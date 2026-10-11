@@ -1,11 +1,16 @@
 #!/bin/sh
 # Escenarios de prueba de la cache de tiles, el CD y el sonido con psxprof, comparados con la linea base.
-#   perf/escenarios.sh [escenario ...]     (por defecto todos: std seg att steer zig)
-#   std    recorrido de medir.sh: moneda en 600, START, acelerar desde 1300 (3000 cuadros)
+#   perf/escenarios.sh [escenario ...]     (por defecto todos)
+#   std    recorrido de medir.sh: moneda en 600, START, acelerar desde 1300 (3000 cuadros); Sanremo (LEVEL05)
 #   seg    segunda partida tras la primera, con direccion oscilante: STEER=1 COIN2=7200 (9500 cuadros)
 #   att    attract largo (demostracion con su carrera) y luego moneda: NOCOIN1=1 COIN2=6000 (8000 cuadros)
 #   steer  carrera con direccion oscilante (choques, derrapes): STEER=1 (4500 cuadros)
 #   zig    lo mismo con otro ritmo, que no sale en los registros de los que se hacen los paquetes: STEER=33 (6000)
+#   mc acro lagos  los otros rallies, elegidos en 'Choose a Rally' (Monte-Carlo LEVEL01, Acropolis LEVEL07 de
+#          noche, 1000 Lagos LEVEL09), hasta el game over (9500)
+#   attlong  attract de 8 minutos: dos vueltas con sus demostraciones (NOCOIN1=1, 30000)
+#   stdlong  partida, game over, records ('Best Drivers') y vuelta al attract (20000)
+#   g2mc   segunda partida en otro rally (Monte-Carlo) tras la de Sanremo: COIN2=10500 (17500)
 # Se compila la variante -DOKI_CUADROS -DFRAMESKIP=0 (estado del juego identico al del codigo original y un dibujo
 # por cuadro; CFX la cambia) y se compara cuadro a cuadro con la linea base: BASE = carpeta wrally_ps1 de un
 # checkout del commit f65069b ya construido (ps1/wrps1_USA.cue, ps1/wr2.ps-exe, ps1/wr2.elf o ps1/wr2.nm),
@@ -20,7 +25,7 @@ cd "$(dirname "$0")/.."
 R=$(pwd)
 P=mipsel-linux-gnu
 CFX="${CFX--DOKI_CUADROS -DFRAMESKIP=0}"; export CFX
-ESC=${*:-std seg att steer zig}
+ESC=${*:-std seg att steer zig mc acro lagos attlong stdlong g2mc}
 O=${ESCDIR:-$R/work/esc}; mkdir -p $O; O=$(cd $O && pwd)
 [ perf/psxprof -nt perf/psxprof.c ] || gcc -O2 -w -o perf/psxprof perf/psxprof.c -lm
 perf/compilar_g.sh $O/g
@@ -35,6 +40,12 @@ params() {
   att) echo "8000 NOCOIN1=1 COIN2=6000" ;;
   steer) echo "4500 STEER=1" ;;
   zig) echo "6000 STEER=33" ;;
+  mc) echo "9500 INPUTS=1180-1190:R" ;;
+  acro) echo "9500 INPUTS=1170-1173:R,1179-1182:R,1188-1191:R" ;;
+  lagos) echo "9500 INPUTS=1180-1190:L" ;;
+  attlong) echo "30000 NOCOIN1=1" ;;
+  stdlong) echo "20000" ;;
+  g2mc) echo "17500 COIN2=10500 INPUTS=11120-11130:R,11200-11210:S" ;;
   *) echo "escenario desconocido: $1" >&2; exit 1 ;;
   esac
 }
@@ -59,4 +70,7 @@ for e in $ESC; do
   echo "== $e ($(params $e))"
   tail -1 $O/$e/psxprof.log
   if [ -n "$BASE" ]; then python3 perf/compara.py $O/$e $O/base_$e; else python3 perf/compara.py $O/$e; fi
+  python3 perf/cortes.py $O/$e ps1/wrps1_USA.cue | tail -1
 done
+echo
+python3 perf/tabla.py ps1/wrps1_USA.cue $O $ESC
