@@ -26,9 +26,9 @@ COND_EXPR = {'t': '1', 'f': '0', 'hi': '(!fC && !fZ)', 'ls': '(fC || fZ)', 'cc':
              'ge': '(fN == fV)', 'lt': '(fN != fV)', 'gt': '(!fZ && fN == fV)', 'le': '(fZ || fN != fV)'}
 
 # region prevista de los accesos por registro de cada instruccion (lectura, escritura, lecturas de 32 bits
-# alineadas a 4), de regiones.sh
+# alineadas a 4): work/regiones.txt, de rc/regiones.py (construir.sh). Sin el, todo va por el acceso general
 PRED = {}
-_rf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'regiones.txt')
+_rf = work('regiones.txt')
 if os.path.exists(_rf):
     for l in open(_rf):
         p = l.split()
