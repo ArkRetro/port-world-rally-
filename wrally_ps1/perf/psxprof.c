@@ -178,6 +178,24 @@ static u16 inputs_for(long fr)
         long ph = ((fr - 1300) / steer) % 4;
         if (ph == 1) in &= ~0x0020; else if (ph == 3) in &= ~0x0080;
     }
+    {   /* INPUTS="a-b:BOTONES,...": botones en los cuadros [a, b) (sin -b, solo a): C moneda, S START, X acelerar,
+           x soltar X, Q cuadrado, L R U D cruceta; a-b%P/W:BOT solo cuando (cuadro - a) % P < W */
+        const char *q = getenv("INPUTS");
+        while (q && *q) {
+            long a = strtol(q, (char **)&q, 10), b = a + 1, P = 0, Wd = 0; const char *bt;
+            if (*q == '-') b = strtol(q + 1, (char **)&q, 10);
+            if (*q == '%') { P = strtol(q + 1, (char **)&q, 10); if (*q == '/') Wd = strtol(q + 1, (char **)&q, 10); }
+            if (*q == ':') q++;
+            bt = q; while (*q && *q != ',') q++;
+            if (fr >= a && fr < b && (!P || (fr - a) % P < Wd)) {
+                const char *c; for (c = bt; c < q; c++) switch (*c) {
+                case 'C': in &= ~0x0001; break; case 'S': in &= ~0x0008; break; case 'X': in &= ~0x4000; break;
+                case 'x': in |= 0x4000; break; case 'Q': in &= ~0x8000; break; case 'L': in &= ~0x0080; break;
+                case 'R': in &= ~0x0020; break; case 'U': in &= ~0x0010; break; case 'D': in &= ~0x0040; break; }
+            }
+            if (*q == ',') q++;
+        }
+    }
     return in;
 }
 
@@ -354,7 +372,7 @@ static void gp1_write(u32 v)
     case 0x00: gpu_fn = 0; gpu_upload_left = 0; disp_on = 0; break;
     case 0x01: gpu_fn = 0; gpu_upload_left = 0; break;
     case 0x03: disp_on = !(v & 1); break;
-    case 0x05: disp_x = v & 0x3FF; disp_y = (v >> 10) & 0x1FF; break;
+    case 0x05: { void dump_show(void); disp_x = v & 0x3FF; disp_y = (v >> 10) & 0x1FF; dump_show(); break; }
     case 0x08: disp_mode = v & 0xFF; break;
     default: break;
     }
@@ -437,6 +455,80 @@ static u32 disp_hash(void)
     for (y = 0; y < 240; y++) for (x = 0; x < 368; x++) { h ^= vram[(disp_y + y) & 511][(disp_x + x) & 1023]; h *= 16777619u; }
     return h;
 }
+/* ---- DUMPAT="f1,f2,a-b/paso": por cuadro f (llamada f a rc_vblank, la numeracion de SHOT e INPUTS) la imagen que
+   ensena la PS1 y el estado de la placa con el que se dibujo. La PS1 dibuja en la llamada f (pk_send: la unica lista
+   enlazada por DMA) el estado de la placa al entrar en ella (el 68000 no corre entre medias: se comprueba con la
+   huella) y lo ensena desde el vsync del siguiente cuadro que se dibuja (GP1 05): ahi se guarda la captura. Si f no
+   se dibujo (FRAMESKIP) en su lugar se ve el ultimo dibujado g < f: se guarda ese (saltado = 1) y el estado de f en
+   dump_f_placa.bin. Si algo dibuja en el bufer entre la lista y el GP1 05 (la pantalla de carga) imagen_ok = 0.
+   Salen dump_NNNNN.ppm (368x240), dump_NNNNN.bin y dumps.csv (formato en perf/arcade.py). El estado de f es el de la
+   fila cuadro_juego = f - 1 de cuadros.csv y la linea f de perf/ref_estado.txt */
+#define DS_N (0x4000 + 0x4000 + 0x1000 + 0x10)
+static u8 *dump_want; static long dump_max; static FILE *dumpf;
+static u8 dump_st[4][DS_N]; static u32 dump_h[4]; static long dump_sf[4] = {-1, -1, -1, -1};   /* al entrar en la llamada c: [c & 3] */
+typedef struct { long f; int ok; u32 h, ml, ms, ih; u8 pres[2048]; u16 clut[16][288]; } dump_buf_t;
+static dump_buf_t dump_b[2] = {{-1}, {-1}};        /* lo dibujado en cada bufer (y 0 / 256) al mandar la lista */
+static int dump_w(long f) { return dump_want && f >= 0 && f < dump_max && dump_want[f] == 1; }
+static u32 dump_ih(int fy) { u32 h = 2166136261u; int x, y; for (y = 0; y < 240; y++) for (x = 0; x < 368; x++) { h ^= vram[(fy + y) & 511][x]; h *= 16777619u; } return h; }
+static void dump_init(void)
+{
+    const char *p = getenv("DUMPAT"); char fn[600];
+    if (!p) return;
+    dump_max = max_game_frames + 2; dump_want = calloc(dump_max, 1);
+    while (*p) {
+        long a = strtol(p, (char **)&p, 10), b = a, st = 1, f;
+        if (*p == '-') b = strtol(p + 1, (char **)&p, 10);
+        if (*p == '/') st = strtol(p + 1, (char **)&p, 10);
+        for (f = a; f <= b && f < dump_max; f += st > 0 ? st : 1) if (f >= 0) dump_want[f] = 1;
+        if (*p == ',') p++; else break;
+    }
+    snprintf(fn, sizeof fn, "%s/dumps.csv", outdir); dumpf = fopen(fn, "w");
+    if (dumpf) fprintf(dumpf, "cuadro,dibujado,saltado,llamada_vista,vblank_vista,estado,huella_ok,imagen_ok,falta_capa,falta_spr\n");
+}
+static void dump_entry(void)          /* al entrar en rc_vblank (game_frame ya es la llamada c) */
+{
+    long c = game_frame; u8 *d = dump_st[c & 3];
+    if (!dump_w(c) && !dump_w(c + 1)) return;
+    memcpy(d, ram + (sym_vram & 0x1FFFFF), 0x4000); memcpy(d + 0x4000, ram + (sym_pal & 0x1FFFFF), 0x4000);
+    memcpy(d + 0x8000, ram + (sym_spr & 0x1FFFFF), 0x1000); memcpy(d + 0x9000, ram + (sym_vregs & 0x1FFFFF), 0x10);
+    dump_sf[c & 3] = c; dump_h[c & 3] = state_hash();
+}
+static void dump_list(void)           /* lista del cuadro mandada (psxprof la dibuja entera al momento) */
+{
+    dump_buf_t *q = &dump_b[da_y0 >= 256]; int t, y;
+    q->f = game_frame; q->ok = 0;
+    if (!dump_w(game_frame) && !dump_w(game_frame + 1)) return;
+    q->ok = 1; q->h = state_hash(); q->ml = miss_lay; q->ms = miss_spr; q->ih = dump_ih(da_y0);
+    memset(q->pres, 0, sizeof q->pres);                         /* tiles en la cache de VRAM (tslot) */
+    if (sym_tslot) for (t = 0; t < 16384; t++) if (rd16ram(sym_tslot + t * 2) != 0xFFFF) q->pres[t >> 3] |= 1 << (t & 7);
+    for (y = 0; y < 16; y++) memcpy(q->clut[y], vram[240 + y], 288 * 2);   /* CLUT de las capas, sprites y efectos */
+}
+static void dump_bin(const char *nm, long f, long g, int fl, const dump_buf_t *q, int slot)
+{
+    char fn[600]; FILE *o; u32 hd[16] = {0x31445257, 1, f, g, fl, (u32)vbl_count, dump_h[slot], q->h, q->ml, q->ms, q->f, (u32)game_frame};
+    snprintf(fn, sizeof fn, "%s/%s.bin", outdir, nm); o = fopen(fn, "wb"); if (!o) return;
+    fwrite(hd, 4, 16, o); fwrite(dump_st[slot], 1, DS_N, o); fwrite(q->pres, 1, 2048, o); fwrite(q->clut, 2, 16 * 288, o);
+    fclose(o);
+}
+void dump_show(void)                  /* GP1 05: empieza a verse el bufer de disp_y */
+{
+    dump_buf_t *q = &dump_b[disp_y >= 256]; long g = q->f, h;
+    char nm[64];
+    if (!dump_want || g < 0) return;
+    for (h = g; h < game_frame; h++) {                          /* g y los que se saltaron despues (se ve g) */
+        int fl = h != g, ok;
+        if (!dump_w(h)) continue;
+        dump_want[h] = 2;
+        ok = q->ok && dump_sf[g & 3] == g;
+        if (!ok) { fprintf(stderr, "DUMPAT: sin estado del cuadro %ld\n", g); continue; }
+        if (dump_h[g & 3] != q->h) fl |= 2;                    /* el estado cambio entre la entrada y la lista */
+        if (dump_ih(disp_y) != q->ih) fl |= 8;                 /* algo dibujo en el bufer despues (pantalla de carga) */
+        snprintf(nm, sizeof nm, "dump_%05ld", h); screenshot(nm); dump_bin(nm, h, g, fl, q, g & 3);
+        if (h != g && dump_sf[h & 3] == h) { snprintf(nm, sizeof nm, "dump_%05ld_placa", h); dump_bin(nm, h, h, 4, q, h & 3); }
+        if (dumpf) fprintf(dumpf, "%ld,%ld,%d,%ld,%llu,%08x,%d,%d,%u,%u\n", h, g, h != g, game_frame, (unsigned long long)vbl_count,
+                           dump_h[g & 3], !(fl & 2), !(fl & 8), q->ml, q->ms);
+    }
+}
 static void dma_start(int ch)
 {
     u32 chcr = dma_chcr[ch], madr = dma_madr[ch] & 0x1FFFFC, mode = (chcr >> 9) & 3, words = 0;
@@ -455,7 +547,7 @@ static void dma_start(int ch)
             stall_cyc += words;                    /* el bus lo ocupa la DMA */
             dma_done[2] = (gpu_busy_until > cyc + words ? gpu_busy_until : cyc + words);
             ll_start = cyc; ll_end = dma_done[2];
-            count_missing();
+            count_missing(); dump_list();
         } else {
             u32 bs = dma_bcr[ch] & 0xFFFF, nb = dma_bcr[ch] >> 16, i;
             if (!bs) bs = 0x10000;
@@ -1014,6 +1106,7 @@ int main(int argc, char **argv)
     if (!sym_vblank) { fprintf(stderr, "sin rc_vblank en %s\n", nmfile); return 1; }
     sym_ram = sym_lookup(nmfile, "rc_ram"); sym_vram = sym_lookup(nmfile, "rc_vram"); sym_pal = sym_lookup(nmfile, "rc_pal"); sym_spr = sym_lookup(nmfile, "rc_spr"); sym_vregs = sym_lookup(nmfile, "rc_vregs");
     sym_tslot = sym_lookup(nmfile, "tslot"); sym_loading = sym_lookup(nmfile, "loading");
+    dump_init();
     prof = calloc(0x80000, 8); prof_n = calloc(0x80000, 8);
     { char fn[600]; snprintf(fn, sizeof fn, "%s/eventos.txt", outdir); evf = fopen(fn, "w");
       snprintf(fn, sizeof fn, "%s/cuadros.csv", outdir); framef = fopen(fn, "w"); }
@@ -1036,6 +1129,7 @@ int main(int argc, char **argv)
             was_loading = 0;
             last_vblank_call = cyc;
             game_frame++;
+            dump_entry();
             if (game_frame == prof_from_frame) { memset(prof, 0, 0x80000 * 8); memset(prof_n, 0, 0x80000 * 8); prof_from_cyc = cyc; }
             pad_buttons = inputs_for(game_frame);
             if ((shot_every && game_frame % shot_every == 0) || shot_at(game_frame)) { char nm[64]; snprintf(nm, sizeof nm, "shot_%05ld", game_frame); screenshot(nm); }
