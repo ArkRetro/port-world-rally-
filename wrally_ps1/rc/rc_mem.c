@@ -13,9 +13,15 @@ void rc_gcrypt_init(void);
 /* estado de los pares de escrituras a la VRAM (rc_vw16/rc_vw32 en rc_rt.h) */
 u32 rc_vl_key = 0xFFFFFFFF; u16 rc_vl_enc, rc_vl_dec;
 extern u8 oki_busy;
+#ifdef RCREG
+static u32 rc_fr;    /* cuadro, para el perfil de regiones */
+#endif
 
 void rc_set_io(u16 dsw, u16 in)
 {
+#ifdef RCREG
+    rc_fr++;
+#endif
     *(u16 *)(rc_iopg + 0x0) = dsw;
     *(u16 *)(rc_iopg + 0x2) = in;
     *(u16 *)(rc_iopg + 0x4) = 0xFF00;
@@ -47,11 +53,25 @@ u32 rc_rd16(u32 a) { return RD16(a); }
 u32 rc_rd8(u32 a) { return RD8(a); }
 u32 rc_vram_writes;
 #ifdef RCREG
-/* perfil de regiones (rc/regiones.sh): se vuelca al salir en el fichero $RCREG */
+/* perfil de regiones (rc/regiones.py): se vuelca al salir en el fichero $RCREG, con las cuentas detras (total y
+   maximo en un cuadro; el cuadro lo marca rc_set_io) */
 #include <stdio.h>
 #include <stdlib.h>
 u32 rc_cur; u16 rc_regmask[0x10000];
-static void rc_reg_dump(void) { FILE *f = fopen(getenv("RCREG"), "wb"); if (f) { fwrite(rc_regmask, 2, 0x10000, f); fclose(f); } }
+static u32 rc_cnt[0x10000], rc_fmax[0x10000], rc_fcnt[0x10000], rc_fst[0x10000], rc_bk[0x10000];
+void rc_regbk(u32 pc) { rc_bk[(pc >> 1) & 0xFFFF]++; }
+void rc_regck(u32 pc)
+{
+    u32 i = (pc >> 1) & 0xFFFF;
+    rc_cur = pc; rc_cnt[i]++;
+    if (rc_fst[i] != rc_fr) { rc_fst[i] = rc_fr; rc_fcnt[i] = 0; }
+    if (++rc_fcnt[i] > rc_fmax[i]) rc_fmax[i] = rc_fcnt[i];
+}
+static void rc_reg_dump(void)
+{
+    FILE *f = fopen(getenv("RCREG"), "wb");
+    if (f) { fwrite(rc_regmask, 2, 0x10000, f); fwrite(rc_cnt, 4, 0x10000, f); fwrite(rc_fmax, 4, 0x10000, f); fwrite(&rc_fr, 4, 1, f); fwrite(rc_bk, 4, 0x10000, f); fclose(f); }
+}
 __attribute__((constructor)) static void rc_reg_init(void) { atexit(rc_reg_dump); }
 #endif
 /* el codigo recompilado escribe en la VRAM sin pasar por aqui (rc_wr16_s/rc_wr32_s en rc_rt.h) */
