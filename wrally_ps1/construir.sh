@@ -12,14 +12,16 @@ echo "== 2. traduccion 68000 -> C y 8051 -> C"
 (cd rc && python3 rc68.py wr_rc.c && python3 rc51c.py mcu_rc.c)
 echo "== 3. tablas de sonido y codificador PS-ADPCM"
 (cd snd && python3 okitab.py && gcc -O2 -o psxadpcm psxadpcm.c)
-echo "== 4. banco de pruebas en el PC: tiles usados (paquetes de cada tramo) y regiones de memoria (recompilador)"
+echo "== 4. banco de pruebas en el PC: tiles usados (paquetes) en attract, partida y partidas con la direccion"
+echo "      oscilante (choques y derrapes), y regiones de memoria (recompilador)"
 (cd rc && gcc -O1 -c -w -DMCS51_XOR=1 -Dmcs51_run=mcs51_run_sw -Dmcs51_reset=mcs51_reset_sw mcs51.c -o mcs51_sw.o \
   && gcc -O1 -c -w -DMCS51_XOR=1 mcu_rc.c -o mcu_rc_sw.o \
   && gcc -O1 -w -DBLKLOG -DRCREG -I. -o rc_host rc_host.c rc_mem.c ../snd/oki_tab.c wr_rc.c mcu_rc_sw.o gcrypt.c mcs51_sw.o \
   && mkdir -p ../work/run \
   && NOCOIN=1 WR_WORK=../work BLKLOG=../work/tl_nc.bin RCREG=../work/reg_nc.bin ./rc_host 30000 ../work/run \
   && WR_WORK=../work BLKLOG=../work/tl_co.bin RCREG=../work/reg_co.bin ./rc_host 8000 ../work/run \
-  && python3 regiones.py ../work/reg_nc.bin ../work/reg_co.bin && python3 rc68.py wr_rc.c)
+  && for s in 45 90 140; do STEER=$s WR_WORK=../work BLKLOG=../work/tl_s$s.bin RCREG=../work/reg_s$s.bin ./rc_host 9000 ../work/run || exit 1; done \
+  && python3 regiones.py ../work/reg_*.bin && python3 rc68.py wr_rc.c)
 echo "== 5. graficos y sonido para el CD"
 (cd ps1 && python3 gen2.py)
 (cd snd && python3 sndps1.py)

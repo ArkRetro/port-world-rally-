@@ -103,15 +103,35 @@ static void eventf(const char *fmt, ...)
 }
 
 /* ---------------------------------------------------------------- entradas */
+/* escenarios (variables de entorno):
+   por defecto  moneda en 600, START en 800/1000/1200, X (acelerar) desde 1300 (como rc_host)
+   NOCOIN1=1    sin esa primera moneda (solo la demostracion del attract)
+   COIN2=N      moneda en N y START en N+200/400/600 (segunda partida, o la primera tras el attract con NOCOIN1:
+                entonces X desde N+700)
+   STEER=1      direccion oscilante desde 1300 (90 cuadros recto, derecha, recto, izquierda): choques y derrapes;
+                STEER=n (n > 1): con n cuadros por tramo */
 static u16 inputs_for(long fr)
 {
+    static int init, nc1, steer; static long c2 = -1;
     u16 in = 0xFFFF;   /* botones del mando, activos a 0 */
-    if (fr >= 600 && fr < 606) in &= ~0x0001;                       /* SELECT: moneda */
-    if ((fr >= 800 && fr < 810) || (fr >= 1000 && fr < 1010) || (fr >= 1200 && fr < 1210)) in &= ~0x0008;   /* START */
-    if (fr >= 1300) in &= ~0x4000;                                   /* X: acelerar */
-    {   /* direccion: oscilar un poco para que el coche no vaya recto siempre */
-        long k = fr - 1300;
-        if (fr >= 1300 && getenv("STEER")) { long ph = (k / 90) % 4; if (ph == 1) in &= ~0x0020; else if (ph == 3) in &= ~0x0080; }
+    if (!init) {
+        init = 1; nc1 = getenv("NOCOIN1") != 0; if (getenv("COIN2")) c2 = atol(getenv("COIN2"));
+        if (getenv("STEER")) { steer = atoi(getenv("STEER")); if (steer <= 1) steer = 90; }
+    }
+    if (!nc1) {
+        if (fr >= 600 && fr < 606) in &= ~0x0001;                   /* SELECT: moneda */
+        if ((fr >= 800 && fr < 810) || (fr >= 1000 && fr < 1010) || (fr >= 1200 && fr < 1210)) in &= ~0x0008;   /* START */
+        if (fr >= 1300) in &= ~0x4000;                               /* X: acelerar */
+    }
+    if (c2 > 0) {
+        long k = fr - c2;
+        if (k >= 0 && k < 6) in &= ~0x0001;
+        if ((k >= 200 && k < 210) || (k >= 400 && k < 410) || (k >= 600 && k < 610)) in &= ~0x0008;
+        if (nc1 && k >= 700) in &= ~0x4000;
+    }
+    if (steer && fr >= 1300) {   /* direccion: oscilar para que el coche no vaya recto siempre */
+        long ph = ((fr - 1300) / steer) % 4;
+        if (ph == 1) in &= ~0x0020; else if (ph == 3) in &= ~0x0080;
     }
     return in;
 }
@@ -317,9 +337,61 @@ static void screenshot(const char *name)
     fclose(f);
 }
 
+/* SHOTAT=a,b-c,...: capturas de mas en esos cuadros */
+static int shot_at(long fr)
+{
+    const char *p = getenv("SHOTAT");
+    while (p && *p) {
+        long a = strtol(p, (char **)&p, 10), b = a;
+        if (*p == '-') b = strtol(p + 1, (char **)&p, 10);
+        if (fr >= a && fr <= b) return 1;
+        if (*p == ',') p++; else break;
+    }
+    return 0;
+}
 /* ---------------------------------------------------------------- DMA */
 static u32 rd32ram(u32 a) { a &= 0x1FFFFC; return ram[a] | (ram[a + 1] << 8) | (ram[a + 2] << 16) | ((u32)ram[a + 3] << 24); }
 static void wr32ram(u32 a, u32 v) { a &= 0x1FFFFC; ram[a] = v; ram[a + 1] = v >> 8; ram[a + 2] = v >> 16; ram[a + 3] = v >> 24; }
+static u32 rd16ram(u32 a) { a &= 0x1FFFFE; return ram[a] | (ram[a + 1] << 8); }
+/* tiles que se ven y no estan en la cache de VRAM del port (tslot[t] == 0xFFFF) al mandar la lista del cuadro:
+   capas (mapa visible de las dos) y sprites visibles, sin repetir. Para ver cuanto faltan y cuanto tardan */
+static u32 sym_tslot, sym_loading;
+static int miss_lay, miss_spr;
+static void count_missing(void)
+{
+    static u8 seen[16384]; static u16 lst[2048]; int n = 0, L, i, j, nl = 0, ns = 0;
+    if (!sym_tslot || !sym_vram) return;
+    for (L = 0; L < 2; L++) {
+        u32 vr0 = rd16ram(sym_vregs + (L ? 4 : 0)), vr1 = rd16ram(sym_vregs + (L ? 6 : 2));
+        int sx = L ? (vr1 + 8) & 1023 : (vr1 + 12) & 1023, sy = (vr0 + 16) & 511;
+        int nv = (368 + 15 + (sx & 15)) >> 4, nf = (240 + 15 + (sy & 15)) >> 4;
+        u32 m = sym_vram + (L ? 0x2000 : 0);
+        for (j = 0; j < nf; j++) for (i = 0; i < nv; i++) {
+            u32 t = rd32ram(m + ((((sy >> 4) + j) & 31) * 64 + (((sx >> 4) + i) & 63)) * 4) & 0x3FFF;
+            if (seen[t]) continue;
+            seen[t] = 1; lst[n++] = t;
+            if (rd16ram(sym_tslot + t * 2) == 0xFFFF) nl++;
+        }
+    }
+    for (i = 0; i < 511; i++) {
+        u32 a = sym_spr + 6 + i * 8, w0 = rd16ram(a), w2 = rd16ram(a + 4), t = rd16ram(a + 6) & 0x3FFF;
+        int sx = ((w2 & 0x3FF) - 23) & 0x3FF, sy = ((240 - (w0 & 0xFF)) & 0xFF) - 16;
+        if (sx >= 0x3F0) sx -= 0x400;
+        if (sx >= 368 || sy >= 240 || sx <= -16 || sy <= -16 || seen[t] == 2) continue;
+        if (!seen[t]) lst[n++] = t;
+        seen[t] = 2;
+        if (rd16ram(sym_tslot + t * 2) == 0xFFFF) ns++;
+    }
+    for (i = 0; i < n; i++) seen[lst[i]] = 0;
+    miss_lay = nl; miss_spr = ns;
+}
+/* huella de la imagen que se ve (para comparar cuadro a cuadro con otra version) */
+static u32 disp_hash(void)
+{
+    u32 h = 2166136261u; int x, y;
+    for (y = 0; y < 240; y++) for (x = 0; x < 368; x++) { h ^= vram[(disp_y + y) & 511][(disp_x + x) & 1023]; h *= 16777619u; }
+    return h;
+}
 static void dma_start(int ch)
 {
     u32 chcr = dma_chcr[ch], madr = dma_madr[ch] & 0x1FFFFC, mode = (chcr >> 9) & 3, words = 0;
@@ -338,6 +410,7 @@ static void dma_start(int ch)
             stall_cyc += words;                    /* el bus lo ocupa la DMA */
             dma_done[2] = (gpu_busy_until > cyc + words ? gpu_busy_until : cyc + words);
             ll_start = cyc; ll_end = dma_done[2];
+            count_missing();
         } else {
             u32 bs = dma_bcr[ch] & 0xFFFF, nb = dma_bcr[ch] >> 16, i;
             if (!bs) bs = 0x10000;
@@ -866,6 +939,7 @@ int main(int argc, char **argv)
     FILE *f; u8 hdr[0x800]; u32 pc0, taddr, tsize, sp;
     long maxcyc_frames;
     u64 next_cd = 0;
+    int was_loading = 0;
     const char *nmfile;
     if (argc < 5) { fprintf(stderr, "uso: psxprof imagen.cue exe nm.txt cuadros [dir]\n"); return 1; }
     if (load_cue(argv[1])) { fprintf(stderr, "no se pudo abrir %s\n", argv[1]); return 1; }
@@ -887,10 +961,13 @@ int main(int argc, char **argv)
     sym_vblank = sym_lookup(nmfile, "rc_vblank");
     if (!sym_vblank) { fprintf(stderr, "sin rc_vblank en %s\n", nmfile); return 1; }
     sym_ram = sym_lookup(nmfile, "rc_ram"); sym_vram = sym_lookup(nmfile, "rc_vram"); sym_pal = sym_lookup(nmfile, "rc_pal"); sym_spr = sym_lookup(nmfile, "rc_spr"); sym_vregs = sym_lookup(nmfile, "rc_vregs");
+    sym_tslot = sym_lookup(nmfile, "tslot"); sym_loading = sym_lookup(nmfile, "loading");
     prof = calloc(0x80000, 8); prof_n = calloc(0x80000, 8);
     { char fn[600]; snprintf(fn, sizeof fn, "%s/eventos.txt", outdir); evf = fopen(fn, "w");
       snprintf(fn, sizeof fn, "%s/cuadros.csv", outdir); framef = fopen(fn, "w"); }
-    if (framef) fprintf(framef, "cuadro_juego,ciclo,vblank,ciclos_desde_anterior,gpu_ticks,estado,lista,gpu_fin\n");
+    /* imagen: huella de lo que se ve al empezar el cuadro; falta_capa/falta_spr: tiles visibles que no estaban en la
+       cache al mandar la ultima lista; carga: hubo pantalla de carga (variable loading del port) desde el anterior */
+    if (framef) fprintf(framef, "cuadro_juego,ciclo,vblank,ciclos_desde_anterior,gpu_ticks,estado,lista,gpu_fin,imagen,falta_capa,falta_spr,carga\n");
     sp = 0x801FFFF0;
     R[29] = sp; R[30] = sp;
     PC = pc0; NPC = pc0 + 4;
@@ -902,18 +979,19 @@ int main(int argc, char **argv)
     while (!halted) {
         if ((PC & 0x1FFFFFFF) == (sym_vblank & 0x1FFFFFFF) && PC == sym_vblank) {
             u64 d = cyc - last_vblank_call;
-            if (framef) fprintf(framef, "%ld,%llu,%llu,%llu,%llu,%08x,%llu,%llu\n", game_frame, (unsigned long long)cyc, (unsigned long long)vbl_count, (unsigned long long)d, (unsigned long long)gpu_ticks_total, state_hash(),
-                                (unsigned long long)ll_start, (unsigned long long)ll_end);
+            if (framef) fprintf(framef, "%ld,%llu,%llu,%llu,%llu,%08x,%llu,%llu,%08x,%d,%d,%d\n", game_frame, (unsigned long long)cyc, (unsigned long long)vbl_count, (unsigned long long)d, (unsigned long long)gpu_ticks_total, state_hash(),
+                                (unsigned long long)ll_start, (unsigned long long)ll_end, disp_hash(), miss_lay, miss_spr, was_loading);
+            was_loading = 0;
             last_vblank_call = cyc;
             game_frame++;
             if (game_frame == prof_from_frame) { memset(prof, 0, 0x80000 * 8); memset(prof_n, 0, 0x80000 * 8); prof_from_cyc = cyc; }
             pad_buttons = inputs_for(game_frame);
-            if (shot_every && game_frame % shot_every == 0) { char nm[64]; snprintf(nm, sizeof nm, "shot_%05ld", game_frame); screenshot(nm); }
+            if ((shot_every && game_frame % shot_every == 0) || shot_at(game_frame)) { char nm[64]; snprintf(nm, sizeof nm, "shot_%05ld", game_frame); screenshot(nm); }
             if (game_frame >= max_game_frames) break;
         }
         step();
         while (cyc >= next_vbl) { I_STAT |= 1; next_vbl += frame_cyc; vbl_count++; }
-        if (cyc >= next_cd) { cd_tick(); next_cd = cyc + 64; }
+        if (cyc >= next_cd) { cd_tick(); next_cd = cyc + 64; if (sym_loading && rd32ram(sym_loading)) was_loading = 1; }
     }
     {
         char fn[600];

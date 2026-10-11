@@ -66,12 +66,17 @@ static void dump(void)
     D("d_spr.bin", rc_spr, 0x1000) D("d_ram.bin", rc_ram, 0x4000)
 }
 
+/* botones por cuadro (como perf/psxprof): moneda en 600 (NOCOIN: sin ella), START en 800/1000/1200, acelerar desde
+   1300; STEER=n: direccion oscilante desde 1300 (n cuadros recto, derecha, recto, izquierda) para ver choques */
 static u16 inputs(long fr)
 {
+    static long st = -1;
     u16 in = 0xFFEF;
+    if (st < 0) st = getenv("STEER") ? atol(getenv("STEER")) : 0;
     if (fr >= 600 && fr < 606 && !getenv("NOCOIN")) in &= ~0x40;
     if ((fr >= 800 && fr < 810) || (fr >= 1000 && fr < 1010) || (fr >= 1200 && fr < 1210)) in &= ~0x4000;
     if (fr >= 1300) in &= ~0x20;
+    if (st > 0 && fr >= 1300) { long ph = (fr - 1300) / st % 4; if (ph == 1) in &= ~0x04; else if (ph == 3) in &= ~0x08; }
     return in;
 }
 

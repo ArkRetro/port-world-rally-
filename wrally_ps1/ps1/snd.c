@@ -1,6 +1,7 @@
 /* Sonido: el OKI M6295 de la recreativa sobre la SPU (frases cortas, en la RAM de la SPU) y el audio del CD
    (frases largas, pistas CD-DA). El canal de una frase de CD queda ocupado hasta que la pista acaba de verdad
-   (pausa automatica, INT4), o como mucho su duracion mas 2 s. Uso personal. */
+   (pausa automatica, INT4), o como mucho su duracion mas 2 s contando desde que empieza a sonar. Para leer del CD
+   la frase se corta (apuntando por donde iba) y luego se sigue desde ahi. Uso personal. */
 #include "cd.h"
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32;
 #define R16(a) (*(volatile u16 *)(a))
@@ -14,7 +15,9 @@ extern const u8 snd_track[128];
 void rc_oki_hold(int c, int on);
 static const u8 okivol[16] = {32, 22, 16, 11, 8, 6, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1};
 static int trk_lba[32], trk_end[32];        /* pistas: principio exacto y final (TRACKS.BIN) */
-static int cd_ch = -1, cd_trk, cd_t, cd_len, cd_susp = -1, snd_ok;
+/* frase larga: canal, pista, desde donde suena, 1/60 s sonando y lo que dura desde ahi, 1/60 s esperando a que
+   suene, posicion si esta cortada */
+static int cd_ch = -1, cd_trk, cd_from, cd_t, cd_len, cd_wait, cd_susp = -1, cut_st, snd_ok;
 
 static void spu_wait_mode(u16 m) { int n; for (n = 0; n < 100000 && (SPUSTAT & 0x3F) != (m & 0x3F); n++); }
 static void spu_dma_write(u32 addr, const void *src, int bytes)
@@ -64,7 +67,7 @@ void snd_play(int ch, int p, int bank, int att)
         if (cd_ch >= 0 && cd_ch != ch) rc_oki_hold(cd_ch, 0);   /* la anterior: ocupada solo por su duracion */
         cd_volume(vol > 0x80 ? 0x80 : vol);
         cd_play(trk_lba[t]);
-        cd_ch = ch; cd_trk = t; cd_t = 0; cd_susp = -1;
+        cd_ch = ch; cd_trk = t; cd_from = trk_lba[t]; cd_t = cd_wait = 0; cd_susp = -1; cut_st = 0;
         cd_len = (trk_end[t] - trk_lba[t]) * 60 / 75;
         rc_oki_hold(ch, 1);
     } else if (snd_addr[p]) {
@@ -82,37 +85,63 @@ void snd_stop(int mask)
 {
     if (!snd_ok) return;
     R16(0x1F801D8C) = mask & 15;
-    if (cd_ch >= 0 && (mask & (1 << cd_ch))) { cd_stop(); cd_ch = -1; cd_susp = -1; }
+    if (cd_ch >= 0 && (mask & (1 << cd_ch))) { cd_stop(); cd_ch = -1; cd_susp = -1; cut_st = 0; }
 }
-/* cada cuadro, con los 1/60 s pasados: fin de la frase larga */
+static void cd_done(void) { cd_ended = 0; rc_oki_hold(cd_ch, 0); cd_ch = -1; cd_susp = -1; cut_st = 0; }
+/* cada cuadro, con los 1/60 s pasados: fin de la frase larga (el tiempo cuenta mientras suena: la busqueda, la
+   pausa o el cambio de velocidad de antes no; si no llega a sonar en 10 s se da por acabada) */
 void snd_frame(int n)
 {
     if (cd_ch < 0 || cd_susp >= 0) return;
-    cd_t += n;
-    if ((cd_ended && !cd_audio()) || cd_t > cd_len + 120) {
+    if (cd_playing()) cd_t += n; else cd_wait += n;
+    if ((cd_ended && !cd_audio()) || cd_t > cd_len + 120 || cd_wait > 600) {
         if (!cd_ended) cd_stop();               /* sin pausa automatica: pararla a mano */
-        cd_ended = 0;
-        rc_oki_hold(cd_ch, 0);
-        cd_ch = -1;
+        cd_done();
     }
+}
+/* la frase ya ha acabado (o casi): no vale la pena cortarla ni seguirla */
+static int cd_over(int margin) { return cd_ended || cd_t + margin >= cd_len; }
+/* posicion para seguir la frase: la de GetlocP si es de la pista, si no por tiempo */
+static int cd_pos(int pos)
+{
+    if (pos < cd_from || pos >= trk_end[cd_trk]) {
+        pos = cd_from + (cd_t > 20 ? cd_t - 20 : 0) * 75 / 60;
+        if (pos >= trk_end[cd_trk]) pos = trk_end[cd_trk] - 1;
+    }
+    return pos;
 }
 /* antes de una carga: parar la frase larga y apuntar por donde iba; despues, seguirla desde ahi */
 void snd_suspend(void)
 {
     int pos;
-    if (cd_ch < 0 || cd_susp >= 0) return;
-    pos = cd_where();
-    if (pos < trk_lba[cd_trk] || pos >= trk_end[cd_trk]) {   /* aun buscando o sin respuesta: por tiempo */
-        pos = trk_lba[cd_trk] + (cd_t > 20 ? cd_t - 20 : 0) * 75 / 60;
-        if (pos >= trk_end[cd_trk]) pos = trk_end[cd_trk] - 1;
-    }
+    if (cd_ch < 0 || cd_susp >= 0) { cut_st = 0; return; }
+    if (cd_over(0)) { cd_stop(); cd_sync(); cd_done(); return; }
+    pos = cd_pos(cd_where());
     cd_stop(); cd_sync();
-    cd_ended = 0; cd_susp = pos;
+    cd_ended = 0; cd_susp = pos; cut_st = 0;
 }
+/* lo mismo sin esperar (para leer tiles mientras suena): devuelve 1 cuando el audio ya esta cortado o se esta
+   parando (la lectura que se pida espera a la pausa), 0 si aun hay que esperar a la posicion. No corta si a la
+   frase le queda poco (devuelve 0) */
+int snd_cut(void)
+{
+    int pos = -1;
+    if (cd_ch < 0 || cd_susp >= 0) return !cd_audio() || cd_susp >= 0;
+    if (cd_over(15)) return 0;
+    if (cd_playing() || cut_st) {               /* si aun no suena se seguira desde donde iba a empezar */
+        if (!cut_st) { cd_loc_start(); cut_st = 1; return 0; }
+        if ((pos = cd_loc_get()) == -2) return 0;
+    }
+    cd_susp = cd_pos(pos);
+    cd_stop();
+    cd_ended = 0; cut_st = 0;
+    return 1;
+}
+int snd_cut_on(void) { return cd_ch >= 0 && cd_susp >= 0; }
 void snd_resume(void)
 {
     if (cd_ch < 0 || cd_susp < 0) return;
     cd_play(cd_susp);
-    cd_t = 0; cd_len = (trk_end[cd_trk] - cd_susp) * 60 / 75;
+    cd_from = cd_susp; cd_t = cd_wait = 0; cd_len = (trk_end[cd_trk] - cd_susp) * 60 / 75;
     cd_susp = -1;
 }
