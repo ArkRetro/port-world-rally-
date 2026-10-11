@@ -2,12 +2,14 @@
  - rom_sw.bin: programa 68000 con las palabras en orden nativo (byte a en a^1)
  - cd/TILES.BIN: los 16384 tiles 16x16 de 4 bits para la VRAM de la PS1, 128 bytes cada uno (16 por sector)
  - cd/LEVELnn.BIN: tiles de los mapas de cada uno de los 12 recorridos (marcados con el bit 15 en la cabecera: el port
-   mira si el fondo es el mapa para saber si esta en carrera) y lo demas que se ve en su carrera
- - cd/RACE.BIN: sprites que se usan en carrera en cualquier recorrido (observados en el banco de pruebas, tambien
-   con la direccion oscilante: choques, derrapes)
- - cd/MENU.BIN: lo que se ve fuera de la carrera en el camino con moneda (arranque, menus): se lee al arrancar
- - cd/MENU2.BIN: lo demas de la demostracion, por orden de aparicion (sin lo que dura uno o dos cuadros); se lee
-   de fondo despues de arrancar, como RACE.BIN. Los tres tienen que caber en la cache de VRAM
+   mira si el fondo es el mapa para saber si esta en carrera) y lo demas que se ve en su carrera (en los que no salen
+   en los registros, lo mas usado del recorrido registrado de mapa mas parecido)
+ - cd/RACE.BIN: lo que se ve en carrera en casi todos los rallies (el coche, el marcador) y los sprites que solo salen
+   con la direccion oscilante (choques, derrapes), observados en el banco de pruebas
+ - cd/MENU.BIN: lo mas visto fuera de la carrera en las partidas con moneda (arranque, menus, mapas de los tramos,
+   game over, records): se lee al arrancar
+ - cd/MENU2.BIN: lo demas que se ve fuera de la carrera (demostracion, partidas), lo mas visto primero hasta llenar la
+   cache con los otros dos (sin lo que dura uno o dos cuadros); se lee de fondo despues de arrancar, como RACE.BIN
    Paquete: sectores de cabecera (u16 n, u16 tiles[n]) y luego los datos de los tiles, 16 por sector."""
 import numpy as np, os, sys, struct, collections
 import sys, os
@@ -44,67 +46,82 @@ def pack(name, tiles, mark=()):
 lv = [level_tiles(r) for r in R]
 # carrera: sprites y tiles de las capas fuera del mapa que se ven en los cuadros de carrera del banco de pruebas,
 # y en que fraccion de los cuadros de carrera de cada recorrido (la mayor de los registros: lo que sale en la
-# demostracion se ve siempre). Registros: attract (tl_nc), partida (tl_co) y partidas con la direccion oscilante
-# (tl_sNN: choques, trompos, salidas de la pista)
+# demostracion se ve siempre). Registros: attract (tl_nc), partidas con moneda (tl_co en Sanremo, tl_rN en el rally
+# del recorrido N hasta volver al attract) y partidas con la direccion oscilante (tl_sNN: choques, trompos, salidas)
 NTS = 5120
 CAP = NTS - 160                              # lo que puede quedar fijo en carrera: el resto, para lo que falte
-spc = [collections.Counter() for _ in range(12)]; exc = [collections.Counter() for _ in range(12)]; nrf = [0] * 12
-rate = [collections.Counter() for _ in range(12)]; nlog = [collections.Counter() for _ in range(12)]
-seen = {0: set(), 1: set()}                  # sprites de carrera vistos sin y con direccion oscilante
-menu = {0: collections.Counter(), 1: collections.Counter()}; first = {}   # 0 attract, 1 partidas
-logs = [('tl_nc.bin', 0, 0), ('tl_co.bin', 1, 0)] + [(f, 1, 1) for f in sorted(os.listdir(work('.'))) if f.startswith('tl_s') and f.endswith('.bin')]
-for fn, coin, steer in logs:
-    fn = work(fn)
-    if not os.path.exists(fn): continue
-    r = np.fromfile(fn, '<u4').reshape(-1, 3)
-    byf = collections.defaultdict(list)
-    for f, t, l in r: byf[int(f)].append((int(t), int(l)))
-    lu = [collections.Counter() for _ in range(12)]; ln = [0] * 12
-    for f, lst in sorted(byf.items()):
-        l = lst[0][1]
-        k = R.index(l) if l in R else -1
-        lay = [t for t, _ in lst if t < 16384]
-        if k < 0 or not lay or sum(1 for t in lay if t in lv[k]) / len(lay) < 0.6:
-            for t in set(t & 0x3FFF for t, _ in lst):
-                menu[coin][t] += 1
-                if not coin: first.setdefault(t, f)
-            continue
-        nrf[k] += 1; ln[k] += 1
-        for t, _ in lst:
-            if t >= 16384: spc[k][t & 0x3FFF] += 1; seen[steer].add(t & 0x3FFF); lu[k][t & 0x3FFF] += 1
-            elif t not in lv[k]: exc[k][t] += 1; lu[k][t] += 1
-    for k in range(12):
-        for t, c in lu[k].items(): rate[k][t] = max(rate[k][t], c / ln[k]); nlog[k][t] += 1
-# RACE: sprites que se ven en dos recorridos o mas, y los que solo salen con la direccion oscilante (los del coche
-# al chocar o derrapar, que valen para cualquier recorrido)
-nlev = collections.Counter(t for c in spc for t in c)
-race = set(t for t, c in nlev.items() if c >= 2) | (seen[1] - seen[0])
+N = 16384
+lvm = np.zeros((12, N), bool)
+for k in range(12): lvm[k, list(lv[k])] = True
+spc = np.zeros((12, N), np.int64); exc = np.zeros((12, N), np.int64); nrf = np.zeros(12, np.int64)
+rate = np.zeros((12, N)); nlog = np.zeros((12, N), np.int64)
+seen = np.zeros((2, N), bool)                # sprites de carrera vistos sin y con direccion oscilante
+menu = np.zeros((2, N), np.int64)            # cuadros fuera de la carrera: 0 attract, 1 partidas
+for fn in sorted(f for f in os.listdir(work('.')) if f.startswith('tl_') and f.endswith('.bin')):
+    coin, steer = fn != 'tl_nc.bin', fn.startswith('tl_s')
+    f, t, l = np.fromfile(work(fn), '<u4').reshape(-1, 3).T.astype(np.int64)
+    uf, fi, inv = np.unique(f, return_index=True, return_inverse=True)
+    kf = np.array([R.index(x) if x in R else -1 for x in l[fi]]); kr = kf[inv]
+    lay = t < N; tt = t & (N - 1)
+    inm = lay & (kr >= 0) & lvm[np.maximum(kr, 0), tt]
+    nl, ni = np.bincount(inv, lay, len(uf)), np.bincount(inv, inm, len(uf))
+    rf = (kf >= 0) & (nl > 0) & (ni >= 0.6 * nl); rr = rf[inv]
+    for k in set(kf[rf].tolist()):
+        sel = rr & (kr == k); n = int(np.sum(rf & (kf == k)))
+        cs = np.bincount(tt[sel & ~lay], minlength=N); ce = np.bincount(tt[sel & lay & ~inm], minlength=N)
+        spc[k] += cs; exc[k] += ce; nrf[k] += n; seen[int(steer)] |= cs > 0
+        rate[k] = np.maximum(rate[k], (cs + ce) / n); nlog[k] += (cs + ce) > 0
+    key = np.unique(f[~rr] * N + tt[~rr])        # cada tile una vez por cuadro
+    menu[int(coin)] += np.bincount(key % N, minlength=N)
+def tl(a): return set(np.nonzero(a)[0].tolist())
+# RACE: lo que se ve en carrera en al menos 3 de los 4 rallies (su primer tramo, de las partidas registradas) y los
+# sprites que solo salen con la direccion oscilante (los del coche al chocar o derrapar, que valen para cualquiera)
+PL = [5, 1, 7, 9]
+race = tl(sum((spc[k] + exc[k]) > 0 for k in PL) >= 3) | tl(seen[1] & ~seen[0])
+# lo de cada recorrido; los que no salen en los registros (tramos 2 y 3) toman lo mas usado (>= 1 % de los cuadros)
+# del registrado con el mapa mas parecido
+rec = [k for k in range(12) if nrf[k]]
+ext, use = [], []
+for k in range(12):
+    j = k if nrf[k] else max(rec, key=lambda j: len(lv[k] & lv[j]) / len(lv[k] | lv[j]))
+    e = tl(spc[j] + exc[j]) - lv[k]
+    if j != k:
+        e = set(x for x in e if rate[j][x] >= 0.01)
+        print('LEVEL%02d: sin registros, %d tiles de LEVEL%02d' % (k, len(e - race), j))
+    ext.append(e); use.append((nlog[j], rate[j]))
 # cada recorrido con RACE tiene que caber en CAP: fuera lo que menos se usa en el (lo que sale en menos registros y,
-# entre eso, en menos cuadros; primero lo suyo, luego de RACE)
+# entre eso, en menos cuadros; primero lo suyo, luego de RACE). Dos pasadas: la primera solo recorta RACE (si el
+# mapa y RACE no caben), la segunda reparte con RACE ya fijo
+def own_of(k, race):
+    own = (lv[k] | ext[k]) - race
+    over = len(own | race) - CAP
+    out = sorted(own - lv[k], key=lambda t: (use[k][0][t], use[k][1][t]))[:max(over, 0)]
+    return own - set(out), over - len(out), out
+for k in range(12):
+    over = own_of(k, race)[1]
+    if over > 0:
+        out = sorted(race, key=lambda t: (use[k][0][t], use[k][1][t]))[:over]
+        race -= set(out)
+        print('RACE: fuera %d tiles poco usados en LEVEL%02d' % (len(out), k))
 lvp = []
 for k in range(12):
-    use = {t: (nlog[k][t], rate[k][t]) for t in rate[k]}
-    own = (lv[k] | set(exc[k]) | set(spc[k])) - race
-    over = len(own | race) - CAP
-    if over > 0:
-        out = sorted((t for t in own if t not in lv[k]), key=lambda t: use.get(t, (0, 0)))[:over]
-        own -= set(out); over -= len(out)
-        print('LEVEL%02d: fuera %d tiles poco usados (vistos en hasta %d registros y el %.2f%% de los cuadros)' % ((k, len(out)) + ((use[out[-1]][0], 100 * use[out[-1]][1]) if out else (0, 0))))
-    if over > 0:
-        out = sorted(race, key=lambda t: use.get(t, (0, 0)))[:over]
-        race -= set(out)
-        print('RACE: fuera %d sprites poco usados en LEVEL%02d' % (len(out), k))
+    own, over, out = own_of(k, race)
+    assert over <= 0, (k, over)
+    if out: print('LEVEL%02d: fuera %d tiles poco usados (vistos en hasta %d registros y el %.2f%% de los cuadros)' % (k, len(out), use[k][0][out[-1]], 100 * use[k][1][out[-1]]))
     lvp.append(own)
 assert len(race) <= 2000, len(race)          # race_ids[] en main.c
 for k in range(12):
-    n = pack('LEVEL%02d.BIN' % k, lvp[k] - race, lv[k])
+    n = pack('LEVEL%02d.BIN' % k, lvp[k], lv[k])
     assert n[0] <= 4000, n                   # lvl_ids[] en main.c
     print('LEVEL%02d' % k, n, 'total con RACE', len(lvp[k] | race))
 print('RACE', pack('RACE.BIN', race))
-# MENU: lo mas usado fuera de la carrera en las partidas; MENU2: lo demas del attract, por orden de aparicion (sin lo
-# que dura uno o dos cuadros). Al arrancar tienen que caber con RACE
+# MENU: lo mas visto fuera de la carrera en las partidas. MENU2: lo demas que se ve fuera de la carrera (3 cuadros o
+# mas), lo mas visto primero, hasta llenar la cache con MENU y RACE (que se lee antes, de fondo, al arrancar) dejando
+# 200 huecos
 co, nc = menu[1], menu[0]
-m1 = set(t for t, _ in co.most_common(1280))
-m2 = sorted((t for t in nc if t not in m1 and t not in race and nc[t] >= 3), key=lambda t: first[t])
-m2 = m2[:max(0, min(4000, NTS - 200 - len(race | m1)))]
-print('MENU', pack('MENU.BIN', m1), 'MENU2', pack('MENU2.BIN', m2))
+m1 = set(sorted(tl(co), key=lambda t: -co[t])[:1280])
+tot = co + nc
+m2 = sorted(tl(tot >= 3) - m1 - race, key=lambda t: (-tot[t], t))
+cap = max(0, min(4000, NTS - 200 - len(race | m1)))
+print('MENU2: %d de %d (fuera los vistos en menos de %d cuadros)' % (min(cap, len(m2)), len(m2), tot[m2[cap]] if cap < len(m2) else 0))
+print('MENU', pack('MENU.BIN', m1), 'MENU2', pack('MENU2.BIN', m2[:cap]))
