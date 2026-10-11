@@ -1,10 +1,20 @@
 #ifndef CD_H
 #define CD_H
 int cd_init(void);
-int cd_read(int lba, int n, void *buf);
+void cd_poll(void);
+int cd_busy(void);
+void cd_sync(void);
+void cd_speed(int fast);
+int cd_read(int lba, int n, void *buf, int fast);
+int cd_stream(int lba, int n, void (*cb)(int i, const unsigned char *d), int fast);
+int cd_read_async(int lba, int n, void *buf);
+int cd_read_state(void);
+void cd_cancel(void);
 int cd_find(const char *name, int *lba, int *size);
-int cd_track_lba(int t);
 void cd_volume(int v);
-int cd_play_at(int lba);
-void cd_stop_audio(void);
+void cd_play(int lba);
+void cd_stop(void);
+int cd_audio(void);
+int cd_where(void);
+extern int cd_ended, cd_dbg[8];
 #endif

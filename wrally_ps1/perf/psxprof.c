@@ -55,11 +55,11 @@ static u64 gpu_ticks_total, gpu_prims;
 static u64 ll_start, ll_end;          /* ultima lista enlazada a la GPU: cuando se mando y cuando acabo de dibujarse */
 /* ---- CD */
 static FILE *cdf; static long cd_sectors;
-static int ntracks; static u32 trk_lba[100];
+static int ntracks; static u32 trk_lba[100], trk_end[100], trk_idx0[100];
 static u8 cd_idx, cd_ie = 0x1F, cd_if;
 static u8 cd_param[16]; static int cd_np;
 static u8 cd_resp[16]; static int cd_nresp, cd_rpos;
-static u8 cd_data[2352]; static int cd_dpos, cd_dlen;
+static u8 cd_data[2352]; static int cd_dpos, cd_dlen, cd_dsize = 2048;
 static u8 cd_req;
 static int cd_stat = 0x02;          /* motor encendido */
 static u32 cd_loc, cd_cur; static int cd_mode;
@@ -70,6 +70,9 @@ static cdev_t cdq[16]; static int cdqn;
 static int cd_reading, cd_playing; static u64 cd_next_sector;
 static u8 cd_sector_buf[2352]; static int cd_sector_ready;
 static u64 cd_busy_until;
+/* velocidad del motor (cambiarla tarda, como en DuckStation: 0,6 s a doble y 1 s a normal) y audio CD-DA:
+   posicion por tiempo desde que acaba la busqueda, pausa automatica (INT4) al final de la pista */
+static int cd_2x; static u64 cd_speed_ready; static u32 cd_play_lba; static int cd_play_trk;
 static FILE *evf;
 /* ---- SPU */
 static u16 spu[0x200];
@@ -370,7 +373,7 @@ static u64 seek_ticks(u32 from, u32 to)
 {
     u32 diff = from > to ? from - to : to - from, spt = 9;
     double s;
-    u64 tps = 225792;   /* doble velocidad */
+    u64 tps = cd_2x ? 225792 : 451584;
     if (from < to && diff <= spt) return tps * (diff < 2 ? 2 : diff);
     if (from >= to && (from >= spt ? from - spt : 0) <= to) return tps * ((to - (from >= spt ? from - spt : 0)) < 1 ? 1 : (to - (from >= spt ? from - spt : 0)));
     if (diff < 7200) {
@@ -388,10 +391,17 @@ static void cd_read_sector(u32 lba)
     fseek(cdf, (long)lba * 2352, SEEK_SET);
     if (fread(cd_sector_buf, 1, 2352, cdf) != 2352) memset(cd_sector_buf, 0, 2352);
 }
+static int track_of(u32 lba) { int t, k = 1; for (t = 1; t <= ntracks; t++) if (trk_lba[t] <= lba || (trk_idx0[t] && trk_idx0[t] <= lba)) k = t; return k; }
+/* posicion actual del audio (avanza a 75 sectores/s desde que acaba la busqueda) */
+static u32 cd_play_pos(void)
+{
+    if (cyc < cd_busy_until) return cd_play_lba;
+    return cd_play_lba + (u32)((cyc - cd_busy_until) / 451584);
+}
 static void cd_stop_activity(const char *why)
 {
-    if (cd_playing) eventf("CDDA_STOP %s lba %u", why, cd_cur);
-    cd_reading = 0; cd_playing = 0; cdqn = 0;
+    if (cd_playing) { cd_cur = cd_play_pos(); eventf("CDDA_STOP %s lba %u", why, cd_cur); }
+    cd_reading = 0; cd_playing = 0;
     {   int i, j = 0; for (i = 0; i < cdqn; i++) if (cdq[i].kind != K_SECTOR) cdq[j++] = cdq[i]; cdqn = j; }
 }
 static void cd_command(u8 c)
@@ -403,35 +413,56 @@ static void cd_command(u8 c)
     case 0x01: cd_push(ack, 3, r, 1, K_RESP); break;                               /* GetStat */
     case 0x02: cd_loc = (bcd2i(cd_param[0]) * 60 + bcd2i(cd_param[1])) * 75 + bcd2i(cd_param[2]) - 150; cd_push(ack, 3, r, 1, K_RESP); break;
     case 0x03: {                                                                    /* Play */
-        u64 st = seek_ticks(cd_cur, cd_loc);
+        u64 st, t0;
+        if (cd_np && cd_param[0]) { int t = bcd2i(cd_param[0]); if (t >= 1 && t <= ntracks) cd_loc = trk_lba[t]; }
+        if (cd_playing) cd_cur = cd_play_pos();
+        st = seek_ticks(cd_cur, cd_loc);
         cd_stop_activity("play");
         cd_push(ack, 3, r, 1, K_RESP);
-        cd_playing = 1; cd_cur = cd_loc;
-        eventf("CDDA_PLAY lba %u seek_ms %.1f", cd_loc, st * 1000.0 / CLK);
-        cd_busy_until = cyc + st;
+        cd_playing = 1; cd_cur = cd_play_lba = cd_loc; cd_play_trk = track_of(cd_loc);
+        t0 = cyc > cd_speed_ready ? cyc : cd_speed_ready;
+        eventf("CDDA_PLAY lba %u seek_ms %.1f%s", cd_loc, (t0 + st - cyc) * 1000.0 / CLK, (cd_mode & 0x80) ? " A_DOBLE_VELOCIDAD" : "");
+        cd_busy_until = t0 + st;
         break; }
     case 0x06: case 0x1B: {                                                         /* ReadN / ReadS */
-        u64 st = seek_ticks(cd_cur, cd_loc);
+        u64 st, t0;
+        if (cd_playing) cd_cur = cd_play_pos();
+        st = seek_ticks(cd_cur, cd_loc);
         if (cd_playing) eventf("CDDA_STOP read lba %u", cd_cur);
         cd_playing = 0;
         cd_push(ack, 3, r, 1, K_RESP);
         cd_reading = 1; cd_cur = cd_loc;
-        cd_next_sector = cyc + ack + st;
-        eventf("CD_READ lba %u seek_ms %.1f", cd_loc, st * 1000.0 / CLK);
+        t0 = cyc + ack > cd_speed_ready ? cyc + ack : cd_speed_ready;
+        cd_next_sector = t0 + st;
+        eventf("CD_READ lba %u seek_ms %.1f x%d", cd_loc, (t0 + st - cyc) * 1000.0 / CLK, cd_2x ? 2 : 1);
         break; }
     case 0x09: {                                                                    /* Pause */
         u64 pt = (cd_reading || cd_playing) ? 9 * 225792ULL : 7400;
         if (pt < 1000000 && (cd_reading || cd_playing)) pt = 1000000;
-        if (cd_playing) eventf("CDDA_STOP pause lba %u", cd_cur);
+        if (cd_playing) { cd_cur = cd_play_pos(); eventf("CDDA_STOP pause lba %u", cd_cur); }
         cd_reading = 0; cd_playing = 0;
         { int i, j = 0; for (i = 0; i < cdqn; i++) if (cdq[i].kind != K_SECTOR) cdq[j++] = cdq[i]; cdqn = j; }
         cd_push(ack, 3, r, 1, K_RESP);
         cd_push(ack + pt, 2, r, 1, K_RESP);
         eventf("CD_PAUSE ms %.1f", pt * 1000.0 / CLK);
         break; }
-    case 0x0A: cd_push(80000, 3, r, 1, K_RESP); cd_push(80000 + 4000000, 2, r, 1, K_RESP); cd_mode = 0; break;  /* Init */
+    case 0x0A: cd_push(80000, 3, r, 1, K_RESP); cd_push(80000 + 4000000, 2, r, 1, K_RESP); cd_mode = 0x20; cd_dsize = 0x924; break;  /* Init */
     case 0x0C: case 0x0D: case 0x0B: cd_push(ack, 3, r, 1, K_RESP); break;         /* Demute / Setfilter / Mute */
-    case 0x0E: cd_mode = cd_param[0]; cd_push(ack, 3, r, 1, K_RESP); break;        /* Setmode */
+    case 0x0E: {                                                                    /* Setmode */
+        int s2 = (cd_param[0] >> 7) & 1;
+        cd_mode = cd_param[0]; cd_dsize = (cd_mode & 0x20) ? 0x924 : 0x800;
+        if (s2 != cd_2x) {
+            u64 t0 = cyc > cd_speed_ready ? cyc : cd_speed_ready, d = (u64)((s2 ? 0.6 : 1.0) * CLK);
+            cd_2x = s2; cd_speed_ready = t0 + d;
+            eventf("CD_SPEED x%d ms %.1f", s2 ? 2 : 1, (cd_speed_ready - cyc) * 1000.0 / CLK);
+        }
+        cd_push(ack, 3, r, 1, K_RESP); break; }
+    case 0x11: {                                                                    /* GetlocP */
+        u32 pos = cd_playing ? cd_play_pos() : cd_cur, a = pos + 150, rel; int t = track_of(pos);
+        rel = pos >= trk_lba[t] ? pos - trk_lba[t] : trk_lba[t] - pos;
+        r[0] = i2bcd(t); r[1] = pos >= trk_lba[t] ? 1 : 0; r[2] = i2bcd(rel / 4500); r[3] = i2bcd((rel / 75) % 60); r[4] = i2bcd(rel % 75);
+        r[5] = i2bcd(a / 4500); r[6] = i2bcd((a / 75) % 60); r[7] = i2bcd(a % 75);
+        cd_push(ack, 3, r, 8, K_RESP); break; }
     case 0x13: r[1] = 1; r[2] = i2bcd(ntracks); cd_push(ack, 3, r, 3, K_RESP); break;
     case 0x14: {                                                                    /* GetTD */
         int t = bcd2i(cd_param[0]); u32 l;
@@ -452,15 +483,23 @@ static void cd_tick(void)
         u8 r[1]; r[0] = cd_stat | 0x20;
         cd_read_sector(cd_cur);
         if ((cd_if & 7) == 0 && cdqn < 15) {
-            memcpy(cd_data, cd_sector_buf + 24, 2048); cd_dlen = 2048; cd_dpos = 2048; /* hasta pedir BFRD */
+            /* 0x924: todo menos la sincronia (cabecera, subcabecera, datos, EDC/ECC); 0x800: solo los datos */
+            if (cd_dsize == 0x924) memcpy(cd_data, cd_sector_buf + 12, 0x924); else memcpy(cd_data, cd_sector_buf + 24, 2048);
+            cd_dlen = cd_dsize; cd_dpos = cd_dsize; /* hasta pedir BFRD */
             cd_push(0, 1, r, 1, K_SECTOR);
         } else eventf("CD_SECTOR_LOST lba %u", cd_cur);
         cd_cur++;
-        cd_next_sector += 225792;
+        cd_next_sector += cd_2x ? 225792 : 451584;
     }
-    if (cd_playing && cyc >= cd_busy_until) {
-        /* avanza al ritmo del audio (1x: 75 sectores/s) */
-        static u64 last; if (!last || cyc - last > 451584) { last = cyc; cd_cur++; }
+    if (cd_playing && (cd_mode & 2)) {
+        /* pausa automatica al final de la pista (antes del pregap de la siguiente): INT4 */
+        u32 pos = cd_play_pos();
+        if (cd_play_trk >= 1 && pos >= trk_end[cd_play_trk]) {
+            u8 r[1]; r[0] = cd_stat;
+            cd_cur = pos; cd_playing = 0;
+            eventf("CDDA_END lba %u", pos);
+            cd_push(0, 4, r, 1, K_RESP);
+        }
     }
     if ((cd_if & 7) == 0 && cdqn) {
         int best = -1;
@@ -496,7 +535,7 @@ static void cd_wr(u32 r, u8 v)
     switch (cd_idx * 4 + r) {
     case 1: cd_command(v); break;
     case 2: if (cd_np < 16) cd_param[cd_np++] = v; break;
-    case 3: if (v & 0x80) { if (cd_sector_ready) { cd_dpos = 0; cd_dlen = 2048; cd_sector_ready = 0; } } else { cd_dlen = 0; cd_dpos = 0; } break;
+    case 3: if (v & 0x80) { if (cd_sector_ready) { cd_dpos = 0; cd_sector_ready = 0; } } else { cd_dlen = 0; cd_dpos = 0; } break;
     case 6: cd_ie = v & 0x1F; break;
     case 7: cd_if &= ~(v & 0x1F); if (v & 0x40) cd_np = 0; if (v & 7) { cd_nresp = 0; cd_rpos = 0; } break;
     default: break;
@@ -512,10 +551,12 @@ static int load_cue(const char *cue)
         if (p) { char *q = strchr(p + 6, '"'); *q = 0; snprintf(bin, sizeof bin, "%s%s", dir, p + 6); }
         if (strstr(line, "TRACK")) sscanf(strstr(line, "TRACK") + 5, "%d", &t);
         if (strstr(line, "INDEX 01")) { int m, s, fr; sscanf(strstr(line, "INDEX 01") + 8, "%d:%d:%d", &m, &s, &fr); trk_lba[t] = (m * 60 + s) * 75 + fr; if (t > ntracks) ntracks = t; }
+        if (strstr(line, "INDEX 00")) { int m, s, fr; sscanf(strstr(line, "INDEX 00") + 8, "%d:%d:%d", &m, &s, &fr); trk_idx0[t] = (m * 60 + s) * 75 + fr; }
     }
     fclose(f);
     cdf = fopen(bin, "rb"); if (!cdf) return -2;
     fseek(cdf, 0, SEEK_END); cd_sectors = ftell(cdf) / 2352;
+    for (t = 1; t <= ntracks; t++) trk_end[t] = t < ntracks ? (trk_idx0[t + 1] ? trk_idx0[t + 1] : trk_lba[t + 1]) : (u32)cd_sectors;
     return 0;
 }
 

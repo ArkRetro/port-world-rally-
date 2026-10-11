@@ -12,6 +12,7 @@ rc_regs_t rc_r;
 void rc_gcrypt_init(void);
 /* estado de los pares de escrituras a la VRAM (rc_vw16/rc_vw32 en rc_rt.h) */
 u32 rc_vl_key = 0xFFFFFFFF; u16 rc_vl_enc, rc_vl_dec;
+extern u8 oki_busy;
 
 void rc_set_io(u16 dsw, u16 in)
 {
@@ -19,7 +20,11 @@ void rc_set_io(u16 dsw, u16 in)
     *(u16 *)(rc_iopg + 0x2) = in;
     *(u16 *)(rc_iopg + 0x4) = 0xFF00;
     *(u16 *)(rc_iopg + 0x8) = 0xFFF3;
-    *(u16 *)(rc_iopg + 0xE) = 0x0000;      /* OKI: nunca ocupado */
+#ifdef OKI_CUADROS
+    *(u16 *)(rc_iopg + 0xE) = 0x0000;      /* OKI: libre al empezar cada cuadro (como antes) */
+#else
+    *(u16 *)(rc_iopg + 0xE) = oki_busy;    /* OKI: canales ocupados (el secuenciador del juego espera a que acabe cada frase) */
+#endif
 }
 void rc_mem_init(void)
 {
@@ -55,19 +60,35 @@ void rc_wr16(u32 a, u32 v, u32 pc)
     a &= 0xFFFFFF;
     if (a >= 0x100000 && a < 0x104000) rc_vw16(a, v & 0xFFFF, pc);
 }
-/* ---- OKI M6295: orden de frases, canales ocupados (estado en 0x70000F) y banco (0x70000D) */
+/* ---- OKI M6295: orden de frases, canales ocupados (estado en 0x70000F) y banco (0x70000D). Cada frase ocupa su
+   canal lo que dura (oki_len, en pasos de 1/60 s): en el PC un paso por cuadro (rc_oki_frame); en la PS1 por
+   tiempo real (rc_oki_tick con los pasos pasados), y la plataforma puede retener el canal hasta que la frase
+   acabe de verdad (pistas de CD-DA, que empiezan tras la busqueda). Con -DOKI_CUADROS (aqui y en main.c) se
+   vuelve a lo de antes, pasos por cuadro del juego y estado libre al empezar cada cuadro, con lo que la huella
+   del estado del juego coincide con perf/ref_estado.txt */
 extern const unsigned short oki_len[16][128];
-static u8 oki_wait, oki_phr, oki_bank;
+static u8 oki_wait, oki_phr, oki_bank, oki_hold;
 static u16 oki_cnt[4];
 u8 oki_busy;
 void snd_play(int ch, int phrase, int bank, int att);   /* los pone cada plataforma */
 void snd_stop(int mask);
 static void oki_status(void) { *(u16 *)(rc_iopg + 0xE) = oki_busy; }
-void rc_oki_frame(void)
+void rc_oki_tick(int n)
 {
     int c;
-    for (c = 0; c < 4; c++) if (oki_cnt[c] && !--oki_cnt[c]) oki_busy &= ~(1 << c);
+    for (c = 0; c < 4; c++)
+        if (oki_cnt[c]) {
+            oki_cnt[c] = oki_cnt[c] > n ? oki_cnt[c] - n : 0;
+            if (!oki_cnt[c]) { if (oki_hold & (1 << c)) oki_cnt[c] = 1; else oki_busy &= ~(1 << c); }
+        }
     oki_status();
+}
+void rc_oki_frame(void) { rc_oki_tick(1); }
+void rc_oki_hold(int c, int on)
+{
+#ifndef OKI_CUADROS
+    if (on) oki_hold |= 1 << c; else oki_hold &= ~(1 << c);
+#endif
 }
 void rc_wr8(u32 a, u32 v, u32 pc)
 {
@@ -87,7 +108,7 @@ void rc_wr8(u32 a, u32 v, u32 pc)
     } else if (v & 0x80) { oki_phr = v & 0x7F; oki_wait = 1; }
     else {
         int m = (v >> 3) & 15;
-        if (m) { oki_busy &= ~m; snd_stop(m); { int c; for (c = 0; c < 4; c++) if (m & (1 << c)) oki_cnt[c] = 0; } }
+        if (m) { oki_busy &= ~m; oki_hold &= ~m; snd_stop(m); { int c; for (c = 0; c < 4; c++) if (m & (1 << c)) oki_cnt[c] = 0; } }
     }
     oki_status();
 }

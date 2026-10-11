@@ -3,7 +3,7 @@
 #   perf/medir.sh [cuadros] [desde]   (por defecto 3000 cuadros de juego, perfil desde el cuadro 2000 = carrera)
 # Requiere haber construido antes (construir.sh). Compila una variante con -g (mismo codigo) para atribuir
 # ciclos a lineas de C y a instrucciones del 68000. Deja los resultados en work/perf/.
-# CFX: opciones de mas para ps1/*.c (p. ej. CFX=-DFRAMESKIP=0 para comparar capturas pixel a pixel).
+# CFX: opciones de mas para ps1/*.c y rc/rc_mem.c (p. ej. CFX=-DFRAMESKIP=0 para comparar capturas pixel a pixel).
 set -e
 cd "$(dirname "$0")/.."
 R=$(pwd)
@@ -23,7 +23,7 @@ $P-gcc $CF -c snd/oki_tab.c -o $B/oki_tab.o
 $P-gcc $CF -DMCS51_XOR=1 -c rc/mcu_rc.c -o $B/mcu_rc.o
 $P-gcc $CF -DMCS51_XOR=1 -c rc/mcs51.c -o $B/mcs51.o
 $P-gcc $CF -c rc/gcrypt.c -o $B/gcrypt.o
-$P-gcc $CF -DRC_ROM_EXTERN -c rc/rc_mem.c -o $B/rc_mem.o
+$P-gcc $CF $CFX -DRC_ROM_EXTERN -c rc/rc_mem.c -o $B/rc_mem.o
 (cd ps1 && $P-gcc $ARCH -c data.s -o $B/data.o)
 $P-gcc $ARCH -I$N -c $N/common/crt0/crt0.s -o $B/crt0.o
 $P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,--oformat=elf32-tradlittlemips -o $B/wr2g.elf \

@@ -1,5 +1,6 @@
 /* Sonido: el OKI M6295 de la recreativa sobre la SPU (frases cortas, en la RAM de la SPU) y el audio del CD
-   (frases largas, pistas CD-DA). Uso personal. */
+   (frases largas, pistas CD-DA). El canal de una frase de CD queda ocupado hasta que la pista acaba de verdad
+   (pausa automatica, INT4), o como mucho su duracion mas 2 s. Uso personal. */
 #include "cd.h"
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32;
 #define R16(a) (*(volatile u16 *)(a))
@@ -10,10 +11,10 @@ typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32;
 #define VOICE(v, r) R16(0x1F801C00 + (v) * 16 + (r))
 extern const u16 snd_addr[128];
 extern const u8 snd_track[128];
-extern const unsigned short oki_len[16][128];
+void rc_oki_hold(int c, int on);
 static const u8 okivol[16] = {32, 22, 16, 11, 8, 6, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1};
-static int trk_lba[32], cd_ch = -1, cd_left, cd_trk, cd_elapsed, snd_ok;
-int snd_cd_busy;            /* el CD esta sonando (las lecturas de datos lo paran) */
+static int trk_lba[32], trk_end[32];        /* pistas: principio exacto y final (TRACKS.BIN) */
+static int cd_ch = -1, cd_trk, cd_t, cd_len, cd_susp = -1, snd_ok;
 
 static void spu_wait_mode(u16 m) { int n; for (n = 0; n < 100000 && (SPUSTAT & 0x3F) != (m & 0x3F); n++); }
 static void spu_dma_write(u32 addr, const void *src, int bytes)
@@ -28,9 +29,9 @@ static void spu_dma_write(u32 addr, const void *src, int bytes)
     for (n = 0; n < 1000000 && (R32(0x1F8010C8) & 0x01000000); n++);
     for (n = 0; n < 100000 && (SPUSTAT & 0x400); n++);
 }
-void snd_init(void *buf, int bufsize, int lba, int size)
+void snd_init(void)
 {
-    int v, off;
+    int v;
     R32(0x1F8010F0) |= 0x80000;                 /* DMA 4 (SPU) */
     SPUCNT = 0; spu_wait_mode(0);
     R16(0x1F801D80) = 0x3FFF; R16(0x1F801D82) = 0x3FFF;   /* volumen general */
@@ -42,16 +43,16 @@ void snd_init(void *buf, int bufsize, int lba, int size)
     R16(0x1F801DAC) = 0x0004;
     SPUCNT = 0xC001;                                       /* SPU, sin silencio, audio del CD */
     for (v = 0; v < 24; v++) { VOICE(v, 0) = 0; VOICE(v, 2) = 0; }
-    /* efectos del CD a la RAM de la SPU */
-    if (lba >= 0)
-        for (off = 0; off < size; off += bufsize) {
-            int n = size - off < bufsize ? size - off : bufsize;
-            if (cd_read(lba + off / 2048, (n + 2047) / 2048, buf)) break;
-            spu_dma_write(0x1010 + off, buf, (n + 63) & ~63);
-        }
-    for (v = 2; v < 32; v++) trk_lba[v] = cd_track_lba(v);
     cd_volume(0x80);
     snd_ok = 1;
+}
+/* sector i de SNDFX.BIN (efectos en PS-ADPCM) a la RAM de la SPU */
+void snd_fx_sector(int i, const unsigned char *d) { spu_dma_write(0x1010 + i * 2048, d, 2048); }
+/* tabla de pistas (TRACKS.BIN: principio y final de cada una, en sectores) */
+void snd_tracks(const unsigned char *d)
+{
+    const u32 *p = (const u32 *)d; int t;
+    for (t = 0; t < 32; t++) { trk_lba[t] = p[t * 2]; trk_end[t] = p[t * 2 + 1]; }
 }
 void snd_play(int ch, int p, int bank, int att)
 {
@@ -59,10 +60,13 @@ void snd_play(int ch, int p, int bank, int att)
     if (!snd_ok) return;
     if (snd_track[p]) {
         int t = snd_track[p], vol = okivol[att] * 0x80 / 16;
-        if (trk_lba[t] < 0) return;
+        if (t >= 32 || trk_lba[t] <= 0 || trk_end[t] <= trk_lba[t]) return;
+        if (cd_ch >= 0 && cd_ch != ch) rc_oki_hold(cd_ch, 0);   /* la anterior: ocupada solo por su duracion */
         cd_volume(vol > 0x80 ? 0x80 : vol);
-        cd_play_at(trk_lba[t]);
-        cd_ch = ch; cd_trk = t; cd_left = oki_len[0][p]; cd_elapsed = 0; snd_cd_busy = 1;
+        cd_play(trk_lba[t]);
+        cd_ch = ch; cd_trk = t; cd_t = 0; cd_susp = -1;
+        cd_len = (trk_end[t] - trk_lba[t]) * 60 / 75;
+        rc_oki_hold(ch, 1);
     } else if (snd_addr[p]) {
         u32 vol = okivol[att] * 0x3FFF / 16;
         if (vol > 0x3FFF) vol = 0x3FFF;
@@ -78,18 +82,37 @@ void snd_stop(int mask)
 {
     if (!snd_ok) return;
     R16(0x1F801D8C) = mask & 15;
-    if (cd_ch >= 0 && (mask & (1 << cd_ch))) { cd_stop_audio(); cd_ch = -1; snd_cd_busy = 0; }
+    if (cd_ch >= 0 && (mask & (1 << cd_ch))) { cd_stop(); cd_ch = -1; cd_susp = -1; }
 }
-/* una vez por cuadro: fin de la frase larga */
-void snd_frame(void)
+/* cada cuadro, con los 1/60 s pasados: fin de la frase larga */
+void snd_frame(int n)
 {
-    if (cd_ch >= 0) {
-        cd_elapsed++;
-        if (--cd_left <= 0) { cd_stop_audio(); cd_ch = -1; snd_cd_busy = 0; }
+    if (cd_ch < 0 || cd_susp >= 0) return;
+    cd_t += n;
+    if ((cd_ended && !cd_audio()) || cd_t > cd_len + 120) {
+        if (!cd_ended) cd_stop();               /* sin pausa automatica: pararla a mano */
+        cd_ended = 0;
+        rc_oki_hold(cd_ch, 0);
+        cd_ch = -1;
     }
 }
-/* tras leer datos del CD: seguir la frase larga donde iba */
+/* antes de una carga: parar la frase larga y apuntar por donde iba; despues, seguirla desde ahi */
+void snd_suspend(void)
+{
+    int pos;
+    if (cd_ch < 0 || cd_susp >= 0) return;
+    pos = cd_where();
+    if (pos < trk_lba[cd_trk] || pos >= trk_end[cd_trk]) {   /* aun buscando o sin respuesta: por tiempo */
+        pos = trk_lba[cd_trk] + (cd_t > 20 ? cd_t - 20 : 0) * 75 / 60;
+        if (pos >= trk_end[cd_trk]) pos = trk_end[cd_trk] - 1;
+    }
+    cd_stop(); cd_sync();
+    cd_ended = 0; cd_susp = pos;
+}
 void snd_resume(void)
 {
-    if (cd_ch >= 0 && trk_lba[cd_trk] >= 0) cd_play_at(trk_lba[cd_trk] + cd_elapsed * 75 / 60);
+    if (cd_ch < 0 || cd_susp < 0) return;
+    cd_play(cd_susp);
+    cd_t = 0; cd_len = (trk_end[cd_trk] - cd_susp) * 60 / 75;
+    cd_susp = -1;
 }
