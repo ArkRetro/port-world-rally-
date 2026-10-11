@@ -63,9 +63,10 @@ for k in range(12): lvm[k, list(lv[k])] = True
 spc = np.zeros((12, N), np.int64); exc = np.zeros((12, N), np.int64); nrf = np.zeros(12, np.int64)
 rate = np.zeros((12, N)); nlog = np.zeros((12, N), np.int64)
 seen = np.zeros((2, N), bool)                # sprites de carrera vistos sin y con direccion oscilante
+vis1 = np.zeros((12, N), bool)               # vistos en carrera en las partidas del primer tramo (para RACE)
 menu = np.zeros((2, N), np.int64)            # cuadros fuera de la carrera: 0 attract, 1 partidas
 for fn in sorted(f for f in os.listdir(work('.')) if f.startswith('tl_') and f.endswith('.bin')):
-    coin, steer = fn != 'tl_nc.bin', fn.startswith('tl_s')
+    coin, steer, auto = fn != 'tl_nc.bin', fn.startswith('tl_s'), fn.startswith('tl_a')
     f, t, l = np.fromfile(work(fn), '<u4').reshape(-1, 3).T.astype(np.int64)
     uf, fi, inv = np.unique(f, return_index=True, return_inverse=True)
     kf = np.array([R.index(x) if x in R else -1 for x in l[fi]]); kr = kf[inv]
@@ -76,15 +77,18 @@ for fn in sorted(f for f in os.listdir(work('.')) if f.startswith('tl_') and f.e
     for k in set(kf[rf].tolist()):
         sel = rr & (kr == k); n = int(np.sum(rf & (kf == k)))
         cs = np.bincount(tt[sel & ~lay], minlength=N); ce = np.bincount(tt[sel & lay & ~inm], minlength=N)
-        spc[k] += cs; exc[k] += ce; nrf[k] += n; seen[int(steer)] |= cs > 0
+        spc[k] += cs; exc[k] += ce; nrf[k] += n
+        if not auto: seen[int(steer)] |= cs > 0; vis1[k] |= (cs + ce) > 0
         rate[k] = np.maximum(rate[k], (cs + ce) / n); nlog[k] += (cs + ce) > 0
     key = np.unique(f[~rr] * N + tt[~rr])        # cada tile una vez por cuadro
     menu[int(coin)] += np.bincount(key % N, minlength=N)
 def tl(a): return set(np.nonzero(a)[0].tolist())
-# RACE: lo que se ve en carrera en al menos 3 de los 4 rallies (su primer tramo, de las partidas registradas) y los
-# sprites que solo salen con la direccion oscilante (los del coche al chocar o derrapar, que valen para cualquiera)
+# RACE: lo que se ve en carrera en al menos 3 de los 4 rallies (su primer tramo, de las partidas registradas sin el
+# piloto automatico) y los sprites que solo salen con la direccion oscilante (los del coche al chocar o derrapar, que
+# valen para cualquiera). Con el piloto automatico RACE creceria y quitaria sitio a los menus (MENU2); lo que este
+# vea entra en cada recorrido
 PL = [5, 1, 7, 9]
-race = tl(sum((spc[k] + exc[k]) > 0 for k in PL) >= 3) | tl(seen[1] & ~seen[0])
+race = tl(sum(vis1[k] for k in PL) >= 3) | tl(seen[1] & ~seen[0])
 # lo de cada recorrido; los que no salen en los registros (tramos 2 y 3) toman lo mas usado (>= 1 % de los cuadros)
 # del registrado con el mapa mas parecido
 rec = [k for k in range(12) if nrf[k]]
