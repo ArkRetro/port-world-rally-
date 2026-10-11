@@ -1,10 +1,11 @@
 #!/bin/sh
 # Escenarios de prueba de la cache de tiles, el CD y el sonido con psxprof, comparados con la linea base.
-#   perf/escenarios.sh [escenario ...]     (por defecto todos: std seg att steer)
+#   perf/escenarios.sh [escenario ...]     (por defecto todos: std seg att steer zig)
 #   std    recorrido de medir.sh: moneda en 600, START, acelerar desde 1300 (3000 cuadros)
 #   seg    segunda partida tras la primera, con direccion oscilante: STEER=1 COIN2=7200 (9500 cuadros)
 #   att    attract largo (demostracion con su carrera) y luego moneda: NOCOIN1=1 COIN2=6000 (8000 cuadros)
 #   steer  carrera con direccion oscilante (choques, derrapes): STEER=1 (4500 cuadros)
+#   zig    lo mismo con otro ritmo, que no sale en los registros de los que se hacen los paquetes: STEER=33 (6000)
 # Se compila la variante -DOKI_CUADROS -DFRAMESKIP=0 (estado del juego identico al del codigo original y un dibujo
 # por cuadro; CFX la cambia) y se compara cuadro a cuadro con la linea base: BASE = carpeta wrally_ps1 de un
 # checkout del commit f65069b ya construido (ps1/wrps1_USA.cue, ps1/wr2.ps-exe, ps1/wr2.elf o ps1/wr2.nm),
@@ -19,7 +20,7 @@ cd "$(dirname "$0")/.."
 R=$(pwd)
 P=mipsel-linux-gnu
 CFX="${CFX--DOKI_CUADROS -DFRAMESKIP=0}"; export CFX
-ESC=${*:-std seg att steer}
+ESC=${*:-std seg att steer zig}
 O=${ESCDIR:-$R/work/esc}; mkdir -p $O; O=$(cd $O && pwd)
 [ perf/psxprof -nt perf/psxprof.c ] || gcc -O2 -w -o perf/psxprof perf/psxprof.c -lm
 perf/compilar_g.sh $O/g
@@ -33,6 +34,7 @@ params() {
   seg) echo "9500 STEER=1 COIN2=7200" ;;
   att) echo "8000 NOCOIN1=1 COIN2=6000" ;;
   steer) echo "4500 STEER=1" ;;
+  zig) echo "6000 STEER=33" ;;
   *) echo "escenario desconocido: $1" >&2; exit 1 ;;
   esac
 }

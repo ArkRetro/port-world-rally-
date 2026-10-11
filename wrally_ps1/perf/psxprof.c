@@ -108,12 +108,16 @@ static void eventf(const char *fmt, ...)
    NOCOIN1=1    sin esa primera moneda (solo la demostracion del attract)
    COIN2=N      moneda en N y START en N+200/400/600 (segunda partida, o la primera tras el attract con NOCOIN1:
                 entonces X desde N+700)
-   STEER=1      direccion oscilante desde 1300 (90 cuadros recto, derecha, recto, izquierda): choques y derrapes */
+   STEER=1      direccion oscilante desde 1300 (90 cuadros recto, derecha, recto, izquierda): choques y derrapes;
+                STEER=n (n > 1): con n cuadros por tramo */
 static u16 inputs_for(long fr)
 {
     static int init, nc1, steer; static long c2 = -1;
     u16 in = 0xFFFF;   /* botones del mando, activos a 0 */
-    if (!init) { init = 1; nc1 = getenv("NOCOIN1") != 0; steer = getenv("STEER") != 0; if (getenv("COIN2")) c2 = atol(getenv("COIN2")); }
+    if (!init) {
+        init = 1; nc1 = getenv("NOCOIN1") != 0; if (getenv("COIN2")) c2 = atol(getenv("COIN2"));
+        if (getenv("STEER")) { steer = atoi(getenv("STEER")); if (steer <= 1) steer = 90; }
+    }
     if (!nc1) {
         if (fr >= 600 && fr < 606) in &= ~0x0001;                   /* SELECT: moneda */
         if ((fr >= 800 && fr < 810) || (fr >= 1000 && fr < 1010) || (fr >= 1200 && fr < 1210)) in &= ~0x0008;   /* START */
@@ -126,7 +130,7 @@ static u16 inputs_for(long fr)
         if (nc1 && k >= 700) in &= ~0x4000;
     }
     if (steer && fr >= 1300) {   /* direccion: oscilar para que el coche no vaya recto siempre */
-        long ph = ((fr - 1300) / 90) % 4;
+        long ph = ((fr - 1300) / steer) % 4;
         if (ph == 1) in &= ~0x0020; else if (ph == 3) in &= ~0x0080;
     }
     return in;
