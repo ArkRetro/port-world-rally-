@@ -25,6 +25,15 @@ COND_EXPR = {'t': '1', 'f': '0', 'hi': '(!fC && !fZ)', 'ls': '(fC || fZ)', 'cc':
              'ne': '(!fZ)', 'eq': '(fZ)', 'vc': '(!fV)', 'vs': '(fV)', 'pl': '(!fN)', 'mi': '(fN)',
              'ge': '(fN == fV)', 'lt': '(fN != fV)', 'gt': '(!fZ && fN == fV)', 'le': '(fZ || fN != fV)'}
 
+# region prevista de los accesos por registro de cada instruccion (lectura, escritura, lecturas de 32 bits
+# alineadas a 4), de regiones.sh
+PRED = {}
+_rf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'regiones.txt')
+if os.path.exists(_rf):
+    for l in open(_rf):
+        p = l.split()
+        if len(p) >= 3 and not l.startswith('#'): PRED[int(p[0], 16)] = tuple(None if x == '-' else x for x in p[1:3]) + (p[3:4] == ['a'],)
+
 IRQ6 = struct.unpack('>I', D[0x78:0x7C])[0]
 RESET_PC = struct.unpack('>I', D[4:8])[0]
 
@@ -169,7 +178,7 @@ def rd_const(a, sz):
     if reg:
         if sz == 1: return 'MB(%s, 0x%x)' % (reg, o)
         if sz == 2: return 'MW(%s, 0x%x)' % (reg, o)
-        return 'ML(%s, 0x%x)' % (reg, o)
+        return '%s(%s, 0x%x)' % ('ML' if o & 3 else 'MLA', reg, o)
     return 'RD%d(0x%06xu)' % (sz * 8, a)
 
 def wr_const(a, sz, v, pc):
@@ -208,11 +217,17 @@ class G:
         if m == 'pci': s.e('%s = 0x%xu + %s;' % (tmp, ea.v, idx_expr(ea.x))); return tmp, None, ''
         raise ValueError(m)
 
+    def pred(s, k): return PRED.get(s.i.a, (None, None, False))[k]
     def rd(s, expr, const, sz):
         if const is not None: return rd_const(const, sz)
+        if s.pred(0) and sz == 4 and s.pred(2): return 'RDA32(%s, %s)' % (s.pred(0), expr)
+        if s.pred(0): return 'RDP%d(%s, %s)' % (sz * 8, s.pred(0), expr)
         return 'RD%d(%s)' % (sz * 8, expr)
     def wr(s, expr, const, sz, v):
         if const is not None: return wr_const(const, sz, v, s.i.a)
+        # VRAM: descifrado fuera de linea sin pasar por la tabla de paginas (los bytes van por el camino general)
+        if s.pred(1) == 'vram' and sz > 1: return 'WRV%d(%s, %s, 0x%x);' % (sz * 8, expr, v, s.i.a)
+        if s.pred(1) and s.pred(1) != 'vram': return 'WRP%d(%s, %s, %s, 0x%x);' % (sz * 8, s.pred(1), expr, v, s.i.a)
         return 'WR%d(%s, %s, 0x%x);' % (sz * 8, expr, v, s.i.a)
 
     def read(s, ea, sz, tmp='eas'):
@@ -229,8 +244,9 @@ class G:
     def setreg(s, ea, sz, v):
         r = '%s%d' % ('d' if ea.m == 'D' else 'a', ea.r)
         if ea.m == 'A' or sz == 4: s.e('%s = %s;' % (r, v))
-        elif sz == 2: s.e('%s = (%s & 0xFFFF0000u) | ((%s) & 0xFFFFu);' % (r, r, v))
-        else: s.e('%s = (%s & 0xFFFFFF00u) | ((%s) & 0xFFu);' % (r, r, v))
+        # parte baja con xor: 3 instrucciones del MIPS, sin cargar la mascara de la parte alta
+        elif sz == 2: s.e('%s ^= (%s ^ (%s)) & 0xFFFFu;' % (r, r, v))
+        else: s.e('%s ^= (%s ^ (%s)) & 0xFFu;' % (r, r, v))
 
     def write(s, ea, sz, v):
         if ea.m in ('D', 'A'): s.setreg(ea, sz, v); return
@@ -275,6 +291,10 @@ class G:
             s.e('fC = %s > %s;' % (ss, dd))
             if x and s.fl(X): s.e('fX = fC;')
         s.nz(r, sz)
+
+def callpush(i, nxt, labelset):
+    """apila la direccion de vuelta"""
+    return 'RC_PUSH(0x%xu, 0x%x);' % (nxt, i.a)
 
 def gen_ins(i, live_out, labelset, taken):
     g = G(i, live_out[i.a])
@@ -327,8 +347,9 @@ def gen_ins(i, live_out, labelset, taken):
         d, w = g.rmw(i.dst, sz)
         if d != 'vd': e('vd = %s;' % d)
         op = '+' if o.startswith('add') else '-'
-        if sz == 4: e('vr = vd %s vs;' % op)
-        else: e('vr = (vd %s vs) & 0x%x;' % (op, (1 << (BITS[sz] + 1)) - 1))
+        # sin mascara: vd y vs ya vienen recortados, la suma cabe en b+1 bits y la resta solo se mira hasta el bit
+        # b-1 (C de la resta sale de vs > vd); quien escribe o mira Z recorta
+        e('vr = vd %s vs;' % op)
         if op == '+': g.add_flags('vd', 'vs', 'vr', sz)
         else: g.sub_flags('vd', 'vs', 'vr', sz)
         w('vr')
@@ -348,8 +369,7 @@ def gen_ins(i, live_out, labelset, taken):
             if sz == 2: e('vs = (u32)(s32)(s16)vs;')
             sz = 4
         if d != 'vd': e('vd = %s;' % d)
-        if sz == 4: e('vr = vd - vs;')
-        else: e('vr = (vd - vs) & 0x%x;' % ((1 << (BITS[sz] + 1)) - 1))
+        e('vr = vd - vs;')
         g.sub_flags('vd', 'vs', 'vr', sz, x=False)
     elif o in ('and', 'andi', 'or', 'ori', 'eor', 'eori'):
         s = g.read(i.src, sz)
@@ -394,7 +414,7 @@ def gen_ins(i, live_out, labelset, taken):
         w('vr')
     elif o == 'ext':
         r = i.dst.r
-        if sz == 2: e('d%d = (d%d & 0xFFFF0000u) | ((u32)(s32)(s8)d%d & 0xFFFFu);' % (r, r, r)); g.logic('d%d' % r, 2)
+        if sz == 2: e('d%d ^= (d%d ^ (u32)(s32)(s8)d%d) & 0xFFFFu;' % (r, r, r)); g.logic('d%d' % r, 2)
         else: e('d%d = (u32)(s32)(s16)d%d;' % (r, r)); g.logic('d%d' % r, 4)
     elif o == 'swap':
         r = i.dst.r
@@ -486,57 +506,96 @@ def gen_ins(i, live_out, labelset, taken):
     elif o == 'dbcc':
         r = i.dst.r
         pre = '' if i.cond == 'f' else 'if (!%s) ' % COND_EXPR[i.cond]
-        e('%s{ u32 t = (d%d - 1) & 0xFFFFu; d%d = (d%d & 0xFFFF0000u) | t; if (t != 0xFFFFu) { CYC(10); %s } }' % (pre, r, r, r, br_irq(i.target)))
+        # parte baja distinta de 0: restar 1 no toca la alta; si es 0 pasa a 0xFFFF y se sale del bucle
+        e('%s{ if (d%d & 0xFFFFu) { d%d -= 1; CYCB(10); %s } d%d |= 0xFFFFu; }' % (pre, r, r, br_irq(i.target), r))
     elif o == 'bcc':
         e('if %s { %s }' % (COND_EXPR[i.cond], br_irq(i.target)))
     elif o == 'bra':
         e(br_irq(i.target))
     elif o == 'bsr':
-        e('a7 -= 4; WR32(a7, 0x%xu, 0x%x); %s' % (nxt, i.a, goto(i.target)))
+        e('%s %s' % (callpush(i, nxt, labelset), goto(i.target)))
     elif o in ('jsr', 'jmp'):
         if i.dst.m in ('absl', 'absw'): t = '0x%xu' % i.dst.v; tc = i.dst.v
         else:
             expr, const, post = g.addr(i.dst, 4, 'eas'); t = expr; tc = None
-        if o == 'jsr': e('a7 -= 4; WR32(a7, 0x%xu, 0x%x);' % (nxt, i.a))
+        if o == 'jsr': e(callpush(i, nxt, labelset))
         if tc is not None: e(goto(tc))
         else: e('DISPATCH(%s);' % t)
     elif o == 'rts':
-        e('vs = RD32(a7); a7 += 4; DISPATCH(vs);')
+        e('RTS();')
     elif o == 'rte':
-        e('vs = RD16(a7); SETSR(vs); vd = RD32(a7 + 2); a7 += 6; DISPATCH(vd);')
+        e('vs = RDP16(ram, a7); SETSR(vs); ead = a7 + 2; vd = RDP32(ram, ead); a7 += 6; DISPATCH(vd);')
     elif o == 'nop':
         pass
     elif o == 'movem':
+        # con region prevista: si el bloque entero cabe en ella, accesos directos; si no, uno a uno por el
+        # camino general (en el mismo orden que el 68000)
         mask = i.extra
+        regs = [('d%d' % k) for k in range(8)] + [('a%d' % k) for k in range(8)]
+        nb = bin(mask).count('1') * sz
+        def blk(pr, ea):
+            e('if (RBLK(%s, %s, %d)) { u8 *_q = RPTR(%s, %s);' % (pr, ea, nb, pr, ea))
         if i.n == 0:   # registros -> memoria
-            regs = [('d%d' % k) for k in range(8)] + [('a%d' % k) for k in range(8)]
+            pw = g.pred(1) if g.pred(1) != 'vram' else None
             if i.dst.m == 'pre':
                 ar = i.dst.r
-                e('ead = a%d;' % ar)
-                for bit in range(16):
-                    if mask & (1 << bit):
-                        rg = regs[15 - bit]
-                        e('ead -= %d; WR%d(ead, %s, 0x%x);' % (sz, sz * 8, rg, i.a))
+                order = [regs[15 - bit] for bit in range(16) if mask & (1 << bit)]
+                if pw:
+                    e('ead = a%d - %d;' % (ar, nb)); blk(pw, 'ead')
+                    for k, rg in enumerate(order):
+                        off = nb - (k + 1) * sz
+                        e('    ' + ('SETL(_q, %d, %s);' % (off, rg) if sz == 4 else 'MW(_q, %d) = (u16)%s;' % (off, rg)))
+                    e('} else { ead = a%d;' % ar)
+                    for rg in order: e('    ead -= %d; rc_wrg%d(ead, %s, 0x%x);' % (sz, sz * 8, rg, i.a))
+                    e('}')
+                else:
+                    e('ead = a%d;' % ar)
+                    for rg in order: e('ead -= %d; WR%d(ead, %s, 0x%x);' % (sz, sz * 8, rg, i.a))
                 e('a%d = ead;' % ar)
             else:
                 expr, const, post = g.addr(i.dst, sz, 'ead')
                 if const is not None: e('ead = 0x%xu;' % const)
-                for bit in range(16):
-                    if mask & (1 << bit):
-                        e('WR%d(ead, %s, 0x%x); ead += %d;' % (sz * 8, regs[bit], i.a, sz))
+                order = [regs[bit] for bit in range(16) if mask & (1 << bit)]
+                if pw:
+                    blk(pw, 'ead')
+                    for k, rg in enumerate(order):
+                        e('    ' + ('SETL(_q, %d, %s);' % (k * sz, rg) if sz == 4 else 'MW(_q, %d) = (u16)%s;' % (k * sz, rg)))
+                    e('} else {')
+                    for k, rg in enumerate(order): e('    rc_wrg%d(ead + %d, %s, 0x%x);' % (sz * 8, k * sz, rg, i.a))
+                    e('}')
+                else:
+                    for rg in order: e('WR%d(ead, %s, 0x%x); ead += %d;' % (sz * 8, rg, i.a, sz))
         else:
-            regs = [('d%d' % k) for k in range(8)] + [('a%d' % k) for k in range(8)]
             m = i.src.m
+            pr = g.pred(0)
             if m == 'post':
                 e('eas = a%d;' % i.src.r)
             else:
                 expr, const, post = g.addr(i.src, sz, 'eas')
                 if const is not None: e('eas = 0x%xu;' % const)
-            for bit in range(16):
-                if mask & (1 << bit):
-                    if sz == 2: e('%s = (u32)(s32)(s16)RD16(eas); eas += 2;' % regs[bit])
-                    else: e('%s = RD32(eas); eas += 4;' % regs[bit])
-            if m == 'post': e('a%d = eas;' % i.src.r)
+            order = [regs[bit] for bit in range(16) if mask & (1 << bit)]
+            if pr:
+                blk(pr, 'eas')
+                if sz == 4 and len(order) > 1:
+                    # alineado a 4 (lo normal salvo en la pila dentro de la IRQ): una lectura de 32 bits por registro
+                    e('    if (!(eas & 2)) {')
+                    for k, rg in enumerate(order): e('        %s = MLA(_q, %d);' % (rg, k * 4))
+                    e('    } else {')
+                    for k, rg in enumerate(order): e('        %s = ML(_q, %d);' % (rg, k * 4))
+                    e('    }')
+                else:
+                    for k, rg in enumerate(order):
+                        e('    ' + ('%s = ML(_q, %d);' % (rg, k * sz) if sz == 4 else '%s = (u32)(s32)(s16)MW(_q, %d);' % (rg, k * sz)))
+                e('} else {')
+                for k, rg in enumerate(order):
+                    e('    ' + ('%s = rc_rdg32(eas + %d);' % (rg, k * sz) if sz == 4 else '%s = (u32)(s32)(s16)rc_rdg16(eas + %d);' % (rg, k * sz)))
+                e('}')
+                if m == 'post': e('a%d = eas + %d;' % (i.src.r, nb))
+            else:
+                for rg in order:
+                    if sz == 2: e('%s = (u32)(s32)(s16)RD16(eas); eas += 2;' % rg)
+                    else: e('%s = RD32(eas); eas += 4;' % rg)
+                if m == 'post': e('a%d = eas;' % i.src.r)
     elif o == 'move_from_sr':
         g.write(i.dst, 2, 'GETSR()')
     elif o == 'move_to_sr':
@@ -578,17 +637,27 @@ for _a in ADDRS:
         _j = INS[NEXT[_a]]
         if _j.op == 'bcc' and _j.target == _a: IDLE.add(NEXT[_a])
 
+HN, HS = 4096, 17
 def main(out):
     live_in, live_out = liveness()
     labs, taken = labels()
     f = open(out, 'w')
     w = f.write
-    w('/* generado por rc68.py: World Rally 68000 -> C (uso personal) */\n#define RC_GEN 1\n#include "rc_rt.h"\n#define RC_IRQ6 0x%xu\n' % IRQ6)
+    w('/* generado por rc68.py: World Rally 68000 -> C (uso personal) */\n#define RC_GEN 1\n#define RC_HN %d\n#define RC_HS %d\n' % (HN, HS))
+    w('#include "rc_rt.h"\n#define RC_IRQ6 0x%xu\n' % IRQ6)
     w('const u32 rc_ntaken = %d;\n' % len(taken))
     w('void rc_run(u32 start_pc)\n{\n    RC_LOCALS\n')
-    w('    static const rc_lab tab[] = {\n')
+    # despacho (rts, rte, jmp indirecto): tabla hash por el pc con las palabras cambiadas (como queda en la RAM,
+    # rts lo usa tal cual), sondeo lineal hasta una entrada vacia (clave 0: el pc 0 no es codigo). Con 4096
+    # entradas y la clave (k ^ k >> 17) sale a 1,2 lecturas de media
+    def sw(pc): return ((pc << 16) | (pc >> 16)) & 0xFFFFFFFF
+    slots = {}
     for t in sorted(taken):
-        w('        {0x%xu, &&L_%06x},\n' % (t, t))
+        h = (sw(t) ^ (sw(t) >> HS)) & (HN - 1)
+        while h in slots: h += 1
+        slots[h] = t
+    w('    static const rc_lab ht[%d] = {\n' % (max(slots) + 2))
+    for h in sorted(slots): w('        [%d] = {0x%xu, &&L_%06x},\n' % (h, sw(slots[h]), slots[h]))
     w('    };\n')
     w('    RC_ENTER\n    DISPATCH(start_pc);\n')
     # ciclos sumados por bloque basico (al principio del bloque)

@@ -1,4 +1,5 @@
-/* Gaelco VRAM decrypt (World Rally: 0x1f, 0x522a), bitswap directo */
+/* Gaelco VRAM decrypt (World Rally: 0x1f, 0x522a), bitswap directo. gdecrypt es la referencia (la usa el
+   banco de pruebas con Musashi); el codigo recompilado usa la version en linea de rc_rt.h con estas tablas */
 typedef unsigned short u16;
 #define P1 0x1f
 #define P2 0x522a
@@ -8,22 +9,23 @@ static const unsigned char SW[4][16] = {{1,2,0,14,12,15,4,8,13,7,3,6,11,5,10,9},
 static const unsigned char FIN[16] = {2,6,0,11,14,12,7,10,5,4,8,3,9,1,13,15};
 static u16 bs(u16 v, const unsigned char *b) { u16 r = 0; int i; for (i = 0; i < 16; i++) r = (r << 1) | B(v, b[i]); return r; }
 /* tablas: la permutacion de 16 bits es la OR de la de cada byte */
-static u16 sw_t[4][2][256], fin_t[2][256];
+u16 rc_gsw[4][2][256], rc_gfin[2][256];
 static int tab_ok;
-static void tab_init(void)
+void rc_gcrypt_init(void)
 {
     int s, h, v;
-    for (s = 0; s < 4; s++) for (h = 0; h < 2; h++) for (v = 0; v < 256; v++) sw_t[s][h][v] = bs((u16)(h ? v : v << 8), SW[s]);
-    for (h = 0; h < 2; h++) for (v = 0; v < 256; v++) fin_t[h][v] = bs((u16)(h ? v : v << 8), FIN);
+    if (tab_ok) return;
+    for (s = 0; s < 4; s++) for (h = 0; h < 2; h++) for (v = 0; v < 256; v++) rc_gsw[s][h][v] = bs((u16)(h ? v : v << 8), SW[s]);
+    for (h = 0; h < 2; h++) for (v = 0; v < 256; v++) rc_gfin[h][v] = bs((u16)(h ? v : v << 8), FIN);
     tab_ok = 1;
 }
-#define BS(v, s) (sw_t[s][0][(v) >> 8] | sw_t[s][1][(v) & 0xFF])
-#define BF(v) (fin_t[0][(v) >> 8] | fin_t[1][(v) & 0xFF])
+#define BS(v, s) (rc_gsw[s][0][(v) >> 8] | rc_gsw[s][1][(v) & 0xFF])
+#define BF(v) (rc_gfin[0][(v) >> 8] | rc_gfin[1][(v) & 0xFF])
 u16 gdecrypt(u16 ep, u16 dp, u16 e)
 {
     int swap = (B(dp, 8) << 1) | B(dp, 7), type = (B(dp, 12) << 1) | B(dp, 2);
     u16 res, k;
-    if (!tab_ok) tab_init();
+    if (!tab_ok) rc_gcrypt_init();
     res = BS(e, swap) ^ P2;
     switch (type) {
     case 0: k = 0x3a; break;
