@@ -9,7 +9,9 @@ u8 rc_spr[0x1000 + 4] __attribute__((aligned(4))), rc_vram[0x4000 + 4] __attribu
 u8 rc_vregs[0x1000 + 4] __attribute__((aligned(4)));
 u8 rc_iopg[0x1000 + 4] __attribute__((aligned(4))), rc_ffpg[0x1000 + 4] __attribute__((aligned(4)));
 rc_regs_t rc_r;
-u16 gdecrypt(u16 ep, u16 dp, u16 e);
+void rc_gcrypt_init(void);
+/* estado de los pares de escrituras a la VRAM (rc_vw16/rc_vw32 en rc_rt.h) */
+u32 rc_vl_pc = 0xFFFFFFFF, rc_vl_off = 0xFFFFFFFE; u16 rc_vl_enc, rc_vl_dec;
 
 void rc_set_io(u16 dsw, u16 in)
 {
@@ -34,21 +36,24 @@ void rc_mem_init(void)
     rc_rpg[0x440] = rc_wpg[0x440] = rc_spr;
     rc_rpg[0x700] = rc_iopg;
     rc_set_io(0xFFDF, 0xFFEF);
+    rc_gcrypt_init();
 }
 u32 rc_rd16(u32 a) { return RD16(a); }
 u32 rc_rd8(u32 a) { return RD8(a); }
 u32 rc_vram_writes;
-static u32 lastpc = 0xFFFFFFFF; static int lastoff = -2; static u16 lastenc, lastdec;
+#ifdef RCREG
+/* perfil de regiones (rc/regiones.sh): se vuelca al salir en el fichero $RCREG */
+#include <stdio.h>
+#include <stdlib.h>
+u32 rc_cur; u16 rc_regmask[0x10000];
+static void rc_reg_dump(void) { FILE *f = fopen(getenv("RCREG"), "wb"); if (f) { fwrite(rc_regmask, 2, 0x10000, f); fclose(f); } }
+__attribute__((constructor)) static void rc_reg_init(void) { atexit(rc_reg_dump); }
+#endif
+/* el codigo recompilado escribe en la VRAM sin pasar por aqui (rc_wr16_s/rc_wr32_s en rc_rt.h) */
 void rc_wr16(u32 a, u32 v, u32 pc)
 {
     a &= 0xFFFFFF;
-    if (a >= 0x100000 && a < 0x104000) {
-        rc_vram_writes++;
-        int off = (a & 0x3FFF) >> 1;
-        if (lastpc == pc && off == lastoff + 1) { lastpc = 0xFFFFFFFF; v = gdecrypt(lastenc, lastdec, v); }
-        else { lastenc = v; lastpc = pc; lastoff = off; v = lastdec = gdecrypt(0, 0, v); }
-        *(u16 *)(rc_vram + (a & 0x3FFE)) = v;
-    }
+    if (a >= 0x100000 && a < 0x104000) rc_vw16(a, v & 0xFFFF, pc);
 }
 /* ---- OKI M6295: orden de frases, canales ocupados (estado en 0x70000F) y banco (0x70000D) */
 extern const unsigned short oki_len[16][128];

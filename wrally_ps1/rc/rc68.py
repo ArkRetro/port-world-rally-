@@ -25,6 +25,14 @@ COND_EXPR = {'t': '1', 'f': '0', 'hi': '(!fC && !fZ)', 'ls': '(fC || fZ)', 'cc':
              'ne': '(!fZ)', 'eq': '(fZ)', 'vc': '(!fV)', 'vs': '(fV)', 'pl': '(!fN)', 'mi': '(fN)',
              'ge': '(fN == fV)', 'lt': '(fN != fV)', 'gt': '(!fZ && fN == fV)', 'le': '(fZ || fN != fV)'}
 
+# region prevista de los accesos por registro de cada instruccion (lectura, escritura), de regiones.sh
+PRED = {}
+_rf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'regiones.txt')
+if os.path.exists(_rf):
+    for l in open(_rf):
+        p = l.split()
+        if len(p) == 3 and not l.startswith('#'): PRED[int(p[0], 16)] = tuple(None if x == '-' else x for x in p[1:])
+
 IRQ6 = struct.unpack('>I', D[0x78:0x7C])[0]
 RESET_PC = struct.unpack('>I', D[4:8])[0]
 
@@ -208,11 +216,14 @@ class G:
         if m == 'pci': s.e('%s = 0x%xu + %s;' % (tmp, ea.v, idx_expr(ea.x))); return tmp, None, ''
         raise ValueError(m)
 
+    def pred(s, k): return PRED.get(s.i.a, (None, None))[k]
     def rd(s, expr, const, sz):
         if const is not None: return rd_const(const, sz)
+        if s.pred(0): return 'RDP%d(%s, %s)' % (sz * 8, s.pred(0), expr)
         return 'RD%d(%s)' % (sz * 8, expr)
     def wr(s, expr, const, sz, v):
         if const is not None: return wr_const(const, sz, v, s.i.a)
+        if s.pred(1): return 'WRP%d(%s, %s, %s, 0x%x);' % (sz * 8, s.pred(1), expr, v, s.i.a)
         return 'WR%d(%s, %s, 0x%x);' % (sz * 8, expr, v, s.i.a)
 
     def read(s, ea, sz, tmp='eas'):
@@ -275,6 +286,11 @@ class G:
             s.e('fC = %s > %s;' % (ss, dd))
             if x and s.fl(X): s.e('fX = fC;')
         s.nz(r, sz)
+
+def callpush(i, nxt, labelset):
+    """apila la direccion de vuelta (y la apunta en la pila sombra de rts si tiene etiqueta)"""
+    if nxt in labelset: return 'CALLPUSH(%d, 0x%xu, &&L_%06x);' % (i.size, nxt, nxt)
+    return 'a7 -= 4; WR32(a7, 0x%xu, 0x%x);' % (nxt, i.a)
 
 def gen_ins(i, live_out, labelset, taken):
     g = G(i, live_out[i.a])
@@ -492,51 +508,81 @@ def gen_ins(i, live_out, labelset, taken):
     elif o == 'bra':
         e(br_irq(i.target))
     elif o == 'bsr':
-        e('a7 -= 4; WR32(a7, 0x%xu, 0x%x); %s' % (nxt, i.a, goto(i.target)))
+        e('%s %s' % (callpush(i, nxt, labelset), goto(i.target)))
     elif o in ('jsr', 'jmp'):
         if i.dst.m in ('absl', 'absw'): t = '0x%xu' % i.dst.v; tc = i.dst.v
         else:
             expr, const, post = g.addr(i.dst, 4, 'eas'); t = expr; tc = None
-        if o == 'jsr': e('a7 -= 4; WR32(a7, 0x%xu, 0x%x);' % (nxt, i.a))
+        if o == 'jsr': e(callpush(i, nxt, labelset))
         if tc is not None: e(goto(tc))
         else: e('DISPATCH(%s);' % t)
     elif o == 'rts':
-        e('vs = RD32(a7); a7 += 4; DISPATCH(vs);')
+        e('RTS();')
     elif o == 'rte':
-        e('vs = RD16(a7); SETSR(vs); vd = RD32(a7 + 2); a7 += 6; DISPATCH(vd);')
+        e('vs = RDP16(ram, a7); SETSR(vs); ead = a7 + 2; vd = RDP32(ram, ead); a7 += 6; DISPATCH(vd);')
     elif o == 'nop':
         pass
     elif o == 'movem':
+        # con region prevista: si el bloque entero cabe en ella, accesos directos; si no, uno a uno por el
+        # camino general (en el mismo orden que el 68000)
         mask = i.extra
+        regs = [('d%d' % k) for k in range(8)] + [('a%d' % k) for k in range(8)]
+        nb = bin(mask).count('1') * sz
+        def blk(pr, ea):
+            e('if (RBLK(%s, %s, %d)) { u8 *_q = RPTR(%s, %s);' % (pr, ea, nb, pr, ea))
         if i.n == 0:   # registros -> memoria
-            regs = [('d%d' % k) for k in range(8)] + [('a%d' % k) for k in range(8)]
+            pw = g.pred(1)
             if i.dst.m == 'pre':
                 ar = i.dst.r
-                e('ead = a%d;' % ar)
-                for bit in range(16):
-                    if mask & (1 << bit):
-                        rg = regs[15 - bit]
-                        e('ead -= %d; WR%d(ead, %s, 0x%x);' % (sz, sz * 8, rg, i.a))
+                order = [regs[15 - bit] for bit in range(16) if mask & (1 << bit)]
+                if pw:
+                    e('ead = a%d - %d;' % (ar, nb)); blk(pw, 'ead')
+                    for k, rg in enumerate(order):
+                        off = nb - (k + 1) * sz
+                        e('    ' + ('SETL(_q, %d, %s);' % (off, rg) if sz == 4 else 'MW(_q, %d) = (u16)%s;' % (off, rg)))
+                    e('} else { ead = a%d;' % ar)
+                    for rg in order: e('    ead -= %d; rc_wrg%d(ead, %s, 0x%x);' % (sz, sz * 8, rg, i.a))
+                    e('}')
+                else:
+                    e('ead = a%d;' % ar)
+                    for rg in order: e('ead -= %d; WR%d(ead, %s, 0x%x);' % (sz, sz * 8, rg, i.a))
                 e('a%d = ead;' % ar)
             else:
                 expr, const, post = g.addr(i.dst, sz, 'ead')
                 if const is not None: e('ead = 0x%xu;' % const)
-                for bit in range(16):
-                    if mask & (1 << bit):
-                        e('WR%d(ead, %s, 0x%x); ead += %d;' % (sz * 8, regs[bit], i.a, sz))
+                order = [regs[bit] for bit in range(16) if mask & (1 << bit)]
+                if pw:
+                    blk(pw, 'ead')
+                    for k, rg in enumerate(order):
+                        e('    ' + ('SETL(_q, %d, %s);' % (k * sz, rg) if sz == 4 else 'MW(_q, %d) = (u16)%s;' % (k * sz, rg)))
+                    e('} else {')
+                    for k, rg in enumerate(order): e('    rc_wrg%d(ead + %d, %s, 0x%x);' % (sz * 8, k * sz, rg, i.a))
+                    e('}')
+                else:
+                    for rg in order: e('WR%d(ead, %s, 0x%x); ead += %d;' % (sz * 8, rg, i.a, sz))
         else:
-            regs = [('d%d' % k) for k in range(8)] + [('a%d' % k) for k in range(8)]
             m = i.src.m
+            pr = g.pred(0)
             if m == 'post':
                 e('eas = a%d;' % i.src.r)
             else:
                 expr, const, post = g.addr(i.src, sz, 'eas')
                 if const is not None: e('eas = 0x%xu;' % const)
-            for bit in range(16):
-                if mask & (1 << bit):
-                    if sz == 2: e('%s = (u32)(s32)(s16)RD16(eas); eas += 2;' % regs[bit])
-                    else: e('%s = RD32(eas); eas += 4;' % regs[bit])
-            if m == 'post': e('a%d = eas;' % i.src.r)
+            order = [regs[bit] for bit in range(16) if mask & (1 << bit)]
+            if pr:
+                blk(pr, 'eas')
+                for k, rg in enumerate(order):
+                    e('    ' + ('%s = ML(_q, %d);' % (rg, k * sz) if sz == 4 else '%s = (u32)(s32)(s16)MW(_q, %d);' % (rg, k * sz)))
+                e('} else {')
+                for k, rg in enumerate(order):
+                    e('    ' + ('%s = rc_rdg32(eas + %d);' % (rg, k * sz) if sz == 4 else '%s = (u32)(s32)(s16)rc_rdg16(eas + %d);' % (rg, k * sz)))
+                e('}')
+                if m == 'post': e('a%d = eas + %d;' % (i.src.r, nb))
+            else:
+                for rg in order:
+                    if sz == 2: e('%s = (u32)(s32)(s16)RD16(eas); eas += 2;' % rg)
+                    else: e('%s = RD32(eas); eas += 4;' % rg)
+                if m == 'post': e('a%d = eas;' % i.src.r)
     elif o == 'move_from_sr':
         g.write(i.dst, 2, 'GETSR()')
     elif o == 'move_to_sr':
@@ -587,9 +633,18 @@ def main(out):
     w('const u32 rc_ntaken = %d;\n' % len(taken))
     w('void rc_run(u32 start_pc)\n{\n    RC_LOCALS\n')
     w('    static const rc_lab tab[] = {\n')
-    for t in sorted(taken):
+    tl = sorted(taken)
+    for t in tl:
         w('        {0x%xu, &&L_%06x},\n' % (t, t))
     w('    };\n')
+    # indice por bloques de 256 bytes: primera entrada de cada bloque (y una de cierre)
+    nb = (tl[-1] >> 8) + 1; ti = []; j = 0
+    for b in range(nb + 1):
+        while j < len(tl) and tl[j] < b * 256: j += 1
+        ti.append(j)
+    w('    static const u16 tabi[] = {')
+    for k, v in enumerate(ti): w('%s%d,' % ('\n        ' if k % 16 == 0 else ' ', v))
+    w('\n    };\n')
     w('    RC_ENTER\n    DISPATCH(start_pc);\n')
     # ciclos sumados por bloque basico (al principio del bloque)
     CF = ('bcc', 'dbcc', 'bra', 'bsr', 'jsr', 'jmp', 'rts', 'rte')

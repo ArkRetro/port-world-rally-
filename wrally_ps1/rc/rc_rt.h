@@ -18,8 +18,9 @@ void rc_mcu(void);
 void rc_run(u32 start_pc);
 extern const u32 rc_ntaken;
 
-/* estado visible desde fuera (depuracion / reanudar) */
-typedef struct { u32 d[8], a[8], fX, fN, fZ, fV, fC, imask, pc; s32 cyc, cyc_next; } rc_regs_t;
+/* estado visible desde fuera (depuracion / reanudar). Dentro de rc_run el contador va relativo al proximo
+   vblank (cyr = cyc - cyc_next): la comprobacion de IRQ es un signo, sin leer cyc_next */
+typedef struct { u32 d[8], a[8], fX, fN, fZ, fV, fC, imask, pc; s32 cyc, cyc_next, cyr; } rc_regs_t;
 extern rc_regs_t rc_r;
 
 #if defined(__mips__) && defined(RC_GEN) && !defined(RCDBG)
@@ -32,11 +33,11 @@ register u32 a7 asm("$30");
 register u32 a0 asm("$8"); register u32 a1 asm("$9"); register u32 a2 asm("$10"); register u32 a3 asm("$11");
 register u32 a4 asm("$12"); register u32 a5 asm("$13"); register u32 a6 asm("$14");
 register u32 fZ asm("$15"); register u32 fC asm("$24"); register u32 fN asm("$25");
-register s32 cyc asm("$28");
+register s32 cyr asm("$28");
 #define RC_TSAVE do { rc_r.a[0]=a0; rc_r.a[1]=a1; rc_r.a[2]=a2; rc_r.a[3]=a3; rc_r.a[4]=a4; rc_r.a[5]=a5; rc_r.a[6]=a6; \
-    rc_r.fZ=fZ; rc_r.fC=fC; rc_r.fN=fN; rc_r.cyc=cyc; } while (0)
+    rc_r.fZ=fZ; rc_r.fC=fC; rc_r.fN=fN; rc_r.cyr=cyr; } while (0)
 #define RC_TLOAD do { a0=rc_r.a[0]; a1=rc_r.a[1]; a2=rc_r.a[2]; a3=rc_r.a[3]; a4=rc_r.a[4]; a5=rc_r.a[5]; a6=rc_r.a[6]; \
-    fZ=rc_r.fZ; fC=rc_r.fC; fN=rc_r.fN; cyc=rc_r.cyc; } while (0)
+    fZ=rc_r.fZ; fC=rc_r.fC; fN=rc_r.fN; cyr=rc_r.cyr; } while (0)
 #else
 #define RC_TSAVE
 #define RC_TLOAD
@@ -52,32 +53,223 @@ register s32 cyc asm("$28");
 #define ML(r, o) (((u32)MW(r, o) << 16) | MW(r, (o) + 2))
 #define SETL(r, o, v) do { u32 _v = (v); MW(r, o) = (u16)(_v >> 16); MW(r, (o) + 2) = (u16)_v; } while (0)
 
+#ifdef RCREG
+/* perfil de regiones (rc/regiones.sh): por instruccion, las regiones que lee (bits 0-7) y escribe (8-15) */
+extern u32 rc_cur; extern u16 rc_regmask[0x10000];
+static inline u32 rc_regbit(u32 a)
+{
+    a &= 0xFFFFFF;
+    if (a < 0x100000) return 1;                   /* rom */
+    if (a >= 0xFEC000) return 2;                  /* ram */
+    if (a < 0x104000) return 4;                   /* vram */
+    if (a >= 0x200000 && a < 0x204000) return 8;  /* pal */
+    if ((a >> 12) == 0x440) return 16;            /* spr */
+    if ((a >> 12) == 0x108) return 32;            /* vregs */
+    return 64;
+}
+#define REGREC(a, w) (rc_regmask[(rc_cur >> 1) & 0xFFFF] |= rc_regbit(a) << ((w) * 8))
+#else
+#define REGREC(a, w) ((void)0)
+#endif
 /* lectura: todas las paginas apuntan a algo (E/S en una pagina que se rellena cada cuadro, sin mapear =
    pagina de 0xFF); las regiones tienen 4 bytes de margen al final para leer un long sin mirar el cruce */
-static inline __attribute__((always_inline)) u32 RD8(u32 a) { return rc_rpg[(a >> 12) & 0xFFF][(a & 0xFFF) ^ 1]; }
-static inline __attribute__((always_inline)) u32 RD16(u32 a) { return *(u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); }
-static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q = (u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); return ((u32)q[0] << 16) | q[1]; }
-/* caminos lentos fuera de linea (guardan los registros del 68000 que viven en registros temporales) */
-#ifdef RC_GEN
-static __attribute__((noinline)) void rc_wr8_s(u32 a, u32 v, u32 pc) { RC_CALL(rc_wr8(a, v & 0xFF, pc)); }
-static __attribute__((noinline)) void rc_wr16_s(u32 a, u32 v, u32 pc) { RC_CALL(rc_wr16(a, v & 0xFFFF, pc)); }
-static __attribute__((noinline)) void rc_wr32_s(u32 a, u32 v, u32 pc) { RC_CALL(rc_wr16(a, (v >> 16) & 0xFFFF, pc); rc_wr16(a + 2, v & 0xFFFF, pc)); }
-static inline __attribute__((always_inline)) void WR8(u32 a, u32 v, u32 pc) { u8 *p = rc_wpg[(a >> 12) & 0xFFF]; if (p) p[(a & 0xFFF) ^ 1] = (u8)v; else rc_wr8_s(a, v, pc); }
-static inline __attribute__((always_inline)) void WR16(u32 a, u32 v, u32 pc) { u8 *p = rc_wpg[(a >> 12) & 0xFFF]; if (p) *(u16 *)(p + (a & 0xFFF)) = (u16)v; else rc_wr16_s(a, v, pc); }
-static inline __attribute__((always_inline)) void WR32(u32 a, u32 v, u32 pc)
+static inline __attribute__((always_inline)) u32 RD8(u32 a) { REGREC(a, 0); return rc_rpg[(a >> 12) & 0xFFF][(a & 0xFFF) ^ 1]; }
+static inline __attribute__((always_inline)) u32 RD16(u32 a) { REGREC(a, 0); return *(u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); }
+static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; REGREC(a, 0); q = (u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); return ((u32)q[0] << 16) | q[1]; }
+/* ---- VRAM cifrada (algoritmo de MAME, tablas en gcrypt.c). Dos escrituras seguidas de la misma instruccion a
+   palabras consecutivas forman un par: la segunda se descifra con la primera (cifrada y descifrada) */
+extern u16 rc_gsw[4][2][256], rc_gfin[2][256];
+extern u32 rc_vl_pc, rc_vl_off, rc_vram_writes; extern u16 rc_vl_enc, rc_vl_dec;
+#define GB(x, n) (((x) >> (n)) & 1)
+#define GC_P1 0x1f
+#define GC_P2 0x522a
+static inline __attribute__((always_inline)) u32 gc_bs(u32 v, u32 s) { const u16 *t = rc_gsw[s][0]; return t[v >> 8] | t[256 + (v & 0xFF)]; }
+/* suma de k en los 6 bits bajos */
+static inline __attribute__((always_inline)) u32 gc_lo(u32 res, u32 k) { return ((res & 0xffc0) | ((res + (k ^ GC_P1)) & 0x3f)) ^ GC_P1; }
+/* final comun: k de 5 bits sumado a los bits 6-10 y 11-15, y permutacion de salida */
+static inline __attribute__((always_inline)) u32 gc_end(u32 res, u32 k)
 {
-    u8 *p = rc_wpg[(a >> 12) & 0xFFF];
-    if (p) { u16 *q = (u16 *)(p + (a & 0xFFF)); q[0] = (u16)(v >> 16); q[1] = (u16)v; return; }
-    rc_wr32_s(a, v, pc);
+    k ^= GC_P1;
+    res = ((res & 0x3f) | ((res + (k << 6)) & 0x7c0) | ((res + (k << 11)) & 0xf800)) ^ 0xffc0;
+    return rc_gfin[0][res >> 8] | rc_gfin[1][res & 0xFF];
+}
+/* primera palabra (ep = dp = 0: permutacion 0, tipo 0) */
+static inline __attribute__((always_inline)) u32 gc_dec0(u32 e)
+{
+    u32 res = gc_lo(gc_bs(e, 0) ^ GC_P2, 0x3a);
+    return gc_end(res, GB(e, 9) | (GB(res, 2) << 1) | (GB(e, 5) << 2) | (GB(res, 5) << 3) | (GB(res, 4) << 4));
+}
+/* general (ep, dp: la palabra anterior del par, cifrada y descifrada); cada tipo en un solo tramo */
+static inline __attribute__((always_inline)) u32 gc_dec(u32 ep, u32 dp, u32 e)
+{
+    u32 res = gc_bs(e, (dp >> 7) & 3) ^ GC_P2, k;
+    switch ((GB(dp, 12) << 1) | GB(dp, 2)) {
+    case 0:
+        res = gc_lo(res, 0x3a);
+        k = GB(e,9) | (GB(res,2)<<1) | (GB(e,5)<<2) | (GB(res,5)<<3) | (GB(res,4)<<4); break;
+    case 1:
+        res = gc_lo(res, GB(dp,0) | (GB(dp,1)<<1) | (GB(dp,1)<<2) | (GB(ep,3)<<3) | (GB(ep,8)<<4) | (GB(ep,15)<<5));
+        k = GB(dp,2) | (GB(ep,4)<<1) | (GB(dp,14)<<2) | (GB(res,1)<<3) | (GB(dp,12)<<4); break;
+    case 2:
+        res = gc_lo(res, GB(ep,5) | (GB(dp,5)<<1) | (GB(ep,7)<<2) | (GB(ep,3)<<3) | (GB(ep,13)<<4) | (GB(ep,14)<<5));
+        k = GB(ep,6) | (GB(dp,6)<<1) | (GB(dp,15)<<2) | (GB(res,0)<<3) | (GB(dp,7)<<4); break;
+    default:
+        res = gc_lo(res, GB(ep,0) | (GB(ep,9)<<1) | (GB(ep,6)<<2) | (GB(dp,4)<<3) | (GB(ep,2)<<4) | (GB(dp,11)<<5));
+        k = GB(dp,2) | (GB(dp,9)<<1) | (GB(ep,5)<<2) | (GB(dp,1)<<3) | (GB(ep,10)<<4); break;
+    }
+    return gc_end(res, k);
+}
+/* en el codigo recompilado, funciones hoja fuera de linea (pocos registros libres: mejor sin nada alrededor) */
+#ifdef RC_GEN
+static __attribute__((noinline)) u32 rc_gdec0(u32 e) { return gc_dec0(e); }
+static __attribute__((noinline)) u32 rc_gdec(u32 ep, u32 dp, u32 e) { return gc_dec(ep, dp, e); }
+#else
+#define rc_gdec0 gc_dec0
+#define rc_gdec gc_dec
+#endif
+/* escritura de 16 bits a la VRAM (a dentro de 0x100000-0x103FFF) */
+static inline void rc_vw16(u32 a, u32 v, u32 pc)
+{
+    u32 off = (a & 0x3FFF) >> 1;
+#ifndef RC_GREGS
+    rc_vram_writes++;
+#endif
+    if (rc_vl_pc == pc && off == rc_vl_off + 1) { rc_vl_pc = 0xFFFFFFFF; v = rc_gdec(rc_vl_enc, rc_vl_dec, v); }
+    else { rc_vl_enc = v; rc_vl_pc = pc; rc_vl_off = off; v = rc_vl_dec = rc_gdec0(v); }
+    MW(rc_vram, a & 0x3FFE) = v;
+}
+
+#ifdef RC_GEN
+/* las dos palabras de un long (a y a+2 dentro de la VRAM), mismo estado final que dos rc_vw16. Lo normal: la
+   primera abre un par y la segunda lo cierra; el resultado depende solo del long escrito y se guarda en una cache
+   (los mapas repiten mucho los codigos). Tras cerrar el par, enc/dec/off no se vuelven a mirar hasta otra
+   escritura suelta, que los pone: no hace falta guardarlos */
+#define RC_VCN 256
+static u32 rc_vck[RC_VCN], rc_vcd[RC_VCN];   /* clave 0 con su valor (rc_vc_init): nunca da un acierto falso */
+static __attribute__((noinline)) u32 rc_gpair(u32 v) { u32 e1 = v >> 16, d1 = gc_dec0(e1); return (d1 << 16) | gc_dec(e1, d1, v & 0xFFFF); }
+static void rc_vc_init(void) { int i; u32 d = rc_gpair(0); for (i = 0; i < RC_VCN; i++) { rc_vck[i] = 0; rc_vcd[i] = d; } }
+static inline void rc_vw32(u32 a, u32 v, u32 pc)
+{
+    u32 o = a & 0x3FFF, d;
+#ifndef RC_GREGS
+    rc_vram_writes += 2;
+#endif
+    if (rc_vl_pc != pc || (o >> 1) != rc_vl_off + 1) {
+        u32 h = (v ^ (v >> 16) ^ (v >> 7)) & (RC_VCN - 1);
+        if (rc_vck[h] == v) d = rc_vcd[h];
+        else { d = rc_gpair(v); rc_vck[h] = v; rc_vcd[h] = d; }
+        rc_vl_pc = 0xFFFFFFFF;
+    } else {   /* la primera cierra un par anterior y la segunda queda suelta */
+        u32 e2 = v & 0xFFFF, d2 = rc_gdec0(e2);
+        d = (rc_gdec(rc_vl_enc, rc_vl_dec, v >> 16) << 16) | d2;
+        rc_vl_enc = e2; rc_vl_off = (o >> 1) + 1; rc_vl_dec = d2;
+    }
+    MW(rc_vram, o & 0x3FFE) = d >> 16; MW(rc_vram, (o + 2) & 0x3FFE) = d;
 }
 #endif
 
-static inline void *rc_find(const rc_lab *t, u32 n, u32 pc)
+/* caminos lentos fuera de linea. Las escrituras a paginas sin puntero solo hacen algo en la VRAM (aqui mismo,
+   sin guardar registros) y en la E/S de 8 bits (rc_wr8: guarda los registros del 68000 que viven en temporales) */
+#ifdef RC_GEN
+static __attribute__((noinline)) void rc_wr8_s(u32 a, u32 v, u32 pc) { RC_CALL(rc_wr8(a, v & 0xFF, pc)); }
+static __attribute__((noinline)) void rc_wr16_s(u32 a, u32 v, u32 pc) { if (((a & 0xFFFFFF) - 0x100000) < 0x4000) rc_vw16(a, v & 0xFFFF, pc); }
+static __attribute__((noinline)) void rc_wr32_s(u32 a, u32 v, u32 pc)
 {
-    u32 lo = 0, hi = n;
-    while (lo < hi) { u32 m = (lo + hi) >> 1; if (t[m].pc < pc) lo = m + 1; else hi = m; }
-    return (lo < n && t[lo].pc == pc) ? t[lo].l : 0;
+    u32 o = (a & 0xFFFFFF) - 0x100000;
+    if (o < 0x3FFE) { rc_vw32(a, v, pc); return; }
+    if (o < 0x4000) rc_vw16(a, v >> 16, pc);
+    if (((a + 2) & 0xFFFFFF) - 0x100000 < 0x4000) rc_vw16(a + 2, v & 0xFFFF, pc);
 }
+static inline __attribute__((always_inline)) void WR8(u32 a, u32 v, u32 pc) { u8 *p; REGREC(a, 1); p = rc_wpg[(a >> 12) & 0xFFF]; if (p) p[(a & 0xFFF) ^ 1] = (u8)v; else rc_wr8_s(a, v, pc); }
+static inline __attribute__((always_inline)) void WR16(u32 a, u32 v, u32 pc) { u8 *p; REGREC(a, 1); p = rc_wpg[(a >> 12) & 0xFFF]; if (p) *(u16 *)(p + (a & 0xFFF)) = (u16)v; else rc_wr16_s(a, v, pc); }
+static inline __attribute__((always_inline)) void WR32(u32 a, u32 v, u32 pc)
+{
+    u8 *p; REGREC(a, 1); p = rc_wpg[(a >> 12) & 0xFFF];
+    if (p) { u16 *q = (u16 *)(p + (a & 0xFFF)); q[0] = (u16)(v >> 16); q[1] = (u16)v; return; }
+    rc_wr32_s(a, v, pc);
+}
+/* accesos generales fuera de linea (para cuando falla la region prevista) */
+static __attribute__((noinline)) u32 rc_rdg8(u32 a) { return RD8(a); }
+static __attribute__((noinline)) u32 rc_rdg16(u32 a) { return RD16(a); }
+static __attribute__((noinline)) u32 rc_rdg32(u32 a) { return RD32(a); }
+static __attribute__((noinline)) void rc_wrg8(u32 a, u32 v, u32 pc) { WR8(a, v, pc); }
+static __attribute__((noinline)) void rc_wrg16(u32 a, u32 v, u32 pc) { WR16(a, v, pc); }
+static __attribute__((noinline)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR32(a, v, pc); }
+/* accesos con region prevista para cada instruccion (perfil en rc/regiones.txt): comprobacion de rango en linea
+   (sin mirar el byte alto, como la tabla de paginas) y, si falla, el acceso general. RG = esta en la region,
+   RO = desplazamiento, RB = memoria, RS = tamano (los bloques de movem comprueban que caben enteros) */
+#define RG_ram(a) ((((a) >> 14) & 0x3FF) == 0x3FB)
+#define RG_rom(a) ((((a) >> 20) & 0xF) == 0)
+#define RG_pal(a) ((((a) >> 14) & 0x3FF) == 0x080)
+#define RG_vram(a) ((((a) >> 14) & 0x3FF) == 0x040)
+#define RG_spr(a) ((((a) >> 12) & 0xFFF) == 0x440)
+#define RG_vregs(a) ((((a) >> 12) & 0xFFF) == 0x108)
+#define RO_ram(a) ((a) & 0x3FFF)
+#define RO_rom(a) ((a) & 0xFFFFF)
+#define RO_pal(a) ((a) & 0x3FFF)
+#define RO_vram(a) ((a) & 0x3FFF)
+#define RO_spr(a) ((a) & 0xFFF)
+#define RO_vregs(a) ((a) & 0xFFF)
+#define RB_ram rc_ram
+#define RB_rom rc_rom
+#define RB_pal rc_pal
+#define RB_vram rc_vram
+#define RB_spr rc_spr
+#define RB_vregs rc_vregs
+#define RS_ram 0x4000
+#define RS_rom 0x100000
+#define RS_pal 0x4000
+#define RS_vram 0x4000
+#define RS_spr 0x1000
+#define RS_vregs 0x1000
+#ifdef RCREG
+#define RDP8(r, a) RD8(a)
+#define RDP16(r, a) RD16(a)
+#define RDP32(r, a) RD32(a)
+#define WRP8(r, a, v, pc) WR8(a, v, pc)
+#define WRP16(r, a, v, pc) WR16(a, v, pc)
+#define WRP32(r, a, v, pc) WR32(a, v, pc)
+#define RBLK(r, a, n) 0
+#else
+#define RDP8(r, a) (RG_##r(a) ? (u32)MB(RB_##r, RO_##r(a)) : rc_rdg8(a))
+#define RDP16(r, a) (RG_##r(a) ? (u32)MW(RB_##r, RO_##r(a)) : rc_rdg16(a))
+#define RDP32(r, a) (RG_##r(a) ? ML(RB_##r, RO_##r(a)) : rc_rdg32(a))
+#define WRP8(r, a, v, pc) do { if (RG_##r(a)) MB(RB_##r, RO_##r(a)) = (u8)(v); else rc_wrg8(a, v, pc); } while (0)
+#define WRP16(r, a, v, pc) do { if (RG_##r(a)) MW(RB_##r, RO_##r(a)) = (u16)(v); else rc_wrg16(a, v, pc); } while (0)
+#define WRP32(r, a, v, pc) do { if (RG_##r(a)) SETL(RB_##r, RO_##r(a), v); else rc_wrg32(a, v, pc); } while (0)
+#define RBLK(r, a, n) (RG_##r(a) && RO_##r(a) <= RS_##r - (n))
+#endif
+#define RPTR(r, a) (RB_##r + RO_##r(a))
+#endif
+
+/* despacho general: tabla ordenada por pc con un indice por bloques de 256 bytes (ti[b] = primera entrada con
+   pc >= b * 256; nb bloques mas uno de cierre) y busqueda binaria dentro del bloque */
+static inline void *rc_find(const rc_lab *t, const u16 *ti, u32 nb, u32 pc)
+{
+    u32 b = pc >> 8, lo, hi, e;
+    if (b >= nb) return 0;
+    lo = ti[b]; e = hi = ti[b + 1];
+    while (lo < hi) { u32 m = (lo + hi) >> 1; if (t[m].pc < pc) lo = m + 1; else hi = m; }
+    return (lo < e && t[lo].pc == pc) ? t[lo].l : 0;
+}
+
+/* prediccion de retorno: bsr/jsr apuntan (direccion de vuelta, etiqueta) en una pila sombra indexada por a7;
+   rts compara lo que saca de la pila del 68000 con la entrada y, si coincide, salta directo (si no, despacho
+   general: el juego puede tocar su pila como quiera) */
+#ifdef RC_GEN
+#define RC_SHN 64
+static rc_lab rc_sh[RC_SHN];
+#define SHE(sp) (&rc_sh[((sp) >> 2) & (RC_SHN - 1)])
+#ifdef RC_GREGS
+/* fuera de linea para no repetir el codigo en cada llamada (a7 es global); n = tamano de la instruccion */
+#define RC_CALLPUSH_F(n) static __attribute__((noinline)) void rc_callpush##n(u32 r, void *lb) \
+    { rc_lab *e; a7 -= 4; WRP32(ram, a7, r, r - n); e = SHE(a7); e->pc = r; e->l = lb; }
+RC_CALLPUSH_F(2) RC_CALLPUSH_F(4) RC_CALLPUSH_F(6)
+#define CALLPUSH(n, r, lb) rc_callpush##n(r, lb)
+#else
+#define CALLPUSH(n, r, lb) do { rc_lab *_e; a7 -= 4; WRP32(ram, a7, r, (r) - n); _e = SHE(a7); _e->pc = (r); _e->l = (lb); } while (0)
+#endif
+#endif
 
 /* desplazamientos con cuenta en registro (semantica 68000 / Musashi), sin aritmetica de 64 bits */
 #define MSK(b) ((b) == 32 ? 0xFFFFFFFFu : ((1u << (b)) - 1))
@@ -153,26 +345,31 @@ static inline u32 sh_roxr(u32 v, u32 c, int b, u32 *x, u32 *cf, u32 *vf) { *vf =
 
 #define RC_SYNC do { rc_r.d[0]=d0; rc_r.d[1]=d1; rc_r.d[2]=d2; rc_r.d[3]=d3; rc_r.d[4]=d4; rc_r.d[5]=d5; rc_r.d[6]=d6; rc_r.d[7]=d7; \
     rc_r.a[0]=a0; rc_r.a[1]=a1; rc_r.a[2]=a2; rc_r.a[3]=a3; rc_r.a[4]=a4; rc_r.a[5]=a5; rc_r.a[6]=a6; rc_r.a[7]=a7; \
-    rc_r.fX=fX; rc_r.fN=fN; rc_r.fZ=fZ; rc_r.fV=fV; rc_r.fC=fC; rc_r.imask=imask; rc_r.cyc=cyc; rc_r.cyc_next=cyc_next; } while (0)
+    rc_r.fX=fX; rc_r.fN=fN; rc_r.fZ=fZ; rc_r.fV=fV; rc_r.fC=fC; rc_r.imask=imask; rc_r.cyc=cyr+cyc_next; rc_r.cyc_next=cyc_next; \
+    rc_r.cyr=cyr; } while (0)
 
+/* pila sombra vacia: entradas que no coinciden con nada que no fuera a ir al despacho general igualmente */
+#define RC_SHINIT do { int _k; for (_k = 0; _k < RC_SHN; _k++) { rc_sh[_k].pc = 0xFFFFFFFFu; rc_sh[_k].l = &&rc_shbad; } } while (0)
 #ifdef RC_GREGS
 #define RC_LOCALS u32 fX = rc_r.fX, fV = rc_r.fV, imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
     u32 vs, vd, vr, eas, ead, dpc; void *dl;
 #define RC_ENTER d0 = rc_r.d[0]; d1 = rc_r.d[1]; d2 = rc_r.d[2]; d3 = rc_r.d[3]; d4 = rc_r.d[4]; d5 = rc_r.d[5]; \
-    d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; cyc = rc_r.cyc; RC_TLOAD;
+    d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; RC_TLOAD; cyr = rc_r.cyc - rc_r.cyc_next; RC_SHINIT; rc_vc_init();
 #else
 #define RC_LOCALS u32 d0 = rc_r.d[0], d1 = rc_r.d[1], d2 = rc_r.d[2], d3 = rc_r.d[3], d4 = rc_r.d[4], d5 = rc_r.d[5], d6 = rc_r.d[6], d7 = rc_r.d[7]; \
     u32 a0 = rc_r.a[0], a1 = rc_r.a[1], a2 = rc_r.a[2], a3 = rc_r.a[3], a4 = rc_r.a[4], a5 = rc_r.a[5], a6 = rc_r.a[6], a7 = rc_r.a[7]; \
     u32 fX = rc_r.fX, fN = rc_r.fN, fZ = rc_r.fZ, fV = rc_r.fV, fC = rc_r.fC, imask = rc_r.imask; \
-    s32 cyc = rc_r.cyc, cyc_next = rc_r.cyc_next; u32 vs, vd, vr, eas, ead, dpc; void *dl;
-#define RC_ENTER
+    s32 cyr = rc_r.cyc - rc_r.cyc_next, cyc_next = rc_r.cyc_next; u32 vs, vd, vr, eas, ead, dpc; void *dl;
+#define RC_ENTER RC_SHINIT; rc_vc_init();
 #endif
-#define DISPATCH(x) do { dpc = (x); dl = rc_find(tab, sizeof(tab) / sizeof(tab[0]), dpc); if (!dl) goto bad_dispatch; goto *dl; } while (0)
+/* despacho indirecto y rts: bloques comunes al final de rc_run (un salto en cada sitio) */
+#define DISPATCH(x) do { dpc = (x); goto rc_disp; } while (0)
 #define FELL(x) DISPATCH(x)
-#define CYC(n) cyc += (n)
+#define RTS() goto rc_rts
+#define CYC(n) cyr += (n)
 #define CYC_FRAME 200000
-#define IDLEHINT(cond) do { if ((cond) && cyc < cyc_next) cyc = cyc_next; } while (0)
-#define IRQCHK(t) do { if (cyc >= cyc_next && imask < 6) { dpc = (t); goto irq_take; } } while (0)
+#define IDLEHINT(cond) do { if ((cond) && cyr < 0) cyr = 0; } while (0)
+#define IRQCHK(t) do { if (cyr >= 0 && imask < 6) { dpc = (t); goto irq_take; } } while (0)
 #define DIVZERO(pc) do { RC_SYNC; rc_divzero(pc); } while (0)
 void rc_divzero(u32 pc);
 
@@ -182,17 +379,29 @@ void rc_dbg_irq(void);
 #define CK(pc, lv) do { RC_SYNC; rc_ck(pc, lv); } while (0)
 #define IRQ_DBG() rc_dbg_irq()
 #else
+#ifdef RCREG
+#define CK(pc, lv) (rc_cur = (pc))
+#else
 #define CK(pc, lv)
+#endif
 #define IRQ_DBG()
 #endif
 
+/* irq_take: el contador absoluto pasa a contar desde este vblank (cyc -= cyc_next) y cyc_next se recalcula */
 #define RC_EXIT_CODE \
 irq_take: \
     RC_SYNC; rc_vblank(); RC_TLOAD; \
-    cyc -= cyc_next; cyc_next = CYC_FRAME; while (cyc_next <= cyc) cyc_next += CYC_FRAME; \
-    { u32 sr = GETSR(); a7 -= 4; WR32(a7, dpc, 0); a7 -= 2; WR16(a7, sr, 0); imask = 6; } \
+    { s32 _c = cyr; cyc_next = CYC_FRAME; while (cyc_next <= _c) cyc_next += CYC_FRAME; cyr = _c - cyc_next; } \
+    { u32 sr = GETSR(); a7 -= 4; WRP32(ram, a7, dpc, 0); a7 -= 2; WRP16(ram, a7, sr, 0); imask = 6; } \
     IRQ_DBG(); \
     DISPATCH(RC_IRQ6); \
+rc_rts: \
+    { rc_lab *_e = SHE(a7); vs = RDP32(ram, a7); a7 += 4; if (_e->pc == vs) goto *_e->l; } \
+    DISPATCH(vs); \
+rc_shbad: \
+    DISPATCH(0xFFFFFFFFu); \
+rc_disp: \
+    dl = rc_find(tab, tabi, sizeof(tabi) / sizeof(tabi[0]) - 1, dpc); if (!dl) goto bad_dispatch; goto *dl; \
 bad_dispatch: \
     RC_SYNC; rc_r.pc = dpc; rc_bad(dpc); return;
 #endif
