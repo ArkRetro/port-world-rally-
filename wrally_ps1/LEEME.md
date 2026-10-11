@@ -50,6 +50,9 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
 - `perf/`: medidas con el emulador `psxprof` (modelo de tiempos aproximado).
   - `medir.sh`: ritmo y perfil del recorrido estándar.
   - `escenarios.sh`: partida, segunda partida, attract, dirección oscilante, los otros rallies, attract de 8 minutos, partida hasta los records y segunda partida en otro rally; compara cuadro a cuadro con la versión original (`BASE`), cuenta los tiles que faltan en pantalla y lo resume por escenario (`tabla.py`).
+  - Referencia de la placa: `psxprof` con `DUMPAT` guarda, por cuadro, la imagen que enseña la PS1 y el estado de la placa con el que se dibujó (y `INPUTS` lleva el mando: elegir rally, conducir).
+    - `arcade.py` dibuja ese estado como MAME (y como `ps1/main.c`).
+    - `difref.py` compara las dos imágenes y atribuye cada diferencia a sprites y tiles (falta, sobra, prioridad, color).
 
 ## Mandos
 | Botón | Acción |
