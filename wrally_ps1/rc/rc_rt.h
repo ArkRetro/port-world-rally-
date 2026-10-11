@@ -8,8 +8,14 @@ typedef unsigned long long u64; typedef long long s64;
 typedef struct { u32 pc; void *l; } rc_lab;
 
 extern u8 *rc_rpg[4096], *rc_wpg[4096];
-extern u8 rc_rom[0x100000 + 4], rc_ram[0x4000 + 4], rc_pal[0x4000 + 4], rc_spr[0x1000 + 4], rc_vram[0x4000 + 4], rc_vregs[0x1000 + 4];
-extern u8 rc_iopg[0x1000 + 4], rc_ffpg[0x1000 + 4];
+/* alineadas tambien en la declaracion: si no, gcc hace los accesos de 16 bits a direccion fija byte a byte.
+   Detras de la RAM del 68000 (16 KB y 4 de margen) va la pila sombra de rts, a mano de la misma base */
+#define RC_AL __attribute__((aligned(4)))
+#define RC_SHN 64
+#define RC_SHOFF 0x4008
+#define RC_RAMSZ (RC_SHOFF + RC_SHN * sizeof(rc_lab))
+extern u8 rc_rom[0x100000 + 4] RC_AL, rc_ram[RC_RAMSZ] __attribute__((aligned(8))), rc_pal[0x4000 + 4] RC_AL, rc_spr[0x1000 + 4] RC_AL;
+extern u8 rc_vram[0x4000 + 4] RC_AL, rc_vregs[0x1000 + 4] RC_AL, rc_iopg[0x1000 + 4] RC_AL, rc_ffpg[0x1000 + 4] RC_AL;
 u32 rc_rd8(u32 a), rc_rd16(u32 a);
 void rc_wr8(u32 a, u32 v, u32 pc), rc_wr16(u32 a, u32 v, u32 pc);
 void rc_vblank(void);
@@ -26,31 +32,41 @@ extern rc_regs_t rc_r;
 #if defined(__mips__) && defined(RC_GEN) && !defined(RCDBG)
 #define RC_GREGS 1
 /* registros del 68000 fijos en registros del MIPS: d0-d7, a7 en s0-s8 (se conservan en las llamadas);
-   a0-a6 y Z, C, N en t0-t9 (se guardan a mano alrededor de las llamadas); el contador de ciclos en gp */
+   a0-a6, Z y C en t0-t8 (se guardan a mano alrededor de las llamadas); el contador de ciclos en gp. En t9 la
+   base de la RAM del 68000 (los accesos a direccion fija son una sola instruccion); N, que se usa poco, va en
+   una variable local */
 register u32 d0 asm("$16"); register u32 d1 asm("$17"); register u32 d2 asm("$18"); register u32 d3 asm("$19");
 register u32 d4 asm("$20"); register u32 d5 asm("$21"); register u32 d6 asm("$22"); register u32 d7 asm("$23");
 register u32 a7 asm("$30");
 register u32 a0 asm("$8"); register u32 a1 asm("$9"); register u32 a2 asm("$10"); register u32 a3 asm("$11");
 register u32 a4 asm("$12"); register u32 a5 asm("$13"); register u32 a6 asm("$14");
-register u32 fZ asm("$15"); register u32 fC asm("$24"); register u32 fN asm("$25");
+register u32 fZ asm("$15"); register u32 fC asm("$24"); register u8 *rc_rb asm("$25");
 register s32 cyr asm("$28");
 #define RC_TSAVE do { rc_r.a[0]=a0; rc_r.a[1]=a1; rc_r.a[2]=a2; rc_r.a[3]=a3; rc_r.a[4]=a4; rc_r.a[5]=a5; rc_r.a[6]=a6; \
-    rc_r.fZ=fZ; rc_r.fC=fC; rc_r.fN=fN; rc_r.cyr=cyr; } while (0)
+    rc_r.fZ=fZ; rc_r.fC=fC; rc_r.cyr=cyr; } while (0)
 #define RC_TLOAD do { a0=rc_r.a[0]; a1=rc_r.a[1]; a2=rc_r.a[2]; a3=rc_r.a[3]; a4=rc_r.a[4]; a5=rc_r.a[5]; a6=rc_r.a[6]; \
-    fZ=rc_r.fZ; fC=rc_r.fC; fN=rc_r.fN; cyr=rc_r.cyr; } while (0)
+    fZ=rc_r.fZ; fC=rc_r.fC; cyr=rc_r.cyr; rc_rb = rc_ram; } while (0)
+#define RAMB rc_rb
 #else
 #define RC_TSAVE
 #define RC_TLOAD
+#define RAMB rc_ram
 #endif
 #define RC_CALL(x) do { RC_TSAVE; x; RC_TLOAD; } while (0)
 
 #define rom rc_rom
-#define ram rc_ram
+#define ram RAMB
 #define pal rc_pal
 #define spr rc_spr
 #define MW(r, o) (*(u16 *)((r) + (o)))
 #define MB(r, o) ((r)[(o) ^ 1])
 #define ML(r, o) (((u32)MW(r, o) << 16) | MW(r, (o) + 2))
+/* long en desplazamiento multiplo de 4: una sola lectura de 32 bits y cambio de palabras */
+static inline __attribute__((always_inline)) u32 RC_SW16(u32 x) { return (x << 16) | (x >> 16); }
+#define MLA(r, o) RC_SW16(*(u32 *)((r) + (o)))
+/* base opaca para gcc: si no, calcula base+2, base+4... como constantes aparte y repite la suma del
+   desplazamiento en cada palabra */
+static inline __attribute__((always_inline)) u8 *RC_OPQ(u8 *p) { __asm__("" : "+r"(p)); return p; }
 #define SETL(r, o, v) do { u32 _v = (v); MW(r, o) = (u16)(_v >> 16); MW(r, (o) + 2) = (u16)_v; } while (0)
 
 #ifdef RCREG
@@ -196,26 +212,35 @@ static __attribute__((noinline)) void rc_wrg8(u32 a, u32 v, u32 pc) { WR8(a, v, 
 static __attribute__((noinline)) void rc_wrg16(u32 a, u32 v, u32 pc) { WR16(a, v, pc); }
 static __attribute__((noinline)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR32(a, v, pc); }
 /* accesos con region prevista para cada instruccion (perfil en rc/regiones.txt): comprobacion de rango en linea
-   (sin mirar el byte alto, como la tabla de paginas) y, si falla, el acceso general. RG = esta en la region,
-   RO = desplazamiento, RB = memoria, RS = tamano (los bloques de movem comprueban que caben enteros) */
-#define RG_ram(a) ((((a) >> 14) & 0x3FF) == 0x3FB)
-#define RG_rom(a) ((((a) >> 20) & 0xF) == 0)
-#define RG_pal(a) ((((a) >> 14) & 0x3FF) == 0x080)
-#define RG_vram(a) ((((a) >> 14) & 0x3FF) == 0x040)
-#define RG_spr(a) ((((a) >> 12) & 0xFFF) == 0x440)
-#define RG_vregs(a) ((((a) >> 12) & 0xFFF) == 0x108)
+   y, si falla, el acceso general (exacto siempre). El camino rapido pide ademas el byte alto de la direccion a 0
+   (el juego no usa otra cosa; si no, solo se pierde velocidad): la comprobacion es un desplazamiento y una
+   comparacion, y en la ROM la direccion es ya el desplazamiento. RG = esta en la region, RO = desplazamiento,
+   RB = memoria, RBO = memoria con la base opaca para gcc (punteros), RS = tamano (los bloques de movem
+   comprueban que caben enteros) */
+#define RG_ram(a) (((a) >> 14) == 0x3FB)
+#define RG_rom(a) (((a) >> 20) == 0)
+#define RG_pal(a) (((a) >> 14) == 0x080)
+#define RG_vram(a) (((a) >> 14) == 0x040)
+#define RG_spr(a) (((a) >> 12) == 0x440)
+#define RG_vregs(a) (((a) >> 12) == 0x108)
 #define RO_ram(a) ((a) & 0x3FFF)
-#define RO_rom(a) ((a) & 0xFFFFF)
+#define RO_rom(a) (a)
 #define RO_pal(a) ((a) & 0x3FFF)
 #define RO_vram(a) ((a) & 0x3FFF)
 #define RO_spr(a) ((a) & 0xFFF)
 #define RO_vregs(a) ((a) & 0xFFF)
-#define RB_ram rc_ram
+#define RB_ram RAMB
 #define RB_rom rc_rom
 #define RB_pal rc_pal
 #define RB_vram rc_vram
 #define RB_spr rc_spr
 #define RB_vregs rc_vregs
+#define RBO_ram RAMB
+#define RBO_rom RC_OPQ(rc_rom)
+#define RBO_pal RC_OPQ(rc_pal)
+#define RBO_vram RC_OPQ(rc_vram)
+#define RBO_spr RC_OPQ(rc_spr)
+#define RBO_vregs RC_OPQ(rc_vregs)
 #define RS_ram 0x4000
 #define RS_rom 0x100000
 #define RS_pal 0x4000
@@ -233,13 +258,13 @@ static __attribute__((noinline)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR32(a, v
 #else
 #define RDP8(r, a) (RG_##r(a) ? (u32)MB(RB_##r, RO_##r(a)) : rc_rdg8(a))
 #define RDP16(r, a) (RG_##r(a) ? (u32)MW(RB_##r, RO_##r(a)) : rc_rdg16(a))
-#define RDP32(r, a) (RG_##r(a) ? ML(RB_##r, RO_##r(a)) : rc_rdg32(a))
+#define RDP32(r, a) (RG_##r(a) ? ML(RBO_##r + RO_##r(a), 0) : rc_rdg32(a))
 #define WRP8(r, a, v, pc) do { if (RG_##r(a)) MB(RB_##r, RO_##r(a)) = (u8)(v); else rc_wrg8(a, v, pc); } while (0)
 #define WRP16(r, a, v, pc) do { if (RG_##r(a)) MW(RB_##r, RO_##r(a)) = (u16)(v); else rc_wrg16(a, v, pc); } while (0)
-#define WRP32(r, a, v, pc) do { if (RG_##r(a)) SETL(RB_##r, RO_##r(a), v); else rc_wrg32(a, v, pc); } while (0)
+#define WRP32(r, a, v, pc) do { if (RG_##r(a)) SETL(RBO_##r + RO_##r(a), 0, v); else rc_wrg32(a, v, pc); } while (0)
 #define RBLK(r, a, n) (RG_##r(a) && RO_##r(a) <= RS_##r - (n))
 #endif
-#define RPTR(r, a) (RB_##r + RO_##r(a))
+#define RPTR(r, a) (RBO_##r + RO_##r(a))
 #endif
 
 /* despacho general: tabla ordenada por pc con un indice por bloques de 256 bytes (ti[b] = primera entrada con
@@ -253,21 +278,24 @@ static inline void *rc_find(const rc_lab *t, const u16 *ti, u32 nb, u32 pc)
     return (lo < e && t[lo].pc == pc) ? t[lo].l : 0;
 }
 
-/* prediccion de retorno: bsr/jsr apuntan (direccion de vuelta, etiqueta) en una pila sombra indexada por a7;
+/* prediccion de retorno: bsr/jsr apuntan (direccion de vuelta, etiqueta) en una pila sombra indexada por a7
+   (la direccion como queda en la RAM: palabras cambiadas);
    rts compara lo que saca de la pila del 68000 con la entrada y, si coincide, salta directo (si no, despacho
    general: el juego puede tocar su pila como quiera) */
 #ifdef RC_GEN
-#define RC_SHN 64
-static rc_lab rc_sh[RC_SHN];
-#define SHE(sp) (&rc_sh[((sp) >> 2) & (RC_SHN - 1)])
+#define rc_sh ((rc_lab *)(RAMB + RC_SHOFF))
+#define SHE(sp) ((rc_lab *)((u8 *)rc_sh + ((sp) & ((RC_SHN - 1) << 2)) * (sizeof(rc_lab) / 4)))
+/* long de la RAM del 68000 tal como esta en memoria (palabras cambiadas): alineado a 4, de una vez */
+#define RAW32(a) (*(u32 *)(RAMB + ((a) & 0x3FFC)))
 #ifdef RC_GREGS
 /* fuera de linea para no repetir el codigo en cada llamada (a7 es global); n = tamano de la instruccion */
 #define RC_CALLPUSH_F(n) static __attribute__((noinline)) void rc_callpush##n(u32 r, void *lb) \
-    { rc_lab *e; a7 -= 4; WRP32(ram, a7, r, r - n); e = SHE(a7); e->pc = r; e->l = lb; }
+    { rc_lab *e; a7 -= 4; if (RG_ram(a7)) SETL(RAMB + RO_ram(a7), 0, r); else rc_wrg32(a7, r, r - n); \
+      e = SHE(a7); e->pc = RC_SW16(r); e->l = lb; }
 RC_CALLPUSH_F(2) RC_CALLPUSH_F(4) RC_CALLPUSH_F(6)
 #define CALLPUSH(n, r, lb) rc_callpush##n(r, lb)
 #else
-#define CALLPUSH(n, r, lb) do { rc_lab *_e; a7 -= 4; WRP32(ram, a7, r, (r) - n); _e = SHE(a7); _e->pc = (r); _e->l = (lb); } while (0)
+#define CALLPUSH(n, r, lb) do { rc_lab *_e; a7 -= 4; WRP32(ram, a7, r, (r) - n); _e = SHE(a7); _e->pc = RC_SW16(r); _e->l = (lb); } while (0)
 #endif
 #endif
 
@@ -351,7 +379,7 @@ static inline u32 sh_roxr(u32 v, u32 c, int b, u32 *x, u32 *cf, u32 *vf) { *vf =
 /* pila sombra vacia: entradas que no coinciden con nada que no fuera a ir al despacho general igualmente */
 #define RC_SHINIT do { int _k; for (_k = 0; _k < RC_SHN; _k++) { rc_sh[_k].pc = 0xFFFFFFFFu; rc_sh[_k].l = &&rc_shbad; } } while (0)
 #ifdef RC_GREGS
-#define RC_LOCALS u32 fX = rc_r.fX, fV = rc_r.fV, imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
+#define RC_LOCALS u32 fX = rc_r.fX, fV = rc_r.fV, fN = rc_r.fN, imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
     u32 vs, vd, vr, eas, ead, dpc; void *dl;
 #define RC_ENTER d0 = rc_r.d[0]; d1 = rc_r.d[1]; d2 = rc_r.d[2]; d3 = rc_r.d[3]; d4 = rc_r.d[4]; d5 = rc_r.d[5]; \
     d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; RC_TLOAD; cyr = rc_r.cyc - rc_r.cyc_next; RC_SHINIT; rc_vc_init();
@@ -396,8 +424,13 @@ irq_take: \
     IRQ_DBG(); \
     DISPATCH(RC_IRQ6); \
 rc_rts: \
-    { rc_lab *_e = SHE(a7); vs = RDP32(ram, a7); a7 += 4; if (_e->pc == vs) goto *_e->l; } \
-    DISPATCH(vs); \
+    { rc_lab *_e = SHE(a7); u32 _r; \
+      if (RG_ram(a7)) { \
+          if (!(a7 & 2)) _r = RAW32(a7); else { u8 *_q = RAMB + RO_ram(a7); _r = ((u32)MW(_q, 2) << 16) | MW(_q, 0); } \
+          if (_r == _e->pc) { a7 += 4; goto *_e->l; } \
+          _r = RC_SW16(_r); \
+      } else _r = rc_rdg32(a7); \
+      a7 += 4; DISPATCH(_r); } \
 rc_shbad: \
     DISPATCH(0xFFFFFFFFu); \
 rc_disp: \

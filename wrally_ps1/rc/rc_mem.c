@@ -4,7 +4,7 @@ u8 *rc_rpg[4096], *rc_wpg[4096];
 #ifndef RC_ROM_EXTERN
 u8 rc_rom[0x100000 + 4] __attribute__((aligned(4)));
 #endif
-u8 rc_ram[0x4000 + 4] __attribute__((aligned(4))), rc_pal[0x4000 + 4] __attribute__((aligned(4)));
+u8 rc_ram[RC_RAMSZ] __attribute__((aligned(8))), rc_pal[0x4000 + 4] __attribute__((aligned(4)));
 u8 rc_spr[0x1000 + 4] __attribute__((aligned(4))), rc_vram[0x4000 + 4] __attribute__((aligned(4)));
 u8 rc_vregs[0x1000 + 4] __attribute__((aligned(4)));
 u8 rc_iopg[0x1000 + 4] __attribute__((aligned(4))), rc_ffpg[0x1000 + 4] __attribute__((aligned(4)));

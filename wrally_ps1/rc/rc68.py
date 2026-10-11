@@ -177,7 +177,7 @@ def rd_const(a, sz):
     if reg:
         if sz == 1: return 'MB(%s, 0x%x)' % (reg, o)
         if sz == 2: return 'MW(%s, 0x%x)' % (reg, o)
-        return 'ML(%s, 0x%x)' % (reg, o)
+        return '%s(%s, 0x%x)' % ('ML' if o & 3 else 'MLA', reg, o)
     return 'RD%d(0x%06xu)' % (sz * 8, a)
 
 def wr_const(a, sz, v, pc):
@@ -240,8 +240,9 @@ class G:
     def setreg(s, ea, sz, v):
         r = '%s%d' % ('d' if ea.m == 'D' else 'a', ea.r)
         if ea.m == 'A' or sz == 4: s.e('%s = %s;' % (r, v))
-        elif sz == 2: s.e('%s = (%s & 0xFFFF0000u) | ((%s) & 0xFFFFu);' % (r, r, v))
-        else: s.e('%s = (%s & 0xFFFFFF00u) | ((%s) & 0xFFu);' % (r, r, v))
+        # parte baja con xor: 3 instrucciones del MIPS, sin cargar la mascara de la parte alta
+        elif sz == 2: s.e('%s ^= (%s ^ (%s)) & 0xFFFFu;' % (r, r, v))
+        else: s.e('%s ^= (%s ^ (%s)) & 0xFFu;' % (r, r, v))
 
     def write(s, ea, sz, v):
         if ea.m in ('D', 'A'): s.setreg(ea, sz, v); return
@@ -410,7 +411,7 @@ def gen_ins(i, live_out, labelset, taken):
         w('vr')
     elif o == 'ext':
         r = i.dst.r
-        if sz == 2: e('d%d = (d%d & 0xFFFF0000u) | ((u32)(s32)(s8)d%d & 0xFFFFu);' % (r, r, r)); g.logic('d%d' % r, 2)
+        if sz == 2: e('d%d ^= (d%d ^ (u32)(s32)(s8)d%d) & 0xFFFFu;' % (r, r, r)); g.logic('d%d' % r, 2)
         else: e('d%d = (u32)(s32)(s16)d%d;' % (r, r)); g.logic('d%d' % r, 4)
     elif o == 'swap':
         r = i.dst.r
@@ -502,7 +503,8 @@ def gen_ins(i, live_out, labelset, taken):
     elif o == 'dbcc':
         r = i.dst.r
         pre = '' if i.cond == 'f' else 'if (!%s) ' % COND_EXPR[i.cond]
-        e('%s{ u32 t = (d%d - 1) & 0xFFFFu; d%d = (d%d & 0xFFFF0000u) | t; if (t != 0xFFFFu) { CYC(10); %s } }' % (pre, r, r, r, br_irq(i.target)))
+        # parte baja distinta de 0: restar 1 no toca la alta; si es 0 pasa a 0xFFFF y se sale del bucle
+        e('%s{ if (d%d & 0xFFFFu) { d%d -= 1; CYC(10); %s } d%d |= 0xFFFFu; }' % (pre, r, r, br_irq(i.target), r))
     elif o == 'bcc':
         e('if %s { %s }' % (COND_EXPR[i.cond], br_irq(i.target)))
     elif o == 'bra':
@@ -571,8 +573,16 @@ def gen_ins(i, live_out, labelset, taken):
             order = [regs[bit] for bit in range(16) if mask & (1 << bit)]
             if pr:
                 blk(pr, 'eas')
-                for k, rg in enumerate(order):
-                    e('    ' + ('%s = ML(_q, %d);' % (rg, k * sz) if sz == 4 else '%s = (u32)(s32)(s16)MW(_q, %d);' % (rg, k * sz)))
+                if sz == 4 and len(order) > 1:
+                    # alineado a 4 (lo normal salvo en la pila dentro de la IRQ): una lectura de 32 bits por registro
+                    e('    if (!(eas & 2)) {')
+                    for k, rg in enumerate(order): e('        %s = MLA(_q, %d);' % (rg, k * 4))
+                    e('    } else {')
+                    for k, rg in enumerate(order): e('        %s = ML(_q, %d);' % (rg, k * 4))
+                    e('    }')
+                else:
+                    for k, rg in enumerate(order):
+                        e('    ' + ('%s = ML(_q, %d);' % (rg, k * sz) if sz == 4 else '%s = (u32)(s32)(s16)MW(_q, %d);' % (rg, k * sz)))
                 e('} else {')
                 for k, rg in enumerate(order):
                     e('    ' + ('%s = rc_rdg32(eas + %d);' % (rg, k * sz) if sz == 4 else '%s = (u32)(s32)(s16)rc_rdg16(eas + %d);' % (rg, k * sz)))
