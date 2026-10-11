@@ -28,25 +28,27 @@ extern rc_regs_t rc_r;
 #if defined(__mips__) && defined(RC_GEN) && !defined(RCDBG)
 #define RC_GREGS 1
 /* registros del 68000 fijos en registros del MIPS: d0-d7, a7 en s0-s8 (se conservan en las llamadas);
-   a0-a6, Z y C en t0-t8 (se guardan a mano alrededor de las llamadas); el contador de ciclos en gp. En t9 la
-   base de la RAM del 68000 (los accesos a direccion fija son una sola instruccion); N, que se usa poco, va en
-   una variable local */
+   a0-a5, Z y C en t0-t5, t7, t8 (se guardan a mano alrededor de las llamadas); el contador de ciclos en gp.
+   En t9 la base de la RAM del 68000 (los accesos a direccion fija son una sola instruccion) y en t6 la de la
+   ROM; a6 y N, que el juego apenas usa (menos de 100 veces por cuadro), van en variables locales */
 register u32 d0 asm("$16"); register u32 d1 asm("$17"); register u32 d2 asm("$18"); register u32 d3 asm("$19");
 register u32 d4 asm("$20"); register u32 d5 asm("$21"); register u32 d6 asm("$22"); register u32 d7 asm("$23");
 register u32 a7 asm("$30");
 register u32 a0 asm("$8"); register u32 a1 asm("$9"); register u32 a2 asm("$10"); register u32 a3 asm("$11");
-register u32 a4 asm("$12"); register u32 a5 asm("$13"); register u32 a6 asm("$14");
+register u32 a4 asm("$12"); register u32 a5 asm("$13"); register u8 *rc_rbr asm("$14");
 register u32 fZ asm("$15"); register u32 fC asm("$24"); register u8 *rc_rb asm("$25");
 register s32 cyr asm("$28");
-#define RC_TSAVE do { rc_r.a[0]=a0; rc_r.a[1]=a1; rc_r.a[2]=a2; rc_r.a[3]=a3; rc_r.a[4]=a4; rc_r.a[5]=a5; rc_r.a[6]=a6; \
+#define RC_TSAVE do { rc_r.a[0]=a0; rc_r.a[1]=a1; rc_r.a[2]=a2; rc_r.a[3]=a3; rc_r.a[4]=a4; rc_r.a[5]=a5; \
     rc_r.fZ=fZ; rc_r.fC=fC; rc_r.cyr=cyr; } while (0)
-#define RC_TLOAD do { a0=rc_r.a[0]; a1=rc_r.a[1]; a2=rc_r.a[2]; a3=rc_r.a[3]; a4=rc_r.a[4]; a5=rc_r.a[5]; a6=rc_r.a[6]; \
-    fZ=rc_r.fZ; fC=rc_r.fC; cyr=rc_r.cyr; rc_rb = rc_ram; } while (0)
+#define RC_TLOAD do { a0=rc_r.a[0]; a1=rc_r.a[1]; a2=rc_r.a[2]; a3=rc_r.a[3]; a4=rc_r.a[4]; a5=rc_r.a[5]; \
+    fZ=rc_r.fZ; fC=rc_r.fC; cyr=rc_r.cyr; rc_rb = rc_ram; rc_rbr = rc_rom; } while (0)
 #define RAMB rc_rb
+#define ROMB rc_rbr
 #else
 #define RC_TSAVE
 #define RC_TLOAD
 #define RAMB rc_ram
+#define ROMB rc_rom
 #endif
 #define RC_CALL(x) do { RC_TSAVE; x; RC_TLOAD; } while (0)
 
@@ -246,13 +248,13 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
 #define RO_spr(a) ((a) & 0xFFF)
 #define RO_vregs(a) ((a) & 0xFFF)
 #define RB_ram RAMB
-#define RB_rom rc_rom
+#define RB_rom ROMB
 #define RB_pal rc_pal
 #define RB_vram rc_vram
 #define RB_spr rc_spr
 #define RB_vregs rc_vregs
 #define RBO_ram RAMB
-#define RBO_rom RC_OPQ(rc_rom)
+#define RBO_rom ROMB
 #define RBO_pal RC_OPQ(rc_pal)
 #define RBO_vram RC_OPQ(rc_vram)
 #define RBO_spr RC_OPQ(rc_spr)
@@ -293,13 +295,21 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
 
 #ifdef RC_GEN
 /* despacho general (rts, rte, jmp indirecto): tabla hash de etiquetas por el pc con las palabras cambiadas
-   (k), sondeo lineal hasta una entrada vacia (clave 0). La genera rc68.py (RC_HN, RC_HS) */
-static inline void *rc_hfind(const rc_lab *e, u32 k)
+   (k), sondeo lineal hasta una entrada vacia (clave 0). La genera rc68.py (RC_HN, RC_HS). rts mira la primera
+   entrada en linea y solo llama aqui si no esta */
+static __attribute__((noinline)) void *rc_hfind(const rc_lab *e, u32 k)
 {
     e += (k ^ (k >> RC_HS)) & (RC_HN - 1);
     while (e->pc != k) { if (!e->pc) return 0; e++; }
     return e->l;
 }
+/* direccion de vuelta de bsr/jsr: con a7 en registro, una funcion comun (caliente en la cache de instrucciones) */
+#ifdef RC_GREGS
+static __attribute__((noinline)) void rc_push(u32 r) { a7 -= 4; WRP32(ram, a7, r, 0); }
+#define RC_PUSH(r, pc) rc_push(r)
+#else
+#define RC_PUSH(r, pc) do { a7 -= 4; WRP32(ram, a7, r, pc); } while (0)
+#endif
 /* long de la RAM del 68000 tal como esta en memoria (palabras cambiadas): alineado a 4, de una vez */
 #define RAW32(a) (*(u32 *)(RAMB + ((a) & 0x3FFC)))
 #endif
@@ -382,7 +392,7 @@ static inline u32 sh_roxr(u32 v, u32 c, int b, u32 *x, u32 *cf, u32 *vf) { *vf =
     rc_r.cyr=cyr; } while (0)
 
 #ifdef RC_GREGS
-#define RC_LOCALS u32 fX = rc_r.fX, fV = rc_r.fV, fN = rc_r.fN, imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
+#define RC_LOCALS u32 fX = rc_r.fX, fV = rc_r.fV, fN = rc_r.fN, a6 = rc_r.a[6], imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
     u32 vs, vd, vr, eas, ead, dpc; void *dl;
 #define RC_ENTER d0 = rc_r.d[0]; d1 = rc_r.d[1]; d2 = rc_r.d[2]; d3 = rc_r.d[3]; d4 = rc_r.d[4]; d5 = rc_r.d[5]; \
     d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; RC_TLOAD; cyr = rc_r.cyc - rc_r.cyc_next; rc_vc_init();
@@ -398,6 +408,12 @@ static inline u32 sh_roxr(u32 v, u32 c, int b, u32 *x, u32 *cf, u32 *vf) { *vf =
 #define FELL(x) DISPATCH(x)
 #define RTS() goto rc_rts
 #define CYC(n) cyr += (n)
+/* justo antes de la comprobacion de IRQ: gcc lo haria en otro registro y lo copiaria a gp */
+#ifdef RC_GREGS
+#define CYCB(n) __asm__ ("addiu %0, %0, %1" : "+r"(cyr) : "i"(n))
+#else
+#define CYCB(n) CYC(n)
+#endif
 #define CYC_FRAME 200000
 #define IDLEHINT(cond) do { if ((cond) && cyr < 0) cyr = 0; } while (0)
 #define IRQCHK(t) do { if (cyr >= 0 && imask < 6) { dpc = (t); goto irq_take; } } while (0)
@@ -430,7 +446,9 @@ rc_rts: \
     { u32 _k; \
       if (RG_ram(a7)) { if (!(a7 & 2)) _k = RAW32(a7); else { u8 *_q = RAMB + RO_ram(a7); _k = ((u32)MW(_q, 2) << 16) | MW(_q, 0); } } \
       else _k = RC_SW16(rc_rdg32(a7)); \
-      a7 += 4; dl = rc_hfind(ht, _k); if (dl) goto *dl; dpc = RC_SW16(_k); goto bad_dispatch; } \
+      a7 += 4; \
+      { const rc_lab *_e = ht + ((_k ^ (_k >> RC_HS)) & (RC_HN - 1)); if (_e->pc == _k) goto *_e->l; } \
+      dl = rc_hfind(ht, _k); if (dl) goto *dl; dpc = RC_SW16(_k); goto bad_dispatch; } \
 rc_disp: \
     dl = rc_hfind(ht, RC_SW16(dpc)); if (!dl) goto bad_dispatch; goto *dl; \
 bad_dispatch: \

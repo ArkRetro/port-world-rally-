@@ -294,7 +294,7 @@ class G:
 
 def callpush(i, nxt, labelset):
     """apila la direccion de vuelta"""
-    return 'a7 -= 4; WRP32(ram, a7, 0x%xu, 0x%x);' % (nxt, i.a)
+    return 'RC_PUSH(0x%xu, 0x%x);' % (nxt, i.a)
 
 def gen_ins(i, live_out, labelset, taken):
     g = G(i, live_out[i.a])
@@ -507,7 +507,7 @@ def gen_ins(i, live_out, labelset, taken):
         r = i.dst.r
         pre = '' if i.cond == 'f' else 'if (!%s) ' % COND_EXPR[i.cond]
         # parte baja distinta de 0: restar 1 no toca la alta; si es 0 pasa a 0xFFFF y se sale del bucle
-        e('%s{ if (d%d & 0xFFFFu) { d%d -= 1; CYC(10); %s } d%d |= 0xFFFFu; }' % (pre, r, r, br_irq(i.target), r))
+        e('%s{ if (d%d & 0xFFFFu) { d%d -= 1; CYCB(10); %s } d%d |= 0xFFFFu; }' % (pre, r, r, br_irq(i.target), r))
     elif o == 'bcc':
         e('if %s { %s }' % (COND_EXPR[i.cond], br_irq(i.target)))
     elif o == 'bra':
