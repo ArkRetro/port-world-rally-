@@ -23,6 +23,7 @@ static int drv;                             /* unidad: 0 parada, 1 leyendo, 2 au
 static int cmd, cmd_arg, wait2;             /* comando sin primera respuesta (INT3); Pause sin segunda (INT2) */
 static u16 t_cmd, t_ev, t_done;             /* lineas: envio del comando, ultimo sector, fin de la ultima lectura */
 static int mode = -1, want_mode = M_AUDIO, loc_at = -1, drv_next = -1, lost;
+static int seek_to = -1, seek_n;            /* ReadN sin Pause: hasta ver este sector (o 3) los que lleguen son de antes */
 /* peticion de lectura de los sectores lba..lba+n-1: a buf (como mucho 32, en cualquier orden: rd_got), o en orden
    a cb (por sbuf) o a donde diga dst (0: aun no hay sitio, se volvera a buscar). rd_i: el primero que falta */
 static int rd_on, rd_lba, rd_n, rd_i, rd_fast, rd_err, rd_res; static unsigned rd_got;
@@ -62,11 +63,11 @@ static int need_from(int l)
 /* INT1: lee el sector (antes de reconocerlo). Devuelve el destino si hace falta (*idx: su indice) */
 static u8 *sector(int *idx)
 {
-    u8 h[12], *d = 0; int k, i;
+    u8 h[12], *d = 0; int k, i, l;
     CD0 = 0; CD3 = 0x80;                    /* pedir los datos del sector */
     for (k = 0; k < 1000 && !(CD0 & 0x40); k++);
     for (k = 0; k < 12; k++) h[k] = CD2;    /* cabecera y subcabecera */
-    i = msf(h) - rd_lba;
+    l = msf(h); i = l - rd_lba;
     if (rd_on && i >= 0 && i < rd_n) {
         if (rd_buf) { if (!(rd_got & (1u << i))) d = rd_buf + i * 2048; }
         else if (i == rd_i) d = rd_dst ? rd_dst(i) : sbuf;
@@ -75,7 +76,8 @@ static u8 *sector(int *idx)
     CD0 = 0; CD3 = 0;                       /* soltar el resto */
     cd_dbg[0]++;
     if (rd_on && !d && i > rd_i && !rd_buf) cd_dbg[1]++;
-    if (i >= -8 && i <= rd_n + 8) drv_next = rd_lba + i + 1;   /* los de otra parte del disco (de antes de buscar) no cuentan */
+    if (seek_to >= 0 && (l == seek_to || ++seek_n > 2)) seek_to = -1;
+    if (seek_to < 0 && i >= -8 && i <= rd_n + 8) drv_next = l + 1;   /* los de antes de buscar no cuentan */
     t_ev = T1; *idx = i;
     return d;
 }
@@ -84,7 +86,7 @@ static void event(int t)
     if (t == 3) {                           /* primera respuesta */
         switch (cmd) {
         case 0x02: loc_at = cmd_arg; break;
-        case 0x06: drv = 1; drv_next = loc_at; loc_at = -1; t_ev = T1; lost = 0; break;
+        case 0x06: drv = 1; drv_next = seek_to = loc_at; seek_n = 0; loc_at = -1; t_ev = T1; lost = 0; break;
         case 0x03: drv = 2; loc_at = -1; break;
         case 0x09: case 0x0A: wait2 = cmd; break;
         case 0x0E: mode = cmd_arg; break;
@@ -106,6 +108,7 @@ static void event(int t)
         if (wait2 && !cmd) { wait2 = 0; drv = 0; }
         cmd = 0;
     }
+    if (drv != 1) seek_to = -1;
 }
 /* siguiente comando segun lo que se quiere */
 static void step(void)
@@ -132,7 +135,7 @@ static void step(void)
         if (loc_at != at) { setloc(at); return; }
         send(0x06, 0, 0, 0); return;
     }
-    if (drv == 1) { if (rd_res <= 0 || (u16)(T1 - t_done) >= GRACE) send(0x09, 0, 0, 0); return; }
+    if (drv == 1) { if (rd_res == 0 || rd_res == -1 || (u16)(T1 - t_done) >= GRACE) send(0x09, 0, 0, 0); return; }
     if (!drv && mode != want_mode) setmode(want_mode);
 }
 void cd_poll(void)
@@ -155,11 +158,11 @@ void cd_poll(void)
     }
     /* vigilancia: respuestas que no llegan */
     if ((cmd && (u16)(T1 - t_cmd) > SEG(2)) || (wait2 && (u16)(T1 - t_cmd) > SEG(2))) {
-        cd_dbg[3]++; cmd = 0; wait2 = 0; loc_at = -1;
+        cd_dbg[3]++; cmd = 0; wait2 = 0; loc_at = -1; seek_to = -1;
         if (drv != 2) drv = 1;              /* estado incierto: parar y volver a empezar */
         if (rd_on) rd_err++;
     }
-    if (rd_on && drv == 1 && (u16)(T1 - t_ev) > SEG(3)) { cd_dbg[3]++; rd_err++; lost = 1; t_ev = T1; }
+    if (rd_on && drv == 1 && (u16)(T1 - t_ev) > SEG(3)) { cd_dbg[3]++; rd_err++; lost = 1; t_ev = T1; seek_to = -1; }
     step();
 }
 int cd_busy(void) { return cmd || wait2 || rd_on || play_at >= 0 || stop_req || loc_req; }
@@ -187,7 +190,8 @@ int cd_stream_async(int lba, int n, u8 *(*dst)(int i))
 }
 int cd_read_pos(void) { return rd_i; }
 int cd_read_state(void) { return rd_on ? 0 : rd_res; }
-void cd_cancel(void) { rd_on = 0; rd_res = -1; }
+/* cancelada (-2): como al acabar, la unidad sigue leyendo un momento por si se pide otra cosa enseguida */
+void cd_cancel(void) { if (rd_on) t_done = T1; rd_on = 0; rd_res = -2; }
 static int wait_rd(void)
 {
     u16 t0 = T1; int s = 0;

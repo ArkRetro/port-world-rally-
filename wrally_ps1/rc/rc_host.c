@@ -67,16 +67,37 @@ static void dump(void)
 }
 
 /* botones por cuadro (como perf/psxprof): moneda en 600 (NOCOIN: sin ella), START en 800/1000/1200, acelerar desde
-   1300; STEER=n: direccion oscilante desde 1300 (n cuadros recto, derecha, recto, izquierda) para ver choques */
+   1300; STEER=n: direccion oscilante desde 1300 (n cuadros recto, derecha, recto, izquierda) para ver choques;
+   INPUTS=a-b:BOT,...: botones de mas en [a, b) (a-b%P/W: cuando (cuadro - a) % P < W) con las letras de psxprof:
+   C moneda, S START, X acelerar, x soltarlo, Q cuadrado (cambio de marcha), cruceta R L U D. P. ej. para elegir
+   rally en 'Choose a Rally': R en 1180-1190 Monte-Carlo, R tres veces Acropolis, L 1000 Lagos */
 static u16 inputs(long fr)
 {
-    static long st = -1;
+    static long st = -1; static int gear, qlast;
+    const char *q;
+    int qn = 0;
     u16 in = 0xFFEF;
     if (st < 0) st = getenv("STEER") ? atol(getenv("STEER")) : 0;
     if (fr >= 600 && fr < 606 && !getenv("NOCOIN")) in &= ~0x40;
     if ((fr >= 800 && fr < 810) || (fr >= 1000 && fr < 1010) || (fr >= 1200 && fr < 1210)) in &= ~0x4000;
     if (fr >= 1300) in &= ~0x20;
     if (st > 0 && fr >= 1300) { long ph = (fr - 1300) / st % 4; if (ph == 1) in &= ~0x04; else if (ph == 3) in &= ~0x08; }
+    for (q = getenv("INPUTS"); q && *q; ) {
+        long a = strtol(q, (char **)&q, 10), b = a + 1, P = 0, Wd = 0; const char *bt, *c;
+        if (*q == '-') b = strtol(q + 1, (char **)&q, 10);
+        if (*q == '%') { P = strtol(q + 1, (char **)&q, 10); if (*q == '/') Wd = strtol(q + 1, (char **)&q, 10); }
+        if (*q == ':') q++;
+        for (bt = q; *q && *q != ','; q++);
+        if (fr >= a && fr < b && (!P || (fr - a) % P < Wd)) for (c = bt; c < q; c++) switch (*c) {
+            case 'C': in &= ~0x40; break; case 'S': in &= ~0x4000; break; case 'X': in &= ~0x20; break; case 'x': in |= 0x20; break;
+            case 'Q': qn = 1; break; case 'L': in &= ~0x08; break; case 'R': in &= ~0x04; break;
+            case 'U': in &= ~0x01; break; case 'D': in &= ~0x02; break;
+            }
+        if (*q == ',') q++;
+    }
+    if (qn && !qlast) gear ^= 1;                    /* como el port: el cuadrado cambia de marcha al pulsarlo */
+    qlast = qn;
+    if (gear) in |= 0x10;
     return in;
 }
 

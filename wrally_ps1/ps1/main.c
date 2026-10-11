@@ -107,9 +107,24 @@ static void pk_send(int fy)
     dma_wait(); gpu_wait(); D2_MADR = (u32)hdr; D2_BCR = 0; D2_CHCR = 0x01000401;
 }
 static int vbl_count;
-/* espera al siguiente vblank (atendiendo al CD mientras tanto) y lo reconoce: la bandera que haya al volver a
-   entrar es que ya paso otro */
-static void vsync(void) { I_STAT = ~1u; while (!(I_STAT & 1)) cd_poll(); I_STAT = ~1u; vbl_count++; }
+#define T1 (*(volatile u16 *)0x1F801110)
+static u16 t_vbl;                                    /* temporizador 1 (lineas) en un vblank visto al momento */
+/* espera al siguiente vblank (atendiendo al CD mientras tanto, salvo cerca del vblank: leer un sector tarda hasta
+   ~11 lineas en psxprof, mas con un bus del CD lento, y retrasaria el cambio de bufer) y lo reconoce: la bandera que
+   haya al volver a entrar es que ya paso otro. Cerca: de 32 lineas antes a 2 despues de donde toca, 263 por cuadro
+   desde t_vbl, que se toma cuando la ultima vuelta del bucle no tardo (sin leer un sector: el vblank llego hace
+   menos de 2 lineas) */
+static void vsync(void)
+{
+    u16 tp = T1, ph; int late = 0;
+    I_STAT = ~1u;
+    while (!(I_STAT & 1)) {
+        tp = T1; ph = (u16)(tp - t_vbl) % 263; late = 0;
+        if (ph >= 2 && ph < 263 - 32) { cd_poll(); late = (u16)(T1 - tp) >= 2; }
+    }
+    if (!late) t_vbl = tp;
+    I_STAT = ~1u; vbl_count++;
+}
 
 /* paletas: 64 del juego (0x000-0x3FF) en 4 variantes: 0 opaca, 1 pen 0 transparente, 2 solo pens 1-7,
    3 solo pens 8-15 (para las prioridades por grupo de pens de la capa delantera). Se miran solo las que usa
@@ -179,27 +194,29 @@ static inline int tile_slot(u32 t)
     return (int)s;
 }
 /* huecos fijos: tiles de los paquetes del recorrido actual (o de los menus fuera de la carrera), que se sustituyen
-   los ultimos. min_cls: clase minima que queda en este cuadro (evita recorrer la cache entera en cada tile cuando
-   esta llena) */
-static u8 slot_pin[NTS / 8];
+   los ultimos; guardados: los de los paquetes que no tocan ahora pero si luego (los menus en carrera, el de
+   carrera fuera), que se sustituyen antes que los fijos pero despues de lo demas. min_cls: clase minima que queda
+   en este cuadro (evita recorrer la cache entera en cada tile cuando esta llena) */
+static u8 slot_pin[NTS / 8], slot_low[NTS / 8];
 #define PINNED(s) (slot_pin[(s) >> 3] & (1 << ((s) & 7)))
+#define LOW(s) (slot_low[(s) >> 3] & (1 << ((s) & 7)))
 static int min_cls, min_cls_frame = -1;
 static void cache_init(void)
 {
     int i;
     for (i = 0; i < 16384; i++) tslot[i] = 0xFFFF;
     for (i = 0; i < NTS; i++) { slot_tile[i] = 0xFFFF; slot_age[i] = 0; }
-    for (i = 0; i < NTS / 8; i++) slot_pin[i] = 0;
+    for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
 }
-/* orden de sustitucion: 0 libre o suelto sin usar en 2 s, 1 fijo sin usar en 10 s, 2 suelto, 3 fijo; nunca lo
-   usado en este cuadro o el anterior */
+/* orden de sustitucion: 0 libre o suelto sin usar en 2 s, 1 guardado sin usar en 2 s, 2 fijo sin usar en 10 s,
+   3 suelto o guardado, 4 fijo; nunca lo usado en este cuadro o el anterior */
 static inline int slot_cls(int h)
 {
     s32 age = frame_id - slot_age[h];
     if (slot_tile[h] == 0xFFFF) return 0;
     if (age < 2) return 9;
-    if (!PINNED(h)) return age >= 120 ? 0 : 2;
-    return age >= 600 ? 1 : 3;
+    if (!PINNED(h)) return age >= 120 ? (LOW(h) ? 1 : 0) : 3;
+    return age >= 600 ? 2 : 4;
 }
 #define NEXT(h) ((h) + 1 == NTS ? 0 : (h) + 1)
 /* desde la mano, el primero de clase <= min_cls, o el mejor; maxc: clase maxima. Los de clase 0 se buscan en toda
@@ -212,7 +229,7 @@ static int slot_alloc(int maxc)
     if (min_cls > maxc) return -1;
     if (!min_cls) {
         for (n = 0, h = hand; n < NTS; n++, h = NEXT(h)) {
-            if (!(h & 7) && slot_pin[h >> 3] == 0xFF) { n += 7; h += 7; continue; }
+            if (!(h & 7) && (slot_pin[h >> 3] | slot_low[h >> 3]) == 0xFF) { n += 7; h += 7; continue; }
             if (!PINNED(h) && !slot_cls(h)) { hand = NEXT(h); return h; }
         }
         min_cls = 1;
@@ -229,21 +246,21 @@ static int slot_alloc(int maxc)
     return bc <= maxc ? best : -1;
 }
 static void upload(int x, int y, int w, int h, const void *d);
-/* pone el tile t (si no estaba) y lo marca como usado; pin: queda fijo; pin < 0: de paso (solo en un hueco
-   libre o viejo, en carrera tambien de un fijo viejo, y como ya usado) */
+/* pone el tile t (si no estaba) y lo marca como usado; pin: 1 queda fijo, 2 guardado; pin < 0: de paso (solo en
+   un hueco libre o viejo, nunca de un fijo o guardado, y como ya usado) */
 static void tile_put(u32 t, const void *data, int pin)
 {
     int s = tslot[t];
     if (s == 0xFFFF) {
-        s = slot_alloc(pin < 0 ? in_race : 8);
+        s = slot_alloc(pin < 0 ? 0 : 8);
         if (s < 0) return;
         if (slot_tile[s] != 0xFFFF) tslot[slot_tile[s]] = 0xFFFF;
         slot_tile[s] = t; tslot[t] = s; tiles_up++;
-        slot_pin[s >> 3] &= ~(1 << (s & 7));
+        slot_pin[s >> 3] &= ~(1 << (s & 7)); slot_low[s >> 3] &= ~(1 << (s & 7));
         upload(TEX_X + ((s >> 8) % 10) * 64 + (s & 15) * 4, ((s >> 8) / 10) * 256 + ((s >> 4) & 15) * 16, 4, 16, data);
     } else if (pin < 0) return;
     slot_age[s] = pin < 0 ? frame_id - 2 : frame_id;
-    if (pin > 0) slot_pin[s >> 3] |= 1 << (s & 7);
+    if (pin > 0) (pin == 1 ? slot_pin : slot_low)[s >> 3] |= 1 << (s & 7);
 }
 static u8 cdbuf[16 * 2048] __attribute__((aligned(4)));
 /* ---- pantalla de carga: barra dibujada directamente en los dos bufers */
@@ -279,31 +296,36 @@ static void load_screen(int total)
     }
 }
 /* ---- paquetes: sectores de cabecera (u16 n, u16 tiles[n], ordenados; en los de recorrido el bit 15 marca los
-   tiles de su mapa) y luego los datos, 16 tiles por sector. hs = 0: cabecera aun sin leer */
-typedef struct { u16 *ids; int max, n, hs, pin, lba, ns; } pack_t;
+   tiles de su mapa) y luego los datos, 16 tiles por sector. hs: sectores de cabecera (0 mientras no se hayan leido
+   todos; hn los que son, hr los que ya se han leido en orden). pin: lo que llega queda fijo (1), guardado (2) o
+   suelto (0) */
+typedef struct { u16 *ids; int max, n, hs, pin, lba, ns, hn, hr; } pack_t;
 static u16 lvl_ids[4000], race_ids[2000], menu_ids[1280], menu2_ids[4000];
 static pack_t menu_pk = {menu_ids, 1280, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1};
 static pack_t lvl_pk = {lvl_ids, 4000, 0, 0, 0, -1}, race_pk = {race_ids, 2000, 0, 0, 0, -1};
 static u8 lvl_map[16384 / 8];                       /* tiles del mapa del recorrido de lvl_pk */
-/* los tiles del paquete que ya estan quedan fijos (use: y como recien usados) */
+/* los tiles del paquete que ya estan quedan fijos o guardados segun p->pin (use: y como recien usados) */
 static void pack_pin(pack_t *p, int use)
 {
     int i, s;
-    for (i = 0; i < p->n; i++) if ((s = tslot[p->ids[i]]) != 0xFFFF) { if (use) slot_age[s] = frame_id; slot_pin[s >> 3] |= 1 << (s & 7); }
+    u8 *m = p->pin == 2 ? slot_low : slot_pin;
+    for (i = 0; i < p->n; i++) if ((s = tslot[p->ids[i]]) != 0xFFFF) { if (use) slot_age[s] = frame_id; m[s >> 3] |= 1 << (s & 7); }
 }
 static void pack_sector(pack_t *p, int i, const u8 *d)
 {
     const u16 *w = (const u16 *)d;
     int k, j;
     if (!i) {
-        p->n = w[0] <= p->max ? w[0] : 0; p->hs = (2 + p->n * 2 + 2047) / 2048;
+        p->n = w[0] <= p->max ? w[0] : 0; p->hn = (2 + p->n * 2 + 2047) / 2048; p->hs = p->hr = 0;
         if (p == &lvl_pk) for (k = 0; k < 16384 / 32; k++) ((u32 *)lvl_map)[k] = 0;
     }
-    if (i < p->hs) {
+    if (i < p->hn) {
+        if (i != p->hr) return;
         for (k = i ? 0 : 1; k < 1024 && (j = i * 1024 + k - 1) < p->n; k++) {
             p->ids[j] = w[k] & 0x3FFF;
             if (w[k] & 0x8000) lvl_map[(w[k] >> 3) & 0x7FF] |= 1 << (w[k] & 7);
         }
+        if (++p->hr == p->hn) p->hs = p->hn;
         return;
     }
     if (!p->hs) return;
@@ -359,7 +381,7 @@ static pack_t *bgq[4]; static int nbg, bg_from, bg_jump = -1, bg_err;     /* bg_
 #define RING 16
 static u8 ring[RING * 2048] __attribute__((aligned(4)));
 static int bg_s0, bg_n, bg_got, ring_t;              /* lectura de bgq[0] desde bg_s0: sectores pedidos, llegados, tratados */
-static int cut_t0, cut_until;                        /* cuadro en que se corto el audio, y hasta el que no se vuelve a cortar */
+static int cut_end, cut_until;                       /* cuadro hasta el que el audio queda cortado como mucho, y hasta el que no se vuelve a cortar */
 static int skipped;                                  /* este cuadro no se ha dibujado (rc_vblank) */
 static u8 *ring_dst(int i) { return i - ring_t >= RING ? 0 : ring + (i & (RING - 1)) * 2048; }
 static void miss_clear(void)
@@ -373,13 +395,14 @@ static void miss_clear(void)
 static void bg_stop(void) { if (job_on == 2) { cd_cancel(); job_on = 0; } nbg = bg_n = bg_got = ring_t = 0; bg_jump = -1; }
 static void bg_add(pack_t *p) { if (p->lba >= 0 && p->ns > 0 && nbg < 4) { if (!nbg) bg_from = bg_err = 0; bgq[nbg++] = p; } }
 static void bg_next(void) { int i; for (i = 1; i < nbg; i++) bgq[i - 1] = bgq[i]; nbg--; bg_from = bg_err = 0; bg_jump = -1; }
-/* lo que toca leer de bgq[0]: [*a, *b). Sin la cabecera entera, todo lo que queda; si no, del primer sector con
-   algo que falte desde bg_from (o desde el principio, si despues no queda nada) al ultimo */
+/* lo que toca leer de bgq[0]: [*a, *b). Sin la cabecera, todo lo que queda; si no, del primer sector con algo que
+   falte desde bg_from (o desde el principio de los datos, si despues no queda nada) al ultimo */
 static void bg_range(int *a, int *b)
 {
     pack_t *p = bgq[0];
     int s, e;
-    if (!p->hs || bg_from < p->hs) { *a = bg_from; *b = p->ns; return; }
+    if (!p->hs) { *a = p->hr; *b = p->ns; return; }
+    if (bg_from < p->hs) bg_from = p->hs;
     for (s = bg_from; s < p->ns && !pack_need(p, s); s++);
     if (s == p->ns) for (s = p->hs; s < p->ns && !pack_need(p, s); s++);
     for (e = p->ns - 1; e >= s && !pack_need(p, e); e--);
@@ -442,10 +465,35 @@ static void cache_flush(void)
         if (bg_err > 4) bg_next();
     }
 }
+/* de los tiles que faltan, cuantos se ven (sin la columna y la fila de mas, que solo se piden de antemano) */
+static u8 vis_seen[16384 / 8]; static u16 vis_l[2 * 24 * 17 + 511];
+#define VIS(t) { u32 b_ = 1 << ((t) & 7); if (tslot[t] == 0xFFFF && !(vis_seen[(t) >> 3] & b_)) { vis_seen[(t) >> 3] |= b_; vis_l[n++] = (t); } }
+static int miss_vis(void)
+{
+    const u16 *vr = (const u16 *)rc_vregs;
+    const u32 *q = (const u32 *)(rc_spr + 4);
+    int L, i, j, k, n = 0;
+    for (L = 0; L < 2; L++) {
+        const u32 *m = (const u32 *)(rc_vram + (L ? 0x2000 : 0));
+        int sx = L ? (vr[3] + 8) & 1023 : (vr[1] + 12) & 1023, sy = L ? (vr[2] + 16) & 511 : (vr[0] + 16) & 511;
+        int nv = (W + 15 + (sx & 15)) >> 4, nf = (H + 15 + (sy & 15)) >> 4;
+        for (j = 0; j < nf; j++) {
+            const u32 *row = m + (((sy >> 4) + j) & 31) * 64;
+            for (i = 0; i < nv; i++) { u32 t = row[((sx >> 4) + i) & 63] & 0x3FFF; VIS(t) }
+        }
+    }
+    for (k = 0; k < 511; k++, q += 2) {                 /* los sprites que pide sprites() */
+        u32 t = q[2] & 0x3FFF;
+        if ((((q[1] >> 16) - 8) & 0x3FF) >= W + 15 || ((q[0] >> 16) & 0xFF) == 0xF0) continue;
+        VIS(t)
+    }
+    for (i = 0; i < n; i++) vis_seen[vis_l[i] >> 3] = 0;
+    return n;
+}
 static void cache_load(void)
 {
     int snd_cut(void), snd_cut_on(void); void snd_resume(void);
-    int i, j, s0 = 0x7FFF, s1, urg, q, ms;
+    int i, j, s0 = 0x7FFF, s1, urg, q, ms, au, nv;
     for (i = j = 0; i < nmiss; i++) {                   /* fuera los que ya estan y los que no se han pedido en este cuadro */
         u16 t = miss_list[i], b = 1 << (t & 7);
         if (tslot[t] != 0xFFFF || (!skipped && !(miss_now[t >> 3] & b))) { miss_mark[t >> 3] &= ~b; continue; }
@@ -456,27 +504,35 @@ static void cache_load(void)
     nmiss = j;
     if (!nmiss) miss_t0 = -1; else if (miss_t0 < 0) miss_t0 = frame_id;
     if (nmiss && job_st && job_i >= job_n) job_st = 0;  /* los vecinos que quedaban, ya no */
-    if (job_on == 1) {                                  /* cdbuf ocupado; si una frase nueva la para, cortarla */
-        if (cd_audio() && !snd_cut_on() && frame_id - job_f >= 6 && snd_cut()) cut_t0 = frame_id;
+    if (job_on == 1) {          /* cdbuf ocupado; si una frase nueva la para, cortarla (si aun no suena, ya) */
+        if (cd_audio() && !snd_cut_on() && (!cd_playing() || frame_id - job_f >= 6) && snd_cut()) cut_end = frame_id + 180;
         return;
     }
     if (job_st) return;
-    if (snd_cut_on() && (!nmiss || frame_id - cut_t0 > 180)) { snd_resume(); cut_until = frame_id + 120; }   /* seguir la frase */
+    /* seguir la frase cuando ya no falte nada ni queden paquetes de fondo (como mucho 3 s cortada); en carrera no se
+       vuelve a cortar en 2 s, fuera en 0,5 s */
+    if (snd_cut_on() && ((!nmiss && !nbg) || frame_id > cut_end)) { snd_resume(); cut_until = frame_id + (in_race ? 120 : 30); }
+    /* fuera de la carrera una frase que aun no suena espera a los paquetes de fondo (los menus tras una carrera, como
+       mucho 4 s): mejor empezar un poco tarde que cortarla luego */
+    if (nbg && !in_race && cd_audio() && !cd_playing() && !snd_cut_on() && frame_id >= cut_until && snd_cut()) cut_end = frame_id + 240;
     if (nmiss && tiles_lba >= 0) {
-        /* urgente: muchos, o desde hace rato (en carrera antes) */
-        urg = nmiss >= 16 || frame_id - miss_t0 >= (in_race ? 6 : 15);
+        /* urgente: muchos en pantalla, o desde hace rato (en carrera antes). Con una frase sonando solo se mira lo
+           que se ve (para cortarla) */
+        au = cd_audio() && !snd_cut_on();
+        nv = au && frame_id >= cut_until ? miss_vis() : nmiss;
+        urg = nv >= 16 || (nv && frame_id - miss_t0 >= (in_race ? 6 : 10));
         /* si alguno llega en la lectura de fondo en curso, seguir con ella; si no, si los trae un paquete de fondo,
            que se lea ese empezando por ellos; si no, de TILES.BIN */
         if (job_on == 2 && bg_ahead()) {
-            if (urg && cd_audio() && !snd_cut_on() && frame_id >= cut_until && snd_cut()) cut_t0 = frame_id;
+            if (urg && au && frame_id >= cut_until && snd_cut()) cut_end = frame_id + 180;
             return;
         }
         q = bg_covers(&ms);
         if (job_on == 2) { bg_got = cd_read_pos(); cd_cancel(); job_on = 0; if (!q) bg_jump = ms; }
         if (q >= 0 && bg_n) return;                     /* antes, tratar lo que ya llego */
-        if (cd_audio() && !snd_cut_on()) {
+        if (au) {
             if (!urg || frame_id < cut_until || !snd_cut()) return;
-            cut_t0 = frame_id;
+            cut_end = frame_id + 180;
         }
         if (q >= 0) {
             if (q) { pack_t *t = bgq[0]; bgq[0] = bgq[q]; bgq[q] = t; bg_err = 0; }
@@ -496,20 +552,21 @@ static void cache_load(void)
     }
     if (nbg && !job_on && !bg_n && !cd_audio()) bg_start();
 }
-/* ---- carrera: entrar (paquetes del recorrido y de carrera fijos; lo demas pasa a ser lo primero que se sustituye)
-   y salir (se sueltan y se vuelven a leer de fondo los de menus) */
+/* ---- carrera: entrar (paquetes del recorrido y de carrera fijos, los de menus guardados: se sustituyen antes que
+   los fijos y despues de lo demas, y asi al salir hay menos que volver a leer) y salir (los de menus fijos y se
+   vuelven a leer de fondo; el de carrera guardado) */
 static void level_load(int k)
 {
     int i, hs, fast, need, same = k == cur_level && lvl_pk.hs;
-    for (i = 0; i < NTS / 8; i++) slot_pin[i] = 0;
+    for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
     for (i = 0; i < NTS; i++) slot_age[i] = frame_id - 1000;
     min_cls_frame = -1; hand = 0;
-    lvl_pk.pin = race_pk.pin = 1; menu_pk.pin = menu2_pk.pin = 0;
+    lvl_pk.pin = race_pk.pin = 1; menu_pk.pin = menu2_pk.pin = 2;
+    pack_pin(&menu_pk, 0); pack_pin(&menu2_pk, 0);
     if (!race_pk.hs && race_pk.lba >= 0) {              /* la cabecera de carrera aun no se habia leido de fondo */
         hs = race_pk.ns < 2 ? race_pk.ns : 2;
         if (cd_read(race_pk.lba, hs, cdbuf, 0) == 0) for (i = 0; i < hs; i++) pack_sector(&race_pk, i, cdbuf + i * 2048);
     }
-    pack_pin(&menu_pk, 0);
     pack_pin(&race_pk, 1);
     if (same) pack_pin(&lvl_pk, 1);
     need = pack_missing(&race_pk) + (same ? pack_missing(&lvl_pk) : level_sec[k]);
@@ -525,7 +582,7 @@ static void level_load(int k)
         }
         pack_runs(&race_pk, race_pk.hs, fast);
     }
-    lvl_pk.pin = race_pk.pin = 0;
+    lvl_pk.pin = 0; race_pk.pin = 2;
     loading = 0;
 }
 static void t1_skip(void);
@@ -544,9 +601,11 @@ static void race_exit(void)
 {
     int i;
     in_race = 0; race_cnt = 0;
-    for (i = 0; i < NTS / 8; i++) slot_pin[i] = 0;
+    for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
+    for (i = 0; i < NTS; i++) if (frame_id - slot_age[i] >= 2) slot_age[i] = frame_id - 1000;   /* lo de la carrera, viejo */
+    min_cls_frame = -1;
     menu_pk.pin = menu2_pk.pin = 1;
-    pack_pin(&menu_pk, 0); pack_pin(&menu2_pk, 0);
+    pack_pin(&menu_pk, 0); pack_pin(&menu2_pk, 0); pack_pin(&race_pk, 0);
     if (job_on == 1) {                                  /* los tiles que se estaban leyendo ya no son de esta pantalla */
         cd_cancel(); job_on = 0;
         for (i = 0; i < job_n; i++) miss_mark[job_t[i] >> 3] = 0;
@@ -608,7 +667,7 @@ static void boot_load(void)
     if (cd_find("TRACKS.BIN", &b_trk, &sz)) b_trk = -1;
     if (cd_find("SNDFX.BIN", &b_fx, &sz)) b_fx = -1; else b_nfx = (sz + 2047) / 2048;
     pk_find(&menu_pk, "MENU.BIN"); pk_find(&menu2_pk, "MENU2.BIN");
-    menu_pk.pin = menu2_pk.pin = 1;
+    menu_pk.pin = menu2_pk.pin = 1; race_pk.pin = 2;
     snd_init();
     load_screen(1 + b_nfx + menu_pk.ns);
     GP1 = 0x05000000; GP1 = 0x03000000;          /* pantalla encendida con la barra de carga */

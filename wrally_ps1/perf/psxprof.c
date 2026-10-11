@@ -1,8 +1,10 @@
 /* psxprof: emulador PS1 minimo para perfilar el port de World Rally (EXE sin BIOS, todo por sondeo).
    Modelo de tiempos aproximado (constantes de DuckStation): CPU 33,8688 MHz, cache de instrucciones de 4 KB,
    lecturas de RAM de 6 ciclos, GPU con coste por pixel, CD con busqueda/lectura/pausa, mando SIO0.
-   Uso: psxprof imagen.cue wr2.elf.bin(PS-EXE) cuadros_juego [salida_dir]
-   Entradas (botones) segun el cuadro del juego (llamadas a rc_vblank), como rc_host. */
+   Uso: psxprof imagen.cue wr2.elf.bin(PS-EXE) wr2.nm cuadros_juego [salida_dir]
+   Entradas (botones) segun el cuadro del juego (llamadas a rc_vblank), como rc_host (ver inputs_for).
+   MISSLOG=1: falta.txt con los tiles que faltan en cada cuadro; WATCH=var,...: cambios de esas variables.
+   CD_VIEJOS=n: tras un ReadN sin Pause llegan aun n sectores de la posicion anterior (psxprof no los da si no). */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,6 +70,8 @@ typedef struct { u64 t; u8 irq; u8 resp[8]; u8 n; int kind; } cdev_t;
 #define K_SECTOR 1
 static cdev_t cdq[16]; static int cdqn;
 static int cd_reading, cd_playing; static u64 cd_next_sector;
+/* CD_VIEJOS=n: tras un ReadN sin Pause llegan aun n sectores de donde se leia (como en la unidad real) */
+static u32 cd_old_lba; static int cd_old_n; static u64 cd_old_t;
 static u8 cd_sector_buf[2352]; static int cd_sector_ready;
 static u64 cd_busy_until;
 /* velocidad del motor (cambiarla tarda, como en DuckStation: 0,6 s a doble y 1 s a normal) y audio CD-DA:
@@ -134,6 +138,9 @@ static FILE *framef;
 static u64 last_vblank_call;
 static long shot_every = 0, prof_from_frame = 0;
 static u32 sym_ram, sym_vram, sym_pal, sym_spr, sym_vregs;
+/* cambio de bufer (GP1 05): lineas desde que empezo el vblank (si se pasa, la parte de arriba sale rota) */
+static u64 vbl_set_cyc; static long swap_hist[64]; static double swap_max; static long swap_max_fr;
+static u32 minsp = 0x1FFFFF; static long minsp_fr;
 static u32 fnv(u32 h, u32 a, u32 n) { u32 i; a &= 0x1FFFFF; for (i = 0; i < n; i++) { h ^= ram[(a + i) & 0x1FFFFF]; h *= 16777619u; } return h; }
 static u32 state_hash(void) { u32 h = 2166136261u; if (!sym_ram) return 0; h = fnv(h, sym_ram, 0x4000); h = fnv(h, sym_vram, 0x4000); h = fnv(h, sym_pal, 0x4000); h = fnv(h, sym_spr, 0x1000); h = fnv(h, sym_vregs, 0x10); return h; }
 
@@ -154,14 +161,21 @@ static void eventf(const char *fmt, ...)
    COIN2=N      moneda en N y START en N+200/400/600 (segunda partida, o la primera tras el attract con NOCOIN1:
                 entonces X desde N+700)
    STEER=1      direccion oscilante desde 1300 (90 cuadros recto, derecha, recto, izquierda): choques y derrapes;
-                STEER=n (n > 1): con n cuadros por tramo */
+                STEER=n (n > 1): con n cuadros por tramo
+   INPUTS=a-b:BOT,...  botones de mas en los cuadros [a, b) (a sola: solo ese cuadro; a-b%P/W: solo cuando
+                (cuadro - a) % P < W): C moneda, S START, X acelerar, x soltar el acelerador, Q cuadrado, cruceta
+                R L U D. Elegir rally en 'Choose a Rally': R en 1180-1190 Monte-Carlo, R tres veces Acropolis,
+                L 1000 Lagos (lo mismo que rc_host)
+   RND=semilla  direccion al azar desde RNDFROM (1300) en tramos de 5 a 120 cuadros */
 static u16 inputs_for(long fr)
 {
-    static int init, nc1, steer; static long c2 = -1;
+    static int init, nc1, steer; static long c2 = -1, seed, nxt; static int cur;
+    const char *q;
     u16 in = 0xFFFF;   /* botones del mando, activos a 0 */
     if (!init) {
         init = 1; nc1 = getenv("NOCOIN1") != 0; if (getenv("COIN2")) c2 = atol(getenv("COIN2"));
         if (getenv("STEER")) { steer = atoi(getenv("STEER")); if (steer <= 1) steer = 90; }
+        seed = getenv("RND") ? atol(getenv("RND")) : 0;
     }
     if (!nc1) {
         if (fr >= 600 && fr < 606) in &= ~0x0001;                   /* SELECT: moneda */
@@ -177,6 +191,23 @@ static u16 inputs_for(long fr)
     if (steer && fr >= 1300) {   /* direccion: oscilar para que el coche no vaya recto siempre */
         long ph = ((fr - 1300) / steer) % 4;
         if (ph == 1) in &= ~0x0020; else if (ph == 3) in &= ~0x0080;
+    }
+    for (q = getenv("INPUTS"); q && *q; ) {
+        long a = strtol(q, (char **)&q, 10), b = a + 1, P = 0, Wd = 0; const char *bt, *c;
+        if (*q == '-') b = strtol(q + 1, (char **)&q, 10);
+        if (*q == '%') { P = strtol(q + 1, (char **)&q, 10); if (*q == '/') Wd = strtol(q + 1, (char **)&q, 10); }
+        if (*q == ':') q++;
+        for (bt = q; *q && *q != ','; q++);
+        if (fr >= a && fr < b && (!P || (fr - a) % P < Wd)) for (c = bt; c < q; c++) switch (*c) {
+            case 'C': in &= ~0x0001; break; case 'S': in &= ~0x0008; break; case 'X': in &= ~0x4000; break;
+            case 'Q': in &= ~0x8000; break; case 'L': in &= ~0x0080; break; case 'R': in &= ~0x0020; break;
+            case 'U': in &= ~0x0010; break; case 'D': in &= ~0x0040; break; case 'x': in |= 0x4000; break;
+            }
+        if (*q == ',') q++;
+    }
+    if (seed && fr >= (getenv("RNDFROM") ? atol(getenv("RNDFROM")) : 1300)) {
+        if (fr >= nxt) { seed = seed * 1103515245 + 12345; cur = (seed >> 16) % 3; seed = seed * 1103515245 + 12345; nxt = fr + 5 + ((seed >> 16) & 0x7FFF) % 116; }
+        if (cur == 1) in &= ~0x0020; else if (cur == 2) in &= ~0x0080;
     }
     return in;
 }
@@ -354,7 +385,9 @@ static void gp1_write(u32 v)
     case 0x00: gpu_fn = 0; gpu_upload_left = 0; disp_on = 0; break;
     case 0x01: gpu_fn = 0; gpu_upload_left = 0; break;
     case 0x03: disp_on = !(v & 1); break;
-    case 0x05: disp_x = v & 0x3FF; disp_y = (v >> 10) & 0x1FF; break;
+    case 0x05: disp_x = v & 0x3FF; disp_y = (v >> 10) & 0x1FF;
+        { double l = (double)(cyc - vbl_set_cyc) / LINE_CYC; int b = l < 0 ? 0 : l >= 63 ? 63 : (int)l; swap_hist[b]++; if (l > swap_max) { swap_max = l; swap_max_fr = game_frame; }
+          if (l >= 4 && game_frame > 1) eventf("BUFER_TARDE lineas %.1f", l); } break;
     case 0x08: disp_mode = v & 0xFF; break;
     default: break;
     }
@@ -400,7 +433,7 @@ static void wr32ram(u32 a, u32 v) { a &= 0x1FFFFC; ram[a] = v; ram[a + 1] = v >>
 static u32 rd16ram(u32 a) { a &= 0x1FFFFE; return ram[a] | (ram[a + 1] << 8); }
 /* tiles que se ven y no estan en la cache de VRAM del port (tslot[t] == 0xFFFF) al mandar la lista del cuadro:
    capas (mapa visible de las dos) y sprites visibles, sin repetir. Para ver cuanto faltan y cuanto tardan */
-static u32 sym_tslot, sym_loading;
+static u32 sym_tslot, sym_loading, sym_in_race; static FILE *misslog;   /* MISSLOG=1: falta.txt con cada tile que falta */
 static int miss_lay, miss_spr;
 static void count_missing(void)
 {
@@ -415,7 +448,7 @@ static void count_missing(void)
             u32 t = rd32ram(m + ((((sy >> 4) + j) & 31) * 64 + (((sx >> 4) + i) & 63)) * 4) & 0x3FFF;
             if (seen[t]) continue;
             seen[t] = 1; lst[n++] = t;
-            if (rd16ram(sym_tslot + t * 2) == 0xFFFF) nl++;
+            if (rd16ram(sym_tslot + t * 2) == 0xFFFF) { nl++; if (misslog) fprintf(misslog, "%ld L %u\n", game_frame, t); }
         }
     }
     for (i = 0; i < 511; i++) {
@@ -425,7 +458,7 @@ static void count_missing(void)
         if (sx >= 368 || sy >= 240 || sx <= -16 || sy <= -16 || seen[t] == 2) continue;
         if (!seen[t]) lst[n++] = t;
         seen[t] = 2;
-        if (rd16ram(sym_tslot + t * 2) == 0xFFFF) ns++;
+        if (rd16ram(sym_tslot + t * 2) == 0xFFFF) { ns++; if (misslog) fprintf(misslog, "%ld S %u\n", game_frame, t); }
     }
     for (i = 0; i < n; i++) seen[lst[i]] = 0;
     miss_lay = nl; miss_spr = ns;
@@ -549,6 +582,7 @@ static void cd_command(u8 c)
         if (cd_playing) eventf("CDDA_STOP read lba %u", cd_cur);
         cd_playing = 0;
         cd_push(ack, 3, r, 1, K_RESP);
+        if (cd_reading && getenv("CD_VIEJOS")) { cd_old_lba = cd_cur; cd_old_n = atoi(getenv("CD_VIEJOS")); cd_old_t = cyc + ack + 1000; }
         cd_reading = 1; cd_cur = cd_loc;
         t0 = cyc + ack > cd_speed_ready ? cyc + ack : cd_speed_ready;
         cd_next_sector = t0 + st;
@@ -556,6 +590,7 @@ static void cd_command(u8 c)
         break; }
     case 0x09: {                                                                    /* Pause */
         u64 pt = (cd_reading || cd_playing) ? 9 * 225792ULL : 7400;
+        cd_old_n = 0;
         if (pt < 1000000 && (cd_reading || cd_playing)) pt = 1000000;
         if (cd_playing) { cd_cur = cd_play_pos(); eventf("CDDA_STOP pause lba %u", cd_cur); }
         cd_reading = 0; cd_playing = 0;
@@ -596,6 +631,15 @@ static void cd_command(u8 c)
 static void cd_tick(void)
 {
     int i;
+    if (cd_old_n && cd_reading && cyc >= cd_old_t && cyc < cd_next_sector && (cd_if & 7) == 0 && cdqn < 15) {
+        u8 r[1]; r[0] = cd_stat | 0x20;
+        cd_read_sector(cd_old_lba);
+        if (cd_dsize == 0x924) memcpy(cd_data, cd_sector_buf + 12, 0x924); else memcpy(cd_data, cd_sector_buf + 24, 2048);
+        cd_dlen = cd_dsize; cd_dpos = cd_dsize;
+        cd_push(0, 1, r, 1, K_SECTOR);
+        eventf("CD_SECTOR_VIEJO lba %u", cd_old_lba);
+        cd_old_lba++; cd_old_n--; cd_old_t = cyc + (cd_2x ? 225792 : 451584);
+    }
     /* entregar el siguiente evento si la bandera esta libre */
     if (cd_reading && cyc >= cd_next_sector) {
         u8 r[1]; r[0] = cd_stat | 0x20;
@@ -1013,13 +1057,15 @@ int main(int argc, char **argv)
     sym_vblank = sym_lookup(nmfile, "rc_vblank");
     if (!sym_vblank) { fprintf(stderr, "sin rc_vblank en %s\n", nmfile); return 1; }
     sym_ram = sym_lookup(nmfile, "rc_ram"); sym_vram = sym_lookup(nmfile, "rc_vram"); sym_pal = sym_lookup(nmfile, "rc_pal"); sym_spr = sym_lookup(nmfile, "rc_spr"); sym_vregs = sym_lookup(nmfile, "rc_vregs");
-    sym_tslot = sym_lookup(nmfile, "tslot"); sym_loading = sym_lookup(nmfile, "loading");
+    sym_tslot = sym_lookup(nmfile, "tslot"); sym_loading = sym_lookup(nmfile, "loading"); sym_in_race = sym_lookup(nmfile, "in_race");
+    if (getenv("MISSLOG")) { char fn[600]; snprintf(fn, sizeof fn, "%s/falta.txt", outdir); misslog = fopen(fn, "w"); }
     prof = calloc(0x80000, 8); prof_n = calloc(0x80000, 8);
     { char fn[600]; snprintf(fn, sizeof fn, "%s/eventos.txt", outdir); evf = fopen(fn, "w");
       snprintf(fn, sizeof fn, "%s/cuadros.csv", outdir); framef = fopen(fn, "w"); }
     /* imagen: huella de lo que se ve al empezar el cuadro; falta_capa/falta_spr: tiles visibles que no estaban en la
-       cache al mandar la ultima lista; carga: hubo pantalla de carga (variable loading del port) desde el anterior */
-    if (framef) fprintf(framef, "cuadro_juego,ciclo,vblank,ciclos_desde_anterior,gpu_ticks,estado,lista,gpu_fin,imagen,falta_capa,falta_spr,carga\n");
+       cache al mandar la ultima lista; carga: hubo pantalla de carga (variable loading del port) desde el anterior;
+       carrera: variable in_race del port */
+    if (framef) fprintf(framef, "cuadro_juego,ciclo,vblank,ciclos_desde_anterior,gpu_ticks,estado,lista,gpu_fin,imagen,falta_capa,falta_spr,carga,carrera\n");
     sp = 0x801FFFF0;
     R[29] = sp; R[30] = sp;
     PC = pc0; NPC = pc0 + 4;
@@ -1031,8 +1077,15 @@ int main(int argc, char **argv)
     while (!halted) {
         if ((PC & 0x1FFFFFFF) == (sym_vblank & 0x1FFFFFFF) && PC == sym_vblank) {
             u64 d = cyc - last_vblank_call;
-            if (framef) fprintf(framef, "%ld,%llu,%llu,%llu,%llu,%08x,%llu,%llu,%08x,%d,%d,%d\n", game_frame, (unsigned long long)cyc, (unsigned long long)vbl_count, (unsigned long long)d, (unsigned long long)gpu_ticks_total, state_hash(),
-                                (unsigned long long)ll_start, (unsigned long long)ll_end, disp_hash(), miss_lay, miss_spr, was_loading);
+            if (framef) fprintf(framef, "%ld,%llu,%llu,%llu,%llu,%08x,%llu,%llu,%08x,%d,%d,%d,%d\n", game_frame, (unsigned long long)cyc, (unsigned long long)vbl_count, (unsigned long long)d, (unsigned long long)gpu_ticks_total, state_hash(),
+                                (unsigned long long)ll_start, (unsigned long long)ll_end, disp_hash(), miss_lay, miss_spr, was_loading, sym_in_race ? (int)rd32ram(sym_in_race) : 0);
+            {   /* WATCH=var1,var2: cambios de esas variables del port (32 bits) en falta.txt */
+                static int nw = -1; static u32 wa[8], wv[8]; static char wn[8][64]; int k;
+                if (nw < 0) { const char *q = getenv("WATCH"); nw = 0;
+                    while (q && *q && nw < 8) { k = 0; while (*q && *q != ',' && k < 63) wn[nw][k++] = *q++; wn[nw][k] = 0; if (*q == ',') q++;
+                        wa[nw] = sym_lookup(nmfile, wn[nw]); wv[nw] = 0xDEADBEEF; nw++; } }
+                for (k = 0; k < nw; k++) if (wa[k] && misslog) { u32 v = rd32ram(wa[k]); if (v != wv[k]) { wv[k] = v; fprintf(misslog, "%ld W %s %d\n", game_frame, wn[k], (int)v); } }
+            }
             was_loading = 0;
             last_vblank_call = cyc;
             game_frame++;
@@ -1042,7 +1095,8 @@ int main(int argc, char **argv)
             if (game_frame >= max_game_frames) break;
         }
         step();
-        while (cyc >= next_vbl) { I_STAT |= 1; next_vbl += frame_cyc; vbl_count++; }
+        if ((R[29] & 0x1FFFFF) < minsp && (R[29] >> 24) == 0x80) { minsp = R[29] & 0x1FFFFF; minsp_fr = game_frame; }
+        while (cyc >= next_vbl) { I_STAT |= 1; vbl_set_cyc = next_vbl; next_vbl += frame_cyc; vbl_count++; }
         if (cyc >= next_cd) { cd_tick(); next_cd = cyc + 64; if (sym_loading && rd32ram(sym_loading)) was_loading = 1; }
     }
     {
@@ -1053,6 +1107,10 @@ int main(int argc, char **argv)
     }
     if (evf) fclose(evf);
     if (framef) fclose(framef);
+    {   int b; fprintf(stderr, "cambio de bufer (lineas tras el vblank): max %.1f en el cuadro %ld; histograma:", swap_max, swap_max_fr);
+        for (b = 0; b < 64; b++) if (swap_hist[b]) fprintf(stderr, " %d:%ld", b, swap_hist[b]);
+        fprintf(stderr, "\npila: sp minimo 0x%06x en el cuadro %ld\n", minsp, minsp_fr); }
+    if (misslog) fclose(misslog);
     fprintf(stderr, "perfil desde ciclo %llu (%.2f s)\n", (unsigned long long)prof_from_cyc, (cyc - prof_from_cyc) / CLK);
     fprintf(stderr, "SPU: %ld teclas pisadas antes de que su voz las viera\n", spu_perdidas);
     fprintf(stderr, "fin: %ld cuadros de juego, %llu vblanks, %.2f s emulados, %.1f cuadros de juego/s\n", game_frame, (unsigned long long)vbl_count,
