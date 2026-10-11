@@ -39,10 +39,15 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - La lista de la GPU se hace en una sola pasada por las capas y los sprites (un cubo por paso de dibujo).
   - Si un cuadro llega tarde, el siguiente no se dibuja y el juego sigue a 60 Hz (`FRAMESKIP`, `-DFRAMESKIP=0` lo quita).
 - `ps1/cd.c`: lector de CD por sondeo (datos y CD-DA).
+  - Caché: en carrera quedan fijos los paquetes del recorrido y de carrera; al salir (el fondo deja de ser el mapa) se vuelven a leer de fondo los de menús.
+  - Lo que falte se pide a `TILES.BIN` sin esperar; si suena una frase de CD-DA y faltan muchos tiles, se corta y luego sigue.
 - `ps1/snd.c`: el OKI M6295 sobre la SPU (frases cortas) y sobre pistas de audio (frases largas).
 - `ps1/gen2.py`: genera `TILES.BIN`, los paquetes `LEVELnn.BIN` y `RACE.BIN`.
 - `snd/sndps1.py`, `snd/psxadpcm.c`: muestras a PS-ADPCM y pistas WAV.
 - `ps1/mkiso.py`: genera las dos imágenes.
+- `perf/`: medidas con el emulador `psxprof` (modelo de tiempos aproximado).
+  - `medir.sh`: ritmo y perfil del recorrido estándar.
+  - `escenarios.sh`: segunda partida, attract largo, dirección oscilante; compara cuadro a cuadro con la versión original (`BASE`) y cuenta los tiles que faltan en pantalla.
 
 ## Mandos
 | Botón | Acción |

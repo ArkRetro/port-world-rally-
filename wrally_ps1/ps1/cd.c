@@ -1,8 +1,10 @@
 /* Lector de CD-ROM por sondeo (sin interrupciones de la CPU ni BIOS): comandos directos al controlador y una
-   maquina de estados que avanza cd_poll(). En las cargas se llama en bucle; en la partida dos veces por cuadro y
-   nunca espera. Los sectores se piden de 0x924 bytes para ver la cabecera (MSF) de cada uno: si se pierde alguno
-   se vuelve a buscar. El audio CD-DA va a velocidad normal y con pausa automatica al final de la pista (INT4);
-   los datos a doble velocidad solo en las cargas grandes (cambiar de velocidad tarda casi un segundo). */
+   maquina de estados que avanza cd_poll(). En las cargas se llama en bucle; en la partida varias veces por cuadro
+   (tambien mientras se espera el vblank) y nunca espera. Los sectores se piden de 0x924 bytes para ver la
+   cabecera (MSF) de cada uno: si se pierde alguno se vuelve a buscar. El audio CD-DA va a velocidad normal y con
+   pausa automatica al final de la pista (INT4); los datos a doble velocidad solo en las cargas grandes (cambiar
+   de velocidad tarda casi un segundo). Al acabar una lectura la unidad sigue leyendo un momento (sin pausa) por si
+   llega otra que empiece un poco mas adelante. */
 #include "cd.h"
 typedef unsigned char u8; typedef unsigned short u16;
 #define CD0 (*(volatile u8 *)0x1F801800)
@@ -13,17 +15,18 @@ typedef unsigned char u8; typedef unsigned short u16;
 #define M_AUDIO 0x22                        /* velocidad normal, sectores de 0x924, pausa al final de la pista */
 #define M_FAST 0xA2                         /* lo mismo a doble velocidad */
 #define SEG(s) ((s) * 15750)                /* lineas por segundo */
+#define GRACE 526                           /* lineas (2 cuadros) que se sigue leyendo al acabar una lectura */
 
 int cd_dbg[8];                              /* 0 sectores, 1 perdidos, 2 errores, 3 vigilancia */
 static u8 resp[16]; static int nresp;
 static int drv;                             /* unidad: 0 parada, 1 leyendo, 2 audio */
 static int cmd, cmd_arg, wait2;             /* comando sin primera respuesta (INT3); Pause sin segunda (INT2) */
-static u16 t_cmd, t_ev;                     /* lineas: envio del comando, ultimo sector */
+static u16 t_cmd, t_ev, t_done;             /* lineas: envio del comando, ultimo sector, fin de la ultima lectura */
 static int mode = -1, want_mode = M_AUDIO, loc_at = -1, drv_next = -1, lost;
-/* peticion de lectura de los sectores lba..lba+n-1: a buf (como mucho 32, en cualquier orden: rd_got) o a cb
-   (en orden). rd_i: el primero que falta */
+/* peticion de lectura de los sectores lba..lba+n-1: a buf (como mucho 32, en cualquier orden: rd_got), o en orden
+   a cb (por sbuf) o a donde diga dst (0: aun no hay sitio, se volvera a buscar). rd_i: el primero que falta */
 static int rd_on, rd_lba, rd_n, rd_i, rd_fast, rd_err, rd_res; static unsigned rd_got;
-static u8 *rd_buf; static void (*rd_cb)(int i, const unsigned char *d);
+static u8 *rd_buf; static void (*rd_cb)(int i, const unsigned char *d); static u8 *(*rd_dst)(int i);
 static u8 sbuf[2048] __attribute__((aligned(4))); static int sbuf_dir = -1;   /* sbuf tiene el directorio */
 /* audio */
 static int play_at = -1, stop_req, loc_req, loc_res = -1;
@@ -64,12 +67,16 @@ static u8 *sector(int *idx)
     for (k = 0; k < 1000 && !(CD0 & 0x40); k++);
     for (k = 0; k < 12; k++) h[k] = CD2;    /* cabecera y subcabecera */
     i = msf(h) - rd_lba;
-    if (rd_on && i >= 0 && i < rd_n && (rd_buf ? !(rd_got & (1u << i)) : i == rd_i)) d = rd_buf ? rd_buf + i * 2048 : sbuf;
+    if (rd_on && i >= 0 && i < rd_n) {
+        if (rd_buf) { if (!(rd_got & (1u << i))) d = rd_buf + i * 2048; }
+        else if (i == rd_i) d = rd_dst ? rd_dst(i) : sbuf;
+    }
     if (d) for (k = 0; k < 2048; k += 4) { d[k] = CD2; d[k + 1] = CD2; d[k + 2] = CD2; d[k + 3] = CD2; }
     CD0 = 0; CD3 = 0;                       /* soltar el resto */
     cd_dbg[0]++;
     if (rd_on && !d && i > rd_i && !rd_buf) cd_dbg[1]++;
-    drv_next = rd_lba + i + 1; t_ev = T1; *idx = i;
+    if (i >= -8 && i <= rd_n + 8) drv_next = rd_lba + i + 1;   /* los de otra parte del disco (de antes de buscar) no cuentan */
+    t_ev = T1; *idx = i;
     return d;
 }
 static void event(int t)
@@ -120,12 +127,12 @@ static void step(void)
         if (drv == 1) {
             int nx = drv_next >= 0 ? need_from(drv_next) : -1;
             if (!lost && nx >= 0 && nx - drv_next <= 8) return;   /* lo que falta aun llega */
-            lost = 0; send(0x09, 0, 0, 0); return;              /* se ha perdido alguno: volver a buscar */
+            lost = 0;                                           /* si no, volver a buscar (sin parar: SetLoc y ReadN) */
         }
         if (loc_at != at) { setloc(at); return; }
         send(0x06, 0, 0, 0); return;
     }
-    if (drv == 1) { send(0x09, 0, 0, 0); return; }
+    if (drv == 1) { if (rd_res <= 0 || (u16)(T1 - t_done) >= GRACE) send(0x09, 0, 0, 0); return; }
     if (!drv && mode != want_mode) setmode(want_mode);
 }
 void cd_poll(void)
@@ -142,7 +149,7 @@ void cd_poll(void)
         if (t != 1) event(t);
         else if (d) {
             if (rd_buf) { rd_got |= 1u << i; while (rd_i < rd_n && (rd_got & (1u << rd_i))) rd_i++; } else rd_i++;
-            if (rd_i == rd_n) { rd_on = 0; rd_res = 1; }
+            if (rd_i == rd_n) { rd_on = 0; rd_res = 1; t_done = T1; }
             if (rd_cb) rd_cb(i, d);
         }
     }
@@ -158,19 +165,27 @@ void cd_poll(void)
 int cd_busy(void) { return cmd || wait2 || rd_on || play_at >= 0 || stop_req || loc_req; }
 static int pending(void) { return cd_busy() || drv == 1 || (!drv && mode != want_mode); }
 /* ---- lectura */
-static void rd_start(int lba, int n, void *buf, void (*cb)(int, const unsigned char *), int fast)
+static void rd_start(int lba, int n, void *buf, void (*cb)(int, const unsigned char *), u8 *(*dst)(int), int fast)
 {
-    if (!buf) sbuf_dir = -1;
-    rd_lba = lba; rd_n = n; rd_i = 0; rd_buf = buf; rd_cb = cb; rd_fast = fast; rd_err = 0; rd_res = 0; rd_got = 0;
+    if (!buf && !dst) sbuf_dir = -1;
+    rd_lba = lba; rd_n = n; rd_i = 0; rd_buf = buf; rd_cb = cb; rd_dst = dst; rd_fast = fast; rd_err = 0; rd_res = 0; rd_got = 0;
     rd_on = n > 0; if (!rd_on) rd_res = 1;
     lost = 0;
 }
 int cd_read_async(int lba, int n, void *buf)
 {
-    if (rd_on) return -1;
-    rd_start(lba, n, buf, 0, 0);
+    if (rd_on || n > 32) return -1;
+    rd_start(lba, n, buf, 0, 0, 0);
     return 0;
 }
+/* en orden y sin esperar: el sector i va a dst(i); cd_read_pos() dice cuantos han llegado */
+int cd_stream_async(int lba, int n, u8 *(*dst)(int i))
+{
+    if (rd_on) return -1;
+    rd_start(lba, n, 0, 0, dst, 0);
+    return 0;
+}
+int cd_read_pos(void) { return rd_i; }
 int cd_read_state(void) { return rd_on ? 0 : rd_res; }
 void cd_cancel(void) { rd_on = 0; rd_res = -1; }
 static int wait_rd(void)
@@ -182,9 +197,16 @@ static int wait_rd(void)
     }
     return rd_res > 0 ? 0 : -1;
 }
-/* lee n sectores seguidos (sin pausas ni busquedas entre ellos): a buf, o sector a sector a cb. Para el audio */
-int cd_read(int lba, int n, void *buf, int fast) { cd_cancel(); if (cd_audio()) cd_stop(); rd_start(lba, n, buf, 0, fast); return wait_rd(); }
-int cd_stream(int lba, int n, void (*cb)(int i, const unsigned char *d), int fast) { cd_cancel(); if (cd_audio()) cd_stop(); rd_start(lba, n, 0, cb, fast); return wait_rd(); }
+/* lee n sectores seguidos (sin pausas ni busquedas entre ellos): a buf (de 32 en 32), o sector a sector a cb.
+   Para el audio */
+int cd_read(int lba, int n, void *buf, int fast)
+{
+    int k, r = 0;
+    cd_cancel(); if (cd_audio()) cd_stop();
+    for (k = 0; k < n && !r; k += 32) { rd_start(lba + k, n - k < 32 ? n - k : 32, (u8 *)buf + k * 2048, 0, 0, fast); r = wait_rd(); }
+    return r;
+}
+int cd_stream(int lba, int n, void (*cb)(int i, const unsigned char *d), int fast) { cd_cancel(); if (cd_audio()) cd_stop(); rd_start(lba, n, 0, cb, 0, fast); return wait_rd(); }
 /* esperar a que no quede nada pendiente (y la unidad parada si no hay audio) */
 void cd_sync(void)
 {
@@ -247,6 +269,11 @@ void cd_volume(int v)
 void cd_play(int lba) { play_at = lba; stop_req = 0; cd_ended = 0; }
 void cd_stop(void) { play_at = -1; stop_req = 1; }
 int cd_audio(void) { return drv == 2 || play_at >= 0 || cmd == 0x03; }
+int cd_playing(void) { return drv == 2; }
+/* posicion del audio sin esperar: cd_loc_start() pide GetlocP y cd_loc_get() da -2 mientras no llega la
+   respuesta, luego la posicion (-1 si no suena o no contesta) */
+void cd_loc_start(void) { loc_res = -1; loc_req = drv == 2; }
+int cd_loc_get(void) { return loc_req ? -2 : loc_res; }
 /* posicion del audio (sincrona, GetlocP); -1 si no suena */
 int cd_where(void)
 {
