@@ -757,7 +757,6 @@ void rc_vblank(void)
         u16 t = T1;
         used = (u16)(t - lastv);
     }
-    pad = joy_read();                    /* el mando antes de esperar: si sobra tiempo no cuesta nada */
     dma_wait();                          /* el cuadro anterior ya esta dibujado */
 #if FRAMESKIP
     if ((I_STAT & 1) && !skipped) draw = 0;  /* ya paso el vblank: este cuadro no se dibuja (nunca dos seguidos) */
@@ -769,6 +768,7 @@ void rc_vblank(void)
         fb ^= 1;
     } else I_STAT = ~1u;
     GP1 = 0x03000000;                    /* pantalla encendida (tambien si el primero se salta: barra de carga) */
+    pad = joy_read();                    /* el mando justo tras el vblank: la entrada mas reciente para el 68000 */
     t_rend0 = T1;
     /* la MCU da una vuelta a su bucle principal por cuadro (contestacion 0xA53E, etc.) */
     mcu_run_c(&mcu);

@@ -638,6 +638,8 @@ for _a in ADDRS:
         if _j.op == 'bcc' and _j.target == _a: IDLE.add(NEXT[_a])
 
 HN, HS = 4096, 17
+# la clave del par de escrituras a la VRAM (RC_VLK en rc_rt.h) guarda 18 bits del pc
+assert ADDRS[-1] < 0x40000, 'codigo 68k por encima de 0x40000: ampliar RC_VLK en rc_rt.h'
 def main(out):
     live_in, live_out = liveness()
     labs, taken = labels()
@@ -656,8 +658,11 @@ def main(out):
         h = (sw(t) ^ (sw(t) >> HS)) & (HN - 1)
         while h in slots: h += 1
         slots[h] = t
-    w('    static const rc_lab ht[%d] = {\n' % (max(slots) + 2))
+    # al menos RC_HN + 1 entradas y la ultima vacia: el sondeo de una clave que no esta (despacho erroneo) acaba
+    # dentro de la tabla. Si ht[0] queda libre lleva un centinela: rts con vuelta a 0 no salta a NULL sino a rc_bad
+    w('    static const rc_lab ht[%d] = {\n' % (max(max(slots), HN - 1) + 2))
     for h in sorted(slots): w('        [%d] = {0x%xu, &&L_%06x},\n' % (h, sw(slots[h]), slots[h]))
+    if 0 not in slots: w('        [0] = {0, &&rc_k0},\n')
     w('    };\n')
     w('    RC_ENTER\n    DISPATCH(start_pc);\n')
     # ciclos sumados por bloque basico (al principio del bloque)
@@ -678,6 +683,7 @@ def main(out):
         if a in IDLE: w(' IDLEHINT(%s);' % COND_EXPR[i.cond])
         w(' /* %r */\n' % i)
         for l in lines: w('    ' + l + '\n')
+    w('rc_k0:\n    dpc = 0; goto bad_dispatch;\n')
     w('    RC_EXIT_CODE\n}\n')
     f.close()
     print('instr', len(ADDRS), 'etiquetas', len(labs), 'despacho', len(taken), 'esperas', ' '.join('%x' % x for x in sorted(IDLE)), file=sys.stderr)

@@ -98,7 +98,7 @@ static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; REGREC32(
 extern u16 rc_gsw[4][2][256], rc_gfin[2][256];
 /* par abierto: rc_vl_key = pc de la instruccion y palabra que lo cerraria (0xFFFFFFFF = ninguno) */
 extern u32 rc_vl_key, rc_vram_writes; extern u16 rc_vl_enc, rc_vl_dec;
-#define RC_VLK(pc, off) (((pc) << 14) | (off))
+#define RC_VLK(pc, off) (((pc) << 14) | (off))     /* pc < 0x40000 (lo comprueba rc68.py) */
 #define GB(x, n) (((x) >> (n)) & 1)
 #define GC_P1 0x1f
 #define GC_P2 0x522a
@@ -196,6 +196,9 @@ static __attribute__((noinline)) void rc_vwl(u32 a, u32 v, u32 pc)
     rc_vce *c = &rc_vc[(v ^ (v >> 16) ^ (v >> 7)) & (RC_VCN - 1)];
     if (rc_vl_key != RC_VLK(pc, o >> 1) && c->k == v) {
         u32 d = c->d;
+#ifndef RC_GREGS
+        rc_vram_writes += 2;
+#endif
         rc_vl_key = 0xFFFFFFFF;
         MW(rc_vram, o) = d >> 16; MW(rc_vram, o + 2) = d;
     } else rc_vwl_s(a, v, pc);
