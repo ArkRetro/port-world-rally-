@@ -3,6 +3,9 @@
  - cd/TILES.BIN: los 16384 tiles 16x16 de 4 bits para la VRAM de la PS1, 128 bytes cada uno (16 por sector)
  - cd/LEVELnn.BIN: tiles de los mapas de cada uno de los 12 recorridos
  - cd/RACE.BIN: sprites y tiles sueltos que se usan en carrera (observados en el banco de pruebas)
+ - cd/MENU.BIN: lo que se ve fuera de la carrera en el camino con moneda (arranque, menus): se lee al arrancar
+ - cd/MENU2.BIN: lo demas de la demostracion, por orden de aparicion (sin lo que dura uno o dos cuadros); se lee
+   de fondo despues de arrancar, como RACE.BIN. Los tres tienen que caber en la cache de VRAM
    Paquete: sectores de cabecera (u16 n, u16 tiles[n]) y luego los datos de los tiles, 16 por sector."""
 import numpy as np, os, sys, struct, collections
 import sys, os
@@ -40,22 +43,34 @@ extra = [set() for _ in range(12)]
 # carrera: sprites y extras observados en el banco de pruebas (cuadros de carrera)
 race = set()
 lsp = [set() for _ in range(12)]
+menu = {}
 for fn in (work('tl_nc.bin'), work('tl_co.bin')):
+    menu[fn] = mc = collections.Counter(); menu[fn + 'f'] = first = {}
     if not os.path.exists(fn): continue
     r = np.fromfile(fn, '<u4').reshape(-1, 3)
     byf = collections.defaultdict(list)
     for f, t, l in r: byf[int(f)].append((int(t), int(l)))
-    for f, lst in byf.items():
+    for f, lst in sorted(byf.items()):
         l = lst[0][1]
-        if l not in R: continue
-        k = R.index(l); lay = [t for t, _ in lst if t < 16384]
-        if not lay or sum(1 for t in lay if t in lv[k]) / len(lay) < 0.6: continue
+        k = R.index(l) if l in R else -1
+        lay = [t for t, _ in lst if t < 16384]
+        if k < 0 or not lay or sum(1 for t in lay if t in lv[k]) / len(lay) < 0.6:
+            for t in set(t & 0x3FFF for t, _ in lst): mc[t] += 1; first.setdefault(t, f)
+            continue
         for t, _ in lst:
             if t >= 16384: lsp[k].add(t & 0x3FFF)
             elif t not in lv[k]: extra[k].add(t)
 cnt = collections.Counter(t for s_ in lsp for t in s_)
 race = set(t for t, c in cnt.items() if c >= 2)
+assert len(race) <= 2000, len(race)          # race_ids[] en main.c
 for k in range(12):
     n = pack('LEVEL%02d.BIN' % k, (lv[k] | extra[k] | lsp[k]) - race)
+    assert n[0] <= 4000, n                   # packids[] en main.c
     print('LEVEL%02d' % k, n, 'total con RACE', n[0] + len(race))
 print('RACE', pack('RACE.BIN', race))
+NTS = 5120
+co, nc, ncf = menu[work('tl_co.bin')], menu[work('tl_nc.bin')], menu[work('tl_nc.bin') + 'f']
+m1 = set(t for t, _ in co.most_common(1280))
+m2 = sorted((t for t in nc if t not in m1 and t not in race and nc[t] >= 3), key=lambda t: ncf[t])
+m2 = m2[:max(0, min(4000, NTS - 200 - len(race | m1)))]
+print('MENU', pack('MENU.BIN', m1), 'MENU2', pack('MENU2.BIN', m2))
