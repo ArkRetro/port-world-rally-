@@ -13,7 +13,8 @@ echo "== 2. traduccion 68000 -> C y 8051 -> C"
 echo "== 3. tablas de sonido y codificador PS-ADPCM"
 (cd snd && python3 okitab.py && gcc -O2 -o psxadpcm psxadpcm.c)
 echo "== 4. banco de pruebas en el PC: tiles usados (paquetes) en attract, partida, partidas en cada rally hasta el"
-echo "      game over y los records, y con la direccion oscilante (choques y derrapes); regiones de memoria (recompilador)"
+echo "      game over y los records, con la direccion oscilante (choques y derrapes) y con el piloto automatico (los tres"
+echo "      tramos de cada rally hasta la meta); regiones de memoria (recompilador)"
 (cd rc && gcc -O1 -c -w -DMCS51_XOR=1 -Dmcs51_run=mcs51_run_sw -Dmcs51_reset=mcs51_reset_sw mcs51.c -o mcs51_sw.o \
   && gcc -O1 -c -w -DMCS51_XOR=1 mcu_rc.c -o mcu_rc_sw.o \
   && gcc -O1 -w -DBLKLOG -DRCREG -I. -o rc_host rc_host.c rc_mem.c ../snd/oki_tab.c wr_rc.c mcu_rc_sw.o gcrypt.c mcs51_sw.o \
@@ -22,7 +23,8 @@ echo "      game over y los records, y con la direccion oscilante (choques y der
   && WR_WORK=../work BLKLOG=../work/tl_co.bin RCREG=../work/reg_co.bin ./rc_host 8000 ../work/run \
   && for s in 45 90 140; do STEER=$s WR_WORK=../work BLKLOG=../work/tl_s$s.bin RCREG=../work/reg_s$s.bin ./rc_host 9000 ../work/run || exit 1; done \
   && for r in 1:1180-1190:R 5: 7:1170-1173:R,1179-1182:R,1188-1191:R 9:1180-1190:L; do \
-       INPUTS=${r#*:} WR_WORK=../work BLKLOG=../work/tl_r${r%%:*}.bin RCREG=/dev/null ./rc_host 12500 ../work/run || exit 1; done \
+       INPUTS=${r#*:} WR_WORK=../work BLKLOG=../work/tl_r${r%%:*}.bin RCREG=/dev/null ./rc_host 12500 ../work/run || exit 1; \
+       INPUTS=${r#*:} AUTOP=1900-24000 WR_WORK=../work BLKLOG=../work/tl_a${r%%:*}.bin RCREG=/dev/null ./rc_host 24000 ../work/run || exit 1; done \
   && python3 regiones.py ../work/reg_*.bin && python3 rc68.py wr_rc.c)
 echo "== 5. graficos y sonido para el CD"
 (cd ps1 && python3 gen2.py)

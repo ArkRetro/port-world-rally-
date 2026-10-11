@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include "rc_rt.h"
 /* ficheros de trabajo en $WR_WORK (por defecto ../work) */
 static const char *WORKF(const char *n) { static char b[4][512]; static int k; const char *w = getenv("WR_WORK"); k = (k + 1) & 3; snprintf(b[k], 512, "%s/%s", w ? w : "../work", n); return b[k]; }
@@ -19,6 +21,7 @@ void mcs51_reset_sw(mcs51_t *c); long mcs51_run_sw(mcs51_t *c, unsigned short st
 u16 gdecrypt(u16 ep, u16 dp, u16 e);
 static u16 io_in = 0xFFEF, io_dsw = 0xFFDF;
 static long frame, nframes = 3000;
+static int ap_child = -1;                   /* piloto automatico: candidato que prueba este proceso hijo */
 static const char *outdir = ".";
 
 static void load(const char *fn, u8 *d, int n)
@@ -43,8 +46,8 @@ static u16 io_r(u32 a)
 }
 void rc_mem_init(void); void rc_set_io(u16 dsw, u16 in); void rc_oki_frame(void);
 static FILE *sndlog;
-void snd_play(int ch, int phrase, int bank, int att) { if (sndlog) fprintf(sndlog, "%ld P %d %d %d %d\n", frame, ch, phrase, bank, att); }
-void snd_stop(int mask) { if (sndlog) fprintf(sndlog, "%ld S %d\n", frame, mask); }
+void snd_play(int ch, int phrase, int bank, int att) { if (sndlog && ap_child < 0) fprintf(sndlog, "%ld P %d %d %d %d\n", frame, ch, phrase, bank, att); }
+void snd_stop(int mask) { if (sndlog && ap_child < 0) fprintf(sndlog, "%ld S %d\n", frame, mask); }
 extern u32 rc_vram_writes; static unsigned long mcu_steps;
 void mcu_run_c(mcs51_t *c);
 void rc_mcu(void)
@@ -262,13 +265,63 @@ static void tiledump(void)
 #ifdef PROFCK
 extern long prof_frame, prof_lo, prof_hi; extern unsigned int pc_hist[]; extern unsigned long fr_cnt[];
 #endif
+/* piloto automatico (AUTOP=a-b): de a a b, cada AP_STEP cuadros (10) se prueba cada candidato (direccion a un lado,
+   al otro, a ratos o nada) en un proceso hijo durante AP_LOOK cuadros (150) y se sigue con el que mas avanza en el
+   tramo (palabra 0xFEC1CC del juego). Asi las partidas registradas llegan a la meta y pasan por los tres tramos de
+   cada rally (y los siguientes), que con la direccion fija no se ven. AP_V=1: el avance por stderr; al acabar, el
+   guion de botones (INPUTS) que ha seguido, para repetirlo en psxprof */
+static const char *ap_pat[] = {"", "L", "R", "Lh", "Rh", "Lq", "Rq"};
+#define AP_NC 7
+static int ap_cur, ap_fd; static long ap_a = -2, ap_b, ap_step, ap_look, ap_eval, ap_from, ap_t0;
+static char ap_out[1 << 16]; static int ap_outn;
+static int ap_progress(void) { return *(u16 *)(rc_ram + 0x1CC); }
+static void ap_apply(int c, long fr, long t0)
+{
+    const char *p = ap_pat[c];
+    if (*p && (!p[1] || (fr - t0) % 8 < (p[1] == 'h' ? 4 : 2))) io_in &= p[0] == 'L' ? ~0x08 : ~0x04;
+}
+static void ap_log(long to)
+{
+    const char *p = ap_pat[ap_cur];
+    if (*p && ap_outn < (int)sizeof ap_out - 64)
+        ap_outn += sprintf(ap_out + ap_outn, "%ld-%ld%s:%c,", ap_from, to, p[1] == 'h' ? "%8/4" : p[1] == 'q' ? "%8/2" : "", p[0]);
+}
+static void autop(void)
+{
+    if (ap_a == -2) {
+        const char *q = getenv("AUTOP");
+        ap_a = q ? atol(q) : -1; ap_b = q && strchr(q, '-') ? atol(strchr(q, '-') + 1) : -1; ap_from = ap_a;
+        ap_step = getenv("AP_STEP") ? atol(getenv("AP_STEP")) : 10; ap_look = getenv("AP_LOOK") ? atol(getenv("AP_LOOK")) : 150;
+    }
+    if (ap_a < 0) return;
+    if (ap_child >= 0) {                        /* hijo: su candidato hasta ap_eval, y entonces cuenta cuanto ha avanzado */
+        if (frame >= ap_eval) { int v = ap_progress(); if (write(ap_fd, &v, sizeof v) < 0) {} _exit(0); }
+        ap_apply(ap_child, frame, ap_t0); return;
+    }
+    if (frame >= ap_a && frame < ap_b && frame + ap_look < nframes && (frame - ap_a) % ap_step == 0) {
+        int c, best = ap_cur, bv = -1, fd[AP_NC], v;
+        fflush(NULL);
+        for (c = 0; c < AP_NC; c++) {
+            int pp[2];
+            if (pipe(pp)) { perror("pipe"); exit(1); }
+            if (!fork()) { close(pp[0]); ap_child = c; ap_fd = pp[1]; ap_eval = frame + ap_look; ap_t0 = frame; ap_apply(c, frame, frame); return; }
+            close(pp[1]); fd[c] = pp[0];
+        }
+        for (c = 0; c < AP_NC; c++) { v = -1; if (read(fd[c], &v, sizeof v) < 0) v = -1; close(fd[c]); if (v > bv || (v == bv && c == ap_cur)) { bv = v; best = c; } }
+        while (wait(0) > 0);
+        if (best != ap_cur) { ap_log(frame); ap_cur = best; ap_from = frame; }
+        if (getenv("AP_V")) fprintf(stderr, "cuadro %ld avance %d: %s\n", frame, ap_progress(), ap_pat[best]);
+    }
+    if (frame == ap_b) { ap_log(frame); ap_cur = 0; if (ap_outn) ap_out[ap_outn - 1] = 0; fprintf(stderr, "INPUTS=%s\n", ap_out); }
+    if (frame >= ap_a && frame < ap_b) ap_apply(ap_cur, frame, ap_from);
+}
 void rc_vblank(void)
 {
 #ifdef BLKLOG
-    blklog();
+    if (ap_child < 0) blklog();
 #endif
     rc_oki_frame();
-    if (getenv("DUMPK") && frame % atol(getenv("DUMPK")) == 0) {
+    if (getenv("DUMPK") && frame % atol(getenv("DUMPK")) == 0 && ap_child < 0) {
         static char d[600]; const char *o = outdir; sprintf(d, "%s/f%05ld", o, frame);
         mkdir(d, 0755); outdir = d; dump(); outdir = o; }
     if (!sndlog && getenv("SNDLOG")) sndlog = fopen(getenv("SNDLOG"), "w");
@@ -290,7 +343,7 @@ void rc_vblank(void)
     cmp_mem();
 #endif
     frame++;
-    io_in = inputs(frame); rc_set_io(io_dsw, io_in);
+    io_in = inputs(frame); autop(); rc_set_io(io_dsw, io_in);
     if (getenv("V") && frame % 100 == 0) { fprintf(stderr, "cuadro %ld vram %u mcu %lu\n", frame, rc_vram_writes, mcu_steps); }
     rc_vram_writes = 0; mcu_steps = 0;
     if (frame >= nframes) {
