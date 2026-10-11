@@ -30,8 +30,9 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - Modelo del OKI.
 - `rc/rc_host.c`: banco de pruebas en el PC.
   - Con `-DRCDBG` y Musashi (MIT, no incluido) compara instrucción a instrucción.
-  - Con `-DBLKLOG` registra los tiles usados por cuadro (attract, una partida en cada rally hasta los records, y con la dirección oscilante).
+  - Con `-DBLKLOG` registra los tiles usados por cuadro (attract, una partida en cada rally hasta los records, con la dirección oscilante y con el piloto automático).
   - Botones por cuadro como `psxprof`: `NOCOIN`, `STEER` e `INPUTS` (guion de botones; p. ej. elegir rally).
+  - Piloto automático (`AUTOP=a-b`): cada 10 cuadros prueba en procesos hijos girar a un lado, al otro, a ratos o nada durante 150 cuadros y sigue con lo que más avanza en el tramo. Así las partidas llegan a la meta de los tres tramos de cada rally (y siguen con el rally siguiente). Al acabar escribe el guion `INPUTS` que ha seguido, que `psxprof` repite igual con `-DOKI_CUADROS`.
 - `ps1/main.c`: vídeo y mando.
   - Vídeo a 368×240 y 60 Hz.
   - Caché de tiles en VRAM.
@@ -41,10 +42,12 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - La lista de la GPU se hace en una sola pasada por las capas y los sprites (un cubo por paso de dibujo).
   - Si un cuadro llega tarde, el siguiente no se dibuja y el juego sigue a 60 Hz (`FRAMESKIP`, `-DFRAMESKIP=0` lo quita).
 - `ps1/cd.c`: lector de CD por sondeo (datos y CD-DA).
-  - Caché: en carrera quedan fijos los paquetes del recorrido y de carrera, y los de menús guardados (se sustituyen antes que los fijos y después de lo demás); al salir (el fondo deja de ser el mapa) los de menús vuelven a ser fijos y se leen de fondo, y el de carrera queda guardado.
+  - Caché: en carrera quedan fijos los paquetes del recorrido y de carrera, y los de menús guardados (se sustituyen antes que los fijos y después de lo demás); al salir (el fondo deja de ser el mapa) los de menús vuelven a ser fijos y se leen de fondo, y el de carrera queda guardado. En carrera lo fijo no se sustituye nunca (antes, lo que no se usaba en 10 s sí, y en la meta faltaban trozos).
+  - Los tiles iguales a otro del paquete (o del de carrera) no llevan datos: en carrera usan el hueco de ese (de 250 a 380 por recorrido).
+  - En carrera, con el CD libre, se leen de antemano los sectores de `TILES.BIN` de al lado de los sprites del coche y del haz de los faros que se ven: sus poses van de 16 en 16 tiles en el orden en que se suceden.
   - Lo que falte se pide a `TILES.BIN` sin esperar; si suena una frase de CD-DA y faltan muchos tiles en pantalla, se corta y luego sigue. Fuera de la carrera, una frase que aún no suena espera a que se lean los menús (como mucho 4 s).
 - `ps1/snd.c`: el OKI M6295 sobre la SPU (frases cortas) y sobre pistas de audio (frases largas).
-- `ps1/gen2.py`: genera `TILES.BIN` y los paquetes `LEVELnn.BIN`, `RACE.BIN`, `MENU.BIN` y `MENU2.BIN` a partir de los registros del banco de pruebas.
+- `ps1/gen2.py`: genera `TILES.BIN` y los paquetes `LEVELnn.BIN`, `RACE.BIN`, `MENU.BIN` y `MENU2.BIN` a partir de los registros del banco de pruebas. Cada recorrido se llena hasta la capacidad con los sprites del jugador (poses del coche, marcador y, de noche, el haz de los faros), los más vistos primero.
 - `snd/sndps1.py`, `snd/psxadpcm.c`: muestras a PS-ADPCM y pistas WAV.
 - `ps1/mkiso.py`: genera las dos imágenes.
 - `perf/`: medidas con el emulador `psxprof` (modelo de tiempos aproximado).

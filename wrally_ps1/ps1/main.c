@@ -209,14 +209,15 @@ static void cache_init(void)
     for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
 }
 /* orden de sustitucion: 0 libre o suelto sin usar en 2 s, 1 guardado sin usar en 2 s, 2 fijo sin usar en 10 s,
-   3 suelto o guardado, 4 fijo; nunca lo usado en este cuadro o el anterior */
+   3 suelto o guardado, 4 fijo; nunca lo usado en este cuadro o el anterior, ni en carrera lo fijo (el mapa del
+   recorrido y los sprites del coche: el arco de la meta, p. ej., solo sale al principio y al final del tramo) */
 static inline int slot_cls(int h)
 {
     s32 age = frame_id - slot_age[h];
     if (slot_tile[h] == 0xFFFF) return 0;
     if (age < 2) return 9;
     if (!PINNED(h)) return age >= 120 ? (LOW(h) ? 1 : 0) : 3;
-    return age >= 600 ? 2 : 4;
+    return in_race ? 9 : age >= 600 ? 2 : 4;
 }
 #define NEXT(h) ((h) + 1 == NTS ? 0 : (h) + 1)
 /* desde la mano, el primero de clase <= min_cls, o el mejor; maxc: clase maxima. Los de clase 0 se buscan en toda
@@ -247,12 +248,12 @@ static int slot_alloc(int maxc)
 }
 static void upload(int x, int y, int w, int h, const void *d);
 /* pone el tile t (si no estaba) y lo marca como usado; pin: 1 queda fijo, 2 guardado; pin < 0: de paso (solo en
-   un hueco libre o viejo, nunca de un fijo o guardado, y como ya usado) */
+   un hueco libre o viejo, nunca de un fijo, ni de un guardado salvo en carrera, y como ya usado) */
 static void tile_put(u32 t, const void *data, int pin)
 {
     int s = tslot[t];
     if (s == 0xFFFF) {
-        s = slot_alloc(pin < 0 ? 0 : 8);
+        s = slot_alloc(pin < 0 ? in_race : 8);
         if (s < 0) return;
         if (slot_tile[s] != 0xFFFF) tslot[slot_tile[s]] = 0xFFFF;
         slot_tile[s] = t; tslot[t] = s; tiles_up++;
@@ -295,14 +296,15 @@ static void load_screen(int total)
             if (lfont[n] & (1 << (14 - k))) gp_rect(120 + n * 16 + (k % 3) * 4, b * 256 + 110 + (k / 3) * 4, 4, 4, 0x40C0FF);
     }
 }
-/* ---- paquetes: sectores de cabecera (u16 n, u16 tiles[n], ordenados; en los de recorrido el bit 15 marca los
-   tiles de su mapa) y luego los datos, 16 tiles por sector. hs: sectores de cabecera (0 mientras no se hayan leido
+/* ---- paquetes: sectores de cabecera (u16 n, u16 na, u16 tiles[n], ordenados, y na pares (tile, igual a): tiles sin
+   datos porque son iguales a otro del paquete o del de carrera; en los de recorrido el bit 15 marca los tiles de su
+   mapa) y luego los datos de los n, 16 tiles por sector. hs: sectores de cabecera (0 mientras no se hayan leido
    todos; hn los que son, hr los que ya se han leido en orden). pin: lo que llega queda fijo (1), guardado (2) o
    suelto (0) */
-typedef struct { u16 *ids; int max, n, hs, pin, lba, ns, hn, hr; } pack_t;
-static u16 lvl_ids[4000], race_ids[2000], menu_ids[1280], menu2_ids[4000];
+typedef struct { u16 *ids; int max, n, hs, pin, lba, ns, hn, hr; u16 *al; int maxal, nal; } pack_t;
+static u16 lvl_ids[4000], race_ids[2000], menu_ids[1280], menu2_ids[4000], lvl_al[768 * 2], race_al[256 * 2];
 static pack_t menu_pk = {menu_ids, 1280, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1};
-static pack_t lvl_pk = {lvl_ids, 4000, 0, 0, 0, -1}, race_pk = {race_ids, 2000, 0, 0, 0, -1};
+static pack_t lvl_pk = {lvl_ids, 4000, 0, 0, 0, -1, 0, 0, 0, lvl_al, 768}, race_pk = {race_ids, 2000, 0, 0, 0, -1, 0, 0, 0, race_al, 256};
 static u8 lvl_map[16384 / 8];                       /* tiles del mapa del recorrido de lvl_pk */
 /* los tiles del paquete que ya estan quedan fijos o guardados segun p->pin (use: y como recien usados) */
 static void pack_pin(pack_t *p, int use)
@@ -316,14 +318,17 @@ static void pack_sector(pack_t *p, int i, const u8 *d)
     const u16 *w = (const u16 *)d;
     int k, j;
     if (!i) {
-        p->n = w[0] <= p->max ? w[0] : 0; p->hn = (2 + p->n * 2 + 2047) / 2048; p->hs = p->hr = 0;
+        p->hn = (4 + w[0] * 2 + w[1] * 4 + 2047) / 2048; p->hs = p->hr = 0;
+        p->n = w[0] <= p->max ? w[0] : 0; p->nal = w[1] <= p->maxal ? w[1] : 0;
         if (p == &lvl_pk) for (k = 0; k < 16384 / 32; k++) ((u32 *)lvl_map)[k] = 0;
     }
     if (i < p->hn) {
         if (i != p->hr) return;
-        for (k = i ? 0 : 1; k < 1024 && (j = i * 1024 + k - 1) < p->n; k++) {
-            p->ids[j] = w[k] & 0x3FFF;
-            if (w[k] & 0x8000) lvl_map[(w[k] >> 3) & 0x7FF] |= 1 << (w[k] & 7);
+        for (k = i ? 0 : 2; k < 1024; k++) {
+            if ((j = i * 1024 + k - 2) < p->n) p->ids[j] = w[k] & 0x3FFF;
+            else if ((j -= p->n) < p->nal * 2) p->al[j] = w[k];
+            else break;
+            if ((w[k] & 0x8000) && j >= 0) lvl_map[(w[k] >> 3) & 0x7FF] |= 1 << (w[k] & 7);
         }
         if (++p->hr == p->hn) p->hs = p->hn;
         return;
@@ -332,6 +337,16 @@ static void pack_sector(pack_t *p, int i, const u8 *d)
     if (i == p->hs && p->pin) pack_pin(p, 1);          /* los que ya estan no se sustituyen durante la carga */
     i = (i - p->hs) * 16;
     for (k = 0; k < 16 && i + k < p->n; k++) tile_put(p->ids[i + k], d + k * 128, p->pin);
+}
+/* tiles iguales a otro (alias): en carrera usan el hueco de ese, que es fijo y no se sustituye; al salir se quitan */
+static void alias_set(pack_t *p, int on)
+{
+    int i;
+    for (i = 0; i < p->nal; i++) {
+        u16 d = p->al[i * 2] & 0x3FFF, s = tslot[p->al[i * 2 + 1] & 0x3FFF];
+        if (on) { if (tslot[d] == 0xFFFF && s != 0xFFFF) tslot[d] = s; }
+        else if (tslot[d] != 0xFFFF && slot_tile[tslot[d]] != d) tslot[d] = 0xFFFF;
+    }
 }
 /* sector s del paquete con algun tile que no este en la cache */
 static int pack_need(pack_t *p, int s)
@@ -377,6 +392,7 @@ static void pack_runs(pack_t *p, int from, int fast)
 #define UPF 64
 static int job_on;                                  /* lectura en curso: 1 tiles (a cdbuf), 2 paquete de fondo (al anillo) */
 static u16 job_t[256]; static int job_n, job_s0, job_s1, job_st, job_i, job_f; /* job_st: resultado aun por subir; job_i: por donde va; job_f: cuadro en que se pidio */
+static int job_pf;                                  /* la lectura de tiles es de antemano (prefetch): lo que falte va antes */
 static pack_t *bgq[4]; static int nbg, bg_from, bg_jump = -1, bg_err;     /* bg_from: siguiente sector de bgq[0] que mirar */
 #define RING 16
 static u8 ring[RING * 2048] __attribute__((aligned(4)));
@@ -490,6 +506,29 @@ static int miss_vis(void)
     for (i = 0; i < n; i++) vis_seen[vis_l[i] >> 3] = 0;
     return n;
 }
+/* en carrera, con el CD libre: los sectores de TILES.BIN de al lado de los sprites del jugador que se ven. Las poses
+   del coche (girar, derrapar, volcar) y del haz de los faros van de 16 en 16 tiles en el orden en que se suceden: asi
+   la siguiente ya esta cuando hace falta. pf_at: cuando se pidio cada sector (en cuadros / 8), para no repetirlo en 3 s */
+static u8 pf_at[1024];
+static int sec_missing(int s) { int k; if (s < 0 || s >= 1024) return 0; for (k = 0; k < 16; k++) if (tslot[s * 16 + k] == 0xFFFF) return 1; return 0; }
+static void prefetch(void)
+{
+    const u32 *q = (const u32 *)(rc_spr + 4);
+    int k, s, a, b, now = (frame_id >> 3) & 0xFF;
+    for (k = 0; k < 511; k++, q += 2) {
+        u32 t = q[2] & 0x3FFF;
+        if ((((q[1] >> 16) - 8) & 0x3FF) >= W + 15 || ((q[0] >> 16) & 0xFF) == 0xF0) continue;
+        if (!((t >= 0x2E00 && t < 0x3700) || (t >= 0x3BA4 && t < 0x3EF0))) continue;
+        for (a = 0x7FFF, b = -1, s = (t >> 4) - 2; s <= (int)(t >> 4) + 2; s++)
+            if (sec_missing(s) && (u8)(now - pf_at[s]) >= 23) { if (s < a) a = s; b = s; }
+        if (b < 0) continue;
+        for (s = a; s <= b; s++) pf_at[s] = now;
+        job_n = job_i = 0; job_s0 = a; job_s1 = b; job_pf = 1;
+        if (cd_read_async(tiles_lba + a, b - a + 1, cdbuf)) return;
+        job_on = 1; job_f = frame_id; cd_poll();
+        return;
+    }
+}
 static void cache_load(void)
 {
     int snd_cut(void), snd_cut_on(void); void snd_resume(void);
@@ -503,7 +542,8 @@ static void cache_load(void)
     }
     nmiss = j;
     if (!nmiss) miss_t0 = -1; else if (miss_t0 < 0) miss_t0 = frame_id;
-    if (nmiss && job_st && job_i >= job_n) job_st = 0;  /* los vecinos que quedaban, ya no */
+    if (nmiss && job_st && job_i >= job_n && !job_pf) job_st = 0;  /* los vecinos que quedaban, ya no (lo leido de antemano si: puede ser lo que falta) */
+    if (job_on == 1 && job_pf && nmiss) { cd_cancel(); job_on = 0; }
     if (job_on == 1) {          /* cdbuf ocupado; si una frase nueva la para, cortarla (si aun no suena, ya) */
         if (cd_audio() && !snd_cut_on() && (!cd_playing() || frame_id - job_f >= 6) && snd_cut()) cut_end = frame_id + 180;
         return;
@@ -545,12 +585,13 @@ static void cache_load(void)
             u16 t = miss_list[i];
             if ((t >> 4) <= s1 && job_n < 256) job_t[job_n++] = t; else miss_list[j++] = t;
         }
-        nmiss = j; job_s0 = s0; job_s1 = s1; job_i = 0;
+        nmiss = j; job_s0 = s0; job_s1 = s1; job_i = 0; job_pf = 0;
         if (cd_read_async(tiles_lba + s0, s1 - s0 + 1, cdbuf)) { for (i = 0; i < job_n; i++) miss_mark[job_t[i] >> 3] = 0; job_n = 0; return; }
         job_on = 1; job_f = frame_id; cd_poll();
         return;
     }
     if (nbg && !job_on && !bg_n && !cd_audio()) bg_start();
+    else if (in_race && !nmiss && !nbg && !job_on && !job_st && tiles_lba >= 0 && !cd_audio()) prefetch();
 }
 /* ---- carrera: entrar (paquetes del recorrido y de carrera fijos, los de menus guardados: se sustituyen antes que
    los fijos y despues de lo demas, y asi al salir hay menos que volver a leer) y salir (los de menus fijos y se
@@ -558,6 +599,7 @@ static void cache_load(void)
 static void level_load(int k)
 {
     int i, hs, fast, need, same = k == cur_level && lvl_pk.hs;
+    alias_set(&lvl_pk, 0); alias_set(&race_pk, 0);
     for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
     for (i = 0; i < NTS; i++) slot_age[i] = frame_id - 1000;
     min_cls_frame = -1; hand = 0;
@@ -582,6 +624,7 @@ static void level_load(int k)
         }
         pack_runs(&race_pk, race_pk.hs, fast);
     }
+    alias_set(&race_pk, 1); alias_set(&lvl_pk, 1);
     lvl_pk.pin = 0; race_pk.pin = 2;
     loading = 0;
 }
@@ -601,6 +644,7 @@ static void race_exit(void)
 {
     int i;
     in_race = 0; race_cnt = 0;
+    alias_set(&lvl_pk, 0); alias_set(&race_pk, 0);
     for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
     for (i = 0; i < NTS; i++) if (frame_id - slot_age[i] >= 2) slot_age[i] = frame_id - 1000;   /* lo de la carrera, viejo */
     min_cls_frame = -1;
