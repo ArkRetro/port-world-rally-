@@ -22,6 +22,7 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - Las banderas solo se calculan cuando hacen falta.
   - Los registros van fijos en registros del MIPS.
   - La IRQ de vblank se atiende por presupuesto de ciclos.
+  - Bucles internos con mucho trabajo en el banco de pruebas (`work/vueltas.txt`, de `rc/regiones.py`): además del código normal, una copia rápida que, tras comprobar al entrar cuántas vueltas caben en la región de cada puntero, accede sin comprobar, lleva los Dn de 16 bits sin mezclar con la parte alta y mira la IRQ con un signo. Mismos ciclos del 68000 y mismo estado.
 - `rc/rc51c.py`: traducción 8051 → C de la tarea del DS5002FP. `rc/mcs51.c` es el intérprete 8051 que se usa para el arranque.
 - `rc/rc_rt.h`, `rc/rc_mem.c`: entorno del código traducido.
   - Mapa de memoria.

@@ -30,7 +30,9 @@ extern rc_regs_t rc_r;
 /* registros del 68000 fijos en registros del MIPS: d0-d7, a7 en s0-s8 (se conservan en las llamadas);
    a0-a5, Z y C en t0-t5, t7, t8 (se guardan a mano alrededor de las llamadas); el contador de ciclos en gp.
    En t9 la base de la RAM del 68000 (los accesos a direccion fija son una sola instruccion) y en t6 la de la
-   ROM; a6 y N, que el juego apenas usa (menos de 100 veces por cuadro), van en variables locales */
+   ROM; a6 y N, que el juego apenas usa (menos de 100 veces por cuadro), van en variables locales. X, N y V en la
+   pila siempre (volatile): si no, gcc los deja en registros a lo largo de los bucles y saca a la pila otros valores
+   que se usan en cada vuelta */
 register u32 d0 asm("$16"); register u32 d1 asm("$17"); register u32 d2 asm("$18"); register u32 d3 asm("$19");
 register u32 d4 asm("$20"); register u32 d5 asm("$21"); register u32 d6 asm("$22"); register u32 d7 asm("$23");
 register u32 a7 asm("$30");
@@ -69,8 +71,12 @@ static inline __attribute__((always_inline)) u8 *RC_OPQ(u8 *p) { __asm__("" : "+
 
 #ifdef RCREG
 /* perfil de regiones (rc/regiones.sh): por instruccion, las regiones que lee (bits 0-6) y escribe (8-14); los
-   bits 7 y 15, un acceso de 32 bits no alineado a 4. Con el byte alto distinto de 0 no hay region prevista */
+   bits 7 y 15, un acceso de 32 bits no alineado a 4. Con el byte alto distinto de 0 no hay region prevista.
+   rc_regck: veces que se ejecuta cada instruccion, en total y como mucho en un cuadro (vueltas de los bucles, para
+   elegir los bucles rapidos); rc_regbk: saltos atras tomados (para saber cuantas veces se entra en cada bucle) */
 extern u32 rc_cur; extern u16 rc_regmask[0x10000];
+void rc_regck(u32 pc), rc_regbk(u32 pc);
+#define REGBK(pc) rc_regbk(pc)
 static inline u32 rc_regbit(u32 a)
 {
     if (a >> 24) return 64;
@@ -87,6 +93,7 @@ static inline u32 rc_regbit(u32 a)
 #else
 #define REGREC(a, w) ((void)0)
 #define REGREC32(a, w) ((void)0)
+#define REGBK(pc)
 #endif
 /* lectura: todas las paginas apuntan a algo (E/S en una pagina que se rellena cada cuadro, sin mapear =
    pagina de 0xFF); las regiones tienen 4 bytes de margen al final para leer un long sin mirar el cruce */
@@ -294,6 +301,25 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
 #define WRV32(a, v, pc) do { if (RBLK(vram, a, 4)) rc_vwl(a, v, pc); else rc_wrg32(a, v, pc); } while (0)
 #endif
 #define RPTR(r, a) (RBO_##r + RO_##r(a))
+/* copia rapida de un bucle (rc68.py, bucles rapidos): accesos por An de induccion ya comprobados a la entrada del
+   bucle para todas las vueltas, sin mirar la region */
+#ifdef RCREG
+#define RDU8(r, a) RD8(a)
+#define RDU16(r, a) RD16(a)
+#define RDU32(r, a) RD32(a)
+#define RDU32A(r, a) RD32(a)
+#define WRU8(r, a, v) WR8(a, v, 0)
+#define WRU16(r, a, v) WR16(a, v, 0)
+#define WRU32(r, a, v) WR32(a, v, 0)
+#else
+#define RDU8(r, a) ((u32)MB(RB_##r, RO_##r(a)))
+#define RDU16(r, a) ((u32)MW(RB_##r, RO_##r(a)))
+#define RDU32(r, a) ML(RBO_##r + RO_##r(a), 0)
+#define RDU32A(r, a) MLA(RBO_##r + RO_##r(a), 0)
+#define WRU8(r, a, v) (MB(RB_##r, RO_##r(a)) = (u8)(v))
+#define WRU16(r, a, v) (MW(RB_##r, RO_##r(a)) = (u16)(v))
+#define WRU32(r, a, v) SETL(RBO_##r + RO_##r(a), 0, v)
+#endif
 #endif
 
 #ifdef RC_GEN
@@ -394,17 +420,28 @@ static inline u32 sh_roxr(u32 v, u32 c, int b, u32 *x, u32 *cf, u32 *vf) { *vf =
     rc_r.fX=fX; rc_r.fN=fN; rc_r.fZ=fZ; rc_r.fV=fV; rc_r.fC=fC; rc_r.imask=imask; rc_r.cyc=cyr+cyc_next; rc_r.cyc_next=cyc_next; \
     rc_r.cyr=cyr; } while (0)
 
+/* copia rapida de bucles: desplazamiento del contador de ciclos y parte alta de los Dn partidos (rc68.py). Solo se
+   usan al entrar y al salir: en la pila (volatile), sin quitar registros al cuerpo del bucle */
+#define RC_FLOCALS volatile s32 fb = 0; volatile u32 dh0 = 0, dh1 = 0, dh2 = 0, dh3 = 0, dh4 = 0, dh5 = 0, dh6 = 0, dh7 = 0;
 #ifdef RC_GREGS
-#define RC_LOCALS u32 fX = rc_r.fX, fV = rc_r.fV, fN = rc_r.fN, a6 = rc_r.a[6], imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
-    u32 vs, vd, vr, eas, ead, dpc; void *dl;
+#define RC_LOCALS volatile u32 fX = rc_r.fX, fV = rc_r.fV, fN = rc_r.fN; u32 a6 = rc_r.a[6], imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
+    u32 vs, vd, vr, eas, ead, dpc; void *dl; RC_FLOCALS
 #define RC_ENTER d0 = rc_r.d[0]; d1 = rc_r.d[1]; d2 = rc_r.d[2]; d3 = rc_r.d[3]; d4 = rc_r.d[4]; d5 = rc_r.d[5]; \
     d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; RC_TLOAD; cyr = rc_r.cyc - rc_r.cyc_next; rc_vc_init();
 #else
 #define RC_LOCALS u32 d0 = rc_r.d[0], d1 = rc_r.d[1], d2 = rc_r.d[2], d3 = rc_r.d[3], d4 = rc_r.d[4], d5 = rc_r.d[5], d6 = rc_r.d[6], d7 = rc_r.d[7]; \
     u32 a0 = rc_r.a[0], a1 = rc_r.a[1], a2 = rc_r.a[2], a3 = rc_r.a[3], a4 = rc_r.a[4], a5 = rc_r.a[5], a6 = rc_r.a[6], a7 = rc_r.a[7]; \
     u32 fX = rc_r.fX, fN = rc_r.fN, fZ = rc_r.fZ, fV = rc_r.fV, fC = rc_r.fC, imask = rc_r.imask; \
-    s32 cyr = rc_r.cyc - rc_r.cyc_next, cyc_next = rc_r.cyc_next; u32 vs, vd, vr, eas, ead, dpc; void *dl;
+    s32 cyr = rc_r.cyc - rc_r.cyc_next, cyc_next = rc_r.cyc_next; u32 vs, vd, vr, eas, ead, dpc; void *dl; RC_FLOCALS
 #define RC_ENTER rc_vc_init();
+#endif
+/* sin sacar invariantes de los bucles: en las copias rapidas (bucles sin etiquetas con direccion tomada) gcc sacaria
+   las direcciones constantes (paginas, regiones) y, sin registros libres, las dejaria en la pila: una lectura de la
+   RAM en cada uso en vez de rehacerlas */
+#if defined(__GNUC__) && !defined(__clang__)
+#define RC_RUN_ATTR __attribute__((optimize("no-tree-loop-im", "no-move-loop-invariants")))
+#else
+#define RC_RUN_ATTR
 #endif
 /* despacho indirecto y rts: bloques comunes al final de rc_run (un salto en cada sitio) */
 #define DISPATCH(x) do { dpc = (x); goto rc_disp; } while (0)
@@ -428,12 +465,21 @@ void rc_ck(u32 pc, u32 live);
 void rc_dbg_irq(void);
 #define CK(pc, lv) do { RC_SYNC; rc_ck(pc, lv); } while (0)
 #define IRQ_DBG() rc_dbg_irq()
+/* en la copia rapida de un bucle, la comprobacion ve los Dn partidos (mascara m) enteros: RC_FJ(m); CK(...); RC_FS(m) */
+#define RC_FJOIN(m) do { if ((m) & 1) d0 |= dh0; if ((m) & 2) d1 |= dh1; if ((m) & 4) d2 |= dh2; if ((m) & 8) d3 |= dh3; \
+    if ((m) & 16) d4 |= dh4; if ((m) & 32) d5 |= dh5; if ((m) & 64) d6 |= dh6; if ((m) & 128) d7 |= dh7; } while (0)
+#define RC_FSPLIT(m) do { if ((m) & 1) d0 &= 0xFFFFu; if ((m) & 2) d1 &= 0xFFFFu; if ((m) & 4) d2 &= 0xFFFFu; if ((m) & 8) d3 &= 0xFFFFu; \
+    if ((m) & 16) d4 &= 0xFFFFu; if ((m) & 32) d5 &= 0xFFFFu; if ((m) & 64) d6 &= 0xFFFFu; if ((m) & 128) d7 &= 0xFFFFu; } while (0)
+#define RC_FJ(m) RC_FJOIN(m)
+#define RC_FS(m) RC_FSPLIT(m)
 #else
 #ifdef RCREG
-#define CK(pc, lv) (rc_cur = (pc))
+#define CK(pc, lv) rc_regck(pc)
 #else
 #define CK(pc, lv)
 #endif
+#define RC_FJ(m)
+#define RC_FS(m)
 #define IRQ_DBG()
 #endif
 

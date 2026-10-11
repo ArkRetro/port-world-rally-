@@ -34,6 +34,16 @@ if os.path.exists(_rf):
         p = l.split()
         if len(p) >= 3 and not l.startswith('#'): PRED[int(p[0], 16)] = tuple(None if x == '-' else x for x in p[1:3]) + (p[3:4] == ['a'],)
 
+# veces que se ejecuta cada instruccion en el banco de pruebas, en total y como mucho en un cuadro (work/vueltas.txt,
+# de rc/regiones.py): con ellas se eligen los bucles rapidos (sin el fichero no hay)
+VUELTAS, NCUADROS = {}, 0
+_vf = work('vueltas.txt')
+if os.path.exists(_vf):
+    for l in open(_vf):
+        p = l.split()
+        if l.startswith('# cuadros'): NCUADROS = int(p[2])
+        elif len(p) == 4 and not l.startswith('#'): VUELTAS[int(p[0], 16)] = tuple(int(x) for x in p[1:])
+
 IRQ6 = struct.unpack('>I', D[0x78:0x7C])[0]
 RESET_PC = struct.unpack('>I', D[4:8])[0]
 
@@ -197,9 +207,15 @@ def idx_expr(x):
     return r if lng else '(u32)(s32)(s16)%s' % r
 
 class G:
-    def __init__(s, i, live_out):
+    def __init__(s, i, live_out, cx=None):
         s.i = i; s.lo = live_out; s.out = []
+        # copia rapida de un bucle (bucles_rapidos): accesos sin comprobar y Dn partidos (solo la parte baja)
+        L = cx.fast if cx else None
+        s.split = L.split if L else ()
+        s.unchk = L.unchk.get(i.a, {}) if L else {}
+        s.dirty = False     # el valor a escribir puede pasar de 16 bits (suma/resta sin recortar)
     def e(s, line): s.out.append(line)
+    def role(s, ea, k): return s.unchk.get(('src' if ea is s.i.src else 'dst', k)) if ea is not None else None
 
     def inc(s, ea, sz): return 2 if (sz == 1 and ea.r == 7) else sz
 
@@ -218,13 +234,16 @@ class G:
         raise ValueError(m)
 
     def pred(s, k): return PRED.get(s.i.a, (None, None, False))[k]
-    def rd(s, expr, const, sz):
+    def rd(s, expr, const, sz, ea=None):
         if const is not None: return rd_const(const, sz)
+        u = s.role(ea, 'r')
+        if u: return 'RDU%d%s(%s, %s)' % (sz * 8, 'A' if u[1] and sz == 4 else '', u[0], expr)
         if s.pred(0) and sz == 4 and s.pred(2): return 'RDA32(%s, %s)' % (s.pred(0), expr)
         if s.pred(0): return 'RDP%d(%s, %s)' % (sz * 8, s.pred(0), expr)
         return 'RD%d(%s)' % (sz * 8, expr)
-    def wr(s, expr, const, sz, v):
+    def wr(s, expr, const, sz, v, ea=None):
         if const is not None: return wr_const(const, sz, v, s.i.a)
+        if s.role(ea, 'w'): return 'WRU%d(%s, %s, %s);' % (sz * 8, s.role(ea, 'w')[0], expr, v)
         # VRAM: descifrado fuera de linea sin pasar por la tabla de paginas (los bytes van por el camino general)
         if s.pred(1) == 'vram' and sz > 1: return 'WRV%d(%s, %s, 0x%x);' % (sz * 8, expr, v, s.i.a)
         if s.pred(1) and s.pred(1) != 'vram': return 'WRP%d(%s, %s, %s, 0x%x);' % (sz * 8, s.pred(1), expr, v, s.i.a)
@@ -232,18 +251,21 @@ class G:
 
     def read(s, ea, sz, tmp='eas'):
         """lee un operando; devuelve expr (ya evaluada en variable si es memoria)"""
+        if ea.m == 'D' and ea.r in s.split: return 'd%d' % ea.r if sz == 2 else '(d%d & 0xFFu)' % ea.r
         if ea.m == 'D': return '(d%d & %s)' % (ea.r, MASK[sz]) if sz < 4 else 'd%d' % ea.r
         if ea.m == 'A': return '(a%d & %s)' % (ea.r, MASK[sz]) if sz < 4 else 'a%d' % ea.r
         if ea.m == 'imm': return '0x%xu' % (ea.v & int(MASK[sz][:-1], 16))
         expr, const, post = s.addr(ea, sz, tmp)
         var = 'vs' if tmp == 'eas' else 'vd'
-        s.e('%s = %s;' % (var, s.rd(expr, const, sz)))
+        s.e('%s = %s;' % (var, s.rd(expr, const, sz, ea)))
         if post: s.e(post)
         return var
 
     def setreg(s, ea, sz, v):
         r = '%s%d' % ('d' if ea.m == 'D' else 'a', ea.r)
         if ea.m == 'A' or sz == 4: s.e('%s = %s;' % (r, v))
+        # Dn partido: solo la parte baja, con la alta a 0 (lo leido en .w ya viene recortado)
+        elif ea.r in s.split and sz == 2: s.e(('%s = (%s) & 0xFFFFu;' if s.dirty else '%s = %s;') % (r, v))
         # parte baja con xor: 3 instrucciones del MIPS, sin cargar la mascara de la parte alta
         elif sz == 2: s.e('%s ^= (%s ^ (%s)) & 0xFFFFu;' % (r, r, v))
         else: s.e('%s ^= (%s ^ (%s)) & 0xFFu;' % (r, r, v))
@@ -251,7 +273,7 @@ class G:
     def write(s, ea, sz, v):
         if ea.m in ('D', 'A'): s.setreg(ea, sz, v); return
         expr, const, post = s.addr(ea, sz, 'ead')
-        s.e(s.wr(expr, const, sz, v))
+        s.e(s.wr(expr, const, sz, v, ea))
         if post: s.e(post)
 
     def rmw(s, ea, sz):
@@ -259,9 +281,9 @@ class G:
         if ea.m in ('D', 'A'):
             return s.read(ea, sz), lambda v: s.setreg(ea, sz, v)
         expr, const, post = s.addr(ea, sz, 'ead')
-        s.e('vd = %s;' % s.rd(expr, const, sz))
+        s.e('vd = %s;' % s.rd(expr, const, sz, ea))
         def w(v):
-            s.e(s.wr(expr, const, sz, v))
+            s.e(s.wr(expr, const, sz, v, ea))
             if post: s.e(post)
         return 'vd', w
 
@@ -296,19 +318,87 @@ def callpush(i, nxt, labelset):
     """apila la direccion de vuelta"""
     return 'RC_PUSH(0x%xu, 0x%x);' % (nxt, i.a)
 
-def gen_ins(i, live_out, labelset, taken):
-    g = G(i, live_out[i.a])
+# comparacion, resta u operacion logica seguida de bcc que mira N o V: la condicion sale de los operandos (vd - vs,
+# recortados a sz) sin volver a leer fN/fV (variables en la pila). Las banderas se calculan igual que sin esto: las
+# muertas tambien acaban en el SR que se apila en la IRQ (RAM del juego)
+SCAST = {1: '(s32)(s8)', 2: '(s32)(s16)', 4: '(s32)'}
+FZ_SUB = ('cmp', 'cmpi', 'cmpa', 'cmpm', 'sub', 'subi', 'subq')
+FZ_LOG = ('move', 'tst', 'and', 'andi', 'or', 'ori', 'eor', 'eori', 'not')
+def fz_sub(c, sz):
+    S, sg = SCAST[sz], SIGN[sz]
+    v = '(((vs ^ vd) & (vr ^ vd)) & %s)' % sg
+    return {'eq': '(vd == vs)', 'ne': '(vd != vs)', 'cs': '(vs > vd)', 'cc': '(vs <= vd)', 'hi': '(vd > vs)',
+            'ls': '(vd <= vs)', 'lt': '(%svd < %svs)' % (S, S), 'ge': '(%svd >= %svs)' % (S, S),
+            'gt': '(%svd > %svs)' % (S, S), 'le': '(%svd <= %svs)' % (S, S), 'mi': '((vr & %s) != 0)' % sg,
+            'pl': '((vr & %s) == 0)' % sg, 'vs': '(%s != 0)' % v, 'vc': '(%s == 0)' % v}[c]
+def fz_log(c, x, sz):
+    # tras una operacion logica (V = C = 0) con resultado x
+    S, m, sg = SCAST[sz], MASK[sz], SIGN[sz]
+    z, nz = '(((%s) & %s) == 0)' % (x, m), '(((%s) & %s) != 0)' % (x, m)
+    n, p = '(((%s) & %s) != 0)' % (x, sg), '(((%s) & %s) == 0)' % (x, sg)
+    return {'eq': z, 'ls': z, 'ne': nz, 'hi': nz, 'mi': n, 'lt': n, 'pl': p, 'ge': p, 'gt': '(%s(%s) > 0)' % (S, x),
+            'le': '(%s(%s) <= 0)' % (S, x), 'cs': '(0)', 'vs': '(0)', 'cc': '(1)', 'vc': '(1)'}[c]
+
+class Ctx:
+    # estado de una pasada de generacion: etiquetas, bcc fusionados (direccion -> condicion), copia rapida de
+    # bucle en curso (fast) y saltos atras del codigo normal que van a la etiqueta sin la entrada rapida (slow)
+    def __init__(s, labs, live_out):
+        s.labs = labs; s.lo = live_out; s.fuse = {}; s.fast = None; s.slow = {}
+        s.defer = []; s.dflags = 0; s.live_in = None
+
+def fusable(i, cx):
+    if i.op not in FZ_SUB and i.op not in FZ_LOG: return None
+    n = NEXT[i.a]
+    if n not in INS or n in cx.labs or n in IDLE: return None
+    j = INS[n]
+    L = cx.fast
+    if L and n == L.b and L.defer_ok: return j if j.op == 'bcc' and j.cond not in ('t', 'f') else None
+    if j.op != 'bcc' or j.cond not in ('lt', 'ge', 'gt', 'le', 'mi', 'pl', 'vs', 'vc'): return None
+    return j
+
+def gen_ins(i, live_out, labelset, taken, cx=None):
+    cx = cx or Ctx(labelset, live_out)
+    L = cx.fast
+    g = G(i, live_out[i.a], cx)
     o, sz = i.op, i.sz
     e = g.e
     nxt = NEXT[i.a]
-    def goto(t):
+    fj = fusable(i, cx)
+    # copia rapida sin otras salidas: las banderas de la instruccion que decide la vuelta solo se escriben al salir
+    # (con los mismos operandos), salvo las que lee el propio cuerpo
+    dfr = fj is not None and L is not None and fj.a == L.b and L.defer_ok
+    if dfr: g.lo = live_out[i.a] & cx.live_in[L.h]
+    def defer(fn):
+        if not dfr: return
+        g2 = G(i, live_out[i.a]); fn(g2)
+        cx.defer = g2.out; cx.dflags = uses_defs(i)[1] & live_out[i.a] & ~cx.live_in[L.h]
+    def jump(t):
+        if L and t in L.bodyset and t > i.a: return 'goto F_%06x;' % t
+        if not L and cx.slow.get(i.a) == t: return 'goto S_%06x;' % t
         if t in labelset: return 'goto L_%06x;' % t
         return 'DISPATCH(0x%xu);' % t
+    def goto(t):
+        # en la copia rapida, lo que sale del cuerpo deja antes los registros y el contador como en el codigo normal
+        if L and not (t in L.bodyset and t > i.a): return L.rest(i.a) + jump(t)
+        return jump(t)
     def br_irq(t):
         # salto hacia atras: punto de comprobacion de interrupcion
         if t <= i.a:
-            return 'IRQCHK(0x%xu); %s' % (t, goto(t))
+            return (L.rest(i.a) if L else '') + 'REGBK(0x%x); IRQCHK(0x%xu); %s' % (i.a, t, jump(t))
         return goto(t)
+    if L and i.a == L.b:
+        # vuelta de la copia rapida: sin IRQ pendiente ni fin de las vueltas previstas (cyr < 0) sigue en ella
+        dl = ' '.join(cx.defer) + ' ' if cx.defer else ''
+        back = 'REGBK(0x%x); if (cyr < 0) goto F_%06x; %s%sIRQCHK(0x%xu); goto L_%06x;' % (i.a, L.h, dl, L.rest(i.a), L.h, L.h)
+        if o == 'bra': e(back)
+        elif o == 'bcc': e('if %s { %s }' % (cx.fuse.get(i.a) or COND_EXPR[i.cond], back))
+        else:
+            r = i.dst.r
+            pre = '' if i.cond == 'f' else 'if (!%s) ' % COND_EXPR[i.cond]
+            if r in L.split: e('%s{ if (d%d) { d%d -= 1; CYCB(10); %s } d%d = 0xFFFFu; }' % (pre, r, r, back, r))
+            else: e('%s{ if (d%d & 0xFFFFu) { d%d -= 1; CYCB(10); %s } d%d |= 0xFFFFu; }' % (pre, r, r, back, r))
+        if o != 'bra': e(dl + L.rest(i.a) + jump(nxt))
+        return g.out
 
     if o == 'move':
         v = g.read(i.src, sz)
@@ -317,6 +407,8 @@ def gen_ins(i, live_out, labelset, taken):
         else:
             e('vs = %s;' % v); v = 'vs'
         g.logic(v, sz)
+        if fj: cx.fuse[fj.a] = fz_log(fj.cond, v, sz)
+        defer(lambda g2: g2.logic(v, sz))
         g.write(i.dst, sz, v)
     elif o == 'movea':
         v = g.read(i.src, sz)
@@ -341,6 +433,8 @@ def gen_ins(i, live_out, labelset, taken):
     elif o == 'tst':
         v = g.read(i.dst, sz)
         g.logic(v, sz)
+        if fj: cx.fuse[fj.a] = fz_log(fj.cond, v, sz)
+        defer(lambda g2: g2.logic(v, sz))
     elif o in ('add', 'addi', 'addq', 'sub', 'subi', 'subq'):
         s = g.read(i.src, sz)
         if s != 'vs': e('vs = %s;' % s)
@@ -352,6 +446,9 @@ def gen_ins(i, live_out, labelset, taken):
         e('vr = vd %s vs;' % op)
         if op == '+': g.add_flags('vd', 'vs', 'vr', sz)
         else: g.sub_flags('vd', 'vs', 'vr', sz)
+        if fj: cx.fuse[fj.a] = fz_sub(fj.cond, sz)
+        defer(lambda g2: g2.sub_flags('vd', 'vs', 'vr', sz))
+        g.dirty = True
         w('vr')
     elif o in ('addqa', 'subqa', 'adda', 'suba'):
         s = g.read(i.src, sz)
@@ -371,6 +468,8 @@ def gen_ins(i, live_out, labelset, taken):
         if d != 'vd': e('vd = %s;' % d)
         e('vr = vd - vs;')
         g.sub_flags('vd', 'vs', 'vr', sz, x=False)
+        if fj: cx.fuse[fj.a] = fz_sub(fj.cond, sz)
+        defer(lambda g2: g2.sub_flags('vd', 'vs', 'vr', sz, x=False))
     elif o in ('and', 'andi', 'or', 'ori', 'eor', 'eori'):
         s = g.read(i.src, sz)
         if s != 'vs': e('vs = %s;' % s)
@@ -378,9 +477,13 @@ def gen_ins(i, live_out, labelset, taken):
         op = {'and': '&', 'or': '|', 'eor': '^'}[o.rstrip('i')]
         e('vr = %s %s vs;' % (d, op))
         g.logic('vr', sz); w('vr')
+        if fj: cx.fuse[fj.a] = fz_log(fj.cond, 'vr', sz)
+        defer(lambda g2: g2.logic('vr', sz))
     elif o == 'not':
         d, w = g.rmw(i.dst, sz)
         e('vr = (~%s) & %s;' % (d, MASK[sz])); g.logic('vr', sz); w('vr')
+        if fj: cx.fuse[fj.a] = fz_log(fj.cond, 'vr', sz)
+        defer(lambda g2: g2.logic('vr', sz))
     elif o == 'neg':
         d, w = g.rmw(i.dst, sz)
         if d != 'vd': e('vd = %s;' % d)
@@ -509,7 +612,7 @@ def gen_ins(i, live_out, labelset, taken):
         # parte baja distinta de 0: restar 1 no toca la alta; si es 0 pasa a 0xFFFF y se sale del bucle
         e('%s{ if (d%d & 0xFFFFu) { d%d -= 1; CYCB(10); %s } d%d |= 0xFFFFu; }' % (pre, r, r, br_irq(i.target), r))
     elif o == 'bcc':
-        e('if %s { %s }' % (COND_EXPR[i.cond], br_irq(i.target)))
+        e('if %s { %s }' % (cx.fuse.get(i.a) or COND_EXPR[i.cond], br_irq(i.target)))
     elif o == 'bra':
         e(br_irq(i.target))
     elif o == 'bsr':
@@ -637,6 +740,182 @@ for _a in ADDRS:
         _j = INS[NEXT[_a]]
         if _j.op == 'bcc' and _j.target == _a: IDLE.add(NEXT[_a])
 
+# ---------------------------------------------------------------- bucles rapidos
+# Bucle interno sencillo: cuerpo contiguo de H a B, B (bcc/dbcc/bra) vuelve a H, sin llamadas, sin otros saltos
+# atras y sin tocar el SR. Ademas del codigo normal se genera una copia del cuerpo (F_H) donde:
+# - los accesos por un An de induccion (solo cambia por (An)+, -(An), addq/subq/adda/suba/lea con constante, en
+#   instrucciones que se hacen en todas las vueltas: paso fijo) van sin comprobar la region prevista: la entrada
+#   (L_H) calcula cuantas vueltas fn caben en ella;
+# - los Dn que en el cuerpo solo se usan como .b/.w llevan solo la parte baja (la alta queda en dhN);
+# - el contador de ciclos va desplazado (fb) para que la comprobacion de cada vuelta sea un signo y salte tanto si
+#   toca la IRQ como al pasar fn vueltas (cmin: ciclos minimos de una vuelta).
+# Al salir (o al llegar a la vuelta fn) se deja todo como en el codigo normal; la vuelta normal (S_H) no vuelve a
+# entrar en la copia. Los ciclos de cada bloque y los puntos de IRQ son los mismos
+FAST_OPS = ('move', 'movea', 'moveq', 'lea', 'clr', 'tst', 'add', 'addi', 'addq', 'sub', 'subi', 'subq', 'addqa', 'subqa',
+            'adda', 'suba', 'cmp', 'cmpi', 'cmpa', 'cmpm', 'and', 'andi', 'or', 'ori', 'eor', 'eori', 'not', 'neg', 'negx',
+            'addx', 'subx', 'ext', 'swap', 'exg', 'mulu', 'muls', 'btst', 'bchg', 'bclr', 'bset', 'asl', 'asr', 'lsl', 'lsr',
+            'rol', 'ror', 'roxl', 'roxr', 'scc', 'bcc', 'bra', 'nop', 'movem', 'move_from_sr', 'move_to_ccr')
+SHIFTS = ('asl', 'asr', 'lsl', 'lsr', 'rol', 'ror', 'roxl', 'roxr')
+REG_LO = {'ram': 0xFEC000, 'rom': 0, 'pal': 0x200000, 'vram': 0x100000, 'spr': 0x440000, 'vregs': 0x108000}
+REG_SZ = {'ram': 0x4000, 'rom': 0x100000, 'pal': 0x4000, 'vram': 0x4000, 'spr': 0x1000, 'vregs': 0x1000}
+PLAIN_W = ('ram', 'pal', 'spr', 'vregs')      # escrituras sin efectos (la VRAM va cifrada)
+NMAX = 0x10000
+# se hace la copia si el bucle llega a RAFAGA ciclos del 68000 en un cuadro (cuadros pesados) o a MEDIA ciclos por
+# cuadro de media en el banco de pruebas (cada copia ocupa sitio en la RAM de la PS1), y si da de media VMIN vueltas
+# o mas cada vez que se entra (la entrada y la salida cuestan)
+RAFAGA, MEDIA, VMIN = 8192, 512, 8
+
+def operands(i):
+    """operandos en el orden en que gen_ins los evalua: [(papel, ea, 'r' | 'w' | 'rw', tamano)]"""
+    o, sz = i.op, i.sz
+    if o == 'move': return [('src', i.src, 'r', sz), ('dst', i.dst, 'w', sz)]
+    if o in ('movea', 'cmpa', 'adda', 'suba', 'mulu', 'muls', 'move_to_ccr'): return [('src', i.src, 'r', sz)]
+    if o in ('clr', 'scc', 'move_from_sr'): return [('dst', i.dst, 'w', sz)]
+    if o == 'tst': return [('dst', i.dst, 'r', sz)]
+    if o in ('add', 'addi', 'addq', 'sub', 'subi', 'subq', 'and', 'andi', 'or', 'ori', 'eor', 'eori', 'addx', 'subx'):
+        return [('src', i.src, 'r', sz), ('dst', i.dst, 'rw', sz)]
+    if o in ('not', 'neg', 'negx') or o in SHIFTS: return [('dst', i.dst, 'rw', sz)]
+    if o in ('cmp', 'cmpi', 'cmpm'): return [('src', i.src, 'r', sz), ('dst', i.dst, 'r', sz)]
+    if o == 'btst': return [('dst', i.dst, 'r', 4 if i.dst.m == 'D' else 1)]
+    if o in ('bchg', 'bclr', 'bset'): return [('dst', i.dst, 'rw', 4 if i.dst.m == 'D' else 1)]
+    return []
+
+class Loop: pass
+
+def bucle(h, b, body, bcyc):
+    ib = INS[b]; bs = set(body)
+    skip = set(); targets = set()
+    for a in body[:-1]:
+        i = INS[a]
+        if i.op not in FAST_OPS: return None
+        if i.op in ('bcc', 'bra'):
+            t = i.target
+            if t in bs and t <= a: return None          # otro salto atras dentro (bucle interior)
+            if t in bs:
+                targets.add(t); skip.update(x for x in body if a < x < t)
+            if i.op == 'bra' and t not in bs: skip.update(x for x in body if x > a)
+    delta, nonind, acc, used, bad = {}, set(), [], set(), set()
+    def mod(r, d, a):
+        delta[r] = delta.get(r, 0) + d
+        if a in skip: nonind.add(r)
+    def dref(ea, size):
+        if ea is None: return
+        if ea.m == 'D':
+            used.add(ea.r)
+            if size == 4: bad.add(ea.r)
+        if ea.m in ('idx', 'pci') and ea.x[0] == 'D':
+            used.add(ea.x[1])
+            if ea.x[2]: bad.add(ea.x[1])
+    for a in body:
+        i = INS[a]; o = i.op
+        for role, ea, k, size in operands(i):
+            dref(ea, size)
+            if ea.m in ('ind', 'post', 'pre', 'd16'):
+                r = ea.r; inc = 2 if (size == 1 and r == 7) else size
+                if ea.m == 'pre': mod(r, -inc, a)
+                off = delta.get(r, 0) + (ea.v if ea.m == 'd16' else 0)
+                for kk in k: acc.append((a, role, kk, r, off, size))
+                if ea.m == 'post': mod(r, inc, a)
+        if o in ('btst', 'bchg', 'bclr', 'bset') or o in SHIFTS:
+            if i.src.m == 'D': used.add(i.src.r)
+        if o in ('mulu', 'muls', 'moveq', 'ext', 'swap'): used.add(i.dst.r); bad.add(i.dst.r)
+        if o == 'dbcc': used.add(i.dst.r)
+        if o == 'lea':
+            dref(i.src, 2)
+            if i.src.m == 'd16' and i.src.r == i.dst.r: mod(i.dst.r, i.src.v, a)
+            elif not (i.src.m == 'ind' and i.src.r == i.dst.r): nonind.add(i.dst.r)
+        if o in ('addqa', 'subqa', 'adda', 'suba'):
+            if i.src.m == 'imm':
+                v = i.src.v
+                if i.sz == 2 and o in ('adda', 'suba'): v = (v & 0xFFFF) - (0x10000 if v & 0x8000 else 0)
+                elif i.sz == 4: v = (v & 0xFFFFFFFF) - (1 << 32 if v & 0x80000000 else 0)
+                mod(i.dst.r, v if o.startswith('add') else -v, a)
+            else: nonind.add(i.dst.r)
+        if o == 'movea': nonind.add(i.dst.r)
+        if o == 'exg':
+            for ea in (i.src, i.dst):
+                (used.add(ea.r), bad.add(ea.r)) if ea.m == 'D' else nonind.add(ea.r)
+        if o == 'movem':
+            ea = i.dst if i.n == 0 else i.src
+            regs = [('D', k) for k in range(8)] + [('A', k) for k in range(8)]
+            rl = [regs[15 - bit] if ea.m == 'pre' else regs[bit] for bit in range(16) if i.extra & (1 << bit)]
+            for kd, r in rl:
+                if kd == 'D': used.add(r); bad.add(r)
+                elif i.n: nonind.add(r)
+            dref(ea, 4)
+            nb = len(rl) * i.sz
+            if ea.m == 'pre': mod(ea.r, -nb, a)
+            if ea.m == 'post': mod(ea.r, nb, a)
+    L = Loop()
+    L.h, L.b, L.body, L.bodyset, L.targets = h, b, body, bs, targets
+    L.defer_ok = all(INS[a].target in bs for a in body[:-1] if INS[a].op in ('bcc', 'bra'))
+    L.split = sorted(used - bad)
+    L.unchk = {}; groups = {}; L.al = set()
+    for a, role, kk, r, off, size in acc:
+        if r in nonind or a not in PRED: continue
+        reg = PRED[a][0 if kk == 'r' else 1]
+        if reg not in REG_LO or (kk == 'w' and reg not in PLAIN_W): continue
+        # long alineado a 4 en el perfil (RDA32): de una vez si la entrada ve la direccion alineada y el paso lo mantiene
+        al = kk == 'r' and size == 4 and PRED[a][2] and delta.get(r, 0) % 4 == 0
+        if al: L.al.add((r, off & 3))
+        L.unchk.setdefault(a, {})[(role, kk)] = (reg, al)
+        g = groups.setdefault((r, reg), [off, off]); g[0] = min(g[0], off); g[1] = max(g[1], off)
+    L.groups = groups; L.step = delta
+    L.cmin = sum(bcyc[a] for a in body if a in bcyc and a not in skip) + (10 if ib.op == 'dbcc' else 0)
+    if not (L.unchk or L.split) or not 0 < L.cmin < 0x4000: return None
+    L.mask = sum(1 << r for r in L.split)
+    # los ciclos de los bloques que se hacen en todas las vueltas se suman de una vez en H; si se sale antes de
+    # llegar a alguno, se quitan al salir
+    L.always = sorted(a for a in body if a in bcyc and a not in skip)
+    L.cyc0 = sum(bcyc[a] for a in L.always)
+    L.rest = lambda a: ('cyr += fb - %d; ' % sum(bcyc[x] for x in L.always if x > a) if any(x > a for x in L.always)
+                        else 'cyr += fb; ') + ''.join('d%d |= dh%d; ' % (r, r) for r in L.split)
+    L.enter = ''.join('dh%d = d%d & 0xFFFF0000u; d%d &= 0xFFFFu; ' % (r, r, r) for r in L.split)
+    return L
+
+def bucles_rapidos(bcyc):
+    loops = {}
+    for b in ADDRS:
+        ib = INS[b]
+        if ib.op not in ('bcc', 'dbcc', 'bra') or ib.target > b or ib.target not in INS or b in IDLE: continue
+        if ib.op != 'bra' and NEXT[b] not in INS: continue
+        h = ib.target; body = []; a = h
+        while a in INS and a < b: body.append(a); a = NEXT[a]
+        if a != b or h in loops: continue
+        v = VUELTAS.get(b)
+        if not v or not NCUADROS: continue
+        L = bucle(h, b, body + [b], bcyc)
+        nh = VUELTAS.get(h, (0,))[0]   # veces en H: entradas + saltos atras de B
+        if L and (v[1] * L.cmin >= RAFAGA or v[0] * L.cmin >= MEDIA * NCUADROS) and nh >= VMIN * max(1, nh - v[2]):
+            loops[h] = L
+    return loops
+
+def guarda(L):
+    """entrada de la copia rapida: vueltas que caben en la region de cada An de induccion, contador desplazado"""
+    s = ['{ u32 fn = 0x%xu, fx, fy;' % NMAX]
+    for (r, reg), (omin, omax) in sorted(L.groups.items()):
+        lo, n, st = REG_LO[reg], REG_SZ[reg], L.step.get(r, 0)
+        s.append('fx = a%d + 0x%xu; fy = a%d + 0x%xu;' % (r, (omin - lo) & 0xFFFFFFFF, r, (omax - lo) & 0xFFFFFFFF))
+        k = '(0x%xu - fy) / %du + 1' % (n - 1, st) if st > 0 else 'fx / %du + 1' % -st if st < 0 else None
+        s.append('if (fx >= 0x%xu || fy >= 0x%xu) fn = 0;%s' % (n, n, ' else { fx = %s; if (fx < fn) fn = fx; }' % k if k else ''))
+    for r, o in sorted(L.al): s.append('if ((a%d + %du) & 2) fn = 0;' % (r, o))
+    # con cmin redondeado a potencia de 2 por abajo (desplazamiento): sale antes, nunca despues
+    s.append('if (fn) { fb = cyr + (s32)(fn << %d); if (imask < 6 && fb > 0) fb = 0; cyr -= fb; %sgoto F_%06x; } }'
+             % (L.cmin.bit_length() - 1, L.enter, L.h))
+    return ' '.join(s)
+
+def block_cycles(labs):
+    """ciclos sumados por bloque basico (al principio del bloque)"""
+    CF = ('bcc', 'dbcc', 'bra', 'bsr', 'jsr', 'jmp', 'rts', 'rte')
+    lead = set(labs)
+    for a in ADDRS:
+        if INS[a].op in CF: lead.add(NEXT[a])
+    bcyc = {}; cur = None; cur_last = None
+    for a in ADDRS:
+        if a in lead or cur is None or NEXT.get(cur_last, -1) != a: cur = a; bcyc[cur] = 0
+        bcyc[cur] += cycles(INS[a]); cur_last = a
+    return bcyc
+
 HN, HS = 4096, 17
 # la clave del par de escrituras a la VRAM (RC_VLK en rc_rt.h) guarda 18 bits del pc
 assert ADDRS[-1] < 0x40000, 'codigo 68k por encima de 0x40000: ampliar RC_VLK en rc_rt.h'
@@ -648,7 +927,7 @@ def main(out):
     w('/* generado por rc68.py: World Rally 68000 -> C (uso personal) */\n#define RC_GEN 1\n#define RC_HN %d\n#define RC_HS %d\n' % (HN, HS))
     w('#include "rc_rt.h"\n#define RC_IRQ6 0x%xu\n' % IRQ6)
     w('const u32 rc_ntaken = %d;\n' % len(taken))
-    w('void rc_run(u32 start_pc)\n{\n    RC_LOCALS\n')
+    w('RC_RUN_ATTR void rc_run(u32 start_pc)\n{\n    RC_LOCALS\n')
     # despacho (rts, rte, jmp indirecto): tabla hash por el pc con las palabras cambiadas (como queda en la RAM,
     # rts lo usa tal cual), sondeo lineal hasta una entrada vacia (clave 0: el pc 0 no es codigo). Con 4096
     # entradas y la clave (k ^ k >> 17) sale a 1,2 lecturas de media
@@ -665,19 +944,34 @@ def main(out):
     if 0 not in slots: w('        [0] = {0, &&rc_k0},\n')
     w('    };\n')
     w('    RC_ENTER\n    DISPATCH(start_pc);\n')
-    # ciclos sumados por bloque basico (al principio del bloque)
-    CF = ('bcc', 'dbcc', 'bra', 'bsr', 'jsr', 'jmp', 'rts', 'rte')
-    lead = set(labs)
-    for a in ADDRS:
-        if INS[a].op in CF: lead.add(NEXT[a])
-    bcyc = {}; cur = None; cur_last = None
-    for a in ADDRS:
-        if a in lead or cur is None or NEXT.get(cur_last, -1) != a: cur = a; bcyc[cur] = 0
-        bcyc[cur] += cycles(INS[a]); cur_last = a
+    bcyc = block_cycles(labs)
+    loops = bucles_rapidos(bcyc)
+    cx = Ctx(labs, live_out)
+    for L in loops.values():
+        cx.slow[L.b] = L.h
+        if INS[L.b].op != 'bra': labs.add(NEXT[L.b])   # salida de la copia rapida
+    def copia(L):
+        # copia rapida del cuerpo (va justo antes de su entrada L_H: cerca en la cache de instrucciones)
+        cf = Ctx(labs, live_out); cf.fast = L; cf.live_in = live_in
+        out = ['    /* copia rapida del bucle %06x-%06x: %s */\n' % (L.h, L.b, ', '.join(['d%d.w' % r for r in L.split] +
+               ['a%d %s %+d %d..%d' % (r, reg, L.step.get(r, 0), g[0], g[1]) for (r, reg), g in sorted(L.groups.items())]))]
+        for a in L.body:
+            i = INS[a]
+            lines = gen_ins(i, live_out, labs, taken, cf)
+            lab = 'F_%06x: ' % a if a == L.h or a in L.targets else ''
+            cy = ' CYC(%d);' % (L.cyc0 if a == L.h else bcyc[a]) if a in bcyc and (a == L.h or a not in L.always) else ''
+            lv = live_in[a] & ~cf.dflags if a == L.b else live_in[a]   # las aplazadas aun no estan escritas
+            out.append('%sRC_FJ(%d); CK(0x%x, %d); RC_FS(%d);%s /* %r */\n' % (lab, L.mask, a, lv, L.mask, cy, i))
+            out += ['    ' + l + '\n' for l in lines]
+        return out
     for a in ADDRS:
         i = INS[a]
-        lines = gen_ins(i, live_out, labs, taken)
+        lines = gen_ins(i, live_out, labs, taken, cx)
         lab = 'L_%06x: ' % a if a in labs else ''
+        if a in loops:
+            w('    goto L_%06x;\n' % a)
+            for l in copia(loops[a]): w(l)
+            lab = 'L_%06x: %s\nS_%06x: ' % (a, guarda(loops[a]), a)
         cy = ' CYC(%d);' % bcyc[a] if a in bcyc else ''
         w('%sCK(0x%x, %d);%s' % (lab, a, live_in[a], cy))
         if a in IDLE: w(' IDLEHINT(%s);' % COND_EXPR[i.cond])
@@ -687,6 +981,8 @@ def main(out):
     w('    RC_EXIT_CODE\n}\n')
     f.close()
     print('instr', len(ADDRS), 'etiquetas', len(labs), 'despacho', len(taken), 'esperas', ' '.join('%x' % x for x in sorted(IDLE)), file=sys.stderr)
+    print('bcc fusionados %d, bucles rapidos %d (%d sin comprobar region, %d con Dn partidos)' % (len(cx.fuse), len(loops),
+          sum(1 for L in loops.values() if L.unchk), sum(1 for L in loops.values() if L.split)), file=sys.stderr)
 
 if __name__ == '__main__':
     main(sys.argv[1] if len(sys.argv) > 1 else 'wr_rc.c')
