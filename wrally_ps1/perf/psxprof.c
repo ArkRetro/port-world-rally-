@@ -78,6 +78,52 @@ static FILE *evf;
 static u16 spu[0x200];
 static u8 spuram[0x80000];
 static u32 spu_addr;
+static void eventf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+/* teclas de la SPU como el nucleo PSX de MiSTer (rtl/spu.vhd): escribir KON/KOFF SUSTITUYE la mitad del registro
+   (no suma bits) y cada voz mira sus bits una vez por muestra (24 voces repartidas en los 768 ciclos de una muestra a
+   44,1 kHz): primero KOFF (release) y luego KON (empieza). Un bit pisado por otra escritura antes de que su voz lo
+   vea se pierde (SPU_PERDIDA). El fin de cada voz se calcula con la bandera de fin de bloque del ADPCM y el tono */
+static u32 spu_kon, spu_koff; static u64 spu_t; static u64 voz_fin[24]; static int voz_on[24];
+static long spu_perdidas;
+static u64 voz_dur(int v)
+{
+    u32 a = (spu[v * 8 + 3] * 8) & 0x7FFFF, n = 0, pitch = spu[v * 8 + 2] ? spu[v * 8 + 2] : 1;
+    while (n < 65536) { u8 f = spuram[(a + 1) & 0x7FFFF]; n++; a += 16; if (f & 1) break; }
+    return (u64)n * 28 * 4096 / pitch * 768;
+}
+static void spu_avanza(void)
+{
+    /* procesar las voces con bits pendientes hasta el ciclo actual */
+    while (spu_kon | spu_koff) {
+        u64 base = spu_t - spu_t % 768; int v, hecho = 0;
+        for (v = 0; v < 24; v++) {
+            u64 t = base + v * 32;
+            if (t < spu_t) continue;
+            if (t > cyc) { hecho = 1; break; }
+            spu_t = t + 1;
+            if (spu_koff & (1u << v)) { spu_koff &= ~(1u << v); if (voz_on[v]) { voz_on[v] = 0; voz_fin[v] = t; eventf("SPU_OFF voz %d", v); } }
+            if (spu_kon & (1u << v)) {
+                char ant[48] = "";
+                spu_kon &= ~(1u << v);
+                /* la voz sonaba: silencio desde que acabo (hueco) o lo que le faltaba (corte) */
+                if (voz_on[v]) snprintf(ant, sizeof ant, voz_fin[v] <= t ? " hueco_ms %.1f" : " corte_ms %.1f",
+                    (voz_fin[v] <= t ? t - voz_fin[v] : voz_fin[v] - t) * 1000.0 / CLK);
+                voz_on[v] = 1; voz_fin[v] = t + voz_dur(v);
+                eventf("SPU_ON voz %d addr %u fin_ms %.1f%s", v, spu[v * 8 + 3] * 8, (voz_fin[v] - t) * 1000.0 / CLK, ant);
+            }
+        }
+        if (hecho) break;
+        if (v == 24) spu_t = base + 768;
+    }
+    if (!(spu_kon | spu_koff)) spu_t = cyc;
+}
+static u32 spu_endx(void)
+{
+    u32 m = 0; int v;
+    spu_avanza();
+    for (v = 0; v < 24; v++) if (!voz_on[v] || cyc >= voz_fin[v]) m |= 1u << v;
+    return m;
+}
 /* ---- mando */
 static int joy_state, joy_byte_pending; static u64 joy_rx_at, joy_ack_at; static u8 joy_rx; static int joy_rx_valid;
 static u64 joy_tx_busy_until; static u16 joy_ctrl, joy_mode, joy_baud; static int joy_seq; static u16 pad_buttons = 0xFFFF;
@@ -91,7 +137,6 @@ static u32 sym_ram, sym_vram, sym_pal, sym_spr, sym_vregs;
 static u32 fnv(u32 h, u32 a, u32 n) { u32 i; a &= 0x1FFFFF; for (i = 0; i < n; i++) { h ^= ram[(a + i) & 0x1FFFFF]; h *= 16777619u; } return h; }
 static u32 state_hash(void) { u32 h = 2166136261u; if (!sym_ram) return 0; h = fnv(h, sym_ram, 0x4000); h = fnv(h, sym_vram, 0x4000); h = fnv(h, sym_pal, 0x4000); h = fnv(h, sym_spr, 0x1000); h = fnv(h, sym_vregs, 0x10); return h; }
 
-static void eventf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 #include <stdarg.h>
 static void eventf(const char *fmt, ...)
 {
@@ -676,7 +721,10 @@ static u32 io_read(u32 a, int sz, int *cost)
         u32 r = (o - 0xC00) / 2;
         *cost = IO_SPU;
         if (o == 0xDAE) return spu[(0xDAA - 0xC00) / 2] & 0x3F;
-        if (o == 0xD9C || o == 0xD9E) return 0xFFFF;   /* ENDX: todas terminadas */
+        if (o == 0xD9C) return spu_endx() & 0xFFFF;
+        if (o == 0xD9E) return spu_endx() >> 16;
+        if (o == 0xD88) return spu_kon & 0xFFFF;
+        if (o == 0xD8C) return spu_koff & 0xFFFF;
         return spu[r];
     }
     switch (o) {
@@ -715,11 +763,15 @@ static void io_write(u32 a, u32 v, int sz, int *cost)
         *cost = IO_SPU;
         spu[r] = (u16)v;
         if (o == 0xDA6) spu_addr = (v & 0xFFFF) * 8;
-        if (o == 0xD88 || o == 0xD8A) {   /* KON */
-            int vb = o == 0xD88 ? 0 : 16, k;
-            for (k = 0; k < 16; k++) if (v & (1 << k)) eventf("SPU_KON voz %d addr %u", vb + k, spu[(vb + k) * 8 + 3] * 8);
+        if (o >= 0xD88 && o <= 0xD8E) {   /* KON / KOFF: se sustituye la mitad del registro */
+            u32 *rg = o < 0xD8C ? &spu_kon : &spu_koff, sh = (o & 2) ? 16 : 0, perd;
+            int k;
+            spu_avanza();
+            perd = (*rg >> sh) & 0xFFFF & ~v;
+            for (k = 0; k < 16; k++) if (perd & (1 << k)) { spu_perdidas++; eventf("SPU_PERDIDA %s voz %d", o < 0xD8C ? "KON" : "KOFF", (int)sh + k); }
+            *rg = (*rg & ~(0xFFFFu << sh)) | ((v & 0xFFFF) << sh);
+            for (k = 0; k < 16; k++) if (v & (1 << k)) eventf("SPU_%s voz %d addr %u", o < 0xD8C ? "KON" : "KOFF", (int)sh + k, spu[(sh + k) * 8 + 3] * 8);
         }
-        if (o == 0xD8C) { int k; for (k = 0; k < 16; k++) if (v & (1 << k)) eventf("SPU_KOFF voz %d", k); }
         return;
     }
     switch (o) {
@@ -1002,6 +1054,7 @@ int main(int argc, char **argv)
     if (evf) fclose(evf);
     if (framef) fclose(framef);
     fprintf(stderr, "perfil desde ciclo %llu (%.2f s)\n", (unsigned long long)prof_from_cyc, (cyc - prof_from_cyc) / CLK);
+    fprintf(stderr, "SPU: %ld teclas pisadas antes de que su voz las viera\n", spu_perdidas);
     fprintf(stderr, "fin: %ld cuadros de juego, %llu vblanks, %.2f s emulados, %.1f cuadros de juego/s\n", game_frame, (unsigned long long)vbl_count,
             cyc / CLK, game_frame / (cyc / CLK));
     return 0;

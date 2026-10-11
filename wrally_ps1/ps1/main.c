@@ -917,6 +917,7 @@ static u32 lines_acc, lines_avg, rend_acc, rend_avg; static u16 t_rend0, t_pad, 
 static int lastv;
 void rc_vblank(void)
 {
+    void snd_spu(int n);
     u16 pad;
     int used, draw = 1;
     {   /* lineas usadas por el juego desde la ultima vuelta (temporizador 1 contando HBLANK) */
@@ -988,6 +989,7 @@ void rc_vblank(void)
     cd_poll();
     level_check();                       /* recorrido nuevo: paquetes del CD (con pantalla de carga) */
     cache_load();                        /* tiles que faltan: se piden al CD sin esperar */
+    snd_spu(0);                          /* frases de la SPU que acaban de terminar: el juego las ve libres ya */
     frame_id++;
     nframe++;
     {

@@ -63,9 +63,9 @@ void rc_wr16(u32 a, u32 v, u32 pc)
 /* ---- OKI M6295: orden de frases, canales ocupados (estado en 0x70000F) y banco (0x70000D). Cada frase ocupa su
    canal lo que dura (oki_len, en pasos de 1/60 s): en el PC un paso por cuadro (rc_oki_frame); en la PS1 por
    tiempo real (rc_oki_tick con los pasos pasados), y la plataforma puede retener el canal hasta que la frase
-   acabe de verdad (pistas de CD-DA, que empiezan tras la busqueda). Con -DOKI_CUADROS (aqui y en main.c) se
-   vuelve a lo de antes, pasos por cuadro del juego y estado libre al empezar cada cuadro, con lo que la huella
-   del estado del juego coincide con perf/ref_estado.txt */
+   acabe de verdad (pistas de CD-DA, que empiezan tras la busqueda; voces de la SPU) y soltarlo en cuanto acaba
+   (rc_oki_end). Con -DOKI_CUADROS (aqui y en main.c) se vuelve a lo de antes, pasos por cuadro del juego y estado
+   libre al empezar cada cuadro, con lo que la huella del estado del juego coincide con perf/ref_estado.txt */
 extern const unsigned short oki_len[16][128];
 static u8 oki_wait, oki_phr, oki_bank, oki_hold;
 static u16 oki_cnt[4];
@@ -88,6 +88,14 @@ void rc_oki_hold(int c, int on)
 {
 #ifndef OKI_CUADROS
     if (on) oki_hold |= 1 << c; else oki_hold &= ~(1 << c);
+#endif
+}
+/* la plataforma sabe que la frase del canal c ya ha acabado de verdad (la voz de la SPU llego a su ultimo bloque):
+   canal libre ya, sin esperar a la cuenta */
+void rc_oki_end(int c)
+{
+#ifndef OKI_CUADROS
+    oki_hold &= ~(1 << c); oki_busy &= ~(1 << c); oki_cnt[c] = 0; oki_status();
 #endif
 }
 void rc_wr8(u32 a, u32 v, u32 pc)
