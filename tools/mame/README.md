@@ -16,3 +16,5 @@ QT_QPA_PLATFORM=offscreen mame neogeo wrally -rompath roms -hashpath . -video no
 python3 -I wdgaps.py debug.log
 ```
 `inputs.lua` mete moneda/start/A para llegar a la partida. `cartwrites.cmd` registra escrituras al espacio del cartucho y al registro de banco.
+
+`exceptions.cmd` marca los manejadores de excepcion del 68k (vectores 2-8 del P-ROM); `sysregs.cmd` registra escrituras a 0x3A00xx/0x380000. Resultado en MAME: ninguna excepcion ni acceso sin mapear.
