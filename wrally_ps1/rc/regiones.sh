@@ -18,10 +18,11 @@ m = [0] * 0x10000
 for f in sys.argv[1:]:
     for i, v in enumerate(struct.unpack('<65536H', open(f, 'rb').read())): m[i] |= v
 NOM = {1: 'rom', 2: 'ram', 4: 'vram', 8: 'pal', 16: 'spr', 32: 'vregs'}
-def one(b, ok): return NOM[b] if b in NOM and NOM[b] in ok else '-'
-print('# pc lectura escritura (region unica vista en el banco de pruebas; - = ninguna o varias). rc/regiones.sh')
+def one(b, ok): b &= 0x7F; return NOM[b] if b in NOM and NOM[b] in ok else '-'
+print('# pc lectura escritura alineada (region unica vista en el banco de pruebas, - = ninguna o varias; a = las')
+print('# lecturas de 32 bits siempre alineadas a 4). rc/regiones.sh')
 for i, v in enumerate(m):
-    r, w = one(v & 0xFF, ('rom', 'ram', 'vram', 'pal', 'spr', 'vregs')), one(v >> 8, ('ram', 'pal', 'spr', 'vregs'))
-    if r != '-' or w != '-': print('%06x %s %s' % (i * 2, r, w))
+    r, w = one(v & 0xFF, ('rom', 'ram', 'vram', 'pal', 'spr', 'vregs')), one(v >> 8, ('ram', 'vram', 'pal', 'spr', 'vregs'))
+    if r != '-' or w != '-': print('%06x %s %s %s' % (i * 2, r, w, '-' if v & 0x80 else 'a'))
 EOF
 wc -l regiones.txt

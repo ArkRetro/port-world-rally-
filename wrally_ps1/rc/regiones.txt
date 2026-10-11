@@ -1,1500 +1,1271 @@
-# pc lectura escritura (region unica vista en el banco de pruebas; - = ninguna o varias). rc/regiones.sh
-002406 - ram
-002468 - ram
-0024ba rom ram
-0024bc rom pal
-0024be - ram
-0024c2 - ram
-0024de rom ram
-0024e0 rom pal
-002564 - ram
-002574 - ram
-002584 - ram
-002594 - ram
-0025a4 - ram
-0025b4 - ram
-0025c4 - ram
-0025d4 - ram
-0025e4 - ram
-0025f4 - ram
-002604 - ram
-002614 - ram
-002624 - ram
-002634 - ram
-002644 - ram
-002654 - ram
-002664 - ram
-002674 - ram
-002684 - ram
-0026a2 rom ram
-0026a4 rom pal
-0026c0 rom ram
-0026c2 rom pal
-0026de rom ram
-0026e0 rom pal
-0026fc rom ram
-0026fe rom pal
-002714 rom -
-002716 - ram
-002726 - ram
-00273a - ram
-00274e - ram
-00275c - ram
-002776 - ram
-00277e - ram
-00278a - ram
-0027dc - ram
-0027e8 - ram
-0027f4 - ram
-00281a - ram
-002820 - ram
-002862 ram -
-00289c ram -
-002f82 - ram
-002f8a ram -
-002f8c - vregs
-002f94 - ram
-002fe6 - ram
-002fea - ram
-002fee - ram
-002ff2 - ram
-002ff6 - ram
-002ffa - ram
-002ffe - ram
-003004 - ram
-003008 - ram
-00301a - ram
-00303a - ram
-00303e - ram
-003042 - ram
-003124 - ram
-003188 - ram
-0031c8 ram -
-0031cc ram -
-0031ce - ram
-0031d2 - ram
-0031d6 - ram
-00320e vram -
-003224 - ram
-003270 - ram
-00328c vram -
-0032a0 - ram
-0032ae vram -
-0032be - ram
-0032f6 - ram
-0032fc - ram
-003306 - ram
-00330a - ram
-00330e ram -
-0033c8 - ram
-0033ce - ram
-0033d2 - ram
-0033d6 - ram
-0033e0 - ram
-0033e2 - ram
-0033e6 - ram
-0033ea - ram
-0033f8 - ram
-00340a - ram
-00340c - ram
-00342c rom -
-003522 - ram
-003526 - ram
-00352a - ram
-00352e - ram
-003532 - ram
-003536 - ram
-00353a - ram
-00353e - ram
-003542 - ram
-003546 - ram
-00354a - ram
-00354e - ram
-003552 - ram
-003556 - ram
-00355a - ram
-00355e - ram
-003562 - ram
-003566 - ram
-00356a - ram
-00356e - ram
-003572 - ram
-003576 - ram
-00357a - ram
-00357e - ram
-003582 - ram
-003586 - ram
-00358a - ram
-00358e - ram
-003592 - ram
-003596 - ram
-00359a - ram
-00359e - ram
-0035a4 - ram
-0035a8 - ram
-0035ac - ram
-0035b0 - ram
-0035b4 - ram
-0035b8 - ram
-0035bc - ram
-0035c0 - ram
-0035c4 - ram
-0035c8 - ram
-0035d2 - ram
-0035d4 - ram
-0035e8 - ram
-003624 - ram
-003630 - ram
-00363c - ram
-003640 - ram
-00365e - ram
-00370a rom -
-003712 vram -
-003738 rom -
-003740 vram -
-00376e vram -
-0037e0 ram -
-0037f2 ram -
-00386c ram -
-0038d2 - ram
-0038fc - ram
-003904 ram -
-003916 ram -
-00397c rom ram
-00397e rom pal
-0039c2 ram -
-003a10 ram -
-003a44 - ram
-003a46 - ram
-003a5c - ram
-003a5e - ram
-003a9e - ram
-003aa0 - ram
-003ac6 ram -
-003ae8 - ram
-003b08 ram -
-003b16 - ram
-003b18 - ram
-003b2a ram -
-003b90 ram -
-003b9c - ram
-003b9e - ram
-003ba8 ram -
-003be8 - ram
-003c98 - ram
-003c9c ram -
-003cb2 - ram
-003cb8 - ram
-003cce - ram
-003cd0 - ram
-003cf0 - ram
-003cf6 - ram
-003d04 ram -
-003d5c - ram
-003db8 ram -
-003dd0 rom -
-003dfe rom -
-003e04 vram -
-003e0a rom -
-003e10 vram -
-003e24 rom -
-003e2a vram -
-003e74 rom -
-003e7a vram ram
-003e84 ram -
-003e9e ram -
-003eb4 ram -
-003fb2 ram -
-004024 - ram
-00404e ram -
-004080 ram -
-004094 ram -
-0040a6 ram -
-00435e ram -
-0043e0 ram -
-00443e ram -
-004456 - vregs
-004468 - vregs
-00447a - vregs
-00448c - vregs
-004492 ram -
-0044fe ram spr
-004500 ram spr
-004518 ram spr
-00451a ram spr
-004538 ram spr
-00453a ram spr
-00456a - spr
-00457a ram -
-00459c - ram
-0045aa ram -
-0045b0 ram -
-0045b4 ram -
-0045be rom -
-0045c2 ram -
-0045c6 ram -
-0045d4 rom -
-004618 rom -
-004628 rom -
-004630 - ram
-004634 rom -
-004646 - ram
-004648 ram ram
-004700 ram -
-004706 ram -
-00470e - ram
-004710 ram -
-004716 - ram
-00471a ram -
-00472a ram -
-004732 ram -
-004748 rom -
-00474c ram -
-004750 ram -
-00475e rom -
-0047a4 rom -
-0047ac rom -
-0047b4 - ram
-0047b8 rom -
-0047bc ram -
-0047dc - ram
-0047de ram ram
-0048b2 ram -
-0048ba - ram
-0048be ram -
-0048d4 ram -
-0048dc ram -
-0048e4 ram -
-0048f8 rom -
-0048fe rom -
-004914 - ram
-004918 rom -
-004920 rom ram
-004922 rom -
-004928 ram -
-004940 ram ram
-004946 ram ram
-00494a rom -
-004952 - ram
-00495e ram -
-0049e2 rom -
-0049ea ram -
-0049ee rom -
-0049f6 rom -
-004a0a rom -
-004a0e rom -
-004a12 rom -
-004a20 rom -
-004a42 - ram
-004a52 rom -
-004a5a rom -
-004a64 - ram
-004a66 rom -
-004a6a rom -
-004a90 - ram
-004a9c ram -
-004b8c - ram
-004c46 ram -
-004d4c ram -
-004dba rom -
-004dde - ram
-004de0 - ram
-004e02 - ram
-004e36 ram -
-004e42 ram -
-004e46 ram -
-004e4a - ram
-004e4e - ram
-004e52 - ram
-004e6c ram -
-004e78 ram -
-004e7c ram -
-004e80 - ram
-004e84 - ram
-004e88 - ram
-004eaa ram -
-004eac ram -
-005014 - ram
-00502a rom -
-005050 - ram
-00506a - ram
-005072 rom -
-005096 - ram
-0050d6 ram ram
-0050e8 ram ram
-0050f2 - ram
-0050fe ram -
-005122 - ram
-0051d0 ram -
-0051e4 - ram
-0051f4 ram -
-00520a ram -
-005a52 ram -
-005a64 ram -
-005d6c rom -
-005d88 rom -
-005e14 ram -
-005e16 - ram
-005e36 ram -
-005e3a ram -
-005e8c rom -
-005e9c ram -
-005edc ram -
-005ef6 ram ram
-005ef8 ram ram
-005f16 ram -
-005f2c ram -
-005f38 - ram
-005f7a - ram
-005fae - ram
-005fd4 ram -
-00604c vram -
-006084 ram -
-0060aa rom -
-0060d2 ram -
-0060d4 - ram
-0060f0 - ram
-00611e ram -
-006120 - ram
-00613c - ram
-006164 ram -
-006186 - ram
-00622a - ram
-00622e - ram
-00623a ram -
-006292 ram -
-0062a6 ram -
-0062b0 - ram
-0062b4 ram -
-0063a6 - ram
-0063aa - ram
-0063b6 ram -
-0063fa ram -
-00640e ram -
-006418 - ram
-00641c ram -
-006446 ram -
-006474 ram -
-00651e ram -
-006560 ram -
-00658a ram -
-0065b6 ram -
-00663a ram -
-00673c - ram
-006740 ram -
-0067ee - ram
-0067f6 - ram
-006804 ram -
-006850 ram -
-0068c8 ram -
-0068f6 ram -
-006918 ram -
-006968 ram -
-00698e ram -
-006a0c ram -
-006a24 rom -
-006a32 rom -
-006a54 ram -
-006a62 ram -
-006ad2 ram -
-006ae8 - ram
-006b14 - ram
-006b44 ram -
-006b4e ram -
-006bda - ram
-006bee - ram
-006c52 ram -
-006c76 vram -
-006ca0 ram -
-006cd8 ram -
-006cfe ram -
-006d8c rom -
-006d90 rom -
-006db8 - ram
-006dc8 ram -
-006dd8 ram -
-006df0 ram -
-006dfc - ram
-006e00 ram -
-006f4a ram -
-006f50 ram -
-006f52 - ram
-006f54 rom ram
-006ff0 - ram
-00702c - ram
-007064 ram -
-007094 ram -
-00712a ram -
-00715e rom -
-007164 rom -
-007178 - ram
-0071b8 - ram
-0071d0 ram -
-007232 ram -
-007268 ram -
-00731c rom -
-007320 rom -
-007356 - ram
-007386 ram -
-00747e ram -
-00748c ram -
-007518 vram -
-00758a ram -
-00759e ram -
-0075b0 ram -
-0075d6 ram -
-007606 - ram
-007638 - ram
-0076d4 ram -
-0076fe rom -
-007714 ram -
-00771e ram -
-007750 ram -
-007758 - ram
-007772 ram -
-00777a - ram
-00778e - ram
-00779c ram -
-0077a6 ram -
-0077d8 - ram
-0077dc ram -
-0077e0 ram -
-0077e8 ram -
-0077ee - ram
-0077f2 ram -
-0077f8 - ram
-007804 - ram
-007806 ram -
-00787a rom -
-0078ae rom -
-007944 - ram
-007952 - ram
-007962 - ram
-007988 - ram
-0079ae - ram
-0079b6 ram -
-0079c8 ram -
-007a00 ram -
-007a04 ram -
-007a08 - ram
-007a0c - ram
-007a10 - ram
-007a26 vram -
-007a2c ram -
-007a3e ram -
-007a74 ram -
-007a78 ram -
-007a7c - ram
-007a80 - ram
-007ac6 - ram
-007afe ram -
-007b0c ram -
-007b28 - ram
-007b3e - ram
-007b42 ram -
-007b46 ram -
-007b64 rom -
-007b68 ram -
-007b6a rom -
-007b6e ram -
-007b7c - ram
-007b80 - ram
-007b84 - ram
-007b88 ram -
-007b98 ram -
-007bae ram -
-007c26 - ram
-007c6e - ram
-007cbc - ram
-007cc0 - ram
-007cfa rom -
-007cfe ram -
-007d00 rom -
-007d04 ram -
-007d08 - ram
-007d48 - ram
-007d4c - ram
-007d50 - ram
-007d54 - ram
-007d64 ram -
-007d76 ram -
-007dca ram -
-007dd6 ram -
-007dd8 - ram
-007de6 - ram
-007dea - ram
-007e0e ram -
-007e10 - ram
-007e3a rom -
-007e3e rom -
-007e42 ram -
-007e44 ram -
-007e5c ram -
-007e6e ram -
-007ebe - ram
-007ef2 vram -
-007f0a ram -
-007f3e ram -
-007f50 ram -
-007f92 ram -
-007f94 ram -
-007f98 - ram
-007f9c - ram
-007fa0 - ram
-007fa4 ram -
-007fbc ram -
-007fce ram -
-007ff4 - ram
-008000 ram -
-008014 ram -
-008038 - ram
-00805e - ram
-008064 - ram
-00806e - ram
-00808e - ram
-0080ac - ram
-0080d6 - ram
-0080ec - ram
-0080f2 - ram
-00815e - ram
-00832a vram -
-008338 ram -
-008744 ram -
-00876c - ram
-00877e - ram
-008792 ram pal
-00879c - ram
-0087b6 rom pal
-0087b8 rom ram
-008814 rom -
-00882e rom ram
-008830 rom pal
-008858 rom ram
-00885a rom pal
-008886 - ram
-00889a - ram
-0088a6 ram -
-0088b8 vram -
-0088c6 - ram
-0088d2 - ram
-00890e rom -
-008912 - ram
-00891c ram -
-008940 ram -
-00895c ram -
-00896a ram -
-00897a ram -
-00899a - ram
-00899c - pal
-0089aa - pal
-0089b4 - ram
-0089e2 ram -
-0089ea - ram
-008a02 - ram
-008a3a vram -
-008a4e ram -
-008a54 - ram
-008a6c ram -
-008aa0 - pal
-008aa2 - ram
-008abc ram -
-008ad4 ram -
-008b08 - pal
-008b10 ram pal
-008b36 ram -
-008b62 rom ram
-008b64 rom pal
-008b9c rom -
-008ba0 rom ram
-008ba2 rom pal
-008bb8 rom ram
-008bba rom pal
-008bf4 ram -
-008c40 rom -
-008c48 vram -
-008c54 ram -
-008c76 rom -
-008c7e vram -
-008df0 ram -
-008f06 rom -
-008f6a vram -
-008fdc vram ram
-009072 rom -
-00907a vram -
-0090f8 - ram
-0091a0 - ram
-009214 rom -
-00921c rom -
-00932c - ram
-00934c vram -
-009360 - ram
-009378 - ram
-009382 vram -
-00939e - ram
-0093ba - ram
-0093e2 - ram
-009454 - ram
-00946e - ram
-009476 - ram
-00948a rom ram
-009490 vram -
-00949a ram -
-0094f2 ram -
-00952c - ram
-00953c - ram
-009586 - ram
-0095aa - ram
-0095c2 ram -
-0095dc ram -
-00969c rom -
-0096e0 - ram
-0096e6 - ram
-0096e8 - ram
-0096ec - ram
-0096f6 ram -
-009748 - ram
-0097cc - ram
-00988a - ram
-0098d6 ram -
-0098ec - ram
-0098ee - ram
-0098f0 - ram
-0098f2 - ram
-0098fa - ram
-0098fe - ram
-009900 - ram
-009916 rom -
-00992e - ram
-00993e ram -
-009948 - ram
-009952 ram -
-009958 ram -
-00996c ram -
-00996e ram -
-009970 - ram
-009974 ram -
-009988 - ram
-00998a - ram
-00998c - ram
-00998e - ram
-009996 - ram
-00999a - ram
-00999c - ram
-0099b2 rom -
-0099d0 - ram
-0099e0 ram -
-0099ee - ram
-0099f8 ram -
-0099fe ram -
-009a10 ram -
-009a12 ram -
-009a14 - ram
-009a18 ram -
-009a36 ram -
-009a4c rom -
-009a5a ram -
-009a8c - ram
-009b16 - ram
-009bc2 - ram
-009c0e ram -
-009c24 - ram
-009c26 - ram
-009c28 - ram
-009c2a - ram
-009c32 - ram
-009c36 - ram
-009c38 - ram
-009c4e rom -
-009c66 - ram
-009c76 ram -
-009c8a ram -
-009c90 ram -
-009ca4 ram -
-009ca6 ram -
-009cac ram -
-009cc0 - ram
-009cc2 - ram
-009cc4 - ram
-009cc6 - ram
-009cce - ram
-009cd2 - ram
-009cd4 - ram
-009cea rom -
-009d08 - ram
-009d18 ram -
-009d26 - ram
-009d30 ram -
-009d36 ram -
-009d48 ram -
-009d4a ram -
-009d50 ram -
-009d6e ram -
-009d84 rom -
-009d92 ram -
-009dce ram -
-009e0e vram -
-009e38 vram -
-009e56 rom -
-009e76 rom -
-009eb4 ram -
-009f5c vram -
-009f60 - ram
-009f62 vram -
-009f6e - ram
-009faa - ram
-009fd8 - ram
-00a012 - ram
-00a07a rom -
-00a082 rom -
-00a094 rom -
-00a0a0 ram -
-00a0e2 rom -
-00a0ee rom -
-00a10a - ram
-00a10c - ram
-00a140 ram -
-00a17c ram -
-00a194 - ram
-00a1b4 - ram
-00a1cc - ram
-00a1ec - ram
-00a238 ram -
-00a242 ram -
-00a24a ram -
-00a254 - ram
-00a256 ram -
-00a288 ram -
-00a296 vram -
-00a2f6 ram -
-00a300 ram -
-00a306 - ram
-00a328 ram -
-00a354 ram -
-00a362 ram -
-00a3be rom -
-00a3dc ram -
-00a3de ram -
-00a412 ram -
-00a444 vram -
-00a854 - ram
-00a874 rom -
-00a928 rom -
-00a950 rom -
-00a95c rom -
-00a97a rom -
-00aa0a rom -
-00aa9a - ram
-00aa9e - ram
-00aafe - ram
-00ab04 ram -
-00ab9c - ram
-00abd6 ram -
-00ac3e rom -
-00ac60 rom -
-00ac70 - ram
-00aca6 ram -
-00accc ram -
-00acf2 ram -
-00adfc - ram
-00aef4 ram -
-00af1e ram -
-00af38 ram -
-00af46 ram -
-00afac ram -
-00afc0 ram -
-00b006 ram -
-00b01e - pal
-00b020 - ram
-00b052 - ram
-00b062 ram -
-00b082 - ram
-00b148 ram ram
-00b14a - ram
-00b178 ram ram
-00b184 ram -
-00b186 - ram
-00b1a0 ram -
-00b1a4 ram -
-00b1ac ram -
-00b1b0 ram -
-00b242 vram -
-00b248 ram -
-00b268 - spr
-00b27e - ram
-00b290 vram -
-00b334 rom -
-00b336 vram ram
-00b34c rom ram
-00b358 vram -
-00b398 - ram
-00b3b0 - ram
-00b3c4 - ram
-00b3d8 - ram
-00b4d8 vram -
-00b4e2 - ram
-00b4f8 rom ram
-00b4fe ram -
-00b666 - ram
-00b68a - ram
-00b690 - ram
-00b6ce - ram
-00b6e8 rom ram
-00b6ea rom pal
-00b706 rom ram
-00b708 rom pal
-00b724 rom ram
-00b726 rom pal
-00b742 rom ram
-00b744 rom pal
-00b760 rom ram
-00b762 rom pal
-00b77e rom ram
-00b780 rom pal
-00b79c rom ram
-00b79e rom pal
-00b7ba rom ram
-00b7bc rom pal
-00b7d8 rom ram
-00b7da rom pal
-00b7f6 rom ram
-00b7f8 rom pal
-00b814 rom ram
-00b816 rom pal
-00b832 rom ram
-00b834 rom pal
-00b84a pal pal
-00b860 ram ram
-00b866 - ram
-00b880 rom ram
-00b882 rom pal
-00b888 - ram
-00b8a2 rom ram
-00b8a4 rom pal
-00b8c0 rom ram
-00b8c2 rom pal
-00b8ce vram -
-00b92e - ram
-00b940 rom -
-00b94e - ram
-00b9e6 - ram
-00ba1a - ram
-00ba1e - ram
-00ba22 - ram
-00ba56 - ram
-00ba98 rom ram
-00ba9a rom pal
-00bc2e - ram
-00bc32 - ram
-00bc3c - ram
-00bc5c - ram
-00bc70 - ram
-00bc84 rom -
-00bca0 - ram
-00bcb0 - ram
-00bcce - ram
-00bcec rom -
-00bd10 - ram
-00bd1e - ram
-00bd2a - ram
-00bd38 vram -
-00bd80 - ram
-00bdae - ram
-00bde4 - ram
-00bdf2 - ram
-00be00 - ram
-00be0e - ram
-00be20 rom -
-00be2a vram -
-00be34 - ram
-00be40 - ram
-00be70 - ram
-00be7a - ram
-00be94 - ram
-00beb4 rom -
-00bebc vram -
-00bec2 - ram
-00bf26 - ram
-00bf40 rom ram
-00bf42 rom pal
-00bf5e rom ram
-00bf60 rom pal
-00bf7c rom ram
-00bf7e rom pal
-00bf9a rom ram
-00bf9c rom pal
-00bfa6 - ram
-00bfc0 rom ram
-00bfc2 rom pal
-00bfe6 rom ram
-00bfe8 rom pal
-00c004 rom ram
-00c006 rom pal
-00c022 rom ram
-00c024 rom pal
-00c040 rom ram
-00c042 rom pal
-00c05e rom ram
-00c060 rom pal
-00c07c rom ram
-00c07e rom pal
-00c09a rom ram
-00c09c rom pal
-00c0b2 - ram
-00c0b6 - ram
-00c114 rom ram
-00c116 rom pal
-00c136 rom ram
-00c138 rom pal
-00c13e vram -
-00c158 rom -
-00c1b4 - pal
-00c1bc - pal
-00c1c4 - ram
-00c1cc - ram
-00c1e0 - pal
-00c1e8 - pal
-00c1f0 - ram
-00c1f8 - ram
-00c222 - ram
-00c24c - ram
-00c280 - ram
-00c294 - ram
-00c2a8 - ram
-00c2da - ram
-00c332 - ram
-00c338 - ram
-00c360 vram -
-00c36a vram -
-00c3ae ram -
-00c3bc - ram
-00c3c0 - ram
-00c3d0 - ram
-00c3de - ram
-00d24a - ram
-00d262 - ram
-00d264 - ram
-00d268 - ram
-00d278 - ram
-00d27a - ram
-00d27e - ram
-00d288 ram -
-00d2a6 - ram
-00d2aa - ram
-00d2e2 - ram
-00d308 - ram
-00d372 - ram
-00d37a - ram
-00d3a4 rom ram
-00d3a6 rom pal
-00d3c2 rom ram
-00d3c4 rom pal
-00d3e0 rom ram
-00d3e2 rom pal
-00d3fe rom ram
-00d400 rom pal
-00d406 - ram
-00d420 rom ram
-00d422 rom pal
-00d43e rom ram
-00d440 rom pal
-00d45c rom ram
-00d45e rom pal
-00d47a rom ram
-00d47c rom pal
-00d49c rom ram
-00d49e rom pal
-00d4c6 rom ram
-00d4c8 rom pal
-00d4ee - ram
-00d502 rom -
-00d516 rom ram
-00d518 rom pal
-00d60a - ram
-00d688 - ram
-00d73a - ram
-00d73e - ram
-00d742 - ram
-00d752 - ram
-00d756 - ram
-00d760 - ram
-00d764 - ram
-00d9ac - ram
-00d9b8 ram -
-00d9fc - ram
-00da10 - ram
-00da2a rom ram
-00da2c rom pal
-00da2e - ram
-00da50 rom -
-00da52 - ram
-00da66 - ram
-00da7a rom ram
-00da90 - pal
-00da94 - ram
-00dabc rom ram
-00dad2 rom ram
-00dad8 - ram
-00db04 - ram
-00db0c - ram
-00db32 - ram
-00db5c - ram
-00db7c - ram
-00db80 - ram
-00db84 - ram
-00dba2 rom ram
-00dbc0 - pal
-00dbc4 - ram
-00dc02 - ram
-00dc30 - ram
-00dc34 - ram
-00dc38 - ram
-00dc48 - ram
-00dc62 rom ram
-00dc64 rom pal
-00dc9a - ram
-00dcbc - ram
-00dcf8 - ram
-00dd12 rom ram
-00dd14 rom pal
-00dd34 - ram
-00dd4e rom ram
-00dd50 rom pal
-00dd70 - ram
-00dd8a rom ram
-00dd8c rom pal
-00ddb0 - ram
-00ddc4 rom ram
-00ddda - pal
-00ddde - ram
-00de06 rom ram
-00de34 rom ram
-00de68 rom ram
-00de6a rom pal
-00de9a rom -
-00de9e - ram
-00deae - ram
-00ded4 - ram
-00dee0 - ram
-00df12 - ram
-00df38 - ram
-00df4e - ram
-00df72 rom ram
-00df90 - pal
-00df94 - ram
-00dfce - ram
-00dfe4 - ram
-00dfe8 - ram
-00dfec - ram
-00e03e rom -
-00e046 vram -
-00e04c rom -
-00e052 rom ram
-00e07e rom ram
-00e080 rom pal
-00e09c rom ram
-00e09e rom pal
-00e0b6 - ram
-00e0d6 - pal
-00e0da - ram
-00e106 rom ram
-00e128 rom ram
-00e164 - ram
-00e1f0 rom -
-00e1f8 vram -
-00e1fe rom -
-00e204 rom ram
-00e214 - ram
-00e23a rom ram
-00e23c rom pal
-00e258 rom ram
-00e25a rom pal
-00e264 - ram
-00e29a - ram
-00e2a6 ram -
-00e2a8 - ram
-00e2be - ram
-00e2d8 rom ram
-00e2da rom pal
-00e30a rom ram
-00e30c rom pal
-00e31e - ram
-00e338 rom ram
-00e33a rom pal
-00e366 rom ram
-00e368 rom pal
-00e3aa vram -
-00e3c8 - ram
-00e3d0 - ram
-00e3da - ram
-00e3e4 - ram
-00e3ee - ram
-00e3f2 - ram
-00e400 - ram
-00e460 - ram
-00e474 ram -
-00e4a0 vram -
-00e4b4 ram -
-00e598 ram -
-00ecb2 rom -
-00ecb8 rom -
-00ecbe rom -
-00ecc4 rom -
-00ecca rom -
-00ecd0 rom -
-00ecec vram -
-00ed44 - ram
-00ed68 - ram
-00ed8e ram -
-00eda0 - ram
-00eda8 - ram
-00ede0 - ram
-00ee98 - ram
-00eec8 rom ram
-00eeca rom pal
-00eee6 rom ram
-00eee8 rom pal
-00ef14 rom ram
-00ef16 rom pal
-00ef32 rom ram
-00ef34 rom pal
-00ef50 rom ram
-00ef52 rom pal
-00ef58 - ram
-00f01c - ram
-00f1be - ram
-00f1e4 - ram
-00f1e8 - ram
-00f2e6 rom ram
-00f2e8 rom pal
-00f2ee - ram
-00f2f6 - ram
-00f300 - ram
-00f318 - ram
-00f33e - ram
-00f342 - ram
-00f494 - ram
-00f498 - ram
-00f4a4 ram -
-00fc6e - ram
-00fc88 - ram
-00fc9c - ram
-00fcb0 - ram
-00fcc4 - ram
-00fd0a - ram
-00fd5a - ram
-00fd80 vram -
-00fd90 - ram
-00fd9e - ram
-00fdaa - ram
-00fdb4 - ram
-00fdb8 ram -
-00fdcc - ram
-00fdce ram -
-00fdd8 - ram
-00fddc - ram
-00fde0 - ram
-00fde4 - ram
-00fe0a ram -
-0102f2 - ram
-01032a vram -
-010346 - ram
-0103b8 - ram
-0103ec rom ram
-0103ee rom pal
-01041a rom ram
-01041c rom pal
-010438 rom ram
-01043a rom pal
-010456 rom ram
-010458 rom pal
-010474 rom ram
-010476 rom pal
-01047c - ram
-0104d2 - ram
-0104d6 - ram
-0104da - ram
-01052a - ram
-01052e - ram
-010532 - ram
-010536 - ram
-0106f0 - ram
-0106fe vram -
-010746 - ram
-01074a - ram
-01074e - ram
-0107ce - ram
-0107f8 - ram
-010800 - ram
-010db8 - ram
-010dba rom ram
-010dbe rom ram
-010dc4 - ram
-010dd8 rom ram
-010dda rom ram
-010de6 rom ram
-010de8 rom ram
-010df4 rom ram
-010df6 rom ram
-010dfc ram -
-010e2e - ram
-010e30 - ram
-010e44 - ram
-010e56 - ram
-010e68 - ram
-010e70 ram -
-0117f6 ram -
-011824 - ram
-011828 ram -
-011830 - ram
-011834 ram -
-011836 ram -
-01188e - ram
-011892 ram -
-0119fe - ram
-011a02 - ram
-011a06 ram -
-011a0a - ram
-011a14 - ram
-011a18 ram -
-011a20 - ram
-011a24 - ram
-011a28 ram -
-011a2c - ram
-011a36 - ram
-011a3a ram -
-011a42 - ram
-011a46 - ram
-011a4a ram -
-011a68 - ram
-011a72 - ram
-011a76 ram -
-011a7a - ram
-011a7e - ram
-011a82 ram -
-011a86 ram -
-011aaa ram -
-011af4 - ram
-011af8 - ram
-011afc ram -
-011b06 - ram
-011b18 ram -
-011b2e rom -
-011b32 - ram
-011b46 rom -
-011b4a rom -
-011b4e - ram
-011b52 ram -
-011b9c ram -
-011bf0 rom -
-011c0c ram -
-011c5c - ram
-011c66 - ram
-011c6e ram -
-011c96 ram -
-011c9c ram -
-011cf2 ram -
-011d02 rom -
-011d0a vram -
-011d34 rom -
-011d44 - ram
-011d5c - ram
-011d60 ram -
-011d70 rom -
-011d78 vram -
-011d9e rom -
-011db6 ram -
-011e20 - pal
-011e24 - ram
-011e3c ram -
-011e6e ram -
-011e78 ram -
-011e88 ram ram
-011e8c ram pal
-011e98 ram -
-011ea6 ram -
-011eba ram -
-011ece ram -
-011eda ram ram
-011edc ram -
-011eea ram ram
-011eee ram -
-011efc ram ram
-011f00 ram pal
-011f0c ram -
-011f72 ram -
-011f86 ram -
-011f90 ram -
-011fa0 ram ram
-011fa2 ram -
-011fb4 ram ram
-011fb8 ram -
-011fca ram ram
-011fce ram pal
-011fda ram -
-011fec - ram
-011ff0 ram -
-012002 - ram
-012006 ram -
-012012 - ram
-012020 - ram
-012062 - ram
-012070 - ram
-0120b2 - ram
-0120c0 - ram
-012102 - ram
-012110 - ram
-012148 ram -
-01214a ram -
-01214c ram ram
-012150 ram pal
-012156 - ram
-012158 - pal
-01215a ram -
-012202 ram -
-012226 - ram
-012228 - ram
-01228a rom -
-0122ac - ram
-0122b4 rom -
-0122c0 ram -
-01231c rom -
-012328 ram -
-012332 ram -
-01233e ram -
-0123a0 ram -
-0123ba - ram
-0123ce ram -
-0123de vram -
-01241e rom ram
-012420 rom pal
-012426 ram -
-01243e rom ram
-012440 rom pal
-01246c ram -
-01247a - ram
-01247e ram -
-012496 rom ram
-012498 rom pal
-0124b4 rom ram
-0124b6 rom pal
-0124b8 - ram
-0124d2 rom ram
-0124d4 rom pal
-0124da ram -
-0124f8 - ram
-012504 - ram
-012510 ram -
-01252e ram -
-012536 - ram
-012542 ram -
-012568 - ram
-01256c ram -
-012582 - ram
-012588 ram -
-0125a0 - ram
-0125a6 ram -
-0125be - ram
-0125c4 ram -
-0125d0 - ram
-0125d6 ram -
-0125e4 ram -
-0125fa - ram
-0125fe ram -
-012616 - ram
-012624 - ram
-012628 ram -
-012640 - ram
-012644 ram -
-012650 - ram
-012654 ram -
-0126e0 - ram
-0126e4 ram -
-0126f8 - ram
-0126fc ram -
-012710 - ram
-012714 ram -
-01271c - ram
-012720 ram -
-01273c rom -
-012740 - ram
-01275e rom -
-012762 - ram
-012766 ram -
-01277c rom ram
-01279a - pal
-01279e - ram
-0127b6 ram -
-0127e6 ram -
-0127f2 ram -
-01280a - ram
-012822 ram -
-014016 - ram
-014026 - ram
-014052 ram -
-014076 - ram
-014084 rom -
-01408e rom -
-014096 rom -
-0140a8 - ram
-0140c8 rom -
-0140d2 rom -
-0140da rom -
-0140f0 ram -
-0140f4 - ram
-0140fe - ram
-014102 ram -
-014106 ram -
-014112 ram -
-01414e - ram
-01416e ram -
-014172 ram -
-014178 ram -
-014182 - ram
-014186 - ram
-01418c - ram
-014192 ram -
-01422e rom -
-014234 rom -
-01423a rom -
-014254 ram -
-01425c ram -
-014264 ram -
-014280 rom ram
-014284 - ram
-014288 - ram
-01428c - ram
-014290 - ram
-0142ba - ram
-0142c0 - ram
-0142c4 ram -
-0142c6 rom -
-0142ca - ram
-0142d0 - ram
-0142d4 - ram
-0142d8 - ram
-0142f0 ram -
-0142f8 ram -
-014318 ram -
-01431a ram -
-014326 ram -
-014330 ram -
-014336 rom -
-014340 ram -
-01435a rom -
-01435e rom -
-014362 - ram
-01439e ram -
-0143b2 ram -
-0143ba ram ram
-0143c0 ram -
-0143c4 ram -
-0143ca ram -
-0143d2 - ram
-0143d6 - ram
-0143e8 rom -
-014438 - ram
-01443c - ram
-014454 rom -
-014476 rom -
-01447a rom -
-014ddc ram -
+# pc lectura escritura alineada (region unica vista en el banco de pruebas, - = ninguna o varias; a = las
+# lecturas de 32 bits siempre alineadas a 4). rc/regiones.sh
+002406 - ram a
+002468 - ram a
+0024ba rom ram a
+0024bc rom pal a
+0024be - ram a
+0024c2 - ram a
+0024de rom ram a
+0024e0 rom pal a
+002564 - ram a
+002574 - ram a
+002584 - ram a
+002594 - ram a
+0025a4 - ram a
+0025b4 - ram a
+0025c4 - ram a
+0025d4 - ram a
+0025e4 - ram a
+0025f4 - ram a
+002604 - ram a
+002614 - ram a
+002624 - ram a
+002634 - ram a
+002644 - ram a
+002654 - ram a
+002664 - ram a
+002674 - ram a
+002684 - ram a
+0026a2 rom ram a
+0026a4 rom pal a
+0026c0 rom ram a
+0026c2 rom pal a
+0026de rom ram a
+0026e0 rom pal a
+0026fc rom ram a
+0026fe rom pal a
+002714 rom - a
+002716 - ram a
+002726 - ram a
+00273a - ram a
+00274e - ram a
+00275c - ram a
+002776 - ram a
+00277e - ram a
+00278a - ram a
+0027dc - ram a
+0027e8 - ram a
+0027f4 - ram a
+00281a - ram a
+002820 - ram a
+002f82 - ram a
+002f8c - vregs a
+002f94 - ram a
+002fe6 - ram a
+002fea - ram a
+002fee - ram a
+002ff2 - ram a
+002ff6 - ram a
+002ffa - ram a
+002ffe - ram a
+003004 - ram a
+003008 - ram a
+00301a - ram a
+00303a - ram a
+00303e - ram a
+003042 - ram a
+003124 - ram a
+003188 - ram a
+0031c8 ram - -
+0031cc ram - -
+0031ce - ram a
+0031d2 - ram a
+0031d6 - ram a
+0031dc - vram a
+00320e vram - a
+003224 - ram a
+003270 - ram a
+003282 - vram a
+00328c vram - a
+0032a0 - ram a
+0032a4 - vram a
+0032ae vram - a
+0032be - ram a
+0032f6 - ram a
+0032fc - ram a
+003306 - ram a
+00330a - ram a
+0033c8 - ram a
+0033ce - ram a
+0033d2 - ram a
+0033d6 - ram a
+0033e0 - ram a
+0033e2 - ram a
+0033e6 - ram a
+0033ea - ram a
+0033f8 - ram a
+00340a - ram a
+00340c - ram a
+00342c rom - a
+003522 - ram a
+003526 - ram a
+00352a - ram a
+00352e - ram a
+003532 - ram a
+003536 - ram a
+00353a - ram a
+00353e - ram a
+003542 - ram a
+003546 - ram a
+00354a - ram a
+00354e - ram a
+003552 - ram a
+003556 - ram a
+00355a - ram a
+00355e - ram a
+003562 - ram a
+003566 - ram a
+00356a - ram a
+00356e - ram a
+003572 - ram a
+003576 - ram a
+00357a - ram a
+00357e - ram a
+003582 - ram a
+003586 - ram a
+00358a - ram a
+00358e - ram a
+003592 - ram a
+003596 - ram a
+00359a - ram a
+00359e - ram a
+0035a4 - ram a
+0035a8 - ram a
+0035ac - ram a
+0035b0 - ram a
+0035b4 - ram a
+0035b8 - ram a
+0035bc - ram a
+0035c0 - ram a
+0035c4 - ram a
+0035c8 - ram a
+0035d2 - ram a
+0035d4 - ram a
+0035e8 - ram a
+003624 - ram a
+003630 - ram a
+00363c - ram a
+003640 - ram a
+00365e - ram a
+0036bc - vram a
+00370a rom vram a
+003712 vram - a
+003738 rom vram a
+003740 vram - a
+00376e vram - a
+0038d2 - ram a
+0038fc - ram a
+00397c rom ram a
+00397e rom pal a
+003a44 - ram a
+003a46 - ram a
+003a5c - ram a
+003a5e - ram a
+003a9e - ram a
+003aa0 - ram a
+003ae8 - ram a
+003b16 - ram a
+003b18 - ram a
+003b9c - ram a
+003b9e - ram a
+003be8 - ram a
+003c98 - ram a
+003cb2 - ram a
+003cb8 - ram a
+003cce - ram a
+003cd0 - ram a
+003cf0 - ram a
+003cf6 - ram a
+003d5c - ram a
+003dd0 rom - a
+003dfe rom vram a
+003e04 vram - a
+003e0a rom vram a
+003e10 vram - a
+003e24 rom vram a
+003e2a vram - -
+003e74 rom vram a
+003e7a vram ram a
+004024 - ram a
+004456 - vregs a
+004468 - vregs a
+00447a - vregs a
+00448c - vregs a
+0044fe ram spr a
+004500 ram spr a
+004518 ram spr a
+00451a ram spr a
+004538 ram spr a
+00453a ram spr a
+00456a - spr a
+00459c - ram a
+0045aa ram - a
+0045b4 ram - a
+0045be rom - a
+0045c2 ram - a
+0045c6 ram - a
+0045d4 rom - a
+004618 rom - a
+004628 rom - a
+004630 - ram a
+004634 rom - -
+004646 - ram a
+004648 ram ram a
+004700 ram - a
+00470e - ram a
+004710 ram - a
+004716 - ram a
+00472a ram - a
+004732 ram - a
+004748 rom - a
+00474c ram - a
+004750 ram - a
+00475e rom - a
+0047a4 rom - a
+0047ac rom - a
+0047b4 - ram a
+0047b8 rom - -
+0047bc ram - a
+0047dc - ram a
+0047de ram ram a
+0048b2 ram - a
+0048ba - ram a
+0048d4 ram - a
+0048dc ram - a
+0048e4 ram - a
+0048f8 rom - a
+0048fe rom - a
+004914 - ram a
+004918 rom - a
+004920 rom ram a
+004922 rom - a
+004928 ram - a
+004940 ram ram a
+004946 ram ram a
+00494a rom - a
+004952 - ram a
+00495e ram - a
+0049e2 rom - a
+0049ee rom - a
+0049f6 rom - a
+004a0a rom - a
+004a0e rom - a
+004a12 rom - a
+004a20 rom - a
+004a42 - ram a
+004a52 rom - a
+004a5a rom - a
+004a64 - ram a
+004a66 rom - -
+004a6a rom - a
+004a90 - ram a
+004a9c ram - a
+004b8c - ram a
+004dba rom - a
+004dde - ram a
+004de0 - ram a
+004e02 - ram a
+004e36 ram - a
+004e42 ram - a
+004e46 ram - a
+004e4a - ram a
+004e4e - ram a
+004e52 - ram a
+004e6c ram - a
+004e78 ram - a
+004e7c ram - a
+004e80 - ram a
+004e84 - ram a
+004e88 - ram a
+004eaa ram - -
+004eac ram - a
+005014 - ram a
+00502a rom - a
+005050 - ram a
+00506a - ram a
+005072 rom - a
+005096 - ram a
+0050d6 ram ram a
+0050e8 ram ram a
+0050f2 - ram a
+005122 - ram a
+0051e4 - ram a
+005d6c rom - a
+005d88 rom - a
+005e16 - ram a
+005e36 ram - -
+005e8c rom - a
+005ef6 ram ram a
+005ef8 ram ram a
+005f38 - ram a
+005f7a - ram a
+005fae - ram a
+00604c vram - a
+0060aa rom - a
+0060d4 - ram a
+0060f0 - ram a
+006120 - ram a
+00613c - ram a
+006186 - ram a
+00622a - ram a
+00622e - ram a
+0062b0 - ram a
+0063a6 - ram a
+0063aa - ram a
+006418 - ram a
+00673c - ram a
+0067ee - ram a
+0067f6 - ram a
+006a24 rom - a
+006a32 rom - a
+006ae8 - ram a
+006b14 - ram a
+006bda - ram a
+006bee - ram a
+006c76 vram - a
+006ca0 ram - a
+006d8c rom - a
+006d90 rom - a
+006db8 - ram a
+006dc8 ram - a
+006df0 ram - a
+006dfc - ram a
+006f4a ram - a
+006f50 ram - a
+006f52 - ram a
+006f54 rom ram a
+006ff0 - ram a
+00702c - ram a
+00715e rom - a
+007164 rom - a
+007178 - ram a
+0071b8 - ram a
+00731c rom - a
+007320 rom - a
+007356 - ram a
+007518 vram - a
+007606 - ram a
+007638 - ram a
+0076fe rom - a
+00771e ram - a
+007750 ram - a
+007758 - ram a
+007772 ram - a
+00777a - ram a
+00778e - ram a
+0077a6 ram - a
+0077d8 - ram a
+0077dc ram - a
+0077e0 ram - a
+0077e8 ram - a
+0077ee - ram a
+0077f2 ram - a
+0077f8 - ram a
+007804 - ram a
+00787a rom - a
+0078ae rom - a
+007944 - ram a
+007952 - ram a
+007962 - ram a
+007988 - ram a
+0079ae - ram a
+0079c8 ram - a
+007a00 ram - a
+007a04 ram - a
+007a08 - ram a
+007a0c - ram a
+007a10 - ram a
+007a26 vram - a
+007a3e ram - a
+007a74 ram - a
+007a78 ram - a
+007a7c - ram a
+007a80 - ram a
+007ac6 - ram a
+007b28 - ram a
+007b3e - ram a
+007b46 ram - a
+007b64 rom - a
+007b68 ram - a
+007b6a rom - a
+007b6e ram - a
+007b7c - ram a
+007b80 - ram a
+007b84 - ram a
+007b98 ram - a
+007c26 - ram a
+007c6e - ram a
+007cbc - ram a
+007cc0 - ram a
+007cfa rom - a
+007cfe ram - a
+007d00 rom - a
+007d04 ram - a
+007d08 - ram a
+007d48 - ram a
+007d4c - ram a
+007d50 - ram a
+007d54 - ram a
+007d76 ram - a
+007dca ram - a
+007dd6 ram - a
+007dd8 - ram a
+007de6 - ram a
+007dea - ram a
+007e10 - ram a
+007e3a rom - a
+007e3e rom - a
+007e42 ram - a
+007e44 ram - a
+007e6e ram - a
+007ebe - ram a
+007ef2 vram - a
+007f50 ram - a
+007f92 ram - a
+007f94 ram - a
+007f98 - ram a
+007f9c - ram a
+007fa0 - ram a
+007fce ram - a
+007ff4 - ram a
+008038 - ram a
+00805e - ram a
+008064 - ram a
+00806e - ram a
+00808e - ram a
+0080ac - ram a
+0080d6 - ram a
+0080ec - ram a
+0080f2 - ram a
+00815e - ram a
+00832a vram - a
+00876c - ram a
+00877e - ram a
+008792 ram pal a
+00879c - ram a
+0087b6 rom pal a
+0087b8 rom ram a
+008814 rom - -
+00882e rom ram a
+008830 rom pal a
+008858 rom ram a
+00885a rom pal a
+008886 - ram a
+00889a - ram a
+0088b8 vram - a
+0088c6 - ram a
+0088d2 - ram a
+00890e rom - a
+008912 - ram a
+00895c ram - a
+00896a ram - a
+00897a ram - a
+00899a - ram a
+00899c - pal a
+0089aa - pal a
+0089b4 - ram a
+0089ea - ram a
+008a02 - ram a
+008a30 - vram a
+008a3a vram - a
+008a54 - ram a
+008a6c ram - a
+008aa0 - pal a
+008aa2 - ram a
+008ad4 ram - a
+008b08 - pal a
+008b10 ram pal a
+008b62 rom ram a
+008b64 rom pal a
+008b9c rom - -
+008ba0 rom ram a
+008ba2 rom pal a
+008bb8 rom ram a
+008bba rom pal a
+008c40 rom vram -
+008c48 vram - a
+008c76 rom vram -
+008c7e vram - a
+008f06 rom - -
+008f12 - vram a
+008f6a vram - a
+008fd2 - vram a
+008fdc vram ram a
+008fe6 - vram a
+009072 rom vram -
+00907a vram - a
+009086 - vram a
+0090d8 - vram a
+0090f8 - ram a
+0091a0 - ram a
+009214 rom - a
+00921c rom - a
+00932c - ram a
+00934c vram - a
+009360 - ram a
+009378 - ram a
+009382 vram - a
+00939e - ram a
+0093ba - ram a
+0093e2 - ram a
+009454 - ram a
+00946e - ram a
+009476 - ram a
+00948a rom ram -
+009490 vram - a
+00952c - ram a
+00953c - ram a
+009586 - ram a
+0095aa - ram a
+00969c rom - a
+0096e0 - ram a
+0096e6 - ram a
+0096e8 - ram a
+0096ec - ram a
+009748 - ram a
+0097cc - ram a
+00988a - ram a
+0098ec - ram a
+0098ee - ram a
+0098f0 - ram a
+0098f2 - ram a
+0098fa - ram a
+0098fe - ram a
+009900 - ram a
+009916 rom vram a
+00992e - ram a
+00993e ram - -
+009948 - ram a
+009952 ram - a
+009958 ram - a
+00996c ram - a
+00996e ram - a
+009970 - ram a
+009988 - ram a
+00998a - ram a
+00998c - ram a
+00998e - ram a
+009996 - ram a
+00999a - ram a
+00999c - ram a
+0099b2 rom vram a
+0099d0 - ram a
+0099e0 ram - -
+0099ee - ram a
+0099f8 ram - a
+0099fe ram - a
+009a10 ram - a
+009a12 ram - a
+009a14 - ram a
+009a4c rom - a
+009a8c - ram a
+009b16 - ram a
+009bc2 - ram a
+009c24 - ram a
+009c26 - ram a
+009c28 - ram a
+009c2a - ram a
+009c32 - ram a
+009c36 - ram a
+009c38 - ram a
+009c4e rom vram a
+009c66 - ram a
+009c76 ram - -
+009c8a ram - a
+009c90 ram - a
+009ca4 ram - a
+009ca6 ram - a
+009cc0 - ram a
+009cc2 - ram a
+009cc4 - ram a
+009cc6 - ram a
+009cce - ram a
+009cd2 - ram a
+009cd4 - ram a
+009cea rom vram a
+009d08 - ram a
+009d18 ram - -
+009d26 - ram a
+009d30 ram - a
+009d36 ram - a
+009d48 ram - a
+009d4a ram - a
+009d84 rom - a
+009e0e vram - a
+009e38 vram - a
+009e56 rom vram a
+009e76 rom vram a
+009f5c vram - a
+009f60 - ram a
+009f62 vram - a
+009f6e - ram a
+009faa - ram a
+009fd8 - ram a
+00a012 - ram a
+00a07a rom - a
+00a082 rom - a
+00a094 rom - a
+00a0a0 ram - a
+00a0e2 rom - a
+00a0ee rom - a
+00a10a - ram a
+00a10c - ram a
+00a194 - ram a
+00a1b4 - ram a
+00a1cc - ram a
+00a1ec - ram a
+00a242 ram - a
+00a24a ram - a
+00a254 - ram a
+00a296 vram - a
+00a306 - ram a
+00a3be rom - a
+00a3dc ram - a
+00a3de ram - a
+00a444 vram - a
+00a854 - ram a
+00a874 rom - a
+00a928 rom - a
+00a950 rom - a
+00a95c rom - a
+00a97a rom - a
+00aa0a rom - a
+00aa9a - ram a
+00aa9e - ram a
+00aafe - ram a
+00ab9c - ram a
+00ac3e rom - a
+00ac60 rom - a
+00ac70 - ram a
+00adfc - ram a
+00b006 ram - -
+00b01e - pal a
+00b020 - ram a
+00b052 - ram a
+00b082 - ram a
+00b148 ram ram a
+00b14a - ram a
+00b178 ram ram a
+00b186 - ram a
+00b1a0 ram - a
+00b1ac ram - a
+00b242 vram - a
+00b268 - spr a
+00b27e - ram a
+00b286 - vram a
+00b290 vram - a
+00b304 - vram a
+00b334 rom vram -
+00b336 vram ram a
+00b34c rom ram a
+00b358 vram - a
+00b398 - ram a
+00b3b0 - ram a
+00b3c4 - ram a
+00b3d8 - ram a
+00b474 - vram a
+00b4d8 vram - a
+00b4e2 - ram a
+00b4f8 rom ram a
+00b666 - ram a
+00b68a - ram a
+00b690 - ram a
+00b6ce - ram a
+00b6e8 rom ram a
+00b6ea rom pal a
+00b706 rom ram a
+00b708 rom pal a
+00b724 rom ram a
+00b726 rom pal a
+00b742 rom ram a
+00b744 rom pal a
+00b760 rom ram a
+00b762 rom pal a
+00b77e rom ram a
+00b780 rom pal a
+00b79c rom ram a
+00b79e rom pal a
+00b7ba rom ram a
+00b7bc rom pal a
+00b7d8 rom ram a
+00b7da rom pal a
+00b7f6 rom ram a
+00b7f8 rom pal a
+00b814 rom ram a
+00b816 rom pal a
+00b832 rom ram a
+00b834 rom pal a
+00b84a pal pal a
+00b860 ram ram a
+00b866 - ram a
+00b880 rom ram a
+00b882 rom pal a
+00b888 - ram a
+00b8a2 rom ram a
+00b8a4 rom pal a
+00b8c0 rom ram a
+00b8c2 rom pal a
+00b8c8 - vram a
+00b8ce vram - a
+00b92e - ram a
+00b940 rom - a
+00b94e - ram a
+00b9e6 - ram a
+00ba1a - ram a
+00ba1e - ram a
+00ba22 - ram a
+00ba56 - ram a
+00ba98 rom ram a
+00ba9a rom pal a
+00bc2e - ram a
+00bc32 - ram a
+00bc3c - ram a
+00bc5c - ram a
+00bc70 - ram a
+00bc84 rom - a
+00bca0 - ram a
+00bcb0 - ram a
+00bcce - ram a
+00bcec rom - a
+00bd10 - ram a
+00bd1e - ram a
+00bd2a - ram a
+00bd2e - vram a
+00bd38 vram - a
+00bd80 - ram a
+00bdae - ram a
+00bde4 - ram a
+00bdf2 - ram a
+00be00 - ram a
+00be04 - vram a
+00be0e - ram a
+00be20 rom - a
+00be2a vram - a
+00be34 - ram a
+00be40 - ram a
+00be70 - ram a
+00be7a - ram a
+00be94 - ram a
+00beb4 rom vram a
+00bebc vram - a
+00bec2 - ram a
+00bf26 - ram a
+00bf40 rom ram a
+00bf42 rom pal a
+00bf5e rom ram a
+00bf60 rom pal a
+00bf7c rom ram a
+00bf7e rom pal a
+00bf9a rom ram a
+00bf9c rom pal a
+00bfa6 - ram a
+00bfc0 rom ram a
+00bfc2 rom pal a
+00bfe6 rom ram a
+00bfe8 rom pal a
+00c004 rom ram a
+00c006 rom pal a
+00c022 rom ram a
+00c024 rom pal a
+00c040 rom ram a
+00c042 rom pal a
+00c05e rom ram a
+00c060 rom pal a
+00c07c rom ram a
+00c07e rom pal a
+00c09a rom ram a
+00c09c rom pal a
+00c0b2 - ram a
+00c0b6 - ram a
+00c0c2 - vram a
+00c114 rom ram a
+00c116 rom pal a
+00c136 rom ram a
+00c138 rom pal a
+00c13e vram - a
+00c158 rom - -
+00c1b4 - pal a
+00c1bc - pal a
+00c1c4 - ram a
+00c1cc - ram a
+00c1e0 - pal a
+00c1e8 - pal a
+00c1f0 - ram a
+00c1f8 - ram a
+00c222 - ram a
+00c24c - ram a
+00c280 - ram a
+00c294 - ram a
+00c2a8 - ram a
+00c2da - ram a
+00c332 - ram a
+00c338 - ram a
+00c33c - vram a
+00c346 - vram a
+00c360 vram - a
+00c36a vram - a
+00c3bc - ram a
+00c3c0 - ram a
+00c3d0 - ram a
+00c3de - ram a
+00d24a - ram a
+00d262 - ram a
+00d264 - ram a
+00d268 - ram a
+00d278 - ram a
+00d27a - ram a
+00d27e - ram a
+00d2a6 - ram a
+00d2aa - ram a
+00d2e2 - ram a
+00d308 - ram a
+00d372 - ram a
+00d37a - ram a
+00d3a4 rom ram a
+00d3a6 rom pal a
+00d3c2 rom ram a
+00d3c4 rom pal a
+00d3e0 rom ram a
+00d3e2 rom pal a
+00d3fe rom ram a
+00d400 rom pal a
+00d406 - ram a
+00d420 rom ram a
+00d422 rom pal a
+00d43e rom ram a
+00d440 rom pal a
+00d45c rom ram a
+00d45e rom pal a
+00d47a rom ram a
+00d47c rom pal a
+00d49c rom ram a
+00d49e rom pal a
+00d4c6 rom ram a
+00d4c8 rom pal a
+00d4ee - ram a
+00d502 rom - -
+00d516 rom ram a
+00d518 rom pal a
+00d60a - ram a
+00d688 - ram a
+00d73a - ram a
+00d73e - ram a
+00d742 - ram a
+00d752 - ram a
+00d756 - ram a
+00d760 - ram a
+00d764 - ram a
+00d9ac - ram a
+00d9fc - ram a
+00da10 - ram a
+00da2a rom ram a
+00da2c rom pal a
+00da2e - ram a
+00da50 rom - -
+00da52 - ram a
+00da66 - ram a
+00da7a rom ram a
+00da90 - pal a
+00da94 - ram a
+00dabc rom ram a
+00dad2 rom ram a
+00dad8 - ram a
+00db04 - ram a
+00db0c - ram a
+00db32 - ram a
+00db5c - ram a
+00db7c - ram a
+00db80 - ram a
+00db84 - ram a
+00dba2 rom ram a
+00dbc0 - pal a
+00dbc4 - ram a
+00dc02 - ram a
+00dc30 - ram a
+00dc34 - ram a
+00dc38 - ram a
+00dc48 - ram a
+00dc62 rom ram a
+00dc64 rom pal a
+00dc9a - ram a
+00dcbc - ram a
+00dcf8 - ram a
+00dd12 rom ram a
+00dd14 rom pal a
+00dd34 - ram a
+00dd4e rom ram a
+00dd50 rom pal a
+00dd70 - ram a
+00dd8a rom ram a
+00dd8c rom pal a
+00ddb0 - ram a
+00ddc4 rom ram a
+00ddda - pal a
+00ddde - ram a
+00de06 rom ram a
+00de34 rom ram a
+00de68 rom ram a
+00de6a rom pal a
+00de9a rom - a
+00de9e - ram a
+00deae - ram a
+00ded4 - ram a
+00dee0 - ram a
+00df12 - ram a
+00df38 - ram a
+00df4e - ram a
+00df72 rom ram a
+00df90 - pal a
+00df94 - ram a
+00dfce - ram a
+00dfe4 - ram a
+00dfe8 - ram a
+00dfec - ram a
+00e03e rom vram a
+00e046 vram - a
+00e04c rom - a
+00e052 rom ram a
+00e07e rom ram a
+00e080 rom pal a
+00e09c rom ram a
+00e09e rom pal a
+00e0b6 - ram a
+00e0d6 - pal a
+00e0da - ram a
+00e106 rom ram a
+00e128 rom ram a
+00e164 - ram a
+00e1f0 rom vram a
+00e1f8 vram - a
+00e1fe rom - a
+00e204 rom ram a
+00e214 - ram a
+00e23a rom ram a
+00e23c rom pal a
+00e258 rom ram a
+00e25a rom pal a
+00e264 - ram a
+00e29a - ram a
+00e2a8 - ram a
+00e2be - ram a
+00e2d8 rom ram a
+00e2da rom pal a
+00e30a rom ram a
+00e30c rom pal a
+00e31e - ram a
+00e338 rom ram a
+00e33a rom pal a
+00e366 rom ram a
+00e368 rom pal a
+00e3aa vram - a
+00e3c8 - ram a
+00e3d0 - ram a
+00e3da - ram a
+00e3e4 - ram a
+00e3ee - ram a
+00e3f2 - ram a
+00e400 - ram a
+00e460 - ram a
+00e496 - vram a
+00e4a0 vram - a
+00ecb2 rom - a
+00ecb8 rom - a
+00ecbe rom - a
+00ecc4 rom - a
+00ecca rom - a
+00ecd0 rom - -
+00ece2 - vram a
+00ecec vram - a
+00ed44 - ram a
+00ed68 - ram a
+00eda0 - ram a
+00eda8 - ram a
+00ede0 - ram a
+00ee98 - ram a
+00eec8 rom ram a
+00eeca rom pal a
+00eee6 rom ram a
+00eee8 rom pal a
+00ef14 rom ram a
+00ef16 rom pal a
+00ef32 rom ram a
+00ef34 rom pal a
+00ef50 rom ram a
+00ef52 rom pal a
+00ef58 - ram a
+00f01c - ram a
+00f1be - ram a
+00f1e4 - ram a
+00f1e8 - ram a
+00f2e6 rom ram a
+00f2e8 rom pal a
+00f2ee - ram a
+00f2f6 - ram a
+00f300 - ram a
+00f318 - ram a
+00f33e - ram a
+00f342 - ram a
+00f494 - ram a
+00f498 - ram a
+00fc6e - ram a
+00fc88 - ram a
+00fc9c - ram a
+00fcb0 - ram a
+00fcc4 - ram a
+00fd0a - ram a
+00fd5a - ram a
+00fd76 - vram a
+00fd80 vram - a
+00fd90 - ram a
+00fd9e - ram a
+00fdaa - ram a
+00fdb4 - ram a
+00fdcc - ram a
+00fdd8 - ram a
+00fddc - ram a
+00fde0 - ram a
+00fde4 - ram a
+0102f2 - ram a
+010320 - vram a
+01032a vram - a
+010346 - ram a
+0103b8 - ram a
+0103ec rom ram a
+0103ee rom pal a
+01041a rom ram a
+01041c rom pal a
+010438 rom ram a
+01043a rom pal a
+010456 rom ram a
+010458 rom pal a
+010474 rom ram a
+010476 rom pal a
+01047c - ram a
+0104d2 - ram a
+0104d6 - ram a
+0104da - ram a
+01052a - ram a
+01052e - ram a
+010532 - ram a
+010536 - ram a
+0106f0 - ram a
+0106f4 - vram a
+0106fe vram - a
+010746 - ram a
+01074a - ram a
+01074e - ram a
+0107ce - ram a
+0107f8 - ram a
+010800 - ram a
+010db8 - ram a
+010dba rom ram a
+010dbe rom ram -
+010dc4 - ram a
+010dd8 rom ram a
+010dda rom ram -
+010de6 rom ram a
+010de8 rom ram -
+010df4 rom ram a
+010df6 rom ram -
+010e2e - ram a
+010e30 - ram a
+010e44 - ram a
+010e56 - ram a
+010e68 - ram a
+0117f6 ram - a
+011824 - ram a
+011830 - ram a
+011836 ram - -
+01188e - ram a
+0119fe - ram a
+011a02 - ram a
+011a06 ram - a
+011a0a - ram a
+011a14 - ram a
+011a18 ram - a
+011a20 - ram a
+011a24 - ram a
+011a28 ram - a
+011a2c - ram a
+011a36 - ram a
+011a3a ram - a
+011a42 - ram a
+011a46 - ram a
+011a4a ram - a
+011a68 - ram a
+011a72 - ram a
+011a76 ram - a
+011a7a - ram a
+011a7e - ram a
+011a82 ram - a
+011a86 ram - a
+011af4 - ram a
+011af8 - ram a
+011afc ram - a
+011b06 - ram a
+011b2e rom - a
+011b32 - ram a
+011b46 rom - a
+011b4a rom - a
+011b4e - ram a
+011bf0 rom - -
+011c5c - ram a
+011c66 - ram a
+011c96 ram - a
+011d02 rom vram a
+011d0a vram - a
+011d34 rom vram a
+011d44 - ram a
+011d5c - ram a
+011d70 rom vram -
+011d78 vram - a
+011d9e rom vram -
+011e20 - pal a
+011e24 - ram a
+011e78 ram - a
+011e88 ram ram a
+011e8c ram pal a
+011ece ram - a
+011eda ram ram a
+011edc ram - a
+011eea ram ram a
+011eee ram - a
+011efc ram ram a
+011f00 ram pal a
+011f90 ram - a
+011fa0 ram ram a
+011fa2 ram - a
+011fb4 ram ram a
+011fb8 ram - a
+011fca ram ram a
+011fce ram pal a
+011fe6 - vram a
+011fec - ram a
+011ffc - vram a
+012002 - ram a
+012012 - ram a
+012020 - ram a
+012062 - ram a
+012070 - ram a
+0120b2 - ram a
+0120c0 - ram a
+012102 - ram a
+012110 - ram a
+01214a ram - a
+01214c ram ram a
+012150 ram pal a
+012156 - ram a
+012158 - pal a
+012226 - ram a
+012228 - ram a
+01228a rom - a
+0122ac - ram a
+0122b4 rom - a
+0122c0 ram - -
+01231c rom - a
+012328 ram - a
+012332 ram - a
+01233e ram - a
+0123ba - ram a
+0123de vram - a
+01241e rom ram a
+012420 rom pal a
+01243e rom ram a
+012440 rom pal a
+01247a - ram a
+012496 rom ram a
+012498 rom pal a
+0124b4 rom ram a
+0124b6 rom pal a
+0124b8 - ram a
+0124d2 rom ram a
+0124d4 rom pal a
+0124f8 - ram a
+012504 - ram a
+012536 - ram a
+012568 - ram a
+012582 - ram a
+0125a0 - ram a
+0125be - ram a
+0125d0 - ram a
+0125fa - ram a
+012616 - ram a
+012624 - ram a
+012640 - ram a
+012650 - ram a
+0126e0 - ram a
+0126f8 - ram a
+012710 - ram a
+01271c - ram a
+01273c rom - a
+012740 - ram a
+01275e rom - a
+012762 - ram a
+01277c rom ram a
+01279a - pal a
+01279e - ram a
+01280a - ram a
+014016 - ram a
+014026 - ram a
+014076 - ram a
+014084 rom - a
+01408e rom - a
+014096 rom - a
+0140a8 - ram a
+0140c8 rom - a
+0140d2 rom - a
+0140da rom - a
+0140f0 ram - a
+0140f4 - ram a
+0140fe - ram a
+014102 ram - a
+01414e - ram a
+01416e ram - a
+014172 ram - a
+014178 ram - a
+014182 - ram a
+014186 - ram a
+01418c - ram a
+01422e rom - a
+014234 rom - a
+01423a rom - a
+014254 ram - a
+01425c ram - a
+014264 ram - a
+014280 rom ram a
+014284 - ram a
+014288 - ram a
+01428c - ram a
+014290 - ram a
+0142ba - ram a
+0142c0 - ram a
+0142c6 rom - a
+0142ca - ram a
+0142d0 - ram a
+0142d4 - ram a
+0142d8 - ram a
+0142f0 ram - a
+0142f8 ram - a
+01431a ram - a
+014326 ram - a
+014330 ram - -
+014336 rom - a
+014340 ram - a
+01435a rom - a
+01435e rom - a
+014362 - ram a
+01439e ram - a
+0143b2 ram - a
+0143ba ram ram a
+0143c0 ram - a
+0143c4 ram - a
+0143ca ram - a
+0143d2 - ram a
+0143d6 - ram a
+0143e8 rom - -
+014438 - ram a
+01443c - ram a
+014454 rom - a
+014476 rom - a
+01447a rom - a

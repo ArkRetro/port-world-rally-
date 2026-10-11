@@ -8,13 +8,9 @@ typedef unsigned long long u64; typedef long long s64;
 typedef struct { u32 pc; void *l; } rc_lab;
 
 extern u8 *rc_rpg[4096], *rc_wpg[4096];
-/* alineadas tambien en la declaracion: si no, gcc hace los accesos de 16 bits a direccion fija byte a byte.
-   Detras de la RAM del 68000 (16 KB y 4 de margen) va la pila sombra de rts, a mano de la misma base */
+/* alineadas tambien en la declaracion: si no, gcc hace los accesos de 16 bits a direccion fija byte a byte */
 #define RC_AL __attribute__((aligned(4)))
-#define RC_SHN 64
-#define RC_SHOFF 0x4008
-#define RC_RAMSZ (RC_SHOFF + RC_SHN * sizeof(rc_lab))
-extern u8 rc_rom[0x100000 + 4] RC_AL, rc_ram[RC_RAMSZ] __attribute__((aligned(8))), rc_pal[0x4000 + 4] RC_AL, rc_spr[0x1000 + 4] RC_AL;
+extern u8 rc_rom[0x100000 + 4] RC_AL, rc_ram[0x4000 + 4] RC_AL, rc_pal[0x4000 + 4] RC_AL, rc_spr[0x1000 + 4] RC_AL;
 extern u8 rc_vram[0x4000 + 4] RC_AL, rc_vregs[0x1000 + 4] RC_AL, rc_iopg[0x1000 + 4] RC_AL, rc_ffpg[0x1000 + 4] RC_AL;
 u32 rc_rd8(u32 a), rc_rd16(u32 a);
 void rc_wr8(u32 a, u32 v, u32 pc), rc_wr16(u32 a, u32 v, u32 pc);
@@ -70,11 +66,12 @@ static inline __attribute__((always_inline)) u8 *RC_OPQ(u8 *p) { __asm__("" : "+
 #define SETL(r, o, v) do { u32 _v = (v); MW(r, o) = (u16)(_v >> 16); MW(r, (o) + 2) = (u16)_v; } while (0)
 
 #ifdef RCREG
-/* perfil de regiones (rc/regiones.sh): por instruccion, las regiones que lee (bits 0-7) y escribe (8-15) */
+/* perfil de regiones (rc/regiones.sh): por instruccion, las regiones que lee (bits 0-6) y escribe (8-14); los
+   bits 7 y 15, un acceso de 32 bits no alineado a 4. Con el byte alto distinto de 0 no hay region prevista */
 extern u32 rc_cur; extern u16 rc_regmask[0x10000];
 static inline u32 rc_regbit(u32 a)
 {
-    a &= 0xFFFFFF;
+    if (a >> 24) return 64;
     if (a < 0x100000) return 1;                   /* rom */
     if (a >= 0xFEC000) return 2;                  /* ram */
     if (a < 0x104000) return 4;                   /* vram */
@@ -84,18 +81,22 @@ static inline u32 rc_regbit(u32 a)
     return 64;
 }
 #define REGREC(a, w) (rc_regmask[(rc_cur >> 1) & 0xFFFF] |= rc_regbit(a) << ((w) * 8))
+#define REGREC32(a, w) (rc_regmask[(rc_cur >> 1) & 0xFFFF] |= (rc_regbit(a) | ((a) & 2 ? 0x80 : 0)) << ((w) * 8))
 #else
 #define REGREC(a, w) ((void)0)
+#define REGREC32(a, w) ((void)0)
 #endif
 /* lectura: todas las paginas apuntan a algo (E/S en una pagina que se rellena cada cuadro, sin mapear =
    pagina de 0xFF); las regiones tienen 4 bytes de margen al final para leer un long sin mirar el cruce */
 static inline __attribute__((always_inline)) u32 RD8(u32 a) { REGREC(a, 0); return rc_rpg[(a >> 12) & 0xFFF][(a & 0xFFF) ^ 1]; }
 static inline __attribute__((always_inline)) u32 RD16(u32 a) { REGREC(a, 0); return *(u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); }
-static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; REGREC(a, 0); q = (u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); return ((u32)q[0] << 16) | q[1]; }
+static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; REGREC32(a, 0); q = (u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); return ((u32)q[0] << 16) | q[1]; }
 /* ---- VRAM cifrada (algoritmo de MAME, tablas en gcrypt.c). Dos escrituras seguidas de la misma instruccion a
    palabras consecutivas forman un par: la segunda se descifra con la primera (cifrada y descifrada) */
 extern u16 rc_gsw[4][2][256], rc_gfin[2][256];
-extern u32 rc_vl_pc, rc_vl_off, rc_vram_writes; extern u16 rc_vl_enc, rc_vl_dec;
+/* par abierto: rc_vl_key = pc de la instruccion y palabra que lo cerraria (0xFFFFFFFF = ninguno) */
+extern u32 rc_vl_key, rc_vram_writes; extern u16 rc_vl_enc, rc_vl_dec;
+#define RC_VLK(pc, off) (((pc) << 14) | (off))
 #define GB(x, n) (((x) >> (n)) & 1)
 #define GC_P1 0x1f
 #define GC_P2 0x522a
@@ -150,37 +151,52 @@ static inline void rc_vw16(u32 a, u32 v, u32 pc)
 #ifndef RC_GREGS
     rc_vram_writes++;
 #endif
-    if (rc_vl_pc == pc && off == rc_vl_off + 1) { rc_vl_pc = 0xFFFFFFFF; v = rc_gdec(rc_vl_enc, rc_vl_dec, v); }
-    else { rc_vl_enc = v; rc_vl_pc = pc; rc_vl_off = off; v = rc_vl_dec = rc_gdec0(v); }
+    if (rc_vl_key == RC_VLK(pc, off)) { rc_vl_key = 0xFFFFFFFF; v = rc_gdec(rc_vl_enc, rc_vl_dec, v); }
+    else { rc_vl_enc = v; rc_vl_key = RC_VLK(pc, off + 1); v = rc_vl_dec = rc_gdec0(v); }
     MW(rc_vram, a & 0x3FFE) = v;
 }
 
 #ifdef RC_GEN
 /* las dos palabras de un long (a y a+2 dentro de la VRAM), mismo estado final que dos rc_vw16. Lo normal: la
    primera abre un par y la segunda lo cierra; el resultado depende solo del long escrito y se guarda en una cache
-   (los mapas repiten mucho los codigos). Tras cerrar el par, enc/dec/off no se vuelven a mirar hasta otra
-   escritura suelta, que los pone: no hace falta guardarlos */
-#define RC_VCN 256
-static u32 rc_vck[RC_VCN], rc_vcd[RC_VCN];   /* clave 0 con su valor (rc_vc_init): nunca da un acierto falso */
+   (los mapas repiten mucho los codigos: con 4096 entradas falla unas 7 veces por cuadro en carrera). Tras cerrar
+   el par, enc/dec no se vuelven a mirar hasta otra escritura suelta, que los pone: no hace falta guardarlos */
+#define RC_VCN 4096
+typedef struct { u32 k, d; } rc_vce;
+static rc_vce rc_vc[RC_VCN];   /* clave 0 con su valor (rc_vc_init): nunca da un acierto falso */
 static __attribute__((noinline)) u32 rc_gpair(u32 v) { u32 e1 = v >> 16, d1 = gc_dec0(e1); return (d1 << 16) | gc_dec(e1, d1, v & 0xFFFF); }
-static void rc_vc_init(void) { int i; u32 d = rc_gpair(0); for (i = 0; i < RC_VCN; i++) { rc_vck[i] = 0; rc_vcd[i] = d; } }
+static void rc_vc_init(void) { int i; u32 d = rc_gpair(0); for (i = 0; i < RC_VCN; i++) { rc_vc[i].k = 0; rc_vc[i].d = d; } }
 static inline void rc_vw32(u32 a, u32 v, u32 pc)
 {
     u32 o = a & 0x3FFF, d;
 #ifndef RC_GREGS
     rc_vram_writes += 2;
 #endif
-    if (rc_vl_pc != pc || (o >> 1) != rc_vl_off + 1) {
-        u32 h = (v ^ (v >> 16) ^ (v >> 7)) & (RC_VCN - 1);
-        if (rc_vck[h] == v) d = rc_vcd[h];
-        else { d = rc_gpair(v); rc_vck[h] = v; rc_vcd[h] = d; }
-        rc_vl_pc = 0xFFFFFFFF;
+    if (rc_vl_key != RC_VLK(pc, o >> 1)) {
+        rc_vce *c = &rc_vc[(v ^ (v >> 16) ^ (v >> 7)) & (RC_VCN - 1)];
+        if (c->k == v) d = c->d;
+        else { d = rc_gpair(v); c->k = v; c->d = d; }
+        rc_vl_key = 0xFFFFFFFF;
     } else {   /* la primera cierra un par anterior y la segunda queda suelta */
         u32 e2 = v & 0xFFFF, d2 = rc_gdec0(e2);
         d = (rc_gdec(rc_vl_enc, rc_vl_dec, v >> 16) << 16) | d2;
-        rc_vl_enc = e2; rc_vl_off = (o >> 1) + 1; rc_vl_dec = d2;
+        rc_vl_enc = e2; rc_vl_key = RC_VLK(pc, (o >> 1) + 2); rc_vl_dec = d2;
     }
     MW(rc_vram, o & 0x3FFE) = d >> 16; MW(rc_vram, (o + 2) & 0x3FFE) = d;
+}
+/* escrituras con region prevista en la VRAM (rc68.py: WRV16/WRV32). El long con acierto en la cache y sin par
+   abierto va sin llamadas (sin pila); lo demas, por rc_vw32 */
+static __attribute__((noinline)) void rc_vww(u32 a, u32 v, u32 pc) { rc_vw16(a, v & 0xFFFF, pc); }
+static __attribute__((noinline)) void rc_vwl_s(u32 a, u32 v, u32 pc) { rc_vw32(a, v, pc); }
+static __attribute__((noinline)) void rc_vwl(u32 a, u32 v, u32 pc)
+{
+    u32 o = a & 0x3FFE;
+    rc_vce *c = &rc_vc[(v ^ (v >> 16) ^ (v >> 7)) & (RC_VCN - 1)];
+    if (rc_vl_key != RC_VLK(pc, o >> 1) && c->k == v) {
+        u32 d = c->d;
+        rc_vl_key = 0xFFFFFFFF;
+        MW(rc_vram, o) = d >> 16; MW(rc_vram, o + 2) = d;
+    } else rc_vwl_s(a, v, pc);
 }
 #endif
 
@@ -200,17 +216,17 @@ static inline __attribute__((always_inline)) void WR8(u32 a, u32 v, u32 pc) { u8
 static inline __attribute__((always_inline)) void WR16(u32 a, u32 v, u32 pc) { u8 *p; REGREC(a, 1); p = rc_wpg[(a >> 12) & 0xFFF]; if (p) *(u16 *)(p + (a & 0xFFF)) = (u16)v; else rc_wr16_s(a, v, pc); }
 static inline __attribute__((always_inline)) void WR32(u32 a, u32 v, u32 pc)
 {
-    u8 *p; REGREC(a, 1); p = rc_wpg[(a >> 12) & 0xFFF];
+    u8 *p; REGREC32(a, 1); p = rc_wpg[(a >> 12) & 0xFFF];
     if (p) { u16 *q = (u16 *)(p + (a & 0xFFF)); q[0] = (u16)(v >> 16); q[1] = (u16)v; return; }
     rc_wr32_s(a, v, pc);
 }
 /* accesos generales fuera de linea (para cuando falla la region prevista) */
-static __attribute__((noinline)) u32 rc_rdg8(u32 a) { return RD8(a); }
-static __attribute__((noinline)) u32 rc_rdg16(u32 a) { return RD16(a); }
-static __attribute__((noinline)) u32 rc_rdg32(u32 a) { return RD32(a); }
-static __attribute__((noinline)) void rc_wrg8(u32 a, u32 v, u32 pc) { WR8(a, v, pc); }
-static __attribute__((noinline)) void rc_wrg16(u32 a, u32 v, u32 pc) { WR16(a, v, pc); }
-static __attribute__((noinline)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR32(a, v, pc); }
+static __attribute__((noinline, cold)) u32 rc_rdg8(u32 a) { return RD8(a); }
+static __attribute__((noinline, cold)) u32 rc_rdg16(u32 a) { return RD16(a); }
+static __attribute__((noinline, cold)) u32 rc_rdg32(u32 a) { return RD32(a); }
+static __attribute__((noinline, cold)) void rc_wrg8(u32 a, u32 v, u32 pc) { WR8(a, v, pc); }
+static __attribute__((noinline, cold)) void rc_wrg16(u32 a, u32 v, u32 pc) { WR16(a, v, pc); }
+static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR32(a, v, pc); }
 /* accesos con region prevista para cada instruccion (perfil en rc/regiones.txt): comprobacion de rango en linea
    y, si falla, el acceso general (exacto siempre). El camino rapido pide ademas el byte alto de la direccion a 0
    (el juego no usa otra cosa; si no, solo se pierde velocidad): la comprobacion es un desplazamiento y una
@@ -254,6 +270,9 @@ static __attribute__((noinline)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR32(a, v
 #define WRP8(r, a, v, pc) WR8(a, v, pc)
 #define WRP16(r, a, v, pc) WR16(a, v, pc)
 #define WRP32(r, a, v, pc) WR32(a, v, pc)
+#define RDA32(r, a) RD32(a)
+#define WRV16(a, v, pc) WR16(a, v, pc)
+#define WRV32(a, v, pc) WR32(a, v, pc)
 #define RBLK(r, a, n) 0
 #else
 #define RDP8(r, a) (RG_##r(a) ? (u32)MB(RB_##r, RO_##r(a)) : rc_rdg8(a))
@@ -263,40 +282,26 @@ static __attribute__((noinline)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR32(a, v
 #define WRP16(r, a, v, pc) do { if (RG_##r(a)) MW(RB_##r, RO_##r(a)) = (u16)(v); else rc_wrg16(a, v, pc); } while (0)
 #define WRP32(r, a, v, pc) do { if (RG_##r(a)) SETL(RBO_##r + RO_##r(a), 0, v); else rc_wrg32(a, v, pc); } while (0)
 #define RBLK(r, a, n) (RG_##r(a) && RO_##r(a) <= RS_##r - (n))
+/* long con lecturas siempre alineadas a 4 en el perfil: una sola lectura de 32 bits (si no, el acceso general) */
+#define RDA32(r, a) ((RG_##r(a) && !((a) & 2)) ? MLA(RBO_##r + RO_##r(a), 0) : rc_rdg32(a))
+/* VRAM: descifrado fuera de linea sin pasar por la tabla de paginas; un long que se sale de la VRAM, por el general */
+#define WRV16(a, v, pc) do { if (RG_vram(a)) rc_vww(a, v, pc); else rc_wrg16(a, v, pc); } while (0)
+#define WRV32(a, v, pc) do { if (RBLK(vram, a, 4)) rc_vwl(a, v, pc); else rc_wrg32(a, v, pc); } while (0)
 #endif
 #define RPTR(r, a) (RBO_##r + RO_##r(a))
 #endif
 
-/* despacho general: tabla ordenada por pc con un indice por bloques de 256 bytes (ti[b] = primera entrada con
-   pc >= b * 256; nb bloques mas uno de cierre) y busqueda binaria dentro del bloque */
-static inline void *rc_find(const rc_lab *t, const u16 *ti, u32 nb, u32 pc)
-{
-    u32 b = pc >> 8, lo, hi, e;
-    if (b >= nb) return 0;
-    lo = ti[b]; e = hi = ti[b + 1];
-    while (lo < hi) { u32 m = (lo + hi) >> 1; if (t[m].pc < pc) lo = m + 1; else hi = m; }
-    return (lo < e && t[lo].pc == pc) ? t[lo].l : 0;
-}
-
-/* prediccion de retorno: bsr/jsr apuntan (direccion de vuelta, etiqueta) en una pila sombra indexada por a7
-   (la direccion como queda en la RAM: palabras cambiadas);
-   rts compara lo que saca de la pila del 68000 con la entrada y, si coincide, salta directo (si no, despacho
-   general: el juego puede tocar su pila como quiera) */
 #ifdef RC_GEN
-#define rc_sh ((rc_lab *)(RAMB + RC_SHOFF))
-#define SHE(sp) ((rc_lab *)((u8 *)rc_sh + ((sp) & ((RC_SHN - 1) << 2)) * (sizeof(rc_lab) / 4)))
+/* despacho general (rts, rte, jmp indirecto): tabla hash de etiquetas por el pc con las palabras cambiadas
+   (k), sondeo lineal hasta una entrada vacia (clave 0). La genera rc68.py (RC_HN, RC_HS) */
+static inline void *rc_hfind(const rc_lab *e, u32 k)
+{
+    e += (k ^ (k >> RC_HS)) & (RC_HN - 1);
+    while (e->pc != k) { if (!e->pc) return 0; e++; }
+    return e->l;
+}
 /* long de la RAM del 68000 tal como esta en memoria (palabras cambiadas): alineado a 4, de una vez */
 #define RAW32(a) (*(u32 *)(RAMB + ((a) & 0x3FFC)))
-#ifdef RC_GREGS
-/* fuera de linea para no repetir el codigo en cada llamada (a7 es global); n = tamano de la instruccion */
-#define RC_CALLPUSH_F(n) static __attribute__((noinline)) void rc_callpush##n(u32 r, void *lb) \
-    { rc_lab *e; a7 -= 4; if (RG_ram(a7)) SETL(RAMB + RO_ram(a7), 0, r); else rc_wrg32(a7, r, r - n); \
-      e = SHE(a7); e->pc = RC_SW16(r); e->l = lb; }
-RC_CALLPUSH_F(2) RC_CALLPUSH_F(4) RC_CALLPUSH_F(6)
-#define CALLPUSH(n, r, lb) rc_callpush##n(r, lb)
-#else
-#define CALLPUSH(n, r, lb) do { rc_lab *_e; a7 -= 4; WRP32(ram, a7, r, (r) - n); _e = SHE(a7); _e->pc = RC_SW16(r); _e->l = (lb); } while (0)
-#endif
 #endif
 
 /* desplazamientos con cuenta en registro (semantica 68000 / Musashi), sin aritmetica de 64 bits */
@@ -376,19 +381,17 @@ static inline u32 sh_roxr(u32 v, u32 c, int b, u32 *x, u32 *cf, u32 *vf) { *vf =
     rc_r.fX=fX; rc_r.fN=fN; rc_r.fZ=fZ; rc_r.fV=fV; rc_r.fC=fC; rc_r.imask=imask; rc_r.cyc=cyr+cyc_next; rc_r.cyc_next=cyc_next; \
     rc_r.cyr=cyr; } while (0)
 
-/* pila sombra vacia: entradas que no coinciden con nada que no fuera a ir al despacho general igualmente */
-#define RC_SHINIT do { int _k; for (_k = 0; _k < RC_SHN; _k++) { rc_sh[_k].pc = 0xFFFFFFFFu; rc_sh[_k].l = &&rc_shbad; } } while (0)
 #ifdef RC_GREGS
 #define RC_LOCALS u32 fX = rc_r.fX, fV = rc_r.fV, fN = rc_r.fN, imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
     u32 vs, vd, vr, eas, ead, dpc; void *dl;
 #define RC_ENTER d0 = rc_r.d[0]; d1 = rc_r.d[1]; d2 = rc_r.d[2]; d3 = rc_r.d[3]; d4 = rc_r.d[4]; d5 = rc_r.d[5]; \
-    d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; RC_TLOAD; cyr = rc_r.cyc - rc_r.cyc_next; RC_SHINIT; rc_vc_init();
+    d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; RC_TLOAD; cyr = rc_r.cyc - rc_r.cyc_next; rc_vc_init();
 #else
 #define RC_LOCALS u32 d0 = rc_r.d[0], d1 = rc_r.d[1], d2 = rc_r.d[2], d3 = rc_r.d[3], d4 = rc_r.d[4], d5 = rc_r.d[5], d6 = rc_r.d[6], d7 = rc_r.d[7]; \
     u32 a0 = rc_r.a[0], a1 = rc_r.a[1], a2 = rc_r.a[2], a3 = rc_r.a[3], a4 = rc_r.a[4], a5 = rc_r.a[5], a6 = rc_r.a[6], a7 = rc_r.a[7]; \
     u32 fX = rc_r.fX, fN = rc_r.fN, fZ = rc_r.fZ, fV = rc_r.fV, fC = rc_r.fC, imask = rc_r.imask; \
     s32 cyr = rc_r.cyc - rc_r.cyc_next, cyc_next = rc_r.cyc_next; u32 vs, vd, vr, eas, ead, dpc; void *dl;
-#define RC_ENTER RC_SHINIT; rc_vc_init();
+#define RC_ENTER rc_vc_init();
 #endif
 /* despacho indirecto y rts: bloques comunes al final de rc_run (un salto en cada sitio) */
 #define DISPATCH(x) do { dpc = (x); goto rc_disp; } while (0)
@@ -424,17 +427,12 @@ irq_take: \
     IRQ_DBG(); \
     DISPATCH(RC_IRQ6); \
 rc_rts: \
-    { rc_lab *_e = SHE(a7); u32 _r; \
-      if (RG_ram(a7)) { \
-          if (!(a7 & 2)) _r = RAW32(a7); else { u8 *_q = RAMB + RO_ram(a7); _r = ((u32)MW(_q, 2) << 16) | MW(_q, 0); } \
-          if (_r == _e->pc) { a7 += 4; goto *_e->l; } \
-          _r = RC_SW16(_r); \
-      } else _r = rc_rdg32(a7); \
-      a7 += 4; DISPATCH(_r); } \
-rc_shbad: \
-    DISPATCH(0xFFFFFFFFu); \
+    { u32 _k; \
+      if (RG_ram(a7)) { if (!(a7 & 2)) _k = RAW32(a7); else { u8 *_q = RAMB + RO_ram(a7); _k = ((u32)MW(_q, 2) << 16) | MW(_q, 0); } } \
+      else _k = RC_SW16(rc_rdg32(a7)); \
+      a7 += 4; dl = rc_hfind(ht, _k); if (dl) goto *dl; dpc = RC_SW16(_k); goto bad_dispatch; } \
 rc_disp: \
-    dl = rc_find(tab, tabi, sizeof(tabi) / sizeof(tabi[0]) - 1, dpc); if (!dl) goto bad_dispatch; goto *dl; \
+    dl = rc_hfind(ht, RC_SW16(dpc)); if (!dl) goto bad_dispatch; goto *dl; \
 bad_dispatch: \
     RC_SYNC; rc_r.pc = dpc; rc_bad(dpc); return;
 #endif

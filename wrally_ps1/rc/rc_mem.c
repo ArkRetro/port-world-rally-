@@ -4,14 +4,14 @@ u8 *rc_rpg[4096], *rc_wpg[4096];
 #ifndef RC_ROM_EXTERN
 u8 rc_rom[0x100000 + 4] __attribute__((aligned(4)));
 #endif
-u8 rc_ram[RC_RAMSZ] __attribute__((aligned(8))), rc_pal[0x4000 + 4] __attribute__((aligned(4)));
+u8 rc_ram[0x4000 + 4] __attribute__((aligned(4))), rc_pal[0x4000 + 4] __attribute__((aligned(4)));
 u8 rc_spr[0x1000 + 4] __attribute__((aligned(4))), rc_vram[0x4000 + 4] __attribute__((aligned(4)));
 u8 rc_vregs[0x1000 + 4] __attribute__((aligned(4)));
 u8 rc_iopg[0x1000 + 4] __attribute__((aligned(4))), rc_ffpg[0x1000 + 4] __attribute__((aligned(4)));
 rc_regs_t rc_r;
 void rc_gcrypt_init(void);
 /* estado de los pares de escrituras a la VRAM (rc_vw16/rc_vw32 en rc_rt.h) */
-u32 rc_vl_pc = 0xFFFFFFFF, rc_vl_off = 0xFFFFFFFE; u16 rc_vl_enc, rc_vl_dec;
+u32 rc_vl_key = 0xFFFFFFFF; u16 rc_vl_enc, rc_vl_dec;
 
 void rc_set_io(u16 dsw, u16 in)
 {
