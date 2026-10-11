@@ -3,7 +3,8 @@
    lecturas de RAM de 6 ciclos, GPU con coste por pixel, CD con busqueda/lectura/pausa, mando SIO0.
    Uso: psxprof imagen.cue wr2.elf.bin(PS-EXE) wr2.nm cuadros_juego [salida_dir]
    Entradas (botones) segun el cuadro del juego (llamadas a rc_vblank), como rc_host (ver inputs_for).
-   MISSLOG=1: falta.txt con los tiles que faltan en cada cuadro; WATCH=var,...: cambios de esas variables. */
+   MISSLOG=1: falta.txt con los tiles que faltan en cada cuadro; WATCH=var,...: cambios de esas variables.
+   CD_VIEJOS=n: tras un ReadN sin Pause llegan aun n sectores de la posicion anterior (psxprof no los da si no). */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -69,6 +70,8 @@ typedef struct { u64 t; u8 irq; u8 resp[8]; u8 n; int kind; } cdev_t;
 #define K_SECTOR 1
 static cdev_t cdq[16]; static int cdqn;
 static int cd_reading, cd_playing; static u64 cd_next_sector;
+/* CD_VIEJOS=n: tras un ReadN sin Pause llegan aun n sectores de donde se leia (como en la unidad real) */
+static u32 cd_old_lba; static int cd_old_n; static u64 cd_old_t;
 static u8 cd_sector_buf[2352]; static int cd_sector_ready;
 static u64 cd_busy_until;
 /* velocidad del motor (cambiarla tarda, como en DuckStation: 0,6 s a doble y 1 s a normal) y audio CD-DA:
@@ -338,7 +341,8 @@ static void gp1_write(u32 v)
     case 0x01: gpu_fn = 0; gpu_upload_left = 0; break;
     case 0x03: disp_on = !(v & 1); break;
     case 0x05: disp_x = v & 0x3FF; disp_y = (v >> 10) & 0x1FF;
-        { double l = (double)(cyc - vbl_set_cyc) / LINE_CYC; int b = l < 0 ? 0 : l >= 63 ? 63 : (int)l; swap_hist[b]++; if (l > swap_max) { swap_max = l; swap_max_fr = game_frame; } } break;
+        { double l = (double)(cyc - vbl_set_cyc) / LINE_CYC; int b = l < 0 ? 0 : l >= 63 ? 63 : (int)l; swap_hist[b]++; if (l > swap_max) { swap_max = l; swap_max_fr = game_frame; }
+          if (l >= 4 && game_frame > 1) eventf("BUFER_TARDE lineas %.1f", l); } break;
     case 0x08: disp_mode = v & 0xFF; break;
     default: break;
     }
@@ -533,6 +537,7 @@ static void cd_command(u8 c)
         if (cd_playing) eventf("CDDA_STOP read lba %u", cd_cur);
         cd_playing = 0;
         cd_push(ack, 3, r, 1, K_RESP);
+        if (cd_reading && getenv("CD_VIEJOS")) { cd_old_lba = cd_cur; cd_old_n = atoi(getenv("CD_VIEJOS")); cd_old_t = cyc + ack + 1000; }
         cd_reading = 1; cd_cur = cd_loc;
         t0 = cyc + ack > cd_speed_ready ? cyc + ack : cd_speed_ready;
         cd_next_sector = t0 + st;
@@ -540,6 +545,7 @@ static void cd_command(u8 c)
         break; }
     case 0x09: {                                                                    /* Pause */
         u64 pt = (cd_reading || cd_playing) ? 9 * 225792ULL : 7400;
+        cd_old_n = 0;
         if (pt < 1000000 && (cd_reading || cd_playing)) pt = 1000000;
         if (cd_playing) { cd_cur = cd_play_pos(); eventf("CDDA_STOP pause lba %u", cd_cur); }
         cd_reading = 0; cd_playing = 0;
@@ -580,6 +586,15 @@ static void cd_command(u8 c)
 static void cd_tick(void)
 {
     int i;
+    if (cd_old_n && cd_reading && cyc >= cd_old_t && cyc < cd_next_sector && (cd_if & 7) == 0 && cdqn < 15) {
+        u8 r[1]; r[0] = cd_stat | 0x20;
+        cd_read_sector(cd_old_lba);
+        if (cd_dsize == 0x924) memcpy(cd_data, cd_sector_buf + 12, 0x924); else memcpy(cd_data, cd_sector_buf + 24, 2048);
+        cd_dlen = cd_dsize; cd_dpos = cd_dsize;
+        cd_push(0, 1, r, 1, K_SECTOR);
+        eventf("CD_SECTOR_VIEJO lba %u", cd_old_lba);
+        cd_old_lba++; cd_old_n--; cd_old_t = cyc + (cd_2x ? 225792 : 451584);
+    }
     /* entregar el siguiente evento si la bandera esta libre */
     if (cd_reading && cyc >= cd_next_sector) {
         u8 r[1]; r[0] = cd_stat | 0x20;
