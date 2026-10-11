@@ -5,17 +5,12 @@ TRACKS.BIN lleva el principio y el final exactos de cada pista de audio (GetTD s
 construye la imagen, se lee la disposicion del .cue, se escribe la tabla y se vuelve a construir (TRACKS.BIN no
 cambia de tamano, asi que la disposicion es la misma)."""
 import subprocess, sys, os, struct
-LIC = {'USA': 'Sony Computer Entertainment Amer  ica ', 'EUR': 'Sony Computer Entertainment Euro pe   '}
+import licencia
+LIC = licencia.TXT
 tracks = [l.strip() for l in open('../snd/tracks.txt') if l.strip()]
 files = ['SYSTEM.CNF', 'TRACKS.BIN', 'SNDFX.BIN', 'MENU.BIN', 'RACE.BIN', 'MENU2.BIN', 'WRPS1.EXE', 'TILES.BIN'] + ['LEVEL%02d.BIN' % k for k in range(12)]
 def build(reg):
-    t = b'          Licensed  by          ' + LIC[reg].encode()
-    sec = []
-    for i in range(12):
-        d = bytearray(2048)
-        if i == 4: d[:len(t)] = t
-        sec.append(bytes([0, 0, 8, 0, 0, 0, 8, 0]) + bytes(d) + bytes(280))
-    open('cd_lic_%s.dat' % reg, 'wb').write(b''.join(sec))
+    open('cd_lic_%s.dat' % reg, 'wb').write(lic[reg])    # sectores 0-11: licencia y logo (licencia.py)
     x = ['<?xml version="1.0" encoding="UTF-8"?>',
          '<iso_project image_name="wrps1_%s.bin" cue_sheet="wrps1_%s.cue">' % (reg, reg),
          '  <track type="data">',
@@ -48,6 +43,7 @@ def write_tracks(tab):
     for t, (a, b) in tab.items():
         if 2 <= t < 32: struct.pack_into('<II', d, t * 8, a, b)
     open('cd/TRACKS.BIN', 'wb').write(bytes(d))
+lic = {reg: licencia.datos(reg) for reg in LIC}
 write_tracks({})
 build('USA')
 tab = layout('USA')
