@@ -18,3 +18,5 @@ python3 -I wdgaps.py debug.log
 `inputs.lua` mete moneda/start/A para llegar a la partida. `cartwrites.cmd` registra escrituras al espacio del cartucho y al registro de banco.
 
 `exceptions.cmd` marca los manejadores de excepcion del 68k (vectores 2-8 del P-ROM); `sysregs.cmd` registra escrituras a 0x3A00xx/0x380000. Resultado en MAME: ninguna excepcion ni acceso sin mapear.
+
+`biosram_gamewrites.cmd` / `biosram_biosaccess.cmd`: escrituras del juego (PC<0xC00000) y accesos de la BIOS a 0x10F300-0x10FFFF (RAM reservada a la BIOS). Resultado: el juego escribe en todo ese rango.
