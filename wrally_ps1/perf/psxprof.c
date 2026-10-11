@@ -52,6 +52,7 @@ static u32 gpu_upload_x, gpu_upload_y, gpu_upload_w, gpu_upload_h, gpu_upload_le
 static u32 tpage = 0, twin = 0, da_x0, da_y0, da_x1 = 1023, da_y1 = 511; static s32 off_x, off_y;
 static u32 disp_x, disp_y, disp_mode, disp_on;
 static u64 gpu_ticks_total, gpu_prims;
+static u64 ll_start, ll_end;          /* ultima lista enlazada a la GPU: cuando se mando y cuando acabo de dibujarse */
 /* ---- CD */
 static FILE *cdf; static long cd_sectors;
 static int ntracks; static u32 trk_lba[100];
@@ -333,6 +334,7 @@ static void dma_start(int ch)
             }
             stall_cyc += words;                    /* el bus lo ocupa la DMA */
             dma_done[2] = (gpu_busy_until > cyc + words ? gpu_busy_until : cyc + words);
+            ll_start = cyc; ll_end = dma_done[2];
         } else {
             u32 bs = dma_bcr[ch] & 0xFFFF, nb = dma_bcr[ch] >> 16, i;
             if (!bs) bs = 0x10000;
@@ -847,7 +849,7 @@ int main(int argc, char **argv)
     prof = calloc(0x80000, 8); prof_n = calloc(0x80000, 8);
     { char fn[600]; snprintf(fn, sizeof fn, "%s/eventos.txt", outdir); evf = fopen(fn, "w");
       snprintf(fn, sizeof fn, "%s/cuadros.csv", outdir); framef = fopen(fn, "w"); }
-    if (framef) fprintf(framef, "cuadro_juego,ciclo,vblank,ciclos_desde_anterior,gpu_ticks,estado\n");
+    if (framef) fprintf(framef, "cuadro_juego,ciclo,vblank,ciclos_desde_anterior,gpu_ticks,estado,lista,gpu_fin\n");
     sp = 0x801FFFF0;
     R[29] = sp; R[30] = sp;
     PC = pc0; NPC = pc0 + 4;
@@ -859,7 +861,8 @@ int main(int argc, char **argv)
     while (!halted) {
         if ((PC & 0x1FFFFFFF) == (sym_vblank & 0x1FFFFFFF) && PC == sym_vblank) {
             u64 d = cyc - last_vblank_call;
-            if (framef) fprintf(framef, "%ld,%llu,%llu,%llu,%llu,%08x\n", game_frame, (unsigned long long)cyc, (unsigned long long)vbl_count, (unsigned long long)d, (unsigned long long)gpu_ticks_total, state_hash());
+            if (framef) fprintf(framef, "%ld,%llu,%llu,%llu,%llu,%08x,%llu,%llu\n", game_frame, (unsigned long long)cyc, (unsigned long long)vbl_count, (unsigned long long)d, (unsigned long long)gpu_ticks_total, state_hash(),
+                                (unsigned long long)ll_start, (unsigned long long)ll_end);
             last_vblank_call = cyc;
             game_frame++;
             if (game_frame == prof_from_frame) { memset(prof, 0, 0x80000 * 8); memset(prof_n, 0, 0x80000 * 8); prof_from_cyc = cyc; }

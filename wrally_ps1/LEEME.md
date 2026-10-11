@@ -36,6 +36,8 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - Prioridades de la placa.
   - Faros y sombras con semitransparencia.
   - Pantalla de carga.
+  - La lista de la GPU se hace en una sola pasada por las capas y los sprites (un cubo por paso de dibujo).
+  - Si un cuadro llega tarde, el siguiente no se dibuja y el juego sigue a 60 Hz (`FRAMESKIP`, `-DFRAMESKIP=0` lo quita).
 - `ps1/cd.c`: lector de CD por sondeo (datos y CD-DA).
 - `ps1/snd.c`: el OKI M6295 sobre la SPU (frases cortas) y sobre pistas de audio (frases largas).
 - `ps1/gen2.py`: genera `TILES.BIN`, los paquetes `LEVELnn.BIN` y `RACE.BIN`.

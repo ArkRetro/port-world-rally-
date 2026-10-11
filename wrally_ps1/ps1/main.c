@@ -36,6 +36,9 @@ void rc_bad(u32 pc) { bad_pc = pc; GP1 = 0x03000000; for (;;); }
 #define H 240
 #define CLUT_Y 240
 #define TEX_X 384
+#ifndef FRAMESKIP
+#define FRAMESKIP 1          /* si un cuadro llega tarde no se dibuja el siguiente: la logica sigue a 60 Hz */
+#endif
 static void gpu_wait(void) { while (!(GP1 & (1 << 26))); }
 static void dma_wait(void) { while (D2_CHCR & (1 << 24)); }
 static void upload(int x, int y, int w, int h, const void *d)
@@ -48,21 +51,72 @@ static void upload(int x, int y, int w, int h, const void *d)
     D2_MADR = (u32)d; D2_BCR = ((words / bs) << 16) | bs; D2_CHCR = 0x01000201;
     dma_wait();
 }
-#define OTW 16384
-static u32 ot[2][OTW];
-static u32 *P, *pkend;            /* lista: un nodo (cabecera + palabras) por primitivo */
-#define NODE(p, n) ((p)[0] = ((u32)(n) << 24) | ((u32)((p) + 1 + (n)) & 0xFFFFFF))
-static void pk_begin(int b) { P = ot[b]; pkend = ot[b] + OTW - 64; }
-static void pk_end(void) { P[0] = 0x00FFFFFF; }
-static void pk_send(int b) { dma_wait(); gpu_wait(); D2_MADR = (u32)ot[b]; D2_BCR = 0; D2_CHCR = 0x01000401; }
+/* lista para la GPU: un cubo por paso de dibujo, cada uno una cadena de trozos de CHW palabras de un deposito
+   comun. Las capas y la tabla de sprites se recorren una sola vez repartiendo cada tile en sus cubos, y al final
+   los cubos se enlazan en el orden de la placa con nodos vacios (o con un E2 si el cubo acabo con la ventana de
+   textura puesta). La DMA no lee del scratchpad: los trozos estan en la RAM principal */
+#define CHW 1024
+#define NCH 32
+static u32 pool[NCH][CHW];
+static int pool_n;
+static u32 hdr[10];
+/* cabecera de un nodo de n palabras (la direccion del siguiente en los 24 bits bajos): las de la RAM son
+   0x80xxxxxx, asi que basta con sumar */
+#define NODE(p, n) ((p)[0] = (u32)((p) + 1 + (n)) + (((u32)(n) << 24) - 0x80000000u))
+/* bucles calientes: sin la planificacion antes de asignar registros, que lo adelanta todo y acaba guardando
+   constantes en la pila (cada lectura de la RAM cuesta ~6 ciclos); y sin convertir bucles en memset */
+#define HOT_OPT optimize("no-schedule-insns", "no-tree-loop-distribute-patterns")
+#define HOT __attribute__((noinline, HOT_OPT))
+typedef struct { u32 *p, *end, win; } bucket_t;     /* el primer trozo del cubo k es pool[k] */
+enum { BK_A, BK_B, BK_C, BK_D, BK_E00, BK_E01, BK_S0, BK_F, BK_E10, BK_E11, BK_S1, BK_DBG, NBK };
+/* scratchpad (1 KB, lectura en 1 ciclo; las de RAM cuestan ~6): estado de los cubos y tablas que se leen por
+   cada tile. Se usan 0x1F800000-0x1F8002E7 */
+typedef struct { bucket_t bk[NBK]; u32 pal_wf[32], cl16[32], te1[20], fuv[4][4], rec[(W / 16 + 2) * 2]; } spad_t;
+#define SPAD ((spad_t *)0x1F800000)
+typedef char spad_cabe[sizeof(spad_t) <= 0x300 ? 1 : -1];
+static u32 *bk_cur[NBK];
+/* trozo nuevo para un cubo (empieza con la ventana de textura apagada). Deposito lleno: se reescribe el ultimo
+   trozo del cubo (se pierde lo dibujado en el, como al llenarse la lista antes) */
+static __attribute__((noinline)) u32 *chunk_new(bucket_t *b, u32 *p)
+{
+    u32 *c;
+    if (pool_n < NCH) { c = pool[pool_n++]; p[0] = (u32)c & 0xFFFFFF; bk_cur[b - SPAD->bk] = c; b->end = c + CHW - 2; }
+    else c = bk_cur[b - SPAD->bk];
+    NODE(c, 1); c[1] = 0xE2000000;
+    return c + 2;
+}
+static void bk_init(void)
+{
+    bucket_t *b = SPAD->bk; int k;
+    for (k = 0; k < NBK; k++, b++) { u32 *c = pool[k]; bk_cur[k] = b->p = c; b->end = c + CHW - 2; b->win = 0; }
+    pool_n = NBK;
+}
+/* enlaza los cubos detras de la cabecera (bufer fy: area de dibujo, desplazamiento, fondo negro) y lo manda */
+static void pk_send(int fy)
+{
+    bucket_t *b = SPAD->bk; int k;
+    u32 *h = hdr;
+    h[0] = (8u << 24) | ((u32)pool[0] & 0xFFFFFF);
+    h[1] = 0xE3000000 | (fy << 10); h[2] = 0xE4000000 | ((fy + H - 1) << 10) | (W - 1); h[3] = 0xE5000000 | (fy << 11);
+    h[4] = 0xE6000000; h[5] = 0xE2000000;
+    h[6] = 0x02000000; h[7] = (u32)fy << 16; h[8] = (H << 16) | W;          /* fondo negro */
+    for (k = 0; k < NBK; k++, b++) {
+        u32 *p = b->p, nx = k + 1 < NBK ? (u32)pool[k + 1] & 0xFFFFFF : 0xFFFFFF;
+        if (b->win) { p[0] = (1u << 24) | nx; p[1] = 0xE2000000; } else p[0] = nx;
+    }
+    dma_wait(); gpu_wait(); D2_MADR = (u32)hdr; D2_BCR = 0; D2_CHCR = 0x01000401;
+}
 static int vbl_count;
-static void vsync(void) { I_STAT = ~1u; while (!(I_STAT & 1)); vbl_count++; }
+/* espera al siguiente vblank y lo reconoce: la bandera que haya al volver a entrar es que ya paso otro */
+static void vsync(void) { I_STAT = ~1u; while (!(I_STAT & 1)); I_STAT = ~1u; vbl_count++; }
 
 /* paletas: 64 del juego (0x000-0x3FF) en 4 variantes: 0 opaca, 1 pen 0 transparente, 2 solo pens 1-7,
-   3 solo pens 8-15 (para las prioridades por grupo de pens de la capa delantera). Se convierten solo las
-   que cambian */
+   3 solo pens 8-15 (para las prioridades por grupo de pens de la capa delantera). Se miran solo las que usa
+   el cuadro (0-31 las capas, 32-47 los sprites; 48-63 nadie) y se convierten las que han cambiado; las que no se
+   usan pueden quedar viejas en la VRAM hasta que se vuelvan a usar */
+#define NPAL 48
 static u16 clut[4][64][16];
-static u16 pal_prev[1024];
+static u32 pal_prev[NPAL * 8];
 static int pal_first = 1;
 static u16 c15(u16 v)
 {
@@ -70,20 +124,19 @@ static u16 c15(u16 v)
     c = ((r << 1) | (r >> 3)) | (((g << 1) | (g >> 3)) << 5) | (((b << 1) | (b >> 3)) << 10);
     return c ? c : 0x8000;
 }
-static int pal_convert(void)
+static __attribute__((noinline)) int pal_convert(u32 m0, u32 m1)    /* m0: paletas 0-31 que se usan, m1: 32-47 */
 {
     int p, k, ch = 0;
-    const u16 *pr = (const u16 *)rc_pal;
-    for (p = 0; p < 64; p++) {
-        const u16 *q = pr + p * 16; u16 *o = pal_prev + p * 16;
-        if (!pal_first) {
-            for (k = 0; k < 16 && q[k] == o[k]; k++);
-            if (k == 16) continue;
-        }
+    const u32 *q = (const u32 *)rc_pal; u32 *o = pal_prev;
+    if (pal_first) m0 = m1 = ~0u;
+    for (p = 0; p < NPAL; p++, q += 8, o += 8) {
+        if (!(((p < 32 ? m0 : m1) >> (p & 31)) & 1)) continue;
+        if (!pal_first && !((q[0] ^ o[0]) | (q[1] ^ o[1]) | (q[2] ^ o[2]) | (q[3] ^ o[3]) |
+                             (q[4] ^ o[4]) | (q[5] ^ o[5]) | (q[6] ^ o[6]) | (q[7] ^ o[7]))) continue;
         ch = 1;
+        for (k = 0; k < 8; k++) o[k] = q[k];
         for (k = 0; k < 16; k++) {
-            u16 c = c15(q[k]);
-            o[k] = q[k];
+            u16 c = c15(((const u16 *)q)[k]);
             clut[0][p][k] = c;
             clut[1][p][k] = k ? c : 0;
             clut[2][p][k] = (k && k < 8) ? c : 0;
@@ -236,108 +289,194 @@ static void cache_load(void)
     nmiss = 0;
     if (was) snd_resume();
 }
-static inline u32 tpage_s(int s) { int tp = s >> 8; return ((TEX_X + (tp % 10) * 64) >> 6) | (((tp / 10) & 1) << 4); }
-#define UV_S(s) ((((((s) >> 4) & 15) * 16) << 8) | (((s) & 15) * 16))
-
-/* tablas precalculadas: bits de pagina de textura por pagina de la cache, CLUT por variante y paleta */
-static u32 tp_page[20], clutid[4][64];
+/* tablas en el scratchpad: E1 (pagina de textura) por pagina de la cache, CLUT (<<16) de cada paleta de las
+   capas en la variante 0 (las otras variantes estan 4 filas mas abajo cada una: + CLV(v)), y V<<8 | U de las
+   cuatro esquinas del cuadrilatero de un tile con espejo */
+#define CLV(v) ((u32)((v) * 4) << 22)
 static void tables_init(void)
 {
-    int p, v;
-    for (p = 0; p < 20; p++) tp_page[p] = ((TEX_X + (p % 10) * 64) >> 6) | (((p / 10) & 1) << 4);
-    for (v = 0; v < 4; v++) for (p = 0; p < 64; p++) clutid[v][p] = CLUTID(v, p);
+    int p;
+    for (p = 0; p < 20; p++) SPAD->te1[p] = 0xE1000400 | ((TEX_X + (p % 10) * 64) >> 6) | (((p / 10) & 1) << 4);
+    for (p = 0; p < 32; p++) { SPAD->cl16[p] = CLUTID(0, p) << 16; SPAD->pal_wf[p] = 0; }
+    for (p = 0; p < 4; p++) {
+        u32 uL = (p & 1) ? 31 : 0, uR = (p & 1) ? 15 : 16, vT = (p & 2) ? 31 : 0, vB = (p & 2) ? 15 : 16;
+        SPAD->fuv[p][0] = (vT << 8) | uL; SPAD->fuv[p][1] = (vT << 8) | uR; SPAD->fuv[p][2] = (vB << 8) | uL; SPAD->fuv[p][3] = (vB << 8) | uR;
+    }
 }
-/* un tile 16x16: sin espejo, sprite 0x7D (+E1); con espejo, cuadrilatero 0x2D con la ventana de textura (E2)
-   ajustada al tile, para que U/V puedan ir de 31 a 15 sin salirse (las GPU antiguas no hacen espejo en los
-   rectangulos). *win: si la ventana quedo puesta */
-static inline u32 *emit_tile_s(u32 *p, int x, int y, u32 s, u32 clut, u32 fl, int *win, u32 semi)
+/* un tile 16x16 en (x0, y0>>16) (x0 e y0 ya en el formato de la GPU) con a = CLUT<<16 | V<<8 | U: sin espejo,
+   sprite 0x7D (+E1); con espejo, cuadrilatero 0x2D con la ventana de textura (E2) ajustada al tile, para que U/V
+   puedan ir de 31 a 15 sin salirse (las GPU antiguas no hacen espejo en los rectangulos). *win: si la ventana
+   quedo puesta */
+static inline __attribute__((always_inline)) u32 *emit_tile(u32 *p, u32 *win, u32 x0, u32 y0, u32 a, u32 fl, u32 tp, u32 semi)
 {
-    u32 tp = tp_page[s >> 8] | ((semi ? semi - 1 : 0) << 5), U = (s & 15) << 4, Vv = ((s >> 4) & 15) << 4;
+    if (semi) tp |= (semi - 1) << 5;
     if (!fl) {
         if (*win) { NODE(p, 1); p[1] = 0xE2000000; p += 2; *win = 0; }
         NODE(p, 4);
         p[1] = 0xE1000400 | tp; p[2] = semi ? 0x7F000000 : 0x7D000000;
-        p[3] = ((u32)(y & 0xFFFF) << 16) | (x & 0xFFFF);
-        p[4] = (clut << 16) | (Vv << 8) | U;
+        p[3] = y0 | x0;
+        p[4] = a;
         return p + 5;
     } else {
-        u32 uL = (fl & 1) ? 31 : 0, uR = (fl & 1) ? 15 : 16, vT = (fl & 2) ? 31 : 0, vB = (fl & 2) ? 15 : 16;
-        u32 x0 = x & 0xFFFF, x1 = (x + 16) & 0xFFFF, y0 = (u32)(y & 0xFFFF) << 16, y1 = (u32)((y + 16) & 0xFFFF) << 16;
+        const u32 *f = SPAD->fuv[fl];
+        u32 x1 = (x0 + 16) & 0xFFFF, y1 = y0 + (16 << 16);
         NODE(p, 10);
-        p[1] = 0xE2000000 | 0x1E | (0x1E << 5) | ((U >> 3) << 10) | ((Vv >> 3) << 15);
+        p[1] = 0xE20003DE | ((a & 0xF0) << 7) | ((a & 0xF000) << 4);
         p[2] = semi ? 0x2F808080 : 0x2D808080;
-        p[3] = y0 | x0; p[4] = (clut << 16) | (vT << 8) | uL;
-        p[5] = y0 | x1; p[6] = (tp << 16) | (vT << 8) | uR;
-        p[7] = y1 | x0; p[8] = (vB << 8) | uL;
-        p[9] = y1 | x1; p[10] = (vB << 8) | uR;
+        p[3] = y0 | x0; p[4] = (a & 0xFFFF0000) | f[0];
+        p[5] = y0 | x1; p[6] = (tp << 16) | f[1];
+        p[7] = y1 | x0; p[8] = f[2];
+        p[9] = y1 | x1; p[10] = f[3];
         *win = 1;
         return p + 11;
     }
 }
-#define emit_tile(p, x, y, s, c, f, w) emit_tile_s(p, x, y, s, c, f, w, 0)
-static u16 pal_w[32];
-/* tiles visibles de cada capa: hueco | espejo<<13 | categoria<<15 | paleta<<16 | columna<<21 | fila<<26 */
-static u32 vis[2][32 * 20]; static int nvis[2], vox[2], voy[2];
-static void gather(int L, int sx, int sy)
+/* lo mismo en un cubo cualquiera (mira si cabe) */
+static inline __attribute__((always_inline)) void emit_bk(bucket_t *b, u32 x0, u32 y0, u32 a, u32 fl, u32 tp, u32 semi)
 {
-    int tx0 = sx >> 4, ty0 = sy >> 4, i, j, n = 0;
-    const u16 *m = (const u16 *)(rc_vram + L * 0x2000);
-    vox[L] = -(sx & 15); voy[L] = -(sy & 15);
-    for (j = 0; j < H / 16 + 2; j++) {
-        const u16 *row = m + ((ty0 + j) & 31) * 128;
-        for (i = 0; i < W / 16 + 2; i++) {
-            int e = ((tx0 + i) & 63) * 2, sl;
-            u32 d2 = row[e + 1];
-            sl = tile_slot(row[e] & 0x3FFF);
-            if (sl < 0) continue;
-            pal_w[d2 & 0x1F]++;
-            vis[L][n++] = (u32)sl | (((d2 >> 6) & 3) << 13) | (((d2 >> 5) & 1) << 15) | ((d2 & 0x1F) << 16) | ((u32)i << 21) | ((u32)j << 26);
+    u32 *p = b->p, win = b->win;
+    if (p + 11 > b->end) { p = chunk_new(b, p); win = 0; }
+    b->p = emit_tile(p, &win, x0, y0, a, fl, tp, semi); b->win = win;
+}
+/* capas: cada tile visible en sus cubos segun la categoria (bit 5 del atributo); los de la columna y la fila de
+   mas solo se piden a la cache (para tenerlos antes) y cuentan para pal_w. Orden de la placa: fondo, frente
+   cat. 0, fondo cat. 1, frente cat. 1 (pens 1-7), sprites, frente cat. 1 (pens 8-15), sprites de prioridad alta:
+   capa 1 (fondo): todos -> A (variante 0); cat. 1 tambien -> C (variante 1)
+   capa 0 (frente): cat. 0 -> B (variante 1); cat. 1 -> D (variante 2) y F (variante 3)
+   Por filas: los tiles sin espejo del cubo principal de la capa se emiten segun se leen; los demas (con espejo,
+   y los de la cat. 1 para los otros cubos) van a SPAD->rec, dos palabras por tile (CLUT<<16 | V<<8 | U de la
+   variante 0, y x | categoria<<16 | espejo<<17 | pagina<<24): los sin espejo desde el principio y los con espejo
+   desde el final, y luego se emiten con un bucle corto por cubo (dentro de una capa los tiles no se tapan: el
+   orden da igual) */
+#define ROWW ((W / 16 + 2) * 11 + 2)      /* lo mas que puede ocupar una fila de tiles en un cubo */
+#define NROW (W / 16 + 2)
+#define REC_CAT (1u << 16)
+/* fila: c columna del mapa, nv columnas que se ven (las demas solo se piden a la cache), xy = y | x de la primera
+   con x en 11 bits con signo (la GPU no mira los bits 11-15: asi xy + 16 * k no pasa a la y), b cubo principal
+   con la variante v (todas: todas las categorias; si no, solo la 0). Devuelve cuantos tiles hay en rec sin
+   espejo, con espejo (<<8) y si hay de la cat. 1 (<<16) */
+static inline __attribute__((always_inline, HOT_OPT)) u32 row_run(const u32 *row, u32 c, u32 nv, u32 xy, bucket_t *b, u32 v, const int todas)
+{
+    spad_t *__restrict sp = SPAD;
+    u32 *__restrict p = b->p, *r = sp->rec, *rf = r + NROW * 2, win = b->win, any = 0, k = NROW - nv;
+    if (p > b->end - ROWW) { p = chunk_new(b, p); win = 0; }
+    for (; nv; nv--, xy += 16, c = (c + 1) & 63) {
+        u32 w = row[c], d2 = w >> 16, pi = d2 & 31, a, t;
+        int s = tile_slot(w & 0x3FFF);
+        if (s < 0) continue;
+        sp->pal_wf[pi]++;
+        a = sp->cl16[pi] | ((s & 0xF0) << 8) | ((s & 15) << 4);
+        t = sp->te1[s >> 8];
+        any |= d2;
+        if (!(d2 & 0xC0)) {
+            if (todas || !(d2 & 0x20)) {         /* sin espejo: sprite 16x16 en el cubo principal */
+                if (win) { NODE(p, 1); p[1] = 0xE2000000; p += 2; win = 0; }
+                NODE(p, 4);
+                p[1] = t; p[2] = 0x7D000000;
+                p[3] = xy;
+                p[4] = a + v;
+                p += 5;
+            }
+            if (d2 & 0x20) { r[0] = a; r[1] = (xy & 0xFFFF) | (((d2 >> 5) & 7) << 16) | (t << 24); r += 2; }
+        } else { rf -= 2; rf[0] = a; rf[1] = (xy & 0xFFFF) | (((d2 >> 5) & 7) << 16) | (t << 24); }
+    }
+    for (; k; k--, c = (c + 1) & 63) {           /* fuera de la pantalla: solo se piden a la cache */
+        u32 w = row[c];
+        if (tile_slot(w & 0x3FFF) >= 0) sp->pal_wf[(w >> 16) & 31]++;
+    }
+    b->p = p; b->win = win;
+    return ((r - sp->rec) >> 1) | (((sp->rec + NROW * 2 - rf) >> 1) << 8) | ((any & 0x20) << 11);
+}
+static HOT u32 row_run1(const u32 *row, u32 c, u32 nv, u32 xy) { return row_run(row, c, nv, xy, &SPAD->bk[BK_A], CLV(0), 1); }
+static HOT u32 row_run0(const u32 *row, u32 c, u32 nv, u32 xy) { return row_run(row, c, nv, xy, &SPAD->bk[BK_B], CLV(1), 0); }
+/* los tiles de rec con (categoria & cm) == cv a un cubo, con la CLUT de la variante (v = CLV(variante)) */
+static HOT void row_emit(bucket_t *b, const u32 *rec, u32 n, u32 y0, u32 v, u32 cm, u32 cv)
+{
+    u32 *__restrict p = b->p, win = b->win;
+    const u32 *r = rec, *re = rec + (n & 255) * 2;
+    if (p + ((n & 255) + ((n >> 8) & 255)) * 11 + 2 > b->end) { p = chunk_new(b, p); win = 0; }
+    if (win && r < re) { NODE(p, 1); p[1] = 0xE2000000; p += 2; win = 0; }
+    for (; r < re; r += 2) {                     /* sin espejo: sprite 16x16 */
+        u32 a = r[0], e = r[1];
+        if ((e & cm) != cv) continue;
+        NODE(p, 4);
+        p[1] = 0xE1000400 | (e >> 24); p[2] = 0x7D000000;
+        p[3] = y0 | (e & 0xFFFF);
+        p[4] = a + v;
+        p += 5;
+    }
+    for (r = rec + (NROW - ((n >> 8) & 255)) * 2, re = rec + NROW * 2; r < re; r += 2) {   /* con espejo */
+        u32 a = r[0] + v, e = r[1], x0 = e & 0xFFFF, x1 = (x0 + 16) & 0xFFFF, y1 = y0 + (16 << 16);
+        const u32 *f = (const u32 *)((u8 *)SPAD->fuv + ((e >> 13) & 0x30));
+        if ((e & cm) != cv) continue;
+        NODE(p, 10);
+        p[1] = 0xE20003DE | ((a & 0xF0) << 7) | ((a & 0xF000) << 4);
+        p[2] = 0x2D808080;
+        p[3] = y0 | x0; p[4] = (a & 0xFFFF0000) | f[0];
+        p[5] = y0 | x1; p[6] = ((e >> 24) << 16) | f[1];
+        p[7] = y1 | x0; p[8] = f[2];
+        p[9] = y1 | x1; p[10] = f[3];
+        p += 11; win = 1;
+    }
+    b->p = p; b->win = win;
+}
+/* capa: kr recibe la cat. 0 (y la 1 si todas) con la variante vr; kx, ky la cat. 1 (ky < 0: ninguno) */
+static void layer(const u32 *m, int sx, int sy, int kr, u32 vr, int todas, int kx, u32 vx, int ky, u32 vy)
+{
+    bucket_t *bk = SPAD->bk;
+    u32 *rec = SPAD->rec, y0 = (u32)-(sy & 15) << 16;
+    int tx0 = sx >> 4, ty0 = sy >> 4, ox = -(sx & 15), oy = -(sy & 15), j;
+    int nv = (W + 15 - ox) >> 4, nf = (H + 15 - oy) >> 4;   /* columnas y filas que se ven */
+    for (j = 0; j < H / 16 + 2; j++, y0 += 16 << 16) {
+        u32 n = (todas ? row_run1 : row_run0)(m + ((ty0 + j) & 31) * 64, tx0 & 63, j < nf ? nv : 0, y0 | (ox & 0x7FF));
+        if (n & 0xFF00) row_emit(bk + kr, rec, n & 0xFF00, y0, vr, todas ? 0 : REC_CAT, 0);
+        if (n >> 16) {
+            row_emit(bk + kx, rec, n, y0, vx, REC_CAT, REC_CAT);
+            if (ky >= 0) row_emit(bk + ky, rec, n, y0, vy, REC_CAT, REC_CAT);
         }
     }
-    nvis[L] = n;
-}
-static int win_on;
-static void layer_pass(int L, int cats, int v)
-{
-    u32 *p = P; int k, n = nvis[L], ox = vox[L], oy = voy[L], win = win_on;
-    const u32 *cl = clutid[v], *vv = vis[L];
-    if (p >= pkend) return;
-    for (k = 0; k < n; k++) {
-        u32 e = vv[k];
-        if (!(cats & (1 << ((e >> 15) & 1)))) continue;
-        p = emit_tile(p, ox + ((e >> 21) & 31) * 16, oy + ((e >> 26) & 31) * 16, e & 0x1FFF, cl[(e >> 16) & 0x1F], (e >> 13) & 3, &win);
-    }
-    P = p; win_on = win;
 }
 /* sprites de efecto (faros, sombras): en la placa cambian el banco de paleta (1-7) de lo que tapan; aqui se
    dibujan semitransparentes con dos CLUT (lo que el banco k suma y lo que resta, de media, sobre la paleta
    normal), en x 256 y 272 de la fila 240 */
 static u16 eff_clut[2][16];
-static int eff_any;
 #define EFF_CLUT(i) ((u32)((CLUT_Y << 6) | (16 + (i))))
-static u16 pal_w_unused[1];          /* tiles visibles de cada paleta (cuadro anterior): pesos del color de la luz */
-static void eff_update(void)
+/* suma de las componentes de los 16 colores de una paleta (r = bits 4-7, g = 0-3, b = 8-11): dos colores por
+   lectura, en campos de 8 bits que no desbordan */
+#define PS1(v) (a += (v) & 0x0F0F0F0F, b += ((v) >> 4) & 0x000F000F)
+static inline __attribute__((always_inline)) void pal_sum(const u32 *w, int *r, int *g, int *bl)
 {
-    const u16 *pr = (const u16 *)rc_pal;
-    int k, i, p, c;
+    u32 a = 0, b = 0, v0 = w[0], v1 = w[1], v2 = w[2], v3 = w[3], v4 = w[4], v5 = w[5], v6 = w[6], v7 = w[7];
+    PS1(v0); PS1(v1); PS1(v2); PS1(v3); PS1(v4); PS1(v5); PS1(v6); PS1(v7);
+    *r = (b & 0xFFFF) + (b >> 16);
+    *g = (a & 0xFF) + ((a >> 16) & 0xFF);
+    *bl = ((a >> 8) & 0xFF) + (a >> 24);
+}
+/* tiles de cada paleta en los cuadros anteriores (los cuenta cada cuadro en SPAD->pal_wf): pesos del color de la
+   luz. Por cada banco k, la media ponderada de lo que cambia cada componente del banco 0 al k */
+static u32 pal_w[32];
+static HOT void eff_update(void)
+{
+    const u32 *pr = (const u32 *)rc_pal;
+    int k, i, p, c, d[8][3];
     u32 tw = 0;
     for (p = 0; p < 32; p++) tw += pal_w[p];
     if (!tw) return;
-    for (k = 1; k < 8; k++) {
-        int d[3] = {0, 0, 0}, pos[3], neg[3];
-        for (p = 0; p < 32; p++) {
-            int wgt = pal_w[p], e[3] = {0, 0, 0};
-            if (!wgt) continue;
-            for (i = 0; i < 16; i++) {
-                u16 a = pr[p * 16 + i], b = pr[k * 1024 + p * 16 + i];
-                e[0] += (int)((b >> 4) & 15) - (int)((a >> 4) & 15);
-                e[1] += (int)(b & 15) - (int)(a & 15);
-                e[2] += (int)((b >> 8) & 15) - (int)((a >> 8) & 15);
-            }
-            for (c = 0; c < 3; c++) d[c] += e[c] * wgt;
+    for (k = 1; k < 8; k++) d[k][0] = d[k][1] = d[k][2] = 0;
+    for (p = 0; p < 32; p++) {
+        const u32 *q = pr + p * 8;
+        int wgt = pal_w[p], r0, g0, b0, r, g, b;
+        if (!wgt) continue;
+        pal_sum(q, &r0, &g0, &b0);
+        for (k = 1; k < 8; k++) {
+            pal_sum(q + k * 512, &r, &g, &b);
+            d[k][0] += (r - r0) * wgt; d[k][1] += (g - g0) * wgt; d[k][2] += (b - b0) * wgt;
         }
+    }
+    for (k = 1; k < 8; k++) {
+        int pos[3], neg[3];
         /* media por color (4 bits) -> 5 bits */
-        for (c = 0; c < 3; c++) { int v = d[c] * 3 / (int)(tw * 16); pos[c] = v > 0 ? (v > 31 ? 31 : v) : 0; neg[c] = v < 0 ? (-v > 31 ? 31 : -v) : 0; }
+        for (c = 0; c < 3; c++) { int v = d[k][c] * 3 / (int)(tw * 16); pos[c] = v > 0 ? (v > 31 ? 31 : v) : 0; neg[c] = v < 0 ? (-v > 31 ? 31 : -v) : 0; }
         eff_clut[0][8 + k] = (pos[0] | pos[1] << 5 | pos[2] << 10) ? (u16)(0x8000 | pos[0] | pos[1] << 5 | pos[2] << 10) : 0;
         eff_clut[1][8 + k] = (neg[0] | neg[1] << 5 | neg[2] << 10) ? (u16)(0x8000 | neg[0] | neg[1] << 5 | neg[2] << 10) : 0;
     }
@@ -345,58 +484,51 @@ static void eff_update(void)
     for (i = 0; i < 8; i++) eff_clut[0][i] = eff_clut[1][i] = 0;
     for (p = 0; p < 32; p++) pal_w[p] = 0;
 }
-static void sprites_eff(int prio)
+/* tabla de sprites en una pasada: entrada k = palabras 3+4k..6+4k, leidas de dos en dos (q[0] = w0 << 16,
+   q[1] = w2 << 16 | w1, q[2] = w3 | ...). Primero la x, que descarta casi todas las que no se ven con una sola
+   lectura. Prioridad 0 = bajo la parte alta de la capa delantera, 1 = encima de todo. De efecto (color >= 16):
+   pasada 0 (suma) en E*0 y pasada 1 (resta) en E*1; normales en S* */
+#define NSPR 511
+static HOT u32 sprites(void)    /* devuelve las paletas 32-47 usadas */
 {
-    int i, pass, win = win_on;
-    u32 *p = P;
-    const u16 *sp = (const u16 *)rc_spr;
-    for (pass = 0; pass < 2; pass++)
-        for (i = 3; i < (0x1000 - 6) / 2 && p < pkend; i += 4) {
-            u16 w0 = sp[i], w2 = sp[i + 2], w3 = sp[i + 3];
-            int sx = w2 & 0x3FF, sy = (240 - (w0 & 0xFF)) & 0xFF, num = w3 & 0x3FFF, s;
-            if (!(w2 & 0x4000)) continue;
-            if ((num >= 0x3700) != prio) continue;
-            sx = ((sx - 15 - 8) & 0x3FF); if (sx >= 0x3F0) sx -= 0x400;
-            sy = sy - 16;
-            if (sx >= W || sy >= H || sx <= -16 || sy <= -16) continue;
-            s = tile_slot(num);
-            if (s < 0) continue;
-            p = emit_tile_s(p, sx, sy, s, EFF_CLUT(pass), (w0 >> 14) & 3, &win, pass ? 3 : 2);
-        }
-    P = p; win_on = win;
-}
-/* sprites de prioridad prio (0 = bajo la parte alta de la capa delantera, 1 = encima de todo) */
-static void sprites(int prio)
-{
-    int i, win = win_on;
-    u32 *p = P;
-    const u16 *sp = (const u16 *)rc_spr;
-    for (i = 3; i < (0x1000 - 6) / 2 && p < pkend; i += 4) {
-        u16 w0 = sp[i], w2 = sp[i + 2], w3 = sp[i + 3];
-        int sx = w2 & 0x3FF, sy = (240 - (w0 & 0xFF)) & 0xFF, num = w3 & 0x3FFF, color = (w2 >> 10) & 0x1F;
-        int s;
-        if (color & 0x10) continue;          /* sombras/luces: fase 4 */
-        if ((num >= 0x3700) != prio) continue;
-        sx = ((sx - 15 - 8) & 0x3FF); if (sx >= 0x3F0) sx -= 0x400;
-        sy = sy - 16;
-        if (sx >= W || sy >= H || sx <= -16 || sy <= -16) continue;
+    const u32 *q = (const u32 *)(rc_spr + 4), *te1 = SPAD->te1;
+    u32 pm = 0;
+    int k;
+    for (k = 0; k < NSPR; k++, q += 2) {
+        u32 w2 = q[1] >> 16, u = (w2 - 8) & 0x3FF, w0, num, tp, y0, uv;
+        int s, pr;
+        if (u >= W + 15) continue;                            /* x = ((w2 & 0x3FF) - 23) & 0x3FF fuera */
+        w0 = q[0] >> 16;
+        if ((w0 & 0xFF) == 0xF0) continue;                    /* y = -16: fuera */
+        num = q[2] & 0x3FFF;
         s = tile_slot(num);
         if (s < 0) continue;
-        p = emit_tile(p, sx, sy, s, clutid[1][32 + (color & 15)], (w0 >> 14) & 3, &win);
+        pr = num >= 0x3700;
+        tp = te1[s >> 8] & 0x1FF; uv = ((s & 0xF0) << 8) | ((s & 15) << 4);
+        y0 = (u32)(((240 - (w0 & 0xFF)) & 0xFF) - 16) << 16;
+        if (w2 & 0x4000) {
+            bucket_t *b = &SPAD->bk[pr ? BK_E10 : BK_E00];
+            emit_bk(b, (u - 15) & 0xFFFF, y0, (EFF_CLUT(0) << 16) | uv, w0 >> 14, tp, 2);
+            emit_bk(b + 1, (u - 15) & 0xFFFF, y0, (EFF_CLUT(1) << 16) | uv, w0 >> 14, tp, 3);
+        } else {
+            emit_bk(&SPAD->bk[pr ? BK_S1 : BK_S0], (u - 15) & 0xFFFF, y0, (CLUTID(1, 32 + ((w2 >> 10) & 15)) << 16) | uv, w0 >> 14, tp, 0);
+            pm |= 1 << ((w2 >> 10) & 15);
+        }
     }
-    P = p; win_on = win;
+    return pm;
 }
 
 /* ------------------------------------------------------------ mando (SIO0 directo) */
 static void joy_init(void) { JOY_CTRL = 0x40; JOY_BAUD = 0x88; JOY_MODE = 0x0D; JOY_CTRL = 0; }
-static u8 joy_x(u8 b)
+/* un byte; tras el ultimo el mando no da ACK y no hay que esperarlo */
+static u8 joy_x(u8 b, int ack)
 {
     int t;
     for (t = 0; t < 2000 && !(JOY_STAT & 1); t++);
     JOY_DATA = b;
     for (t = 0; t < 2000 && !(JOY_STAT & 2); t++);
     b = JOY_DATA;
-    for (t = 0; t < 600 && !(JOY_STAT & 0x80); t++);   /* ACK */
+    if (ack) for (t = 0; t < 600 && !(JOY_STAT & 0x80); t++);
     JOY_CTRL |= 0x10;
     return b;
 }
@@ -405,50 +537,60 @@ static u16 joy_read(void)
     u16 r = 0xFFFF; u8 id; int t;
     JOY_CTRL = 0x1003;
     for (t = 0; t < 300; t++) __asm__ volatile ("nop");
-    joy_x(0x01); id = joy_x(0x42);
+    joy_x(0x01, 1); id = joy_x(0x42, 1);
     if ((id & 0xF0) == 0x40 || (id & 0xF0) == 0x70 || (id & 0xF0) == 0x50) {
-        joy_x(0); r = joy_x(0); r |= joy_x(0) << 8;
+        joy_x(0, 1); r = joy_x(0, 1); r |= joy_x(0, 0) << 8;
     }
     JOY_CTRL = 0;
     return r;
 }
 
-static int fb, nframe, gear, sq_last, l2_last = 1, show_dbg = 0;
+static int fb, nframe, gear, sq_last, l2_last = 1, show_dbg = 0, skipped, eff_due;
+static u32 skips;
 static const u16 font[10] = {0x7B6F, 0x2C97, 0x73E7, 0x73CF, 0x5BC9, 0x79CF, 0x79EF, 0x7249, 0x7BEF, 0x7BCF};
 static void digits(int x, int y, u32 v)
 {
+    bucket_t *b = &SPAD->bk[BK_DBG];
     int n, k, d[5];
     for (n = 0; n < 5; n++) { d[n] = v % 10; v /= 10; }
     for (n = 0; n < 5; n++)
         for (k = 0; k < 15; k++)
             if (font[d[4 - n]] & (1 << (14 - k))) {
-                { u32 *p = P; NODE(p, 3); p[1] = 0x60FFFF00; p[2] = ((u32)(y + (k / 3) * 2) << 16) | (x + n * 8 + (k % 3) * 2); p[3] = (2 << 16) | 2; P = p + 4; }
+                u32 *p = b->p;
+                if (p + 4 > b->end) p = chunk_new(b, p);
+                NODE(p, 3); p[1] = 0x60FFFF00; p[2] = ((u32)(y + (k / 3) * 2) << 16) | (x + n * 8 + (k % 3) * 2); p[3] = (2 << 16) | 2;
+                b->p = p + 4;
             }
 }
 static void upload(int x, int y, int w, int h, const void *d);
-static u16 t_cd0, t_cd1;
-static u32 lines_acc, lines_avg, rend_acc, rend_avg; static u16 t_rend0, t_pad, t_pal, t_l0, t_l1, t_end; static u32 l1_acc, l1_avg, all_acc, all_avg; static u32 pad_acc, pal_acc, pad_avg, pal_avg;
+#define T1 (*(volatile u16 *)0x1F801110)
+static u32 lines_acc, lines_avg, rend_acc, rend_avg; static u16 t_rend0, t_pad, t_pal, t_l0, t_l1, t_end, t_cd0; static u32 l1_acc, l1_avg, all_acc, all_avg; static u32 pad_acc, pal_acc, pad_avg, pal_avg;
 static int lastv;
 void rc_vblank(void)
 {
     u16 pad;
-    int fy, used;
-    /* mostrar el cuadro anterior (dibujado por DMA mientras corria el juego) */
+    int used, draw = 1;
     {   /* lineas usadas por el juego desde la ultima vuelta (temporizador 1 contando HBLANK) */
-        u16 t = *(volatile u16 *)0x1F801110;
+        u16 t = T1;
         used = (u16)(t - lastv);
     }
-    dma_wait();
-    vsync();
-    GP1 = 0x05000000 | ((fb ? 256 : 0) << 10);
-    GP1 = 0x03000000;                    /* pantalla encendida */
-    fb ^= 1;
-    t_rend0 = *(volatile u16 *)0x1F801110;
+    pad = joy_read();                    /* el mando antes de esperar: si sobra tiempo no cuesta nada */
+    dma_wait();                          /* el cuadro anterior ya esta dibujado */
+#if FRAMESKIP
+    if ((I_STAT & 1) && !skipped) draw = 0;  /* ya paso el vblank: este cuadro no se dibuja (nunca dos seguidos) */
+    skipped = !draw; skips += !draw;
+#endif
+    if (draw) {
+        vsync();
+        GP1 = 0x05000000 | ((fb ? 256 : 0) << 10);   /* mostrar el cuadro anterior */
+        fb ^= 1;
+    } else I_STAT = ~1u;
+    GP1 = 0x03000000;                    /* pantalla encendida (tambien si el primero se salta: barra de carga) */
+    t_rend0 = T1;
     /* la MCU da una vuelta a su bucle principal por cuadro (contestacion 0xA53E, etc.) */
     mcu_run_c(&mcu);
     { void rc_oki_frame(void); void snd_frame(void); rc_oki_frame(); snd_frame(); }
     /* entradas */
-    pad = joy_read();
     {
         u16 in = 0xFFFF;
         if (!(pad & 0x0010)) in &= ~0x01;            /* arriba */
@@ -466,59 +608,40 @@ void rc_vblank(void)
         io_in = in;
         rc_set_io(io_dsw, io_in);
     }
-    /* dibujar el estado actual en el otro bufer */
-    fy = fb ? 256 : 0;
-    t_pad = *(volatile u16 *)0x1F801110;
-    if (pal_convert()) upload(0, CLUT_Y, 256, 16, clut);
-    if (!(nframe & 3)) { eff_update(); upload(256, CLUT_Y, 32, 1, eff_clut); }
-    t_pal = *(volatile u16 *)0x1F801110;
-    pk_begin(fb);
-    {
-        u32 *p = P;
-        NODE(p, 8);
-        p[1] = 0xE3000000 | (fy << 10); p[2] = 0xE4000000 | ((fy + H - 1) << 10) | (W - 1); p[3] = 0xE5000000 | (fy << 11);
-        p[4] = 0xE6000000; p[5] = 0xE2000000;
-        p[6] = 0x02000000; p[7] = (u32)fy << 16; p[8] = (H << 16) | W;          /* fondo negro */
-        P = p + 9; win_on = 0;
-    }
-    {   /* orden de la placa: fondo, frente cat. 0, fondo cat. 1, frente cat. 1 (pens 1-7), sprites,
-           frente cat. 1 (pens 8-15), sprites de prioridad alta */
+    if (!(nframe & 3)) eff_due = 1;
+    t_pad = T1;
+    if (draw) {                          /* dibujar el estado actual en el otro bufer */
         const u16 *vr = (const u16 *)rc_vregs;
-        int x1 = (vr[3] + 8) & 1023, y1 = (vr[2] + 16) & 511, x0 = (vr[1] + 12) & 1023, y0 = (vr[0] + 16) & 511;
-        t_l0 = *(volatile u16 *)0x1F801110;
-        gather(1, x1, y1); gather(0, x0, y0);
-        t_l1 = *(volatile u16 *)0x1F801110;
-        layer_pass(1, 3, 0);
-        layer_pass(0, 1, 1);
-        layer_pass(1, 2, 1);
-        layer_pass(0, 2, 2);
-        sprites_eff(0);
-        sprites(0);
-        layer_pass(0, 2, 3);
-        sprites_eff(1);
-        sprites(1);
+        u32 *pw = SPAD->pal_wf, m0 = 0, m1; int k;
+        if (eff_due) { eff_due = 0; eff_update(); upload(256, CLUT_Y, 32, 1, eff_clut); }
+        bk_init();
+        t_l0 = T1;
+        layer((const u32 *)(rc_vram + 0x2000), (vr[3] + 8) & 1023, (vr[2] + 16) & 511, BK_A, CLV(0), 1, BK_C, CLV(1), -1, 0);
+        layer((const u32 *)rc_vram, (vr[1] + 12) & 1023, (vr[0] + 16) & 511, BK_B, CLV(1), 0, BK_D, CLV(2), BK_F, CLV(3));
+        t_l1 = T1;
+        m1 = sprites();
+        t_end = T1;
+        for (k = 0; k < 32; k++) if (pw[k]) { m0 |= 1u << k; pal_w[k] += pw[k]; pw[k] = 0; }   /* paletas de las capas usadas */
+        if (pal_convert(m0, m1)) upload(0, CLUT_Y, 256, 16, clut);
+        t_pal = T1;
+        /* lineas de video por cuadro del juego (media de 32 cuadros; 263 = 60 por segundo) */
+        lines_acc += used; pad_acc += (u16)(t_pad - t_rend0); pal_acc += (u16)(t_pal - t_end);
+        l1_acc += (u16)(t_l1 - t_l0); all_acc += (u16)(t_end - t_l0);
+        if ((nframe & 31) == 31) {
+            lines_avg = lines_acc >> 5; pad_avg = pad_acc >> 5; pal_avg = pal_acc >> 5; l1_avg = l1_acc >> 5; all_avg = all_acc >> 5;
+            lines_acc = pad_acc = pal_acc = l1_acc = all_acc = 0;
+        }
+        if (show_dbg) { digits(4, 4, lines_avg); digits(48, 4, rend_avg); digits(92, 4, cd_loads); digits(136, 4, tiles_up); digits(180, 4, pack_err);
+            digits(4, 16, pad_avg); digits(48, 16, pal_avg); digits(92, 16, l1_avg); digits(136, 16, all_avg); digits(180, 16, skips); }
+        pk_send(fb ? 256 : 0);
     }
-    /* lineas de video por cuadro del juego (media de 32 cuadros; 263 = 60 por segundo) */
-    lines_acc += used;
-    if ((nframe & 31) == 31) { lines_avg = lines_acc >> 5; lines_acc = 0; }
-    pad_acc += (u16)(t_pad - t_rend0); pal_acc += (u16)(t_pal - t_pad);
-    if ((nframe & 31) == 31) { pad_avg = pad_acc >> 5; pal_avg = pal_acc >> 5; pad_acc = pal_acc = 0; }
-    if (win_on) { u32 *p = P; NODE(p, 1); p[1] = 0xE2000000; P = p + 2; win_on = 0; }
-    t_end = *(volatile u16 *)0x1F801110;
-    l1_acc += (u16)(t_l1 - t_l0); all_acc += (u16)(t_end - t_l0);
-    if ((nframe & 31) == 31) { l1_avg = l1_acc >> 5; all_avg = all_acc >> 5; l1_acc = all_acc = 0; }
-    if (show_dbg) { digits(4, 4, lines_avg); digits(48, 4, rend_avg); digits(92, 4, cd_loads); digits(136, 4, tiles_up); digits(180, 4, pack_err);
-        digits(4, 16, pad_avg); digits(48, 16, pal_avg); digits(92, 16, l1_avg); digits(136, 16, all_avg); }
-    pk_end();
-    pk_send(fb);
-    t_cd0 = *(volatile u16 *)0x1F801110;
+    t_cd0 = T1;
     level_check();                       /* recorrido nuevo: paquetes del CD */
     cache_load();                        /* tiles que faltaban: del CD a la VRAM (para el cuadro siguiente) */
-    t_cd1 = *(volatile u16 *)0x1F801110;
     frame_id++;
     nframe++;
     {
-        u16 t = *(volatile u16 *)0x1F801110;
+        u16 t = T1;
         rend_acc += (u16)(t_cd0 - t_rend0);
         if ((nframe & 31) == 0) { rend_avg = rend_acc >> 5; rend_acc = 0; }
         lastv = t;

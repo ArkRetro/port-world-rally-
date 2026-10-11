@@ -3,6 +3,7 @@
 #   perf/medir.sh [cuadros] [desde]   (por defecto 3000 cuadros de juego, perfil desde el cuadro 2000 = carrera)
 # Requiere haber construido antes (construir.sh). Compila una variante con -g (mismo codigo) para atribuir
 # ciclos a lineas de C y a instrucciones del 68000. Deja los resultados en work/perf/.
+# CFX: opciones de mas para ps1/*.c (p. ej. CFX=-DFRAMESKIP=0 para comparar capturas pixel a pixel).
 set -e
 cd "$(dirname "$0")/.."
 R=$(pwd)
@@ -16,7 +17,7 @@ CF="$ARCH -g -O2 -G0 -mno-gpopt -fomit-frame-pointer -fno-builtin -fno-strict-al
 B=$OUT/g
 # objetos con -g (el de wr_rc.c solo si cambio)
 [ $B/wr_rc.o -nt rc/wr_rc.c ] && [ $B/wr_rc.o -nt rc/rc_rt.h ] || $P-gcc $CF ${RCOPT:--Os} -c rc/wr_rc.c -o $B/wr_rc.o
-for f in ps1/main ps1/cd ps1/snd; do $P-gcc $CF -c $f.c -o $B/$(basename $f).o; done
+for f in ps1/main ps1/cd ps1/snd; do $P-gcc $CF $CFX -c $f.c -o $B/$(basename $f).o; done
 $P-gcc $CF -c snd/snd_tab.c -o $B/snd_tab.o
 $P-gcc $CF -c snd/oki_tab.c -o $B/oki_tab.o
 $P-gcc $CF -DMCS51_XOR=1 -c rc/mcu_rc.c -o $B/mcu_rc.o
