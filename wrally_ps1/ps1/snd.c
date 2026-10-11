@@ -18,6 +18,7 @@ static int trk_lba[32], trk_end[32];        /* pistas: principio exacto y final 
 /* frase larga: canal, pista, desde donde suena, 1/60 s sonando y lo que dura desde ahi, 1/60 s esperando a que
    suene, posicion si esta cortada */
 static int cd_ch = -1, cd_trk, cd_from, cd_t, cd_len, cd_wait, cd_susp = -1, cut_st, snd_ok;
+static int snd_fr, cut_f;                   /* cuadros (snd_frame) y en el que se pidio la posicion para cortar */
 
 static void spu_wait_mode(u16 m) { int n; for (n = 0; n < 100000 && (SPUSTAT & 0x3F) != (m & 0x3F); n++); }
 static void spu_dma_write(u32 addr, const void *src, int bytes)
@@ -85,13 +86,15 @@ void snd_stop(int mask)
 {
     if (!snd_ok) return;
     R16(0x1F801D8C) = mask & 15;
-    if (cd_ch >= 0 && (mask & (1 << cd_ch))) { cd_stop(); cd_ch = -1; cd_susp = -1; cut_st = 0; }
+    /* cortada ya no suena: sin Pause, que pararia la lectura en curso */
+    if (cd_ch >= 0 && (mask & (1 << cd_ch))) { if (cd_susp < 0) cd_stop(); cd_ch = -1; cd_susp = -1; cut_st = 0; }
 }
 static void cd_done(void) { cd_ended = 0; rc_oki_hold(cd_ch, 0); cd_ch = -1; cd_susp = -1; cut_st = 0; }
 /* cada cuadro, con los 1/60 s pasados: fin de la frase larga (el tiempo cuenta mientras suena: la busqueda, la
    pausa o el cambio de velocidad de antes no; si no llega a sonar en 10 s se da por acabada) */
 void snd_frame(int n)
 {
+    snd_fr++;
     if (cd_ch < 0 || cd_susp >= 0) return;
     if (cd_playing()) cd_t += n; else cd_wait += n;
     if ((cd_ended && !cd_audio()) || cd_t > cd_len + 120 || cd_wait > 600) {
@@ -122,14 +125,16 @@ void snd_suspend(void)
 }
 /* lo mismo sin esperar (para leer tiles mientras suena): devuelve 1 cuando el audio ya esta cortado o se esta
    parando (la lectura que se pida espera a la pausa), 0 si aun hay que esperar a la posicion. No corta si a la
-   frase le queda poco (devuelve 0) */
+   frase le queda poco (devuelve 0). La posicion pedida vale para el cuadro siguiente: si no se vuelve a llamar
+   enseguida, se pide otra (la vieja haria repetir un trozo) */
 int snd_cut(void)
 {
     int pos = -1;
     if (cd_ch < 0 || cd_susp >= 0) return !cd_audio() || cd_susp >= 0;
+    if (cut_st && snd_fr - cut_f > 2) cut_st = 0;
     if (cd_over(15)) return 0;
     if (cd_playing() || cut_st) {               /* si aun no suena se seguira desde donde iba a empezar */
-        if (!cut_st) { cd_loc_start(); cut_st = 1; return 0; }
+        if (!cut_st) { cd_loc_start(); cut_st = 1; cut_f = snd_fr; return 0; }
         if ((pos = cd_loc_get()) == -2) return 0;
     }
     cd_susp = cd_pos(pos);
