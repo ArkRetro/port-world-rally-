@@ -169,6 +169,24 @@ int snd_cut(void)
     return 1;
 }
 int snd_cut_on(void) { return cd_ch >= 0 && cd_susp >= 0; }
+/* pausa: todo en silencio (las voces de la SPU siguen hasta su final, el juego las vera libres al volver) y la frase
+   larga parada y apuntada; al volver, se sigue desde ahi si la paro la pausa (si estaba cortada para leer, la sigue
+   cache_load como siempre) */
+static int pause_cd;
+void snd_resume(void);
+void snd_pause(int on)
+{
+    if (!snd_ok) return;
+    if (on) {
+        R16(0x1F801D80) = 0; R16(0x1F801D82) = 0;
+        pause_cd = cd_ch >= 0 && cd_susp < 0;
+        if (pause_cd) snd_suspend();
+    } else {
+        if (pause_cd && cd_ch >= 0 && cd_susp >= 0) snd_resume();
+        pause_cd = 0;
+        R16(0x1F801D80) = 0x3FFF; R16(0x1F801D82) = 0x3FFF;
+    }
+}
 void snd_resume(void)
 {
     if (cd_ch < 0 || cd_susp < 0) return;

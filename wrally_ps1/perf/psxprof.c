@@ -3,6 +3,7 @@
    lecturas de RAM de 6 ciclos, GPU con coste por pixel, CD con busqueda/lectura/pausa, mando SIO0.
    Uso: psxprof imagen.cue wr2.elf.bin(PS-EXE) wr2.nm cuadros_juego [salida_dir]
    Entradas (botones) segun el cuadro del juego (llamadas a rc_vblank), como rc_host (ver inputs_for).
+   INPUTSV: como INPUTS pero por vblank (sigue contando con el juego parado, p. ej. en la pausa).
    SHOTV=v1,v2,...: capturas en esos vblanks (tambien antes del juego: la pantalla de carga del arranque);
    CLUTCACHE=1: la CLUT se guarda como en la GPU (una, se recarga al cambiar; GP0(01h) la vacia); 2: GP0(01h) no la vacia;
    MISSLOG=1: falta.txt con los tiles que faltan en cada cuadro; WATCH=var,...: cambios de esas variables.
@@ -169,6 +170,24 @@ static void eventf(const char *fmt, ...)
                 R L U D. Elegir rally en 'Choose a Rally': R en 1180-1190 Monte-Carlo, R tres veces Acropolis,
                 L 1000 Lagos (lo mismo que rc_host)
    RND=semilla  direccion al azar desde RNDFROM (1300) en tramos de 5 a 120 cuadros */
+/* a-b[%P/W]:botones,... (cuadros a..b-1; con %P/W solo W de cada P): C moneda, S START, X acelerar, Q marcha, L R U D, x soltar X */
+static u16 inputs_spec(const char *q, long fr, u16 in)
+{
+    for (; q && *q; ) {
+        long a = strtol(q, (char **)&q, 10), b = a + 1, P = 0, Wd = 0; const char *bt, *c;
+        if (*q == '-') b = strtol(q + 1, (char **)&q, 10);
+        if (*q == '%') { P = strtol(q + 1, (char **)&q, 10); if (*q == '/') Wd = strtol(q + 1, (char **)&q, 10); }
+        if (*q == ':') q++;
+        for (bt = q; *q && *q != ','; q++);
+        if (fr >= a && fr < b && (!P || (fr - a) % P < Wd)) for (c = bt; c < q; c++) switch (*c) {
+            case 'C': in &= ~0x0001; break; case 'S': in &= ~0x0008; break; case 'X': in &= ~0x4000; break;
+            case 'Q': in &= ~0x8000; break; case 'L': in &= ~0x0080; break; case 'R': in &= ~0x0020; break;
+            case 'U': in &= ~0x0010; break; case 'D': in &= ~0x0040; break; case 'x': in |= 0x4000; break;
+            }
+        if (*q == ',') q++;
+    }
+    return in;
+}
 static u16 inputs_for(long fr)
 {
     static int init, nc1, steer; static long c2 = -1, seed, nxt; static int cur;
@@ -194,19 +213,7 @@ static u16 inputs_for(long fr)
         long ph = ((fr - 1300) / steer) % 4;
         if (ph == 1) in &= ~0x0020; else if (ph == 3) in &= ~0x0080;
     }
-    for (q = getenv("INPUTS"); q && *q; ) {
-        long a = strtol(q, (char **)&q, 10), b = a + 1, P = 0, Wd = 0; const char *bt, *c;
-        if (*q == '-') b = strtol(q + 1, (char **)&q, 10);
-        if (*q == '%') { P = strtol(q + 1, (char **)&q, 10); if (*q == '/') Wd = strtol(q + 1, (char **)&q, 10); }
-        if (*q == ':') q++;
-        for (bt = q; *q && *q != ','; q++);
-        if (fr >= a && fr < b && (!P || (fr - a) % P < Wd)) for (c = bt; c < q; c++) switch (*c) {
-            case 'C': in &= ~0x0001; break; case 'S': in &= ~0x0008; break; case 'X': in &= ~0x4000; break;
-            case 'Q': in &= ~0x8000; break; case 'L': in &= ~0x0080; break; case 'R': in &= ~0x0020; break;
-            case 'U': in &= ~0x0010; break; case 'D': in &= ~0x0040; break; case 'x': in |= 0x4000; break;
-            }
-        if (*q == ',') q++;
-    }
+    in = inputs_spec(getenv("INPUTS"), fr, in);
     if (seed && fr >= (getenv("RNDFROM") ? atol(getenv("RNDFROM")) : 1300)) {
         if (fr >= nxt) { seed = seed * 1103515245 + 12345; cur = (seed >> 16) % 3; seed = seed * 1103515245 + 12345; nxt = fr + 5 + ((seed >> 16) & 0x7FFF) % 116; }
         if (cur == 1) in &= ~0x0020; else if (cur == 2) in &= ~0x0080;
@@ -1191,6 +1198,7 @@ int main(int argc, char **argv)
         if ((R[29] & 0x1FFFFF) < minsp && (R[29] >> 24) == 0x80) { minsp = R[29] & 0x1FFFFF; minsp_fr = game_frame; }
         while (cyc >= next_vbl) {
             I_STAT |= 1; vbl_set_cyc = next_vbl; next_vbl += frame_cyc; vbl_count++;
+            if (getenv("INPUTSV")) pad_buttons = inputs_spec(getenv("INPUTSV"), vbl_count, inputs_for(game_frame));   /* por vblank (pausa) */
             {   /* SHOTV=v1,v2,...: captura de lo que se ve en esos vblanks (p. ej. la pantalla de carga del arranque) */
                 const char *q = getenv("SHOTV");
                 while (q && *q) { long v = strtol(q, (char **)&q, 10); if (v == (long)vbl_count) { char nm[64]; snprintf(nm, sizeof nm, "vbl_%05ld", v); screenshot(nm); } if (*q == ',') q++; else break; }

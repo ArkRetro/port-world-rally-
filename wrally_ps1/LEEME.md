@@ -67,7 +67,7 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
 | Botón | Acción |
 |---|---|
 | SELECT | moneda |
-| START | empezar |
+| START | empezar; en carrera, pausa (otra vez para seguir) |
 | X | acelerar |
 | Cuadrado | marcha |
 | cruceta | dirección |

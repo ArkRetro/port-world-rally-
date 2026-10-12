@@ -277,11 +277,12 @@ static void gp_rect(int x, int y, int w, int h, u32 c)
 /* pantalla de carga al estilo del juego: bandas de cuadros de bandera arriba y abajo, CARGANDO en cursiva con el
    degradado amarillo-rojo y el borde negro de las cifras del marcador, y la barra START-FINISH del marcador (verde).
    Al arrancar, encima, el logo (LOGO.BIN) */
-static const char lchars[] = "CARGNDOSTFIH";
-static const u8 lglyph[12][7] = {                   /* 5x7, bit 4 a la izquierda */
+static const char lchars[] = "CARGNDOSTFIHPU";
+static const u8 lglyph[14][7] = {                   /* 5x7, bit 4 a la izquierda */
     {14, 17, 16, 16, 16, 17, 14}, {14, 17, 17, 31, 17, 17, 17}, {30, 17, 17, 30, 20, 18, 17}, {14, 17, 16, 23, 17, 17, 15},
     {17, 25, 21, 19, 17, 17, 17}, {30, 17, 17, 17, 17, 17, 30}, {14, 17, 17, 17, 17, 17, 14}, {15, 16, 16, 14, 1, 1, 30},
-    {31, 4, 4, 4, 4, 4, 4}, {31, 16, 16, 30, 16, 16, 16}, {14, 4, 4, 4, 4, 4, 14}, {17, 17, 17, 31, 17, 17, 17}};
+    {31, 4, 4, 4, 4, 4, 4}, {31, 16, 16, 30, 16, 16, 16}, {14, 4, 4, 4, 4, 4, 14}, {17, 17, 17, 31, 17, 17, 17},
+    {30, 17, 17, 30, 16, 16, 16}, {17, 17, 17, 17, 17, 17, 14}};
 static const u32 lgrad[7] = {0x60F0FF, 0x40D8FF, 0x20B8FF, 0x1098FF, 0x0070FF, 0x0048F0, 0x0020D0};   /* 0xBBGGRR */
 static const u32 lwhite[7] = {0xF8F8F8, 0xF8F8F8, 0xF0F0F0, 0xE8E8E8, 0xE0E0E0, 0xD0D0D0, 0xC0C0C0};
 static const u32 lgreen[6] = {0x90FF90, 0x40F040, 0x20D820, 0x10B810, 0x089808, 0x047804};
@@ -1093,6 +1094,31 @@ static void upload(int x, int y, int w, int h, const void *d);
 #define T1 (*(volatile u16 *)0x1F801110)
 static u32 lines_acc, lines_avg, rend_acc, rend_avg; static u16 t_rend0, t_pad, t_pal, t_l0, t_l1, t_end, t_cd0; static u32 l1_acc, l1_avg, all_acc, all_avg; static u32 pad_acc, pal_acc, pad_avg, pal_avg;
 static int lastv;
+/* ---- pausa: START mientras el jugador corre. El 68000 (y la MCU) se quedan parados aqui dentro; la pantalla que se
+   ve se oscurece con PAUSA encima; sin sonido y la frase larga parada; el CD acaba lo que estaba leyendo (vsync lo
+   atiende) pero no empieza nada; el tiempo de la pausa no cuenta para el OKI. Sale con otra pulsacion de START */
+static int start_up;
+/* corre el jugador: en carrera, sin fundirse, y no es la demostracion del attract (0xFEC173 = 1 mientras dura) */
+static int jugando(void) { return in_race && !race_end && !(*(u16 *)(rc_ram + 0x172) & 0xFF); }
+static void pausa(void)
+{
+    void snd_pause(int on);
+    int b = fb ^ 1, sc = 4, up = 0;                  /* el bufer que se ve (el ultimo dibujado) */
+    snd_pause(1);
+    dma_wait(); gpu_wait();
+    GP0 = 0xE1000000; GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
+    GP0 = 0x62000000; GP0 = (u32)(b * 256) << 16; GP0 = (240 << 16) | W;   /* negro semitransparente: la mitad */
+    gp_text(b, (W - (5 * 6 * sc - sc)) / 2, 100, "PAUSA", sc, lgrad);
+    for (;;) {
+        u16 p;
+        vsync();
+        p = joy_read();
+        if (p & 0x0008) up = 1; else if (up) break;
+    }
+    t1_skip();
+    snd_pause(0);
+    start_up = 0;                                    /* START sigue pulsado: no vuelve a pausar hasta soltarlo */
+}
 void rc_vblank(void)
 {
     void snd_spu(int n);
@@ -1114,6 +1140,8 @@ void rc_vblank(void)
     } else I_STAT = ~1u;
     GP1 = 0x03000000;                    /* pantalla encendida (tambien si el primero se salta: barra de carga) */
     pad = joy_read();                    /* el mando justo tras el vblank: la entrada mas reciente para el 68000 */
+    if (!(pad & 0x0008) && start_up && jugando()) { pausa(); pad = joy_read(); }
+    start_up = (pad & 0x0008) != 0;
     t_rend0 = T1;
     /* la MCU da una vuelta a su bucle principal por cuadro (contestacion 0xA53E, etc.) */
     mcu_run_c(&mcu);
@@ -1132,7 +1160,7 @@ void rc_vblank(void)
         l2_last = (pad & 0x0100) != 0;
         if (!gear) in &= ~0x10;
         if (!(pad & 0x0001)) in &= ~0x40;            /* SELECT: moneda */
-        if (!(pad & 0x0008)) in &= ~0x4000;          /* START */
+        if (!(pad & 0x0008) && !jugando()) in &= ~0x4000;   /* START (en carrera es la pausa) */
         io_in = in;
         rc_set_io(io_dsw, io_in);
     }
