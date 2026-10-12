@@ -77,8 +77,8 @@ carpetas para la tarjeta de PSIO o XStation (`SD_NOMBRE` cambia el nombre; por d
   - Para el hardware real y los ODE (XStation usa el controlador de la consola; PSIO lo imita): registros por KSEG1
     (sin la cola de escritura de la CPU), HINTSTS leído hasta que dos lecturas coinciden (en placas antiguas las
     banderas cambian sin sincronizar), una Pause rechazada mientras la unidad aún busca (INT5 80h) se repite a los
-    2 cuadros, el CD-DA cuenta desde que suena de verdad (bit 7 del stat, con GetStat cada 2 cuadros tras Play, y no
-    desde su primera respuesta), tras un error de lectura se espera 0,25 s antes de reintentar y solo los errores
+    2 cuadros, el CD-DA cuenta desde que suena de verdad (bit 7 del stat, con GetStat cada cuadro tras Play, y no
+    desde su primera respuesta; tras un cambio de velocidad, 3 cuadros antes de lo siguiente), tras un error de lectura se espera 0,25 s antes de reintentar y solo los errores
     seguidos abandonan la lectura (80h, «aún no lista», no cuenta). Al empezar: tiempos del bus como la BIOS, lo que
     dejara pendiente el cargador se reconoce y vacía, e Init se repite si no contesta. Los ficheros del disco se
     buscan hasta 3 veces.
@@ -99,7 +99,7 @@ carpetas para la tarjeta de PSIO o XStation (`SD_NOMBRE` cambia el nombre; por d
     arrancar contra el temporizador 2: 59,83 cuadros por segundo en una consola NTSC, 59,28 en una PAL.
   - `ode_cfg`: en la imagen para PSIO (`mkiso.py` cambia ese byte del EXE) el CD-DA entra por la entrada externa de la
     SPU (I2SB); en las demás, apagada.
-  - Las frases que el juego encadena (la música de los menús y de 'Your Time') van seguidas en una misma pista: la siguiente sigue sin parar la unidad ni buscar.
+  - Las frases que el juego encadena (la música de los menús y de 'Your Time') van seguidas en una misma pista, con 4 sectores (53 ms) de silencio entre una y otra: la siguiente sigue sin parar la unidad ni buscar; si el juego no la pide, se para en ese silencio (el tiempo cuenta desde que la unidad empezó a sonar). Al cortar o parar una frase el volumen del CD baja a 0 en el acto.
   - Pausa (START en carrera): calla las voces y el CD, oscurece la pantalla con PAUSA y el juego queda parado; al seguir, todo continúa donde estaba.
 - `ps1/gen2.py`: genera `TILES.BIN` y los paquetes `LEVELnn.BIN`, `RACE.BIN`, `MENU.BIN`, `MENU2.BIN`, `POST.BIN` y `POST2.BIN` a partir de los registros del banco de pruebas. Cada recorrido se llena hasta la capacidad con los sprites del jugador (poses del coche, marcador y, de noche, el haz de los faros), los más vistos primero. Fuera de la carrera los menús llenan la caché (sustituyen a lo de carrera, que se vuelve a leer al empezar). `POST`/`POST2`: lo que sale al acabar una carrera ('Your Time', 'Continue ?', las fotos del attract).
 - `ps1/logo.py`: el logo de arranque a `LOGO.BIN` (15 bits, 128 de ancho).

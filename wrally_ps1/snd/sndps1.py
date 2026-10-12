@@ -2,7 +2,9 @@
  - frases cortas del OKI y efectos largos -> PS-ADPCM en cd/SNDFX.BIN (se sube entero a la RAM de la SPU al arrancar)
  - el resto de frases largas (> LONG s, musica) -> pistas de audio CD-DA (snd/tNN.wav, 44,1 kHz estereo). Las que el
    juego encadena (CADENAS: la siguiente se pide justo al acabar la anterior, segun los registros del OKI en MAME) van
-   seguidas en una misma pista, separadas por SEP sectores de silencio: la unidad sigue tocando sin buscar
+   seguidas en una misma pista, separadas por SEP sectores de silencio: la unidad sigue tocando sin buscar (si el
+   juego no pide la siguiente, snd.c para en ese silencio: SEP cubre el error de su reloj, hasta 3 cuadros; en la
+   placa entre una y otra pasa lo que tarda el juego en mirar el OKI)
  - snd_tab.c: frase -> direccion SPU/8 o primera aparicion en el CD; por aparicion: pista, sector desde el principio,
    sectores (con el silencio de detras), la que va detras y su frase"""
 import numpy as np, struct, subprocess, wave, os, sys
@@ -21,7 +23,7 @@ SPU0 = 0x1010
 # luego las de los otros bancos de efectos (3 a 8), que suenan igual
 EFECTOS = [95, 93, 89, 108, 92, 109, 81]
 CADENAS = [[118, 118], [116, 120, 122, 121], [113, 113, 113, 114, 114], [123, 123]]
-SEP = 2
+SEP = 4
 os.makedirs('wav', exist_ok=True)
 fx = bytearray(); addr = [0] * 128; inst = [0] * 128; ntr = 2; tracks = []; hecho = {}
 apar = [(0, 0, 0, 0, 0)]                     # apariciones en el CD: pista, sector, sectores, siguiente, frase
@@ -83,5 +85,6 @@ with open('snd_tab.c', 'w') as f:
     f.write('const unsigned short ap_n[%d] = {%s};\n' % (len(apar), ','.join(str(a[2]) for a in apar)))
     f.write('const unsigned char ap_sig[%d] = {%s};\n' % (len(apar), ','.join(str(a[3]) for a in apar)))
     f.write('const unsigned char ap_phr[%d] = {%s};\n' % (len(apar), ','.join(str(a[4]) for a in apar)))
+    f.write('const unsigned char ap_sep = %d;\n' % SEP)
 open('tracks.txt', 'w').write('\n'.join(tracks) + '\n')
 print('efectos', len(fx), 'bytes; pistas', len(tracks), '; apariciones en el CD', len(apar) - 1)

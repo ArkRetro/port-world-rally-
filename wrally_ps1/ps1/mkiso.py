@@ -40,6 +40,8 @@ def build(reg, img=None, exe='WRPS1.EXE'):
     x += ['  <track type="audio" source="../snd/%s"/>' % t for t in tracks]
     x += ['</iso_project>']
     open('iso_%s.xml' % reg, 'w').write('\n'.join(x) + '\n')
+    for e in ('.bin', '.cue'):              # mkpsxiso reescribe el fichero sin crear otro: la copia de sd/ es un enlace
+        if os.path.exists(img + e): os.remove(img + e)
     subprocess.check_call([os.environ.get('MKPSXISO', 'mkpsxiso'), '-y', 'iso_%s.xml' % reg], stdout=subprocess.DEVNULL)
 def check_dir(reg, img=None):
     """SYSTEM.CNF y el ejecutable en el primer sector del directorio raiz (lo unico que lee la BIOS)"""

@@ -1,8 +1,11 @@
 #!/bin/sh
 # World Rally -> PlayStation: construccion completa desde tus ROM (uso personal) - arkretro
 #   WR_ROM   carpeta con las ROM de MAME de wrally (por defecto ./rom)
-#   NUGGET   ruta de nugget (pcsx-redux/src/mips), para crt0 y el enlazado
+#   NUGGET   ruta de nugget (pcsx-redux/src/mips), para el enlazado (ps-exe.ld)
 #   MKPSXISO ejecutable de mkpsxiso (por defecto el del PATH)
+#   LICENCIA tu BIOS (o LICENSEA.DAT): logo de PlayStation del arranque (ps1/licencia.py); para PSIO/XStation, siempre
+#   SD_NOMBRE nombre de las carpetas de ps1/sd/ para la tarjeta (por defecto 'World Rally PS1'); CU2_REV=1: .cu2 de PSIO
+#            para firmware anterior a 2.6.11
 set -e
 cd "$(dirname "$0")"
 R=$(pwd)

@@ -42,7 +42,7 @@ static int rd_on, rd_lba, rd_n, rd_i, rd_fast, rd_err, rd_res; static unsigned r
 static u8 *rd_buf; static void (*rd_cb)(int i, const unsigned char *d); static u8 *(*rd_dst)(int i);
 static u8 sbuf[2048] __attribute__((aligned(4))); static int sbuf_dir = -1;   /* sbuf tiene el directorio */
 /* audio */
-static int play_at = -1, stop_req, loc_req, loc_res = -1;
+static int play_at = -1, stop_req, loc_req, loc_res = -1, play_last, play_try;
 int cd_ended;                               /* fin de la pista (INT4) o fallo al tocarla */
 
 static u8 bcd(int v) { return (u8)(((v / 10) << 4) | (v % 10)); }
@@ -107,12 +107,14 @@ static void event(int t)
         case 0x06: drv = 1; drv_next = seek_to = loc_at; seek_n = 0; loc_at = -1; t_ev = T1; lost = 0; break;
         case 0x03: drv = 2; heard = 0; t_play = T1; loc_at = -1; break;
         case 0x09: case 0x0A: wait2 = cmd; break;
-        case 0x0E: mode = cmd_arg; break;
+        case 0x0E:                          /* cambio de velocidad: 3 cuadros antes de lo siguiente (como Sony) */
+            if ((mode ^ cmd_arg) & 0x80) { hold = 1; t_hold = T1; n_hold = 3 * 263; }
+            mode = cmd_arg; break;
         case 0x11: loc_res = nresp >= 8 ? msf(resp + 5) : -1; loc_req = 0; break;
         }
-        /* GetStat tras Play: ya suena (bit 7), o no dice ni que busca (bit 6) ni que toca (un ODE que no los diera: no
-           esperar por ellos) */
-        if (cmd == 0x01 && drv == 2 && !heard && nresp && (resp[0] & 0x80 || !(resp[0] & 0x40))) heard = 1;
+        /* GetStat tras Play: ya suena (bit 7), o con el motor en marcha no dice ni que busca (bit 6) ni error de
+           busqueda (bit 2): un ODE que no diera el bit 7 */
+        if (cmd == 0x01 && drv == 2 && !heard && nresp && (resp[0] & 0x80 || (resp[0] & 0x46) == 0x02)) heard = 1;
         cmd = 0;
     } else if (t == 2) {                    /* segunda respuesta (Pause, Init) */
         if (wait2) { drv = 0; wait2 = 0; }
@@ -120,7 +122,9 @@ static void event(int t)
         if (drv == 2) cd_ended = 1;
         drv = 0;
     } else if (t == 5) {                    /* error */
-        cd_dbg[2]++; cd_dbg[5] = nresp > 1 ? resp[1] : 0x100;
+        int pc = cmd, ec = nresp > 2 && (resp[1] & 1) ? resp[2] : nresp > 1 ? resp[1] : 0x100;   /* codigo (tras uno o dos stat) */
+        if (cmd == 0x01) cmd = 0;           /* GetStat no falla: es de la unidad (p. ej. la busqueda de Play); el GetStat sigue */
+        cd_dbg[2]++; cd_dbg[5] = ec;
         if (cmd == 0x09) {                  /* Pause rechazada (aun busca: Play o ReadN): repetirla dentro de 2 cuadros */
             cd_dbg[6]++; hold = 1; t_hold = T1; n_hold = 526;
             if (drv == 2 && play_at < 0) stop_req = 1;
@@ -128,12 +132,14 @@ static void event(int t)
         }
         if (rd_on && (cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1))) { hold = 1; t_hold = T1; n_hold = 15 * 263; }   /* ~0,25 s */
         if (cmd == 0x11) { loc_res = -1; loc_req = 0; }
-        if (cmd == 0x03 || (cmd == 0x02 && play_at >= 0) || (!cmd && drv == 2)) { play_at = -1; cd_ended = 1; }
-        if ((cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1)) && !(nresp > 1 && resp[1] == 0x80)) rd_err++;   /* 80h: aun no lista */
+        if (cmd == 0x03 && ec == 0x80 && !stop_req && ++play_try < 8) {   /* Play: aun no lista, otra vez */
+            play_at = play_last; hold = 1; t_hold = T1; n_hold = 15 * 263;
+        } else if (cmd == 0x03 || (cmd == 0x02 && play_at >= 0) || (!cmd && drv == 2)) { play_at = -1; cd_ended = 1; }
+        if ((cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1)) && ec != 0x80) rd_err++;   /* 80h: aun no lista */
         if (cmd == 0x02) loc_at = -1;
         if (cmd == 0x06 || cmd == 0x03 || !cmd) drv = 0;
         if (wait2 && !cmd) { wait2 = 0; drv = 0; }
-        cmd = 0;
+        cmd = pc == 0x01 ? pc : 0;
     }
     if (drv != 1) seek_to = -1;
 }
@@ -147,13 +153,13 @@ static void step(void)
         if (drv == 1) { send(0x09, 0, 0, 0); return; }          /* la lectura sigue luego */
         if (mode != M_AUDIO) { setmode(M_AUDIO); return; }
         if (loc_at != play_at) { setloc(play_at); return; }
-        send(0x03, 0, 0, 0); play_at = -1; cd_ended = 0; return;
+        send(0x03, 0, 0, 0); play_last = play_at; play_at = -1; cd_ended = 0; return;
     }
     if (stop_req) { stop_req = 0; if (drv) { send(0x09, 0, 0, 0); return; } }
-    /* Play: GetStat cada 2 cuadros hasta que suene (como mucho 1,5 s: la busqueda no cuenta como sonando) */
+    /* Play: GetStat cada cuadro hasta que suene (como mucho 3 s: la busqueda no cuenta como sonando) */
     if (drv == 2 && !heard) {
-        if ((u16)(T1 - t_play) > SEG(3) / 2) heard = 1;
-        else if ((u16)(T1 - t_cmd) >= 526) { send(0x01, 0, 0, 0); return; }
+        if ((u16)(T1 - t_play) > SEG(3)) heard = 1;
+        else if ((u16)(T1 - t_cmd) >= 263) { send(0x01, 0, 0, 0); return; }
     }
     if (rd_on) {
         int at = rd_lba + rd_i, m = rd_fast ? M_FAST : want_mode;
@@ -275,13 +281,13 @@ int cd_init(void)
     CD0 = 1; CD2 = 0x1F;                    /* habilitar banderas de interrupcion del controlador */
     CD0 = 1; CD3 = 0x1F;
     DPCR |= 0x8000;                         /* DMA 3 (CD) */
-    cd_drain(800);                          /* 50 ms sin nada */
+    cd_drain(2400);                         /* 0,15 s sin nada (la segunda respuesta de una Pause a 1x: hasta 65 ms) */
 #ifndef CD_SIN_INIT
     for (k = 0; k < 3 && mode != M_FAST; k++) {   /* Init: para la unidad, motor en marcha; si no contesta, otra vez */
         cmd = wait2 = 0; drv = 1; want_mode = M_FAST; mode = -1;
         send(0x0A, 0, 0, 0);
         cd_sync();
-        if (mode != M_FAST) cd_drain(800);
+        if (mode != M_FAST) cd_drain(2400);
     }
 #else
     cmd = wait2 = 0; drv = 1; want_mode = M_FAST;
@@ -336,7 +342,7 @@ void cd_volume(int v)
     CD0 = 2; CD2 = v; CD3 = 0;
     CD0 = 3; CD1 = v; CD2 = 0; CD3 = 0x20;
 }
-void cd_play(int lba) { play_at = lba; stop_req = 0; cd_ended = 0; }
+void cd_play(int lba) { play_at = lba; stop_req = 0; cd_ended = 0; heard = 0; play_try = 0; }
 void cd_stop(void) { play_at = -1; stop_req = 1; }
 int cd_audio(void) { return drv == 2 || play_at >= 0 || cmd == 0x03; }
 int cd_playing(void) { return drv == 2 && heard; }
