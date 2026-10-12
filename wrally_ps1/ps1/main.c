@@ -338,8 +338,8 @@ static void load_screen(int total)
    todos; hn los que son, hr los que ya se han leido en orden). pin: lo que llega queda fijo (1), guardado (2) o
    suelto (0) */
 typedef struct { u16 *ids; int max, n, hs, pin, lba, ns, hn, hr; u16 *al; int maxal, nal; } pack_t;
-static u16 lvl_ids[4000], race_ids[2000], menu_ids[1280], menu2_ids[4000], post_ids[512], post2_ids[512], lvl_al[768 * 2], race_al[256 * 2];
-static pack_t menu_pk = {menu_ids, 1280, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1}, post_pk = {post_ids, 512, 0, 0, 1, -1},
+static u16 lvl_ids[4000], race_ids[2000], menu_ids[1400], menu2_ids[4000], post_ids[512], post2_ids[512], lvl_al[768 * 2], race_al[256 * 2];
+static pack_t menu_pk = {menu_ids, 1400, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1}, post_pk = {post_ids, 512, 0, 0, 1, -1},
     post2_pk = {post2_ids, 512, 0, 0, 1, -1};
 static pack_t lvl_pk = {lvl_ids, 4000, 0, 0, 0, -1, 0, 0, 0, lvl_al, 768}, race_pk = {race_ids, 2000, 0, 0, 0, -1, 0, 0, 0, race_al, 256};
 static u8 lvl_map[16384 / 8];                       /* tiles del mapa del recorrido de lvl_pk */
@@ -431,6 +431,7 @@ static int job_on;                                  /* lectura en curso: 1 tiles
 static u16 job_t[256]; static int job_n, job_s0, job_s1, job_st, job_i, job_f; /* job_st: resultado aun por subir; job_i: por donde va; job_f: cuadro en que se pidio */
 static int job_pf;                                  /* la lectura de tiles es de antemano (prefetch): lo que falte va antes */
 static int race_end, lum_prev, lum_ref, lum_steps;  /* la carrera se esta fundiendo a negro (y luminosidad de la paleta) */
+static int race_on;                                 /* el reloj de la carrera corre (0xFEC1B2 = 1) */
 static pack_t *bgq[4]; static int nbg, bg_from, bg_jump = -1, bg_err;     /* bg_from: siguiente sector de bgq[0] que mirar */
 #define RING 16
 static u8 ring[RING * 2048] __attribute__((aligned(4)));
@@ -638,7 +639,7 @@ static void level_load(int k)
 {
     int i, hs, fast, need, same = k == cur_level && lvl_pk.hs;
     alias_set(&lvl_pk, 0); alias_set(&race_pk, 0);
-    race_end = lum_prev = lum_steps = 0;
+    race_end = lum_prev = lum_steps = race_on = 0;
     for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
     for (i = 0; i < NTS; i++) slot_age[i] = frame_id - 1000;
     min_cls_frame = -1; hand = 0;
@@ -755,7 +756,15 @@ static void level_check(void)
         if (k < 12 && k != cur_level) { race_enter(k); return; }
     }
     if (cur_level < 0) return;
-    if (in_race) race_fade();
+    if (in_race) {
+        /* meta o tiempo agotado (el reloj de la carrera se para): POST de fondo ya, en los huecos libres y sin soltar lo
+           de la carrera, mientras la unidad esta libre (la musica de la meta empieza unos 40 cuadros despues y la
+           ocuparia hasta la pantalla 'Your Time', que saldria a trozos); en el fundido sigue lo demas */
+        int on = *(u16 *)(rc_ram + 0x1B2) != 0;
+        if (race_on && !on && !race_end && !nbg) bg_add(&post_pk);
+        race_on = on;
+        race_fade();
+    }
     sc = level_ptr[cur_level] == p ? map_score() : 0;
     if (in_race ? sc < 8 : sc >= 15) {
         if (++race_cnt >= (in_race ? (nmiss >= 16 ? 2 : 8) : 2)) { if (in_race) race_exit(); else race_enter(cur_level); }
@@ -1098,15 +1107,17 @@ static int lastv;
    ve se oscurece con PAUSA encima; sin sonido y la frase larga parada; el CD acaba lo que estaba leyendo (vsync lo
    atiende) pero no empieza nada; el tiempo de la pausa no cuenta para el OKI. Sale con otra pulsacion de START */
 static int start_up;
-/* corre el jugador: en carrera, sin fundirse, y no es la demostracion del attract (0xFEC173 = 1 mientras dura) */
-static int jugando(void) { return in_race && !race_end && !(*(u16 *)(rc_ram + 0x172) & 0xFF); }
+/* corre el jugador: en carrera, sin fundirse, y no es la demostracion del attract (bit 0 de 0xFEC173: el juego lo pone
+   en 0xED00 antes de la carrera de demostracion y lo quita en 0xED74; los bytes del 68000 van cambiados de dos en dos) */
+static int jugando(void) { return in_race && !race_end && !(rc_ram[0x173 ^ 1] & 1); }
 static void pausa(void)
 {
     void snd_pause(int on);
     int b = fb ^ 1, sc = 4, up = 0;                  /* el bufer que se ve (el ultimo dibujado) */
+    t1_update();                                     /* lo de antes de la pausa si cuenta para el OKI */
     snd_pause(1);
     dma_wait(); gpu_wait();
-    GP0 = 0xE1000000; GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
+    GP0 = 0xE1000400; GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
     GP0 = 0x62000000; GP0 = (u32)(b * 256) << 16; GP0 = (240 << 16) | W;   /* negro semitransparente: la mitad */
     gp_text(b, (W - (5 * 6 * sc - sc)) / 2, 100, "PAUSA", sc, lgrad);
     for (;;) {
@@ -1115,7 +1126,7 @@ static void pausa(void)
         p = joy_read();
         if (p & 0x0008) up = 1; else if (up) break;
     }
-    t1_skip();
+    t1_last = T1;                                    /* la pausa no cuenta (el temporizador da la vuelta en 4,2 s) */
     snd_pause(0);
     start_up = 0;                                    /* START sigue pulsado: no vuelve a pausar hasta soltarlo */
 }
@@ -1140,7 +1151,10 @@ void rc_vblank(void)
     } else I_STAT = ~1u;
     GP1 = 0x03000000;                    /* pantalla encendida (tambien si el primero se salta: barra de carga) */
     pad = joy_read();                    /* el mando justo tras el vblank: la entrada mas reciente para el 68000 */
-    if (!(pad & 0x0008) && start_up && jugando()) { pausa(); pad = joy_read(); }
+    if (!(pad & 0x0008) && start_up && jugando()) {
+        pausa(); pad = joy_read();
+        sq_last = (pad & 0x8000) != 0; l2_last = (pad & 0x0100) != 0;   /* lo que siga pulsado al volver no cambia nada */
+    }
     start_up = (pad & 0x0008) != 0;
     t_rend0 = T1;
     /* la MCU da una vuelta a su bucle principal por cuadro (contestacion 0xA53E, etc.) */

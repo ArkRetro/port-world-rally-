@@ -178,6 +178,12 @@ print('POST', pack('POST.BIN', pt[:512]), 'POST2', pack('POST2.BIN', pt[512:]), 
 # RACE (guardado), que se vuelve a leer al entrar en carrera (antes RACE se quedaba y faltaban fotos del attract)
 co, nc = menu[1], menu[0]
 m1 = set(sorted(tl(co), key=lambda t: -co[t])[:1280])
+# y la letra de los sprites entera (nombres de los records: los registros no recorren todas las letras) y las banderas
+# de los rallies de la tabla 'Best Drivers': si no, faltan unos cuadros y se corta la musica para leerlas
+FUENTE = set(t for t in range(0x3940, 0x3A14) if not vacio[t])
+print('MENU: letra y banderas %d tiles (%d nuevos)' % (len(FUENTE), len(FUENTE - m1)))
+m1 |= FUENTE
+assert len(m1) <= 1400, len(m1)              # menu_ids[] en main.c
 tot = co + nc
 m2 = sorted(tl(tot >= 3) - m1 - race, key=lambda t: (-tot[t], t))
 cap = max(0, min(4000, NTS - 200 - len(m1)))

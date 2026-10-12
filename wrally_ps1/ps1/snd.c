@@ -1,8 +1,11 @@
 /* Sonido: el OKI M6295 de la recreativa sobre la SPU (frases cortas y efectos, en la RAM de la SPU) y el audio
    del CD (frases largas, pistas CD-DA). El canal de una frase de la SPU queda ocupado hasta que su voz llega al
    ultimo bloque (ENDX), como el OKI, que avisa al acabar la muestra; el de una frase de CD hasta que la pista acaba
-   de verdad (pausa automatica, INT4), o como mucho su duracion mas 2 s contando desde que empieza a sonar. Para
-   leer del CD la frase se corta (apuntando por donde iba) y luego se sigue desde ahi. Uso personal. */
+   de verdad (pausa automatica, INT4), o como mucho su duracion mas 2 s contando desde que empieza a sonar. Las
+   frases que el juego encadena van seguidas en una pista (sndps1.py): al llegar al final de una (por tiempo) el canal
+   queda libre y, si el juego pide la que va detras, la unidad sigue sin buscar (sin el hueco de 0,13 s de una
+   busqueda); si no, se para en el silencio de entre las dos. Para leer del CD la frase se corta (apuntando por donde
+   iba) y luego se sigue desde ahi. Uso personal. */
 #include "cd.h"
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32;
 #define R16(a) (*(volatile u16 *)(a))
@@ -13,14 +16,15 @@ typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32;
 #define VOICE(v, r) R16(0x1F801C00 + (v) * 16 + (r))
 #define T1 R16(0x1F801110)                  /* temporizador 1: lineas de video */
 extern const u16 snd_addr[128];
-extern const u8 snd_track[128];
+extern const u8 snd_inst[128], ap_trk[], ap_sig[], ap_phr[];
+extern const u16 ap_sec[], ap_n[];
 extern const u16 oki_len[16][128];
 void rc_oki_hold(int c, int on), rc_oki_end(int c);
-static const u8 okivol[16] = {32, 22, 16, 11, 8, 6, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1};
+static const u8 okivol[16] = {32, 22, 16, 11, 8, 6, 4, 3, 2, 0, 0, 0, 0, 0, 0, 0};   /* tabla del OKI (MAME): de 9 en adelante, nada */
 static int trk_lba[32], trk_end[32];        /* pistas: principio exacto y final (TRACKS.BIN) */
-/* frase larga: canal, pista, desde donde suena, 1/60 s sonando y lo que dura desde ahi, 1/60 s esperando a que
-   suene, posicion si esta cortada */
-static int cd_ch = -1, cd_trk, cd_from, cd_t, cd_len, cd_wait, cd_susp = -1, cut_st, snd_ok;
+/* frase larga: canal, aparicion en el CD (ap_*) y su final (sector), desde donde suena, 1/60 s sonando y lo que
+   dura desde ahi, 1/60 s esperando a que suene, posicion si esta cortada, canal ya libre esperando a la siguiente */
+static int cd_ch = -1, cd_ap, cd_iend, cd_from, cd_t, cd_len, cd_wait, cd_susp = -1, cut_st, cd_rel, snd_ok;
 /* canales que suenan en la SPU: 1/60 s desde que empezaron y el maximo (por si la voz no avisara) */
 static int spu_on, spu_t[4], spu_max[4];
 /* teclas: la SPU mira KON y KOFF una vez por muestra (44,1 kHz) y escribir uno de los dos sustituye los bits que
@@ -74,14 +78,24 @@ void snd_tracks(const unsigned char *d)
 void snd_play(int ch, int p, int bank, int att)
 {
     if (!snd_ok) return;
-    if (snd_track[p]) {
-        int t = snd_track[p], vol = okivol[att] * 0x80 / 16;
+    if (snd_inst[p]) {
+        int i = snd_inst[p], t = ap_trk[i], vol = okivol[att] * 0x80 / 16;
         if (t >= 32 || trk_lba[t] <= 0 || trk_end[t] <= trk_lba[t]) return;
+        if (vol > 0x80) vol = 0x80;
+        if (ch == cd_ch && cd_rel && cd_susp < 0 && ap_sig[cd_ap] && ap_phr[ap_sig[cd_ap]] == p) {
+            /* la que va detras en la pista: ya esta sonando, sin buscar */
+            cd_t -= cd_len; cd_ap = ap_sig[cd_ap]; cd_from = cd_iend; cd_iend = cd_from + ap_n[cd_ap];
+            cd_len = ap_n[cd_ap] * 60 / 75; cd_rel = 0;
+            cd_volume(vol);
+            rc_oki_hold(ch, 1);
+            return;
+        }
         if (cd_ch >= 0 && cd_ch != ch) rc_oki_hold(cd_ch, 0);   /* la anterior: ocupada solo por su duracion */
-        cd_volume(vol > 0x80 ? 0x80 : vol);
-        cd_play(trk_lba[t]);
-        cd_ch = ch; cd_trk = t; cd_from = trk_lba[t]; cd_t = cd_wait = 0; cd_susp = -1; cut_st = 0;
-        cd_len = (trk_end[t] - trk_lba[t]) * 60 / 75;
+        cd_volume(vol);
+        cd_ap = i; cd_from = trk_lba[t] + ap_sec[i]; cd_iend = cd_from + ap_n[i];
+        cd_play(cd_from);
+        cd_ch = ch; cd_t = cd_wait = 0; cd_susp = -1; cut_st = 0; cd_rel = 0;
+        cd_len = ap_n[i] * 60 / 75;
         rc_oki_hold(ch, 1);
     } else if (snd_addr[p]) {
         u32 vol = okivol[att] * 0x3FFF / 16;
@@ -102,7 +116,7 @@ void snd_stop(int mask)
     if (mask & 15) spu_key(1, mask & 15);
     spu_on &= ~mask;
     /* cortada ya no suena: sin Pause, que pararia la lectura en curso */
-    if (cd_ch >= 0 && (mask & (1 << cd_ch))) { if (cd_susp < 0) cd_stop(); cd_ch = -1; cd_susp = -1; cut_st = 0; }
+    if (cd_ch >= 0 && (mask & (1 << cd_ch))) { if (cd_susp < 0) cd_stop(); cd_ch = -1; cd_susp = -1; cut_st = 0; cd_rel = 0; }
 }
 /* voces que llegaron al ultimo bloque (ENDX): canal libre. Al empezar cada cuadro, con los 1/60 s pasados, y otra
    vez justo antes de volver al juego (n = 0), que mira los canales nada mas empezar el cuadro */
@@ -114,7 +128,7 @@ void snd_spu(int n)
     for (c = 0; c < 4; c++)
         if ((spu_on & (1 << c)) && ((e & (1 << c)) || (spu_t[c] += n) > spu_max[c])) { spu_on &= ~(1 << c); rc_oki_end(c); }
 }
-static void cd_done(void) { cd_ended = 0; rc_oki_hold(cd_ch, 0); cd_ch = -1; cd_susp = -1; cut_st = 0; }
+static void cd_done(void) { cd_ended = 0; rc_oki_hold(cd_ch, 0); cd_ch = -1; cd_susp = -1; cut_st = 0; cd_rel = 0; }
 /* cada cuadro, con los 1/60 s pasados: fin de las frases de la SPU y de la larga (el tiempo de esta cuenta mientras
    suena: la busqueda, la pausa o el cambio de velocidad de antes no; si no llega a sonar en 10 s se da por acabada) */
 void snd_frame(int n)
@@ -123,6 +137,10 @@ void snd_frame(int n)
     snd_fr++;
     if (cd_ch < 0 || cd_susp >= 0) return;
     if (cd_playing()) cd_t += n; else cd_wait += n;
+    /* detras viene otra en la misma pista: 4 cuadros antes del final el canal queda libre (el juego mira el OKI cada
+       cuadro y pide la siguiente enseguida); si a 2 del final nadie la ha pedido, parar (en el silencio de en medio) */
+    if (ap_sig[cd_ap] && !cd_rel && cd_t >= cd_len - 4) { cd_rel = 1; rc_oki_end(cd_ch); }
+    if (cd_rel && cd_t >= cd_len - 2) { cd_stop(); cd_done(); return; }
     if ((cd_ended && !cd_audio()) || cd_t > cd_len + 120 || cd_wait > 600) {
         if (!cd_ended) cd_stop();               /* sin pausa automatica: pararla a mano */
         cd_done();
@@ -133,9 +151,9 @@ static int cd_over(int margin) { return cd_ended || cd_t + margin >= cd_len; }
 /* posicion para seguir la frase: la de GetlocP si es de la pista, si no por tiempo */
 static int cd_pos(int pos)
 {
-    if (pos < cd_from || pos >= trk_end[cd_trk]) {
+    if (pos < cd_from || pos >= cd_iend) {
         pos = cd_from + (cd_t > 20 ? cd_t - 20 : 0) * 75 / 60;
-        if (pos >= trk_end[cd_trk]) pos = trk_end[cd_trk] - 1;
+        if (pos >= cd_iend) pos = cd_iend - 1;
     }
     return pos;
 }
@@ -169,21 +187,24 @@ int snd_cut(void)
     return 1;
 }
 int snd_cut_on(void) { return cd_ch >= 0 && cd_susp >= 0; }
-/* pausa: todo en silencio (las voces de la SPU siguen hasta su final, el juego las vera libres al volver) y la frase
-   larga parada y apuntada; al volver, se sigue desde ahi si la paro la pausa (si estaba cortada para leer, la sigue
-   cache_load como siempre) */
+/* pausa: todo en silencio; las voces de la SPU quietas (tono 0: no avanzan ni llegan al final) y la frase larga parada
+   y apuntada; al volver, todo sigue desde donde estaba (la frase larga, si la paro la pausa: si estaba cortada para
+   leer, la sigue cache_load como siempre) */
 static int pause_cd;
 void snd_resume(void);
 void snd_pause(int on)
 {
+    int c;
     if (!snd_ok) return;
     if (on) {
         R16(0x1F801D80) = 0; R16(0x1F801D82) = 0;
+        for (c = 0; c < 4; c++) if (spu_on & (1 << c)) VOICE(c, 4) = 0;
         pause_cd = cd_ch >= 0 && cd_susp < 0;
         if (pause_cd) snd_suspend();
     } else {
         if (pause_cd && cd_ch >= 0 && cd_susp >= 0) snd_resume();
         pause_cd = 0;
+        for (c = 0; c < 4; c++) if (spu_on & (1 << c)) VOICE(c, 4) = 704;
         R16(0x1F801D80) = 0x3FFF; R16(0x1F801D82) = 0x3FFF;
     }
 }
@@ -191,6 +212,6 @@ void snd_resume(void)
 {
     if (cd_ch < 0 || cd_susp < 0) return;
     cd_play(cd_susp);
-    cd_from = cd_susp; cd_t = cd_wait = 0; cd_len = (trk_end[cd_trk] - cd_susp) * 60 / 75;
+    cd_from = cd_susp; cd_t = cd_wait = 0; cd_len = (cd_iend - cd_susp) * 60 / 75;
     cd_susp = -1;
 }
