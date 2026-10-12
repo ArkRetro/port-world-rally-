@@ -200,7 +200,8 @@ void cd_poll(void)
     /* vigilancia: respuestas que no llegan */
     if ((cmd && (u16)(T1 - t_cmd) > SEG(2)) || (wait2 && (u16)(T1 - t_cmd) > (wait2 == 0x0A ? SEG(4) : SEG(2)))) {
         cd_dbg[3]++; cmd = 0; wait2 = 0; loc_at = -1; seek_to = -1;
-        if (drv != 2) drv = 1;              /* estado incierto: parar y volver a empezar */
+        if (drv != 2) { drv = 1; lost = 1; }   /* estado incierto: parar, o si se lee, volver a buscar ya (no esperar
+                                               sectores de una unidad que quiza esta parada) */
         if (rd_on) rd_err++;
     }
     if (rd_on && drv == 1 && (u16)(T1 - t_ev) > SEG(3)) { cd_dbg[3]++; rd_err++; lost = 1; t_ev = T1; seek_to = -1; }
