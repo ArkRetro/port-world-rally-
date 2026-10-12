@@ -854,7 +854,7 @@ static void level_check(void)
     if (cur_level < 0) return;
     if (in_race) {
         int on = *(u16 *)(rc_ram + 0x1B2) != 0;           /* el reloj de la carrera corre */
-        race_demo = rc_ram[0x173 ^ 1] & 1;
+        if (on) race_demo = rc_ram[0x173 ^ 1] & 1;      /* (el juego la borra al acabar, aun en carrera) */
         if (race_on && !on && !race_end) race_finish();     /* en el fundido sigue lo demas (race_ending) */
         race_on = on;
         race_fade();
