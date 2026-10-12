@@ -370,6 +370,17 @@ static void gp0_exec(void)
         }
         return;
     }
+    if (op >= 0x80 && op < 0xA0) {   /* copia de VRAM a VRAM */
+        int sx = f[1] & 0x3FF, sy = (f[1] >> 16) & 0x1FF, dx = f[2] & 0x3FF, dy = (f[2] >> 16) & 0x1FF, i, j;
+        int w = ((f[3] & 0x3FF) - 1) & 0x3FF, h = (((f[3] >> 16) & 0x1FF) - 1) & 0x1FF; static u16 ln[1024];
+        w++; h++;
+        for (j = 0; j < h; j++) {
+            for (i = 0; i < w; i++) ln[i] = vram[(sy + j) & 511][(sx + i) & 1023];
+            for (i = 0; i < w; i++) vram[(dy + j) & 511][(dx + i) & 1023] = ln[i];
+        }
+        gpu_add_ticks(w * h * 2 + 16);
+        return;
+    }
     if (op >= 0xA0 && op < 0xC0) {
         gpu_upload_x = f[1] & 0x3FF; gpu_upload_y = (f[1] >> 16) & 0x1FF;
         gpu_upload_w = ((f[2] & 0x3FF) - 1) & 0x3FF; gpu_upload_w++; gpu_upload_h = (((f[2] >> 16) & 0x1FF) - 1) & 0x1FF; gpu_upload_h++;
