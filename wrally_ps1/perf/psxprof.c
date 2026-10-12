@@ -4,6 +4,7 @@
    Uso: psxprof imagen.cue wr2.elf.bin(PS-EXE) wr2.nm cuadros_juego [salida_dir]
    Entradas (botones) segun el cuadro del juego (llamadas a rc_vblank), como rc_host (ver inputs_for).
    SHOTV=v1,v2,...: capturas en esos vblanks (tambien antes del juego: la pantalla de carga del arranque);
+   CLUTCACHE=1: la CLUT se guarda como en la GPU (una, se recarga al cambiar; GP0(01h) la vacia); 2: GP0(01h) no la vacia;
    MISSLOG=1: falta.txt con los tiles que faltan en cada cuadro; WATCH=var,...: cambios de esas variables.
    CD_VIEJOS=n: tras un ReadN sin Pause llegan aun n sectores de la posicion anterior (psxprof no los da si no). */
 #include <stdio.h>
@@ -232,6 +233,19 @@ static void plot(int x, int y, u16 c, int semi, int mode)
     }
     vram[y][x] = c;
 }
+/* CLUTCACHE=1: cache de la CLUT de una entrada como la GPU (se recarga al cambiar de CLUT o de profundidad, y la
+   vacia GP0(01h)); CLUTCACHE=2: igual pero GP0(01h) no la vacia (las escrituras en la VRAM nunca la vacian) */
+static int clutcache = -1; static u32 ck_key = ~0u; static u16 ck[256];
+static u16 clut_entry(u32 clut, int depth, int idx)
+{
+    if (clutcache < 0) { const char *e = getenv("CLUTCACHE"); clutcache = e ? atoi(e) : 0; }
+    if (!clutcache) return vram[(clut >> 6) & 511][((clut & 63) * 16 + idx) & 1023];
+    if (ck_key != (clut | (u32)depth << 16)) {
+        int k; ck_key = clut | (u32)depth << 16;
+        for (k = 0; k < (depth ? 256 : 16); k++) ck[k] = vram[(clut >> 6) & 511][((clut & 63) * 16 + k) & 1023];
+    }
+    return ck[idx];
+}
 static int texel(u32 tp, u32 clut, int u, int v, u16 *out)
 {
     int tx = (tp & 15) * 64, ty = ((tp >> 4) & 1) * 256, depth = (tp >> 7) & 3;
@@ -242,11 +256,11 @@ static int texel(u32 tp, u32 clut, int u, int v, u16 *out)
     if (depth == 0) {
         u16 w = vram[(ty + v) & 511][(tx + u / 4) & 1023];
         int idx = (w >> ((u & 3) * 4)) & 15;
-        t = vram[(clut >> 6) & 511][((clut & 63) * 16 + idx) & 1023];
+        t = clut_entry(clut, 0, idx);
     } else if (depth == 1) {
         u16 w = vram[(ty + v) & 511][(tx + u / 2) & 1023];
         int idx = (w >> ((u & 1) * 8)) & 255;
-        t = vram[(clut >> 6) & 511][((clut & 63) * 16 + idx) & 1023];
+        t = clut_entry(clut, 1, idx);
     } else t = vram[(ty + v) & 511][(tx + u) & 1023];
     if (!t) return 0;
     *out = t; return 1;
@@ -314,6 +328,7 @@ static void gp0_exec(void)
 {
     u32 *f = gpu_fifo, op = f[0] >> 24;
     gpu_prims++;
+    if (op == 0x01) { if (clutcache == 1) ck_key = ~0u; return; }
     if (op == 0x02) {
         int x = f[1] & 0x3F0, y = (f[1] >> 16) & 0x1FF, w = ((f[2] & 0x3FF) + 15) & ~15, h = (f[2] >> 16) & 0x1FF, i, j;
         u16 c = c24to15(f[0] & 0xFFFFFF);

@@ -11,7 +11,11 @@ No distribuyas las imágenes de CD que salen.
 - ROM de MAME `wrally`: `worldr14.c01 worldr15.c03 worldr16.c22 worldr17.c23 worldr18.i07 worldr19.i09 worldr20.i11 worldr21.i13 wrdallas.bin` en `WR_ROM` (por defecto `./rom`).
 
 ## Construir
-    WR_ROM=/ruta/a/wrally NUGGET=/ruta/a/nugget MKPSXISO=/ruta/a/mkpsxiso ./construir.sh
+    WR_ROM=/ruta/a/wrally NUGGET=/ruta/a/nugget MKPSXISO=/ruta/a/mkpsxiso LICENCIA=/ruta/a/scph101.bin ./construir.sh
+
+`LICENCIA` (opcional) es para el logo de PlayStation del arranque: la BIOS solo lo dibuja si los sectores 5-11 del
+disco son iguales al que lleva dentro, así que se saca de **tu** BIOS al construir (`ps1/licencia.py`; también vale un
+`LICENSEA.DAT` o la imagen de un juego original). Sin ella la imagen arranca igual, pero sin el logo.
 
 Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/.bin` (PSone PAL).
 
@@ -38,7 +42,7 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - Caché de tiles en VRAM.
   - Prioridades de la placa.
   - Faros y sombras con semitransparencia.
-  - Pantalla de carga al estilo del juego (bandas de bandera a cuadros, CARGANDO con el degradado de las cifras del marcador y la barra START-FINISH). Al arrancar, encima, el logo de `ps1/logo_pina.png` (en lugar del de PlayStation: la imagen no lleva los sectores del logo de Sony).
+  - Pantalla de carga al estilo del juego (bandas de bandera a cuadros, CARGANDO con el degradado de las cifras del marcador y la barra START-FINISH). Al arrancar, encima, el logo de `ps1/logo_pina.png` (después del de PlayStation de la BIOS, si se construye con `LICENCIA`).
   - La lista de la GPU se hace en una sola pasada por las capas y los sprites (un cubo por paso de dibujo).
   - Si un cuadro llega tarde, el siguiente no se dibuja y el juego sigue a 60 Hz (`FRAMESKIP`, `-DFRAMESKIP=0` lo quita).
 - `ps1/cd.c`: lector de CD por sondeo (datos y CD-DA).
