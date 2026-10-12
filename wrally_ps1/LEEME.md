@@ -78,10 +78,13 @@ carpetas para la tarjeta de PSIO o XStation (`SD_NOMBRE` cambia el nombre; por d
     (sin la cola de escritura de la CPU), HINTSTS leído hasta que dos lecturas coinciden (en placas antiguas las
     banderas cambian sin sincronizar), una Pause rechazada mientras la unidad aún busca (INT5 80h) se repite a los
     2 cuadros, el CD-DA cuenta desde que suena de verdad (bit 7 del stat, con GetStat cada cuadro tras Play, y no
-    desde su primera respuesta; tras un cambio de velocidad, 3 cuadros antes de lo siguiente), tras un error de lectura se espera 0,25 s antes de reintentar y solo los errores
+    desde su primera respuesta; tras un cambio de velocidad, 3 cuadros antes de lo siguiente), tras un error de lectura se esperan 2 cuadros antes de reintentar (0,25 s si es «aún no lista») y solo los errores
     seguidos abandonan la lectura (80h, «aún no lista», no cuenta). Al empezar: tiempos del bus como la BIOS, lo que
     dejara pendiente el cargador se reconoce y vacía, e Init se repite si no contesta. Los ficheros del disco se
     buscan hasta 3 veces.
+  - Los 2 sectores que llegan justo al acabar o cortar una lectura (la unidad sigue un momento) se guardan: si la
+    siguiente empieza por ellos (los paquetes de fondo que van seguidos en el disco: SNDFX, RACE y MENU2; POST y
+    POST2) se dan de ahí y la unidad sigue sin volver a buscar.
   - El temporizador 1 (líneas de vídeo) se lee hasta que dos lecturas coinciden (cuenta con el reloj de la GPU).
   - Caché: en carrera quedan fijos los paquetes del recorrido y de carrera, y los de menús guardados (se sustituyen antes que los fijos y después de lo demás); al salir (el fondo deja de ser el mapa) los de menús vuelven a ser fijos y se leen de fondo, y el de carrera queda guardado. En carrera lo fijo no se sustituye nunca (antes, lo que no se usaba en 10 s sí, y en la meta faltaban trozos).
   - Los tiles iguales a otro del paquete (o del de carrera) no llevan datos: en carrera usan el hueco de ese (de 250 a 380 por recorrido).

@@ -12,8 +12,9 @@ _start:
     lui   $t0, 0xBF80
     sw    $0, 0x1074($t0)       # I_MASK = 0
     sw    $0, 0x1070($t0)       # I_STAT: reconocer lo pendiente
-    lui   $sp, 0x801F
-    ori   $sp, $sp, 0xFFF0      # pila como STACK de SYSTEM.CNF
+    lui   $t1, 0x801F
+    ori   $t1, $t1, 0xFFF0
+    move  $sp, $t1              # pila como STACK de SYSTEM.CNF (de una vez)
     la    $t0, __bss_start
     la    $t1, __bss_end
     beq   $t0, $t1, 2f

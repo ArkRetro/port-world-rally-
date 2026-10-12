@@ -41,6 +41,11 @@ static int hold; static u16 t_hold, n_hold; /* tras una Pause rechazada o un err
 static int rd_on, rd_lba, rd_n, rd_i, rd_fast, rd_err, rd_res; static unsigned rd_got;
 static u8 *rd_buf; static void (*rd_cb)(int i, const unsigned char *d); static u8 *(*rd_dst)(int i);
 static u8 sbuf[2048] __attribute__((aligned(4))); static int sbuf_dir = -1;   /* sbuf tiene el directorio */
+/* los 2 sectores que llegan justo al acabar (o cortar) una lectura, mientras la unidad sigue un momento: si la
+   siguiente empieza por ellos (el paquete de fondo que va detras en el disco: SNDFX, RACE y MENU2 al arrancar; POST
+   y POST2 en la meta), se dan de aqui y la unidad sigue sin buscar. Antes, a 1x, cuando se pedia la siguiente (un
+   cuadro despues) la unidad ya habia pasado su primer sector y habia que volver a buscar (0,15-0,3 s) */
+static u8 spill[2][2048] __attribute__((aligned(4))); static int spill_lba[2] = {-1, -1}, spill_next = -1, spill_k;
 /* audio */
 static int play_at = -1, stop_req, loc_req, loc_res = -1, play_last, play_try;
 int cd_ended;                               /* fin de la pista (INT4) o fallo al tocarla */
@@ -75,7 +80,7 @@ static int need_from(int l)
 /* INT1: lee el sector (antes de reconocerlo). Devuelve el destino si hace falta (*idx: su indice) */
 static u8 *sector(int *idx)
 {
-    u8 h[12], *d = 0; int k, i, l;
+    u8 h[12], *d = 0, *w; int k, i, l;
     CD0 = 0; CD3 = 0x80;                    /* pedir los datos del sector */
     for (k = 0; k < 1000 && !(CD0 & 0x40); k++);
     for (k = 0; k < 12; k++) h[k] = CD2;    /* cabecera y subcabecera */
@@ -84,12 +89,14 @@ static u8 *sector(int *idx)
         if (rd_buf) { if (!(rd_got & (1u << i))) d = rd_buf + i * 2048; }
         else if (i == rd_i) d = rd_dst ? rd_dst(i) : sbuf;
     }
+    w = d;
+    if (!rd_on && l == spill_next && spill_k < 2) { w = spill[spill_k]; spill_lba[spill_k++] = l; spill_next++; }
 #ifdef CD_DMA
     /* (-DCD_DMA, sin probar en MiSTer) los 2048 bytes de datos por DMA (la cabecera ya se leyo con la CPU: la DMA sigue por el mismo FIFO). Con la CPU,
        byte a byte, son ~23000 ciclos por sector (psxprof); con la DMA, 512 palabras a ~24-28 ciclos */
-    if (d) { D3_MADR = (unsigned)d; D3_BCR = 0x00010200; D3_CHCR = 0x11000000; while (D3_CHCR & 0x01000000); }
+    if (w) { D3_MADR = (unsigned)w; D3_BCR = 0x00010200; D3_CHCR = 0x11000000; while (D3_CHCR & 0x01000000); }
 #else
-    if (d) for (k = 0; k < 2048; k += 4) { d[k] = CD2; d[k + 1] = CD2; d[k + 2] = CD2; d[k + 3] = CD2; }
+    if (w) for (k = 0; k < 2048; k += 4) { w[k] = CD2; w[k + 1] = CD2; w[k + 2] = CD2; w[k + 3] = CD2; }
 #endif
     CD0 = 0; CD3 = 0;                       /* soltar el resto */
     cd_dbg[0]++;
@@ -98,6 +105,14 @@ static u8 *sector(int *idx)
     if (seek_to < 0 && i >= -8 && i <= rd_n + 8) drv_next = l + 1;   /* los de antes de buscar no cuentan */
     t_ev = T1; *idx = i;
     return d;
+}
+/* sector i de la lectura en d: anotarlo (y si es el ultimo, la lectura acaba: lo que llegue detras va a spill) */
+static void got(int i, const u8 *d)
+{
+    rd_err = 0;                             /* errores seguidos: uno bueno los borra */
+    if (rd_buf) { rd_got |= 1u << i; while (rd_i < rd_n && (rd_got & (1u << rd_i))) rd_i++; } else rd_i++;
+    if (rd_i == rd_n) { rd_on = 0; rd_res = 1; t_done = T1; spill_next = rd_lba + rd_n; spill_k = 0; }
+    if (rd_cb) rd_cb(i, d);
 }
 static void event(int t)
 {
@@ -130,7 +145,7 @@ static void event(int t)
             if (drv == 2 && play_at < 0) stop_req = 1;
             cmd = 0; return;
         }
-        if (rd_on && (cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1))) { hold = 1; t_hold = T1; n_hold = 15 * 263; }   /* ~0,25 s */
+        if (rd_on && (cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1))) { hold = 1; t_hold = T1; n_hold = ec == 0x80 ? 15 * 263 : 526; }   /* aun no lista: 0,25 s; si no, 2 cuadros */
         if (cmd == 0x11) { loc_res = -1; loc_req = 0; }
         if (cmd == 0x03 && ec == 0x80 && !stop_req && ++play_try < 8) {   /* Play: aun no lista, otra vez */
             play_at = play_last; hold = 1; t_hold = T1; n_hold = 15 * 263;
@@ -190,12 +205,7 @@ void cd_poll(void)
         if (t == 1 && drv == 1) d = sector(&i);
         CD0 = 1; CD3 = 7;                   /* reconocer */
         if (t != 1) event(t);
-        else if (d) {
-            rd_err = 0;                     /* errores seguidos: uno bueno los borra */
-            if (rd_buf) { rd_got |= 1u << i; while (rd_i < rd_n && (rd_got & (1u << rd_i))) rd_i++; } else rd_i++;
-            if (rd_i == rd_n) { rd_on = 0; rd_res = 1; t_done = T1; }
-            if (rd_cb) rd_cb(i, d);
-        }
+        else if (d) got(i, d);
     }
     /* vigilancia: respuestas que no llegan */
     if ((cmd && (u16)(T1 - t_cmd) > SEG(2)) || (wait2 && (u16)(T1 - t_cmd) > (wait2 == 0x0A ? SEG(4) : SEG(2)))) {
@@ -212,10 +222,18 @@ static int pending(void) { return cd_busy() || drv == 1 || (!drv && mode != want
 /* ---- lectura */
 static void rd_start(int lba, int n, void *buf, void (*cb)(int, const unsigned char *), u8 *(*dst)(int), int fast)
 {
+    int k, j;
     if (!buf && !dst) sbuf_dir = -1;
     rd_lba = lba; rd_n = n; rd_i = 0; rd_buf = buf; rd_cb = cb; rd_dst = dst; rd_fast = fast; rd_err = 0; rd_res = 0; rd_got = 0;
     rd_on = n > 0; if (!rd_on) rd_res = 1;
     lost = 0;
+    for (k = 0; k < 2 && rd_on; k++)        /* lo que trae spill, sin leerlo otra vez */
+        if (spill_lba[k] >= 0 && spill_lba[k] == rd_lba + rd_i) {
+            u8 *d = rd_buf ? rd_buf + rd_i * 2048 : rd_dst ? rd_dst(rd_i) : spill[k];
+            if (!d) break;
+            if (d != spill[k]) for (j = 0; j < 512; j++) ((unsigned *)d)[j] = ((const unsigned *)spill[k])[j];
+            got(rd_i, d);
+        }
 }
 int cd_read_async(int lba, int n, void *buf)
 {
@@ -233,7 +251,7 @@ int cd_stream_async(int lba, int n, u8 *(*dst)(int i))
 int cd_read_pos(void) { return rd_i; }
 int cd_read_state(void) { return rd_on ? 0 : rd_res; }
 /* cancelada (-2): como al acabar, la unidad sigue leyendo un momento por si se pide otra cosa enseguida */
-void cd_cancel(void) { if (rd_on) t_done = T1; rd_on = 0; rd_res = -2; }
+void cd_cancel(void) { if (rd_on) { t_done = T1; spill_next = drv_next; spill_k = 0; } rd_on = 0; rd_res = -2; }
 static int wait_rd(void)
 {
     u16 t0 = T1; int s = 0;
