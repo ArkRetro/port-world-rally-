@@ -446,6 +446,7 @@ static u16 job_t[256]; static int job_n, job_s0, job_s1, job_st, job_i, job_f; /
 static int job_pf;                                  /* la lectura de tiles es de antemano (prefetch): lo que falte va antes */
 static int race_end, lum_prev, lum_ref, lum_steps;  /* la carrera se esta fundiendo a negro (y luminosidad de la paleta) */
 static int race_on;                                 /* el reloj de la carrera corre (0xFEC1B2 = 1) */
+static int race_demo;                               /* la ultima carrera era la demostracion del attract */
 static pack_t *bgq[4]; static int nbg, bg_from, bg_jump = -1, bg_err;     /* bg_from: siguiente sector de bgq[0] que mirar */
 #define RING 16
 static u8 ring[RING * 2048] __attribute__((aligned(4)));
@@ -608,12 +609,13 @@ static void cache_load(void)
     if (job_st) return;
     /* seguir la frase cuando ya no falte nada ni queden paquetes de fondo (como mucho 3 s cortada); en carrera no se
        vuelve a cortar en 2 s, fuera en 0,5 s */
-    if (snd_cut_on() && ((!nmiss && (!nbg || bgq[0] == &menu2_pk)) || frame_id > cut_end)) { snd_resume(); cut_until = frame_id + (in_race ? 120 : 30); }
+    if (snd_cut_on() && ((!nmiss && (!nbg || (bgq[0] == &menu2_pk && !race_demo))) || frame_id > cut_end)) { snd_resume(); cut_until = frame_id + (in_race ? 120 : 30); }
     /* fuera de la carrera (o fundiendose) una frase que acaba de empezar espera a lo de las pantallas de despues de la
        carrera (POST, POST2 y MENU, el mapa del rally; como mucho 2,5 s): mejor empezar un poco tarde que cortarla luego
-       (la musica no deja leer: suena seguida). Por MENU2 no espera (antes si, hasta 4 s en total) */
-    if (nbg && (!in_race || race_end) && bgq[0] != &menu2_pk && snd_fresh() && !snd_cut_on() && frame_id >= cut_until &&
-        snd_cut()) cut_end = frame_id + 150;
+       (la musica no deja leer: suena seguida). Por MENU2 solo tras la demostracion del attract (hasta 4 s): las fotos
+       del titulo que vienen despues son de MENU2; tras una partida, 'Your Time' y su musica no esperan a MENU2 */
+    if (nbg && (!in_race || race_end) && (bgq[0] != &menu2_pk || race_demo) && snd_fresh() && !snd_cut_on() &&
+        frame_id >= cut_until && snd_cut()) cut_end = frame_id + (race_demo ? 240 : 150);
     /* pasada la meta, la musica de la meta espera (como mucho 20 cuadros) a que acabe de llegar POST */
     else if (nbg && in_race && !race_on && !race_end && bgq[0] == &post_pk && cd_audio() && !cd_playing() && !snd_cut_on() &&
              frame_id >= cut_until && snd_cut()) cut_end = frame_id + 20;
@@ -852,6 +854,7 @@ static void level_check(void)
     if (cur_level < 0) return;
     if (in_race) {
         int on = *(u16 *)(rc_ram + 0x1B2) != 0;           /* el reloj de la carrera corre */
+        race_demo = rc_ram[0x173 ^ 1] & 1;
         if (race_on && !on && !race_end) race_finish();     /* en el fundido sigue lo demas (race_ending) */
         race_on = on;
         race_fade();
