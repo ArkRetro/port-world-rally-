@@ -8,6 +8,14 @@ for l in open(cue):
     p = l.split()
     if p[:2] == ['INDEX', '01']:
         m, s, f = map(int, p[2].split(':')); starts.append((m * 60 + s) * 75 + f)
+# las frases encadenadas empiezan dentro de su pista (snd/snd_tab.c: pista y sector de cada aparicion)
+try:
+    import re
+    tab = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'snd', 'snd_tab.c')).read()
+    trk = [int(x) for x in re.search(r'ap_trk\[\d+\] = \{([^}]*)\}', tab).group(1).split(',')]
+    sec = [int(x) for x in re.search(r'ap_sec\[\d+\] = \{([^}]*)\}', tab).group(1).split(',')]
+    starts += [starts[t - 1] + o for t, o in zip(trk, sec) if t >= 2 and t - 1 < len(starts)]
+except (OSError, AttributeError): pass
 CLK = 33868800.0
 last_stop = None; n = 0
 for l in open(os.path.join(d, 'eventos.txt')):

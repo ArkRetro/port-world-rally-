@@ -332,15 +332,19 @@ static void load_screen(int total)
     }
     if (logo) { if (cd_stream(logo_lba, logo_ns, logo_cb, 1)) pack_err++; logo_ns = 0; }   /* el logo, solo al arrancar */
 }
-/* ---- paquetes: sectores de cabecera (u16 n, u16 na, u16 tiles[n], ordenados, y na pares (tile, igual a): tiles sin
-   datos porque son iguales a otro del paquete o del de carrera; en los de recorrido el bit 15 marca los tiles de su
-   mapa) y luego los datos de los n, 16 tiles por sector. hs: sectores de cabecera (0 mientras no se hayan leido
+/* ---- paquetes: sectores de cabecera (u16 n, u16 na, u16 tiles[n], ordenados en dos tramos [0, n1) y [n1, n), na
+   pares (tile, igual a): tiles sin datos porque son iguales a otro del paquete o del de carrera, y u16 n1; en los de
+   recorrido el bit 15 marca los tiles de su mapa) y luego los datos de los n, 16 tiles por sector. hs: sectores de cabecera (0 mientras no se hayan leido
    todos; hn los que son, hr los que ya se han leido en orden). pin: lo que llega queda fijo (1), guardado (2) o
    suelto (0) */
-typedef struct { u16 *ids; int max, n, hs, pin, lba, ns, hn, hr; u16 *al; int maxal, nal; } pack_t;
-static u16 lvl_ids[4000], race_ids[2000], menu_ids[1400], menu2_ids[4000], post_ids[512], post2_ids[512], lvl_al[768 * 2], race_al[256 * 2];
-static pack_t menu_pk = {menu_ids, 1400, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1}, post_pk = {post_ids, 512, 0, 0, 1, -1},
-    post2_pk = {post2_ids, 512, 0, 0, 1, -1};
+typedef struct { u16 *ids; int max, n, hs, pin, lba, ns, hn, hr; u16 *al; int maxal, nal; void (*raw)(int i, const u8 *d); int n1; } pack_t;
+void snd_fx_sector(int i, const unsigned char *d);
+/* SNDFX.BIN: muestras de la SPU, leidas de fondo despues de arrancar (paquete sin tiles: cada sector a raw, en orden) */
+static pack_t fx_pk = {0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, snd_fx_sector};
+static int race_cp[12];                             /* copia de RACE.BIN detras de cada LEVELnn.BIN (o -1) */
+static u16 lvl_ids[4000], race_ids[2000], menu_ids[1400], menu2_ids[4000], post_ids[256], post2_ids[768], lvl_al[768 * 2], race_al[256 * 2];
+static pack_t menu_pk = {menu_ids, 1400, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1}, post_pk = {post_ids, 256, 0, 0, 1, -1},
+    post2_pk = {post2_ids, 768, 0, 0, 1, -1};
 static pack_t lvl_pk = {lvl_ids, 4000, 0, 0, 0, -1, 0, 0, 0, lvl_al, 768}, race_pk = {race_ids, 2000, 0, 0, 0, -1, 0, 0, 0, race_al, 256};
 static u8 lvl_map[16384 / 8];                       /* tiles del mapa del recorrido de lvl_pk */
 /* los tiles del paquete que ya estan quedan fijos o guardados segun p->pin (use: y como recien usados) */
@@ -354,9 +358,10 @@ static void pack_sector(pack_t *p, int i, const u8 *d)
 {
     const u16 *w = (const u16 *)d;
     int k, j;
+    if (p->raw) { if (i == p->hr) { p->raw(i, d); p->hr++; } return; }
     if (!i) {
-        p->hn = (4 + w[0] * 2 + w[1] * 4 + 2047) / 2048; p->hs = p->hr = 0;
-        p->n = w[0] <= p->max ? w[0] : 0; p->nal = w[1] <= p->maxal ? w[1] : 0;
+        p->hn = (4 + w[0] * 2 + w[1] * 4 + 2 + 2047) / 2048; p->hs = p->hr = 0;
+        p->n = w[0] <= p->max ? w[0] : 0; p->nal = w[1] <= p->maxal ? w[1] : 0; p->n1 = p->n;
         if (p == &lvl_pk) for (k = 0; k < 16384 / 32; k++) ((u32 *)lvl_map)[k] = 0;
     }
     if (i < p->hn) {
@@ -364,7 +369,7 @@ static void pack_sector(pack_t *p, int i, const u8 *d)
         for (k = i ? 0 : 2; k < 1024; k++) {
             if ((j = i * 1024 + k - 2) < p->n) p->ids[j] = w[k] & 0x3FFF;
             else if ((j -= p->n) < p->nal * 2) p->al[j] = w[k];
-            else break;
+            else { if (j == p->nal * 2 && w[k] && w[k] <= p->n) p->n1 = w[k]; break; }
             if ((w[k] & 0x8000) && j >= 0) lvl_map[(w[k] >> 3) & 0x7FF] |= 1 << (w[k] & 7);
         }
         if (++p->hr == p->hn) p->hs = p->hn;
@@ -398,24 +403,33 @@ static int pack_missing(pack_t *p)
     for (s = p->hs; s < p->ns; s++) n += pack_need(p, s);
     return n;
 }
-/* sector del paquete con el tile t, o -1 */
-static int pack_sec_of(const pack_t *p, int t)
+/* sector del paquete con el tile t, o -1 (dos tramos ordenados: [0, n1) y los de relleno [n1, n)) */
+static int ids_find(const u16 *ids, int a, int b, int t)
 {
-    int a = 0, b = p->n - 1, m;
-    while (a <= b) { m = (a + b) >> 1; if (p->ids[m] == t) return p->hs + m / 16; if (p->ids[m] < t) a = m + 1; else b = m - 1; }
+    int m;
+    while (a <= b) { m = (a + b) >> 1; if (ids[m] == t) return m; if (ids[m] < t) a = m + 1; else b = m - 1; }
     return -1;
 }
+static int pack_sec_of(const pack_t *p, int t)
+{
+    int m = ids_find(p->ids, 0, p->n1 - 1, t);
+    if (m < 0 && p->n1 < p->n) m = ids_find(p->ids, p->n1, p->n - 1, t);
+    return m < 0 ? -1 : p->hs + m / 16;
+}
 static pack_t *run_pk; static int run_base;
+static int spr_pending;                             /* sprites del jugador por leer de fondo en carrera (level_load) */
+static void spr_done(void) { if (spr_pending) { spr_pending = 0; lvl_pk.pin = 0; } }
 static void run_cb(int i, const unsigned char *d) { pack_sector(run_pk, run_base + i, d); if (loading) { load_done++; load_bar(); } }
-/* lee los sectores del paquete (desde from) que hacen falta, por tramos (los huecos cortos se leen de paso) */
-static void pack_runs(pack_t *p, int from, int fast)
+/* lee los sectores del paquete (de from a until) que hacen falta, por tramos (los huecos cortos se leen de paso) */
+static void pack_runs(pack_t *p, int from, int fast, int until)
 {
     int s, e, j;
     run_pk = p;
-    for (s = from; s < p->ns; s = e + 1) {
+    if (until > p->ns) until = p->ns;
+    for (s = from; s < until; s = e + 1) {
         e = s;
         if (!pack_need(p, s)) continue;
-        for (j = s + 1; j < p->ns && j - e <= 8; j++) if (pack_need(p, j)) e = j;
+        for (j = s + 1; j < until && j - e <= 8; j++) if (pack_need(p, j)) e = j;
         run_base = s;
         if (cd_stream(p->lba + s, e - s + 1, run_cb, fast)) pack_err++; else cd_loads++;
     }
@@ -514,7 +528,7 @@ static void cache_flush(void)
         bg_got = cd_read_pos();
         if ((st = cd_read_state())) { job_on = 0; if (st > 0) cd_loads++; else bg_err++; }
     }
-    for (k = 0; k < 4 && ring_t < bg_got && tiles_up - t0 < UPF; k++, ring_t++) pack_sector(bgq[0], bg_s0 + ring_t, ring + (ring_t & (RING - 1)) * 2048);
+    for (k = 0; k < (bgq[0]->raw ? 8 : 4) && ring_t < bg_got && tiles_up - t0 < UPF; k++, ring_t++) pack_sector(bgq[0], bg_s0 + ring_t, ring + (ring_t & (RING - 1)) * 2048);
     if (job_on != 2 && bg_n && ring_t == bg_got) {      /* acabada (o cortada) y tratada */
         bg_from = bg_jump >= 0 ? bg_jump : bg_s0 + bg_got; bg_jump = -1; bg_n = bg_got = ring_t = 0;
         if (bg_err > 4) bg_next();
@@ -570,8 +584,12 @@ static void prefetch(void)
 }
 static void cache_load(void)
 {
-    int snd_cut(void), snd_cut_on(void); void snd_resume(void);
+    int snd_cut(void), snd_cut_on(void), snd_fresh(void); void snd_resume(void);
     int i, j, s0 = 0x7FFF, s1, urg, q, ms, au, nv;
+    static int fx_fast = 1;
+    if (spr_pending && (!nbg || !in_race)) { alias_set(&race_pk, 1); alias_set(&lvl_pk, 1); spr_done(); }
+    /* SNDFX de fondo a doble velocidad (sin tiles: el anillo se vacia enseguida); luego normal, lista para el audio */
+    if (fx_fast && (fx_pk.lba < 0 || fx_pk.hr >= fx_pk.ns || cd_audio())) { fx_fast = 0; cd_speed(0); }
     for (i = j = 0; i < nmiss; i++) {                   /* fuera los que ya estan y los que no se han pedido en este cuadro */
         u16 t = miss_list[i], b = 1 << (t & 7);
         if (tslot[t] != 0xFFFF || (!skipped && !(miss_now[t >> 3] & b))) { miss_mark[t >> 3] &= ~b; continue; }
@@ -590,10 +608,15 @@ static void cache_load(void)
     if (job_st) return;
     /* seguir la frase cuando ya no falte nada ni queden paquetes de fondo (como mucho 3 s cortada); en carrera no se
        vuelve a cortar en 2 s, fuera en 0,5 s */
-    if (snd_cut_on() && ((!nmiss && !nbg) || frame_id > cut_end)) { snd_resume(); cut_until = frame_id + (in_race ? 120 : 30); }
-    /* fuera de la carrera (o fundiendose) una frase que aun no suena espera a los paquetes de fondo (los menus tras una
-       carrera, como mucho 4 s): mejor empezar un poco tarde que cortarla luego */
-    if (nbg && (!in_race || race_end) && cd_audio() && !cd_playing() && !snd_cut_on() && frame_id >= cut_until && snd_cut()) cut_end = frame_id + 240;
+    if (snd_cut_on() && ((!nmiss && (!nbg || bgq[0] == &menu2_pk)) || frame_id > cut_end)) { snd_resume(); cut_until = frame_id + (in_race ? 120 : 30); }
+    /* fuera de la carrera (o fundiendose) una frase que acaba de empezar espera a lo de las pantallas de despues de la
+       carrera (POST, POST2 y MENU, el mapa del rally; como mucho 2,5 s): mejor empezar un poco tarde que cortarla luego
+       (la musica no deja leer: suena seguida). Por MENU2 no espera (antes si, hasta 4 s en total) */
+    if (nbg && (!in_race || race_end) && bgq[0] != &menu2_pk && snd_fresh() && !snd_cut_on() && frame_id >= cut_until &&
+        snd_cut()) cut_end = frame_id + 150;
+    /* pasada la meta, la musica de la meta espera (como mucho 20 cuadros) a que acabe de llegar POST */
+    else if (nbg && in_race && !race_on && !race_end && bgq[0] == &post_pk && cd_audio() && !cd_playing() && !snd_cut_on() &&
+             frame_id >= cut_until && snd_cut()) cut_end = frame_id + 20;
     if (nmiss && tiles_lba >= 0) {
         /* urgente: muchos en pantalla, o desde hace rato (en carrera antes). Con una frase sonando solo se mira lo
            que se ve (para cortarla) */
@@ -635,6 +658,10 @@ static void cache_load(void)
 /* ---- carrera: entrar (paquetes del recorrido y de carrera fijos, los de menus guardados: se sustituyen antes que
    los fijos y despues de lo demas, y asi al salir hay menos que volver a leer) y salir (los de menus fijos y se
    vuelven a leer de fondo; el de carrera guardado) */
+/* al final de cada paquete de recorrido (gen2.py, desde n1): los sprites del jugador (poses del coche, marcador, haz
+   de los faros) que no se ven en los primeros 5 s de ninguna carrera registrada de ese recorrido. En la carga se lee
+   hasta ahi; el resto, de fondo al empezar la carrera (fijo, a velocidad normal) */
+static int spr_from(const pack_t *p) { return p->hs + (p->n1 + 15) / 16; }
 static void level_load(int k)
 {
     int i, hs, fast, need, same = k == cur_level && lvl_pk.hs;
@@ -645,6 +672,10 @@ static void level_load(int k)
     min_cls_frame = -1; hand = 0;
     lvl_pk.pin = race_pk.pin = 1; menu_pk.pin = menu2_pk.pin = 2;
     pack_pin(&menu_pk, 0); pack_pin(&menu2_pk, 0);
+    if (fx_pk.lba >= 0 && fx_pk.hr < fx_pk.ns) {        /* los efectos aun no habian acabado de leerse de fondo */
+        run_pk = &fx_pk; run_base = fx_pk.hr;
+        if (cd_stream(fx_pk.lba + fx_pk.hr, fx_pk.ns - fx_pk.hr, run_cb, 1)) pack_err++;
+    }
     if (!race_pk.hs && race_pk.lba >= 0) {              /* la cabecera de carrera aun no se habia leido de fondo */
         hs = race_pk.ns < 2 ? race_pk.ns : 2;
         if (cd_read(race_pk.lba, hs, cdbuf, 0) == 0) for (i = 0; i < hs; i++) pack_sector(&race_pk, i, cdbuf + i * 2048);
@@ -656,16 +687,28 @@ static void level_load(int k)
         fast = need > 120;
         load_screen(need);
         /* el del recorrido entero de corrido (cabecera y datos), o lo que falte si ya estaba; del de carrera lo que falte */
-        if (same) pack_runs(&lvl_pk, lvl_pk.hs, fast);
+        if (same) pack_runs(&lvl_pk, lvl_pk.hs, fast, spr_from(&lvl_pk));
         else {
-            lvl_pk.n = lvl_pk.hs = 0; lvl_pk.lba = level_lba[k]; lvl_pk.ns = level_sec[k];
+            /* la cabecera (dice donde empiezan los sprites) y los datos hasta ahi, de corrido */
+            lvl_pk.n = lvl_pk.hs = lvl_pk.hn = 0; lvl_pk.lba = level_lba[k]; lvl_pk.ns = level_sec[k];
             run_pk = &lvl_pk; run_base = 0;
-            if (level_lba[k] < 0 || cd_stream(level_lba[k], level_sec[k], run_cb, fast)) pack_err++;
+            if (level_lba[k] < 0 || cd_stream(level_lba[k], 1, run_cb, fast)) pack_err++;
+            else {
+                if (lvl_pk.hn > 1) { run_base = 1; if (cd_stream(level_lba[k] + 1, lvl_pk.hn - 1, run_cb, fast)) pack_err++; }
+                if (lvl_pk.hs) {
+                    i = spr_from(&lvl_pk); run_base = lvl_pk.hs;
+                    load_total = load_done + (i - lvl_pk.hs) + pack_missing(&race_pk) / 4;
+                    if (cd_stream(level_lba[k] + lvl_pk.hs, i - lvl_pk.hs, run_cb, fast)) pack_err++;
+                }
+            }
         }
-        pack_runs(&race_pk, race_pk.hs, fast);
+        /* lo que falte del de carrera, de su copia de detras del recorrido (sin volver a buscar) */
+        if (race_cp[k] >= 0) race_pk.lba = race_cp[k];
+        pack_runs(&race_pk, race_pk.hs, fast, race_pk.ns);  /* entero: son las poses que mas se ven */
     }
     alias_set(&race_pk, 1); alias_set(&lvl_pk, 1);
     lvl_pk.pin = 0; race_pk.pin = 2;
+    if (pack_missing(&lvl_pk)) { spr_pending = 1; lvl_pk.pin = 1; }
     loading = 0;
 }
 static void t1_skip(void);
@@ -675,7 +718,8 @@ static void race_enter(int k)
     miss_clear(); bg_stop();                            /* cancelar lo pendiente antes de esperar al audio */
     snd_suspend();
     level_load(k);
-    cd_speed(0);
+    if (spr_pending) bg_add(&lvl_pk);                   /* los sprites del recorrido, de fondo */
+    cd_speed(0);                                        /* en carrera se lee a velocidad normal: a doble se pierden sectores (el CD se atiende entre cuadros) */
     cur_level = k; in_race = 1; race_cnt = 0;
     t1_skip();                                          /* el tiempo de la carga no cuenta para el sonido */
     snd_resume();
@@ -689,6 +733,7 @@ static void race_ending(void)
     int i, k;
     pack_t *ap[2] = {&lvl_pk, &race_pk};
     race_end = 1;
+    spr_done();
     for (i = 0; i < NTS / 8; i++) slot_pin[i] = 0;
     for (i = 0; i < NTS; i++) if (frame_id - slot_age[i] >= 2 && !LOW(i)) slot_age[i] = frame_id - 1000;
     for (k = 0; k < 2; k++) for (i = 0; i < ap[k]->nal; i++) {
@@ -696,6 +741,7 @@ static void race_ending(void)
         if (s == 0xFFFF || slot_tile[s] == d) continue;
         if (frame_id - slot_age[s] < 2) slot_pin[s >> 3] |= 1 << (s & 7); else tslot[d] = 0xFFFF;
     }
+    if (post_pk.hs) pack_pin(&post_pk, 1);              /* lo de POST que ya llego (desde la meta) sigue fijo */
     min_cls_frame = -1;
     if (job_on == 1 && job_pf) { cd_cancel(); job_on = 0; }
     bg_stop(); bg_add(&post_pk); bg_add(&post2_pk); bg_add(&menu_pk); bg_add(&menu2_pk);
@@ -704,6 +750,28 @@ static void race_ending(void)
    subir nunca y como mucho un 20 % cada vez, hasta 0 (unos 45 cuadros). En carrera la paleta animada sube y baja un
    poco y a veces cae a 0 de golpe y vuelve (de noche). Fundido: 6 bajadas seguidas de menos de un cuarto, sin subir, y
    ya por debajo de la mitad de donde empezo */
+/* meta o tiempo agotado (el reloj de la carrera se para): POST de fondo ya, mientras la unidad esta libre (la musica
+   de la meta empieza unos 40 cuadros despues y la ocuparia hasta la pantalla 'Your Time', que saldria a trozos). En
+   carrera casi toda la cache esta fija: para que quepa, los sprites del jugador del final del paquete del recorrido
+   (desde n1) que no se ven dejan de ser fijos (el mapa sigue fijo), y los iguales que usaban su hueco se olvidan */
+static void race_finish(void)
+{
+    pack_t *ap[2] = {&lvl_pk, &race_pk};
+    int i, k, s;
+    if (spr_pending) { bg_stop(); spr_done(); }
+    for (i = lvl_pk.n1; i < lvl_pk.n; i++)          /* (la letra del marcador, 0x3940-0x3A13, sigue: la usa 'Your Time') */
+        if ((s = tslot[lvl_pk.ids[i]]) != 0xFFFF && slot_tile[s] == lvl_pk.ids[i] && frame_id - slot_age[s] >= 2 &&
+            (lvl_pk.ids[i] < 0x3940 || lvl_pk.ids[i] >= 0x3A14)) {
+            slot_pin[s >> 3] &= ~(1 << (s & 7)); slot_age[s] = frame_id - 1000;
+        }
+    for (k = 0; k < 2; k++) for (i = 0; i < ap[k]->nal; i++) {
+        u16 d = ap[k]->al[i * 2] & 0x3FFF;
+        s = tslot[d];
+        if (s != 0xFFFF && slot_tile[s] != d && !(slot_pin[s >> 3] & (1 << (s & 7)))) tslot[d] = 0xFFFF;
+    }
+    min_cls_frame = -1;
+    bg_add(&post_pk);
+}
 static void race_fade(void)
 {
     const u16 *p = (const u16 *)rc_pal;
@@ -714,16 +782,42 @@ static void race_fade(void)
     lum_prev = l;
     if (lum_steps >= 6 && l * 2 < lum_ref && !race_end) race_ending();
 }
+/* hueco de la cache en la VRAM */
+#define SLOT_X(s) (TEX_X + (((s) >> 8) % 10) * 64 + ((s) & 15) * 4)
+#define SLOT_Y(s) ((((s) >> 8) / 10) * 256 + (((s) >> 4) & 15) * 16)
+/* al salir de la carrera los iguales dejan de usar el hueco de su tile de carrera; los que salen despues (POST, POST2)
+   se copian en la VRAM a un hueco suyo (el contenido es el mismo): si no, faltarian en la pantalla siguiente (p. ej.
+   0x1A00 de 'Your Time', igual a 0x17FF, que tambien sale) */
+static void alias_keep(pack_t *p)
+{
+    int i, n;
+    for (i = 0; i < p->nal; i++) {
+        u16 d = p->al[i * 2] & 0x3FFF, s = tslot[d];
+        if (s == 0xFFFF || slot_tile[s] == d) continue;
+        if (!(post_pk.hs && pack_sec_of(&post_pk, d) >= 0) && !(post2_pk.hs && pack_sec_of(&post2_pk, d) >= 0)) continue;
+        if ((n = slot_alloc(8)) < 0 || n == s) continue;
+        if (slot_tile[n] != 0xFFFF) tslot[slot_tile[n]] = 0xFFFF;
+        slot_tile[n] = d; tslot[d] = n; slot_age[n] = frame_id;
+        slot_pin[n >> 3] &= ~(1 << (n & 7)); slot_low[n >> 3] &= ~(1 << (n & 7));
+        dma_wait(); gpu_wait();
+        GP0 = 0x01000000;
+        GP0 = 0x80000000; GP0 = ((u32)SLOT_Y(s) << 16) | SLOT_X(s); GP0 = ((u32)SLOT_Y(n) << 16) | SLOT_X(n); GP0 = (16 << 16) | 4;
+    }
+}
 static void race_exit(void)
 {
     int i;
     in_race = 0; race_cnt = 0;
+    spr_done();
+    alias_keep(&lvl_pk); alias_keep(&race_pk);
     alias_set(&lvl_pk, 0); alias_set(&race_pk, 0);
     for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
     for (i = 0; i < NTS; i++) if (frame_id - slot_age[i] >= 2) slot_age[i] = frame_id - 1000;   /* lo de la carrera, viejo */
     min_cls_frame = -1;
     menu_pk.pin = menu2_pk.pin = 1;
     pack_pin(&menu_pk, 0); pack_pin(&menu2_pk, 0); pack_pin(&race_pk, 0);
+    if (post_pk.hs) pack_pin(&post_pk, 1);              /* lo de la pantalla que viene ('Your Time'), como recien usado */
+    if (post2_pk.hs) pack_pin(&post2_pk, 0);
     if (job_on == 1) {                                  /* los tiles que se estaban leyendo ya no son de esta pantalla */
         cd_cancel(); job_on = 0;
         for (i = 0; i < job_n; i++) miss_mark[job_t[i] >> 3] = 0;
@@ -757,11 +851,8 @@ static void level_check(void)
     }
     if (cur_level < 0) return;
     if (in_race) {
-        /* meta o tiempo agotado (el reloj de la carrera se para): POST de fondo ya, en los huecos libres y sin soltar lo
-           de la carrera, mientras la unidad esta libre (la musica de la meta empieza unos 40 cuadros despues y la
-           ocuparia hasta la pantalla 'Your Time', que saldria a trozos); en el fundido sigue lo demas */
-        int on = *(u16 *)(rc_ram + 0x1B2) != 0;
-        if (race_on && !on && !race_end && !nbg) bg_add(&post_pk);
+        int on = *(u16 *)(rc_ram + 0x1B2) != 0;           /* el reloj de la carrera corre */
+        if (race_on && !on && !race_end) race_finish();     /* en el fundido sigue lo demas (race_ending) */
         race_on = on;
         race_fade();
     }
@@ -779,7 +870,6 @@ static void boot_cb(int i, const unsigned char *d)
     void snd_tracks(const unsigned char *d), snd_fx_sector(int i, const unsigned char *d);
     int l = b_base + i;
     if (l == b_trk) snd_tracks(d);
-    else if (l >= b_fx && l < b_fx + b_nfx) snd_fx_sector(l - b_fx, d);
     else if (l >= menu_pk.lba && l < menu_pk.lba + menu_pk.ns) pack_sector(&menu_pk, l - menu_pk.lba, d);
     load_done++; load_bar();
 }
@@ -793,18 +883,23 @@ static void boot_load(void)
     if (cd_find("LOGO.BIN", &logo_lba, &sz)) logo_lba = -1; else logo_ns = sz / 2048;
     pk_find(&race_pk, "RACE.BIN");
     for (k = 0; k < 12; k++) { nm[5] = '0' + k / 10; nm[6] = '0' + k % 10; if (cd_find(nm, &level_lba[k], &sz)) level_lba[k] = -1; else level_sec[k] = sz / 2048; }
+    for (k = 0; k < 12; k++) { char rn[] = "ZRACE00.BIN"; rn[5] = '0' + k / 10; rn[6] = '0' + k % 10; if (cd_find(rn, &race_cp[k], &sz) || sz / 2048 != race_pk.ns) race_cp[k] = -1; }
     if (cd_find("TRACKS.BIN", &b_trk, &sz)) b_trk = -1;
     if (cd_find("SNDFX.BIN", &b_fx, &sz)) b_fx = -1; else b_nfx = (sz + 2047) / 2048;
     pk_find(&menu_pk, "MENU.BIN"); pk_find(&menu2_pk, "MENU2.BIN"); pk_find(&post_pk, "POST.BIN"); pk_find(&post2_pk, "POST2.BIN");
     menu_pk.pin = menu2_pk.pin = 1; race_pk.pin = 2;
     snd_init();
-    load_screen(1 + b_nfx + menu_pk.ns);
+    /* al arrancar, la tabla de pistas y el paquete de menus (seguidos en el disco); los efectos (SNDFX, 252 sectores)
+       de fondo despues, a doble velocidad, y luego el paquete de carrera y el resto de menus (snd_play no toca una
+       muestra que aun no haya llegado) */
+    fx_pk.lba = b_fx; fx_pk.ns = b_nfx;
+    load_screen(1 + menu_pk.ns);
     GP1 = 0x05000000; GP1 = 0x03000000;          /* pantalla encendida con la barra de carga */
-    if (b_trk >= 0 && b_fx == b_trk + 1 && menu_pk.lba == b_fx + b_nfx) boot_read(b_trk, menu_pk.lba + menu_pk.ns - b_trk);
-    else { boot_read(b_trk, 1); boot_read(b_fx, b_nfx); boot_read(menu_pk.lba, menu_pk.ns); }
+    if (b_trk >= 0 && menu_pk.lba == b_trk + 1) boot_read(b_trk, 1 + menu_pk.ns);
+    else { boot_read(b_trk, 1); boot_read(menu_pk.lba, menu_pk.ns); }
     loading = 0;
-    bg_add(&race_pk); bg_add(&menu2_pk);
-    cd_speed(0);
+    bg_add(&fx_pk); bg_add(&race_pk); bg_add(&menu2_pk);
+    cd_speed(1);
     t1_skip();
 }
 /* al principio de cada cuadro: avanzar el CD, subir los tiles que llegaron (la GPU esta parada) y llevar el tiempo

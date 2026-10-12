@@ -12,6 +12,10 @@ typedef unsigned char u8; typedef unsigned short u16;
 #define CD2 (*(volatile u8 *)0x1F801802)
 #define CD3 (*(volatile u8 *)0x1F801803)
 #define T1 (*(volatile u16 *)0x1F801110)     /* temporizador 1: lineas de video (263 por cuadro) */
+#define D3_MADR (*(volatile unsigned *)0x1F8010B0)   /* DMA 3: CD -> RAM */
+#define D3_BCR (*(volatile unsigned *)0x1F8010B4)
+#define D3_CHCR (*(volatile unsigned *)0x1F8010B8)
+#define DPCR (*(volatile unsigned *)0x1F8010F0)
 #define M_AUDIO 0x22                        /* velocidad normal, sectores de 0x924, pausa al final de la pista */
 #define M_FAST 0xA2                         /* lo mismo a doble velocidad */
 #define SEG(s) ((s) * 15750)                /* lineas por segundo */
@@ -72,7 +76,13 @@ static u8 *sector(int *idx)
         if (rd_buf) { if (!(rd_got & (1u << i))) d = rd_buf + i * 2048; }
         else if (i == rd_i) d = rd_dst ? rd_dst(i) : sbuf;
     }
+#ifdef CD_DMA
+    /* (-DCD_DMA, sin probar en MiSTer) los 2048 bytes de datos por DMA (la cabecera ya se leyo con la CPU: la DMA sigue por el mismo FIFO). Con la CPU,
+       byte a byte, son ~23000 ciclos por sector (psxprof); con la DMA, 512 palabras a ~24-28 ciclos */
+    if (d) { D3_MADR = (unsigned)d; D3_BCR = 0x00010200; D3_CHCR = 0x11000000; while (D3_CHCR & 0x01000000); }
+#else
     if (d) for (k = 0; k < 2048; k += 4) { d[k] = CD2; d[k + 1] = CD2; d[k + 2] = CD2; d[k + 3] = CD2; }
+#endif
     CD0 = 0; CD3 = 0;                       /* soltar el resto */
     cd_dbg[0]++;
     if (rd_on && !d && i > rd_i && !rd_buf) cd_dbg[1]++;
@@ -225,9 +235,21 @@ int cd_init(void)
     int k;
     CD0 = 1; CD2 = 0x1F;                    /* habilitar banderas de interrupcion del controlador */
     CD0 = 1; CD3 = 0x1F;
+    DPCR |= 0x8000;                         /* DMA 3 (CD) */
     cmd = wait2 = 0; drv = 1; want_mode = M_FAST;
+#ifndef CD_SIN_INIT
     send(0x0A, 0, 0, 0);                    /* Init: para la unidad, motor en marcha */
     cd_sync();
+#else
+    /* (-DCD_SIN_INIT, sin probar en MiSTer) sin Init: la BIOS acaba de leer el EXE (a doble velocidad) y deja la unidad lista; Init la pondria a velocidad
+       normal y buscaria el sector 0 (en DuckStation y MiSTer, mas de un segundo) para volver luego a doble. Basta
+       Pause (por si seguia leyendo) y Setmode, que no cambia la velocidad si ya era doble. Si la unidad contesta con
+       error o sin motor, Init como antes */
+    send(0x09, 0, 0, 0);
+    cd_sync();
+    send(0x01, 0, 0, 0); cd_sync();
+    if ((resp[0] & 0x03) != 0x02) { drv = 1; mode = -1; send(0x0A, 0, 0, 0); cd_sync(); }
+#endif
     for (k = 0; k < 8; k++) {               /* GetStat: borra 'tapa abierta' */
         send(0x01, 0, 0, 0); cd_sync();
         if (!(resp[0] & 0x10)) break;

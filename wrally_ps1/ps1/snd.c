@@ -24,7 +24,7 @@ static const u8 okivol[16] = {32, 22, 16, 11, 8, 6, 4, 3, 2, 0, 0, 0, 0, 0, 0, 0
 static int trk_lba[32], trk_end[32];        /* pistas: principio exacto y final (TRACKS.BIN) */
 /* frase larga: canal, aparicion en el CD (ap_*) y su final (sector), desde donde suena, 1/60 s sonando y lo que
    dura desde ahi, 1/60 s esperando a que suene, posicion si esta cortada, canal ya libre esperando a la siguiente */
-static int cd_ch = -1, cd_ap, cd_iend, cd_from, cd_t, cd_len, cd_wait, cd_susp = -1, cut_st, cd_rel, snd_ok;
+static int cd_ch = -1, cd_ap, cd_ibeg, cd_iend, cd_from, cd_t, cd_len, cd_wait, cd_susp = -1, cut_st, cd_rel, snd_ok;
 /* canales que suenan en la SPU: 1/60 s desde que empezaron y el maximo (por si la voz no avisara) */
 static int spu_on, spu_t[4], spu_max[4];
 /* teclas: la SPU mira KON y KOFF una vez por muestra (44,1 kHz) y escribir uno de los dos sustituye los bits que
@@ -68,7 +68,16 @@ void snd_init(void)
     snd_ok = 1;
 }
 /* sector i de SNDFX.BIN (efectos en PS-ADPCM) a la RAM de la SPU */
-void snd_fx_sector(int i, const unsigned char *d) { spu_dma_write(0x1010 + i * 2048, d, 2048); }
+static int fx_n;                            /* sectores de SNDFX.BIN ya en la RAM de la SPU (llegan en orden) */
+void snd_fx_sector(int i, const unsigned char *d) { spu_dma_write(0x1010 + i * 2048, d, 2048); if (i + 1 > fx_n) fx_n = i + 1; }
+/* la muestra de la frase p ya esta entera en la RAM de la SPU (acaba donde empieza la siguiente) */
+static int fx_ready(int p)
+{
+    extern const unsigned snd_fx_size;
+    u32 a = snd_addr[p], e = (0x1010 + snd_fx_size + 7) >> 3; int q;
+    for (q = 0; q < 128; q++) if (snd_addr[q] > a && snd_addr[q] < e) e = snd_addr[q];
+    return e * 8 <= 0x1010 + (u32)fx_n * 2048;
+}
 /* tabla de pistas (TRACKS.BIN: principio y final de cada una, en sectores) */
 void snd_tracks(const unsigned char *d)
 {
@@ -84,7 +93,7 @@ void snd_play(int ch, int p, int bank, int att)
         if (vol > 0x80) vol = 0x80;
         if (ch == cd_ch && cd_rel && cd_susp < 0 && ap_sig[cd_ap] && ap_phr[ap_sig[cd_ap]] == p) {
             /* la que va detras en la pista: ya esta sonando, sin buscar */
-            cd_t -= cd_len; cd_ap = ap_sig[cd_ap]; cd_from = cd_iend; cd_iend = cd_from + ap_n[cd_ap];
+            cd_t -= cd_len; cd_ap = ap_sig[cd_ap]; cd_from = cd_ibeg = cd_iend; cd_iend = cd_from + ap_n[cd_ap];
             cd_len = ap_n[cd_ap] * 60 / 75; cd_rel = 0;
             cd_volume(vol);
             rc_oki_hold(ch, 1);
@@ -92,12 +101,12 @@ void snd_play(int ch, int p, int bank, int att)
         }
         if (cd_ch >= 0 && cd_ch != ch) rc_oki_hold(cd_ch, 0);   /* la anterior: ocupada solo por su duracion */
         cd_volume(vol);
-        cd_ap = i; cd_from = trk_lba[t] + ap_sec[i]; cd_iend = cd_from + ap_n[i];
+        cd_ap = i; cd_from = cd_ibeg = trk_lba[t] + ap_sec[i]; cd_iend = cd_from + ap_n[i];
         cd_play(cd_from);
         cd_ch = ch; cd_t = cd_wait = 0; cd_susp = -1; cut_st = 0; cd_rel = 0;
         cd_len = ap_n[i] * 60 / 75;
         rc_oki_hold(ch, 1);
-    } else if (snd_addr[p]) {
+    } else if (snd_addr[p] && fx_ready(p)) {
         u32 vol = okivol[att] * 0x3FFF / 16;
         if (vol > 0x3FFF) vol = 0x3FFF;
         /* sin KOFF: KON vuelve a empezar la voz aunque este sonando (y un KOFF justo antes podria ganarle) */
@@ -137,10 +146,10 @@ void snd_frame(int n)
     snd_fr++;
     if (cd_ch < 0 || cd_susp >= 0) return;
     if (cd_playing()) cd_t += n; else cd_wait += n;
-    /* detras viene otra en la misma pista: 4 cuadros antes del final el canal queda libre (el juego mira el OKI cada
-       cuadro y pide la siguiente enseguida); si a 2 del final nadie la ha pedido, parar (en el silencio de en medio) */
-    if (ap_sig[cd_ap] && !cd_rel && cd_t >= cd_len - 4) { cd_rel = 1; rc_oki_end(cd_ch); }
-    if (cd_rel && cd_t >= cd_len - 2) { cd_stop(); cd_done(); return; }
+    /* detras viene otra en la misma pista: 6 cuadros antes del final el canal queda libre (el juego mira el OKI cada
+       pocos cuadros y pide la siguiente); si a 1 del final nadie la ha pedido, parar (en el silencio de en medio) */
+    if (ap_sig[cd_ap] && !cd_rel && cd_t >= cd_len - 6) { cd_rel = 1; rc_oki_end(cd_ch); }
+    if (cd_rel && cd_t >= cd_len - 1) { cd_stop(); cd_done(); return; }
     if ((cd_ended && !cd_audio()) || cd_t > cd_len + 120 || cd_wait > 600) {
         if (!cd_ended) cd_stop();               /* sin pausa automatica: pararla a mano */
         cd_done();
@@ -187,6 +196,8 @@ int snd_cut(void)
     return 1;
 }
 int snd_cut_on(void) { return cd_ch >= 0 && cd_susp >= 0; }
+/* hay una frase larga recien pedida (aun buscando o sonando desde hace menos de 4 cuadros) */
+int snd_fresh(void) { return cd_ch >= 0 && cd_susp < 0 && cd_from == cd_ibeg && cd_t < 4; }
 /* pausa: todo en silencio; las voces de la SPU quietas (tono 0: no avanzan ni llegan al final) y la frase larga parada
    y apuntada; al volver, todo sigue desde donde estaba (la frase larga, si la paro la pausa: si estaba cortada para
    leer, la sigue cache_load como siempre) */
