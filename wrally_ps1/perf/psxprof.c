@@ -6,8 +6,68 @@
    INPUTSV: como INPUTS pero por vblank (sigue contando con el juego parado, p. ej. en la pausa).
    SHOTV=v1,v2,...: capturas en esos vblanks (tambien antes del juego: la pantalla de carga del arranque);
    CLUTCACHE=1: la CLUT se guarda como en la GPU (una, se recarga al cambiar; GP0(01h) la vacia); 2: GP0(01h) no la vacia;
-   MISSLOG=1: falta.txt con los tiles que faltan en cada cuadro; WATCH=var,...: cambios de esas variables.
-   CD_VIEJOS=n: tras un ReadN sin Pause llegan aun n sectores de la posicion anterior (psxprof no los da si no). */
+   MISSLOG=1: falta.txt con los tiles que faltan en cada cuadro; WATCH=var,...: cambios de esas variables
+   (var+desp: la palabra desp bytes despues, p. ej. WATCH=cd_dbg+12 para cd_dbg[3]).
+   CD_VIEJOS=n: tras un ReadN sin Pause llegan aun n sectores de la posicion anterior (psxprof no los da si no).
+   Modelos del hardware real (consola con XStation: HC05 de verdad y lector emulado; PSIO: controlador en una FPGA),
+   todos apagados por defecto (sin ellos psxprof hace exactamente lo mismo que antes):
+   CD_STAT=1: stat de todas las respuestas segun lo que hace la unidad: bit6 (40h) buscando (SeekL/SeekP o la
+     busqueda de ReadN/Play), bit5 (20h) leyendo, bit7 (80h) tocando (solo cuando acaba la busqueda de Play), bit1
+     motor; la primera respuesta lleva el stat de cuando se manda el comando y la segunda (INT2 de Pause, Init,
+     ReadTOC, SeekL/P) el de despues (solo motor). GetlocP durante una busqueda da la posicion de la cabeza
+     (interpolada desde el origen, no el destino), y un Play/ReadN durante otra busqueda empieza desde ahi. Con
+     CD_STAT o CD_PAUSA_REAL, SeekL/SeekP (15h/16h) buscan de verdad (INT3 y luego INT2 al acabar).
+   CD_PAUSA_REAL=1: Pause durante la busqueda de Play o ReadN (antes del primer sector o del audio) o de SeekL/P se
+     rechaza: primera respuesta INT5 {stat|1, 80h} y no se para nada (evento CD_PAUSE_RECHAZADA). Como DuckStation
+     (probado en consola): la busqueda (y la lectura o el audio de despues) sigue; MiSTer en cambio cancela la
+     lectura que venia tras la busqueda de ReadN (la de Play no).
+   CD_SEEK_MUL=f: busquedas f veces mas largas; CD_SEEK_JIT=ms: a cada busqueda se le suma de 0 a ms ms al azar
+     (latencia de la SD; generador fijo: el mismo en cada ejecucion, CD_SEED=n cambia la semilla).
+     CD_SPEED_MS=ms: lo que tarda el cambio de velocidad x1<->x2 (por defecto 600 ms a doble y 1000 ms a normal).
+   CD_INT3_RND=1: la primera respuesta (INT3 o INT5) tarda al azar entre el minimo y el maximo de psx-spx (4A73h a
+     3115Bh ciclos, casi siempre cerca del minimo: media ~C000h, la de psx-spx C4E1h); Init y ReadTOC, de los que
+     psx-spx solo da minimo y media, entre F820h y 1817Ch (media 13CCEh).
+   CD_BUSY=1: BUSYSTS (bit7 de 1F801800h) a 1 desde que se escribe el comando hasta que se entrega su primera
+     respuesta; un comando escrito mientras tanto se apunta (CD_CMD_OCUPADO) y se ejecuta igual.
+   CD_GLITCH=N: HINTSTS inestable (psx-spx, 'Unstable IRQ Flag polling'): uno de cada N INT3 se ve 1 en la primera
+     lectura de 1F801803h (banco 1) y uno de cada CD_GLITCH5 INT5 (por defecto N/10; se puede poner sola) se ve 4;
+     la lectura siguiente ya da el valor bueno (evento CD_GLITCH). Solo puede pasar si la CPU esta sondeando cuando
+     cambian los bits: cuentan los INT cuya primera lectura llega en los CD_GLITCH_VENT ciclos siguientes (2048 por
+     defecto: los bucles de cd_poll leen a los 30-500 ciclos; las lecturas de despues del cuadro del 68000, a 2-15
+     ms, ven ya los bits quietos, como el manejador de una IRQ); CD_GLITCH_VENT=0: cualquier primera lectura.
+     psx-spx (0,1 % de los INT3 y 1 % de los INT5) lo midio sondeando en un bucle corto: con el de cd_poll, mas
+     lento, N=1000 y N5=100 ya son pesimistas.
+   CD_ERR=n: uno de cada n sectores de ReadN se cambia por INT5 {stat|5, 04h} (fallo de busqueda) y la unidad deja de
+     leer (CD_ERR_LECTURA). CD_ERR80=ms: durante los primeros ms tras Init (o tras el primer ReadN si no hubo Init)
+     ReadN y Play responden INT5 {stat|1, 80h} (aun no lista: CD_NO_LISTA). Es una prueba de aguante: el HC05 y
+     DuckStation solo dan 80h a ReadN/Play sin disco o sin TOC, y el driver no lee hasta el INT2 de Init, cuando la
+     unidad ya dice que esta lista.
+   CD_AP=0|1|2: pausa automatica (INT4) del CD-DA en el INDEX 00 de la pista siguiente (0, lo de siempre), en su
+     INDEX 01 (1: 2 s despues) o nunca (2: sigue por la pista siguiente hasta el final del disco). Con 1 y 2,
+     CDDA_PASA_PISTA cuando el audio entra en la pista siguiente.
+   CD_COLA=1 (o n ciclos; 1 = 8): cola de escritura de la CPU: escrito el banco (1F801800h) por KUSEG (1F8018xxh, no
+     BF8018xxh), una lectura de 1F801801-3h en los n ciclos siguientes se hace en el banco anterior. Un acceso por
+     KSEG1 o una lectura de 1F801800h vacian la cola (evento CD_COLA cuando cambia lo que se lee de 1F801803h). Es la
+     hipotesis de psx-spx (memorymap.md; unpredictablethings.md dice lo contrario para 1F801000h) y supone que la
+     escritura aun espera en la cola: como a la entrada de cd_poll, tras los 12 sw del prologo; no mira cuantas
+     escrituras hay delante.
+   T1_GLITCH=n: lecturas rotas del temporizador 1 (1F801110h; psx-spx timers.md): una lectura solo puede salir rota si
+     coincide (menos de un ciclo) con un cambio del contador con acarreo; una de cada n de esas sale con el bit mas
+     alto del acarreo aun sin cambiar (00FFh->0100h se lee 0000h; 1237h->1238h, 1230h): menor que la anterior
+     (T1_ROTO).
+   LINE_CYC=f: ciclos de CPU por linea (2152 por defecto; 2172.7 = video NTSC en una consola PAL).
+   CD_INIT_MS=ms: la segunda respuesta (INT2) de Init a los ms del comando (por defecto unos 120 ms).
+   LOADER_IRQ=1 (o n: el primer vblank en el ciclo n): el EXE empieza como tras el LoadExec del menu de PSIO, con las
+     interrupciones activadas: SR=401h (IEc e IM2), I_MASK=1 (VBlank), y el vector 80000080h salta a una rutina que el
+     menu dejo en lo que es la BSS del EXE (LOADER_IRQ_PC=dir; por defecto __bss_start+40h) que reconoce el VBlank y
+     vuelve. psxprof entrega entonces las interrupciones (con SR.IEc, SR.IM2 e I_STAT & I_MASK); si llega una cuando
+     crt0 ya ha borrado esa rutina se ejecutan ceros de la BSS: lo dice (IRQ_CUELGUE) y para. LOADER_SP=dir: $sp y
+     $fp al empezar (801FFFF0h por defecto; crt0 no los toca: el cargador puede dejarlos en la BSS).
+   ODE=xstation|psio: perfiles (cada variable puesta a mano manda sobre el perfil):
+     xstation: CD_STAT=1 CD_PAUSA_REAL=1 CD_SEEK_MUL=1.3 CD_SEEK_JIT=80 CD_INT3_RND=1 CD_BUSY=1 CD_GLITCH=1000
+       CD_GLITCH5=100 (HC05 de verdad en placas PU-7/PU-8/PU-18, las del fallo de HINTSTS; tasas de psx-spx)
+     psio: CD_STAT=1 CD_SEEK_MUL=0.05 CD_SPEED_MS=0 CD_INIT_MS=5 CD_AP=1 CD_BUSY=1 (FPGA: sin busquedas ni arranque
+       del motor, respuestas fijas; no se sabe en que indice da PSIO la pausa automatica: CD_AP=1 es el caso malo) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,6 +141,30 @@ static u64 cd_busy_until;
    posicion por tiempo desde que acaba la busqueda, pausa automatica (INT4) al final de la pista */
 static int cd_2x; static u64 cd_speed_ready; static u32 cd_play_lba; static int cd_play_trk;
 static FILE *evf;
+/* ---- modelos del hardware real (ver la cabecera; todos a 0: como siempre) */
+static int o_stat, o_pausa, o_int3, o_busy, o_glitch, o_glitch5, o_err, o_ap, o_cola, o_t1g; static long o_irq, o_glvent;
+static double o_seek_mul = 1, o_seek_jit, o_speed_ms = -1, o_err80, o_init_ms = -1;
+static const char *ode_pre;            /* perfil ODE=...: valores para las variables que no esten puestas */
+static const char *cfg(const char *n)
+{
+    static char b[32]; const char *e = getenv(n), *p; size_t l = strlen(n);
+    if (e || !ode_pre) return e;
+    for (p = ode_pre; (p = strstr(p, n)); p += l) if ((p == ode_pre || p[-1] == ' ') && p[l] == '=') { sscanf(p + l + 1, "%31s", b); return b; }
+    return 0;
+}
+static double cfgf(const char *n, double d) { const char *v = cfg(n); return v ? atof(v) : d; }
+static u32 o_rng = 0x2545F491;         /* xorshift: el mismo azar en cada ejecucion */
+static u32 rnd(void) { o_rng ^= o_rng << 13; o_rng ^= o_rng >> 17; o_rng ^= o_rng << 5; return o_rng; }
+static u64 rnd_entre(u64 a, u64 b) { return a + rnd() % (b - a + 1); }
+/* busqueda en curso (de Play, ReadN o SeekL/P): de cd_seek_from a cd_seek_to entre los ciclos t0 y t1 (antes de
+   t0 se espera al cambio de velocidad) */
+static u64 cd_seek_t0, cd_seek_t1; static u32 cd_seek_from, cd_seek_to; static int cd_seek_ex;
+static int cd_ocupado, cd_ocupado_cmd, cd_primera;                     /* CD_BUSY: comandos sin primera respuesta */
+static int cd_gl_arm; static u64 cd_gl_t; static long cd_gl_n3, cd_gl_n5, cd_gl_e3, cd_gl_e5, cd_gl_hechos;   /* CD_GLITCH */
+static long cd_err_n; static int cd_e80_on; static u64 cd_e80_t;       /* CD_ERR, CD_ERR80 */
+static int cd_ap_paso;                                                 /* CD_AP: ya se aviso del cambio de pista */
+static u64 cola_t; static u8 cola_idx; static long cola_n;            /* CD_COLA */
+static long t1_lect, t1_rotas;                                         /* T1_GLITCH: lecturas al cambiar con acarreo, rotas */
 /* ---- SPU */
 static u16 spu[0x200];
 static u8 spuram[0x80000];
@@ -169,7 +253,10 @@ static void eventf(const char *fmt, ...)
                 (cuadro - a) % P < W): C moneda, S START, X acelerar, x soltar el acelerador, Q cuadrado, cruceta
                 R L U D. Elegir rally en 'Choose a Rally': R en 1180-1190 Monte-Carlo, R tres veces Acropolis,
                 L 1000 Lagos (lo mismo que rc_host)
-   RND=semilla  direccion al azar desde RNDFROM (1300) en tramos de 5 a 120 cuadros */
+   RND=semilla  direccion al azar desde RNDFROM (1300) en tramos de 5 a 120 cuadros
+   POKE68=dir:valor[:desde],...  palabra del 68000 (dir y valor en hex) puesta a valor en cada cuadro desde 'desde'.
+                POKE68=FEC1AA:0:1900,FEFF08:0:1900 para el reloj de la carrera (no hay 'Time Exceeded'): con STEER=1
+                se llega a la meta de Sanremo ('Your Time') hacia el cuadro 11400 y sigue el tramo 2 hacia el 12500 */
 /* a-b[%P/W]:botones,... (cuadros a..b-1; con %P/W solo W de cada P): C moneda, S START, X acelerar, Q marcha, L R U D, x soltar X */
 static u16 inputs_spec(const char *q, long fr, u16 in)
 {
@@ -623,13 +710,15 @@ static void dma_start(int ch)
 /* ---------------------------------------------------------------- CD */
 static int bcd2i(u8 v) { return (v >> 4) * 10 + (v & 15); }
 static u8 i2bcd(int v) { return (u8)(((v / 10) << 4) | (v % 10)); }
+#define K_ACK 2                       /* primera respuesta de un comando (CD_BUSY: ocupado hasta entregarla) */
 static void cd_push(u64 dt, u8 irq, const u8 *r, int n, int kind)
 {
     cdev_t *e;
-    if (cdqn >= 16) return;
+    if (cd_primera && kind == K_RESP) { kind = K_ACK; cd_primera = 0; }
+    if (cdqn >= 16) { if (kind == K_ACK && cd_ocupado) cd_ocupado--; return; }
     e = &cdq[cdqn++]; e->t = cyc + dt; e->irq = irq; e->n = n; e->kind = kind; memcpy(e->resp, r, n);
 }
-static u64 seek_ticks(u32 from, u32 to)
+static u64 seek_base(u32 from, u32 to)
 {
     u32 diff = from > to ? from - to : to - from, spt = 9;
     double s;
@@ -644,6 +733,21 @@ static u64 seek_ticks(u32 from, u32 to)
         s = 0.05 + (0.85 * (log((double)diff) / log(lmax))) * 0.4 + (0.85 * (diff / lmax)) * 0.6;
     }
     return (u64)(s * CLK) + (u64)(CLK / 1500);
+}
+static u64 seek_ticks(u32 from, u32 to)   /* CD_SEEK_MUL y CD_SEEK_JIT */
+{
+    u64 t = seek_base(from, to);
+    if (o_seek_mul != 1) t = (u64)(t * o_seek_mul);
+    if (o_seek_jit > 0) t += rnd() % ((u64)(o_seek_jit * CLK / 1000) + 1);
+    return t;
+}
+/* espera de la primera respuesta: fija, o con CD_INT3_RND entre el minimo y el maximo de psx-spx (3 de cada 4 cerca
+   del minimo, 1 en todo el margen: la media queda como la de psx-spx); Init y ReadTOC alrededor de su media */
+static u64 cd_ack(int init)
+{
+    if (!o_int3) return init ? 80000 : 25000;
+    if (init) return rnd_entre(0xF820, 2 * 0x13CCE - 0xF820);
+    return (rnd() & 3) ? rnd_entre(0x4A73, 2 * 0x4A73) : rnd_entre(0x4A73, 0x3115B);
 }
 static void cd_read_sector(u32 lba)
 {
@@ -664,30 +768,62 @@ static void cd_stop_activity(const char *why)
     cd_reading = 0; cd_playing = 0;
     {   int i, j = 0; for (i = 0; i < cdqn; i++) if (cdq[i].kind != K_SECTOR) cdq[j++] = cdq[i]; cdqn = j; }
 }
+static int cd_buscando(void) { return (cd_playing || cd_reading || cd_seek_ex) && cyc < cd_seek_t1; }
+/* stat: fijo (02h, motor) o, con CD_STAT, segun lo que hace la unidad (solo uno de buscar/leer/tocar) */
+static u8 cd_st(void)
+{
+    if (!o_stat) return cd_stat;
+    if (cd_buscando()) return cd_stat | 0x40;
+    return cd_stat | (cd_playing ? 0x80 : cd_reading ? 0x20 : 0);
+}
+/* posicion de la cabeza (CD_STAT): durante la busqueda, interpolada desde el origen */
+static u32 cd_head(void)
+{
+    if (cd_buscando()) {
+        if (cyc <= cd_seek_t0) return cd_seek_from;
+        return cd_seek_from + (s32)(((double)cd_seek_to - cd_seek_from) * (cyc - cd_seek_t0) / (cd_seek_t1 - cd_seek_t0));
+    }
+    return cd_playing ? cd_play_pos() : cd_cur;
+}
+/* CD_ERR80: ReadN/Play poco despues de Init (o del primer ReadN) responden INT5 80h (aun no lista) */
+static int cd_no_lista(u8 c, u8 st, u64 ack)
+{
+    u8 e[2];
+    if (!cd_e80_on && c != 0x03) { cd_e80_on = 1; cd_e80_t = cyc; }
+    if (!o_err80 || cyc - cd_e80_t >= (u64)(o_err80 * CLK / 1000)) return 0;
+    e[0] = st | 1; e[1] = 0x80; cd_push(ack, 5, e, 2, K_RESP);
+    eventf("CD_NO_LISTA cmd %02x ms %.1f", c, (cyc - cd_e80_t) * 1000.0 / CLK);
+    return 1;
+}
 static void cd_command(u8 c)
 {
     u8 r[8]; int n = 0;
-    u64 ack = 25000;
-    r[0] = cd_stat;
+    u64 ack = cd_ack(0);
+    if (cd_ocupado) eventf("CD_CMD_OCUPADO %02x (el %02x aun no tiene su INT3)", c, cd_ocupado_cmd);
+    cd_ocupado += o_busy; cd_ocupado_cmd = c; cd_primera = 1;
+    r[0] = cd_st();
     switch (c) {
     case 0x01: cd_push(ack, 3, r, 1, K_RESP); break;                               /* GetStat */
     case 0x02: cd_loc = (bcd2i(cd_param[0]) * 60 + bcd2i(cd_param[1])) * 75 + bcd2i(cd_param[2]) - 150; cd_push(ack, 3, r, 1, K_RESP); break;
     case 0x03: {                                                                    /* Play */
         u64 st, t0;
+        if (cd_no_lista(c, r[0], ack)) break;
         if (cd_np && cd_param[0]) { int t = bcd2i(cd_param[0]); if (t >= 1 && t <= ntracks) cd_loc = trk_lba[t]; }
-        if (cd_playing) cd_cur = cd_play_pos();
-        st = seek_ticks(cd_cur, cd_loc);
+        if (o_stat) cd_cur = cd_head(); else if (cd_playing) cd_cur = cd_play_pos();
+        st = seek_ticks(cd_cur, cd_loc); cd_seek_from = cd_cur;
         cd_stop_activity("play");
         cd_push(ack, 3, r, 1, K_RESP);
         cd_playing = 1; cd_cur = cd_play_lba = cd_loc; cd_play_trk = track_of(cd_loc);
         t0 = cyc > cd_speed_ready ? cyc : cd_speed_ready;
         eventf("CDDA_PLAY lba %u seek_ms %.1f%s", cd_loc, (t0 + st - cyc) * 1000.0 / CLK, (cd_mode & 0x80) ? " A_DOBLE_VELOCIDAD" : "");
         cd_busy_until = t0 + st;
+        cd_seek_t0 = t0; cd_seek_t1 = t0 + st; cd_seek_to = cd_loc; cd_seek_ex = 0; cd_ap_paso = 0;
         break; }
     case 0x06: case 0x1B: {                                                         /* ReadN / ReadS */
         u64 st, t0;
-        if (cd_playing) cd_cur = cd_play_pos();
-        st = seek_ticks(cd_cur, cd_loc);
+        if (cd_no_lista(c, r[0], ack)) break;
+        if (o_stat) cd_cur = cd_head(); else if (cd_playing) cd_cur = cd_play_pos();
+        st = seek_ticks(cd_cur, cd_loc); cd_seek_from = cd_cur;
         if (cd_playing) eventf("CDDA_STOP read lba %u", cd_cur);
         cd_playing = 0;
         cd_push(ack, 3, r, 1, K_RESP);
@@ -695,32 +831,45 @@ static void cd_command(u8 c)
         cd_reading = 1; cd_cur = cd_loc;
         t0 = cyc + ack > cd_speed_ready ? cyc + ack : cd_speed_ready;
         cd_next_sector = t0 + st;
+        cd_seek_t0 = t0; cd_seek_t1 = t0 + st; cd_seek_to = cd_loc; cd_seek_ex = 0;
         eventf("CD_READ lba %u seek_ms %.1f x%d", cd_loc, (t0 + st - cyc) * 1000.0 / CLK, cd_2x ? 2 : 1);
         break; }
     case 0x09: {                                                                    /* Pause */
         u64 pt = (cd_reading || cd_playing) ? 9 * 225792ULL : 7400;
-        cd_old_n = 0;
+        if (o_pausa && cd_buscando()) {       /* CD_PAUSA_REAL: durante la busqueda se rechaza y la unidad sigue */
+            u8 e[2]; e[0] = r[0] | 1; e[1] = 0x80; cd_push(ack, 5, e, 2, K_RESP);
+            eventf("CD_PAUSE_RECHAZADA %s lba %u faltan_ms %.1f", cd_playing ? "play" : cd_reading ? "read" : "seek", cd_seek_to, (cd_seek_t1 - cyc) * 1000.0 / CLK);
+            break;
+        }
+        cd_old_n = 0; cd_seek_ex = 0;
         if (pt < 1000000 && (cd_reading || cd_playing)) pt = 1000000;
         if (cd_playing) { cd_cur = cd_play_pos(); eventf("CDDA_STOP pause lba %u", cd_cur); }
         cd_reading = 0; cd_playing = 0;
         { int i, j = 0; for (i = 0; i < cdqn; i++) if (cdq[i].kind != K_SECTOR) cdq[j++] = cdq[i]; cdqn = j; }
         cd_push(ack, 3, r, 1, K_RESP);
+        if (o_stat) r[0] = cd_stat;           /* la segunda ya sin leer ni tocar */
         cd_push(ack + pt, 2, r, 1, K_RESP);
         eventf("CD_PAUSE ms %.1f", pt * 1000.0 / CLK);
         break; }
-    case 0x0A: cd_push(80000, 3, r, 1, K_RESP); cd_push(80000 + 4000000, 2, r, 1, K_RESP); cd_mode = 0x20; cd_dsize = 0x924; break;  /* Init */
+    case 0x0A: {                                                                    /* Init */
+        u64 ia = cd_ack(1), i2 = o_init_ms < 0 ? 80000 + 4000000 : (u64)(o_init_ms * CLK / 1000);
+        if (i2 < ia + 1000) i2 = ia + 1000;
+        cd_push(ia, 3, r, 1, K_RESP); if (o_stat) r[0] = cd_stat; cd_push(i2, 2, r, 1, K_RESP); cd_mode = 0x20; cd_dsize = 0x924;
+        cd_e80_on = 1; cd_e80_t = cyc;
+        if (o_init_ms >= 0) eventf("CD_INIT int2_ms %.1f", i2 * 1000.0 / CLK);
+        break; }
     case 0x0C: case 0x0D: case 0x0B: cd_push(ack, 3, r, 1, K_RESP); break;         /* Demute / Setfilter / Mute */
     case 0x0E: {                                                                    /* Setmode */
         int s2 = (cd_param[0] >> 7) & 1;
         cd_mode = cd_param[0]; cd_dsize = (cd_mode & 0x20) ? 0x924 : 0x800;
         if (s2 != cd_2x) {
-            u64 t0 = cyc > cd_speed_ready ? cyc : cd_speed_ready, d = (u64)((s2 ? 0.6 : 1.0) * CLK);
+            u64 t0 = cyc > cd_speed_ready ? cyc : cd_speed_ready, d = o_speed_ms >= 0 ? (u64)(o_speed_ms * CLK / 1000) : (u64)((s2 ? 0.6 : 1.0) * CLK);
             cd_2x = s2; cd_speed_ready = t0 + d;
             eventf("CD_SPEED x%d ms %.1f", s2 ? 2 : 1, (cd_speed_ready - cyc) * 1000.0 / CLK);
         }
         cd_push(ack, 3, r, 1, K_RESP); break; }
     case 0x11: {                                                                    /* GetlocP */
-        u32 pos = cd_playing ? cd_play_pos() : cd_cur, a = pos + 150, rel; int t = track_of(pos);
+        u32 pos = o_stat ? cd_head() : cd_playing ? cd_play_pos() : cd_cur, a = pos + 150, rel; int t = track_of(pos);
         rel = pos >= trk_lba[t] ? pos - trk_lba[t] : trk_lba[t] - pos;
         r[0] = i2bcd(t); r[1] = pos >= trk_lba[t] ? 1 : 0; r[2] = i2bcd(rel / 4500); r[3] = i2bcd((rel / 75) % 60); r[4] = i2bcd(rel % 75);
         r[5] = i2bcd(a / 4500); r[6] = i2bcd((a / 75) % 60); r[7] = i2bcd(a % 75);
@@ -730,12 +879,24 @@ static void cd_command(u8 c)
         int t = bcd2i(cd_param[0]); u32 l;
         if (t == 0) l = (u32)cd_sectors; else if (t <= ntracks) l = trk_lba[t]; else { r[0] |= 1; r[1] = 0x10; cd_push(ack, 5, r, 2, K_RESP); break; }
         l += 150; r[1] = i2bcd(l / 4500); r[2] = i2bcd((l / 75) % 60); cd_push(ack, 3, r, 3, K_RESP); break; }
-    case 0x1E: cd_push(ack, 3, r, 1, K_RESP); cd_push(ack + (u64)(CLK / 2), 2, r, 1, K_RESP); break;   /* ReadTOC */
+    case 0x15: case 0x16:                                                           /* SeekL / SeekP */
+        if (o_stat || o_pausa) {              /* busqueda de verdad: INT3, INT2 al acabar; luego en pausa alli */
+            u64 st, t0;
+            cd_cur = cd_head(); st = seek_ticks(cd_cur, cd_loc); cd_seek_from = cd_cur;
+            cd_stop_activity("seek");
+            cd_push(ack, 3, r, 1, K_RESP);
+            t0 = cyc + ack > cd_speed_ready ? cyc + ack : cd_speed_ready;
+            cd_seek_ex = 1; cd_seek_t0 = t0; cd_seek_t1 = t0 + st; cd_seek_to = cd_cur = cd_loc;
+            r[0] = cd_stat; cd_push(t0 + st - cyc, 2, r, 1, K_RESP);
+            eventf("CD_SEEK lba %u ms %.1f", cd_loc, (t0 + st - cyc) * 1000.0 / CLK);
+        } else cd_push(ack, 3, r, 1, K_RESP);
+        break;
+    case 0x1E: { u64 ia = o_int3 ? cd_ack(1) : ack; cd_push(ia, 3, r, 1, K_RESP); if (o_stat) r[0] = cd_stat; cd_push(ia + (u64)(CLK / 2), 2, r, 1, K_RESP); break; }  /* ReadTOC */
     case 0x19: r[0] = 0x20; cd_push(ack, 3, r, 1, K_RESP); break;
     default: cd_push(ack, 3, r, 1, K_RESP); break;
     }
     (void)n;
-    cd_np = 0;
+    cd_np = 0; cd_primera = 0;
 }
 static void cd_tick(void)
 {
@@ -748,6 +909,12 @@ static void cd_tick(void)
         cd_push(0, 1, r, 1, K_SECTOR);
         eventf("CD_SECTOR_VIEJO lba %u", cd_old_lba);
         cd_old_lba++; cd_old_n--; cd_old_t = cyc + (cd_2x ? 225792 : 451584);
+    }
+    /* CD_ERR: uno de cada n sectores es un error (INT5 04h) y la unidad deja de leer */
+    if (o_err && cd_reading && cyc >= cd_next_sector && ++cd_err_n % o_err == 0) {
+        u8 r[2]; r[0] = cd_st() | 0x05; r[1] = 0x04;
+        cd_reading = 0; cd_push(0, 5, r, 2, K_RESP);
+        eventf("CD_ERR_LECTURA lba %u", cd_cur);
     }
     /* entregar el siguiente evento si la bandera esta libre */
     if (cd_reading && cyc >= cd_next_sector) {
@@ -764,8 +931,12 @@ static void cd_tick(void)
     }
     if (cd_playing && (cd_mode & 2)) {
         /* pausa automatica al final de la pista (antes del pregap de la siguiente): INT4 */
-        u32 pos = cd_play_pos();
-        if (cd_play_trk >= 1 && pos >= trk_end[cd_play_trk]) {
+        u32 pos = cd_play_pos(), fin = cd_play_trk >= 1 ? trk_end[cd_play_trk] : 0;
+        if (o_ap && cd_play_trk >= 1) {      /* CD_AP: en el INDEX 01 siguiente (1) o al final del disco (2) */
+            if (!cd_ap_paso && cd_play_trk < ntracks && pos >= fin) { cd_ap_paso = 1; eventf("CDDA_PASA_PISTA %d lba %u", cd_play_trk + 1, pos); }
+            if (o_ap == 2) fin = (u32)cd_sectors; else if (cd_play_trk < ntracks) fin = trk_lba[cd_play_trk + 1];
+        }
+        if (cd_play_trk >= 1 && pos >= fin) {
             u8 r[1]; r[0] = cd_stat;
             cd_cur = pos; cd_playing = 0;
             eventf("CDDA_END lba %u", pos);
@@ -781,6 +952,11 @@ static void cd_tick(void)
             cd_if = (cd_if & ~7) | e.irq;
             memcpy(cd_resp, e.resp, e.n); cd_nresp = e.n; cd_rpos = 0;
             if (e.irq == 1) cd_sector_ready = 1;
+            if (e.kind == K_ACK && cd_ocupado) cd_ocupado--;
+            if ((o_glitch || o_glitch5) && (e.irq == 3 || e.irq == 5)) {   /* CD_GLITCH: la 1a lectura de HINTSTS a medias */
+                if (e.irq == 3) cd_gl_n3++; else cd_gl_n5++;
+                cd_gl_arm = 1; cd_gl_t = cyc;
+            }
         }
     }
 }
@@ -793,10 +969,22 @@ static u8 cd_rd(u32 r)
         if (cd_np < 16) s |= 0x10;
         if (cd_rpos < cd_nresp) s |= 0x20;
         if (cd_dpos < cd_dlen) s |= 0x40;
+        if (cd_ocupado) s |= 0x80;            /* CD_BUSY: BUSYSTS */
         return s; }
     case 1: return cd_rpos < cd_nresp ? cd_resp[cd_rpos++] : 0;
     case 2: return cd_dpos < cd_dlen ? cd_data[cd_dpos++] : 0;
-    case 3: return (cd_idx & 1) ? (0xE0 | cd_if) : (0xE0 | cd_ie);
+    case 3:
+        if (!(cd_idx & 1)) return 0xE0 | cd_ie;
+        if (cd_gl_arm) {                      /* CD_GLITCH: primera lectura; a medias solo si se sondeaba al cambiar */
+            int t = cd_if & 7, g = 0;
+            cd_gl_arm = 0;
+            if (!o_glvent || cyc - cd_gl_t <= (u64)o_glvent) {
+                if (t == 3 && o_glitch && ++cd_gl_e3 % o_glitch == 0) g = 1;
+                if (t == 5 && o_glitch5 && ++cd_gl_e5 % o_glitch5 == 0) g = 4;
+            }
+            if (g) { cd_gl_hechos++; eventf("CD_GLITCH INT%d se lee %d (%llu ciclos tras el cambio)", t, g, (unsigned long long)(cyc - cd_gl_t)); return 0xE0 | (cd_if & ~7) | g; }
+        }
+        return 0xE0 | cd_if;
     }
     return 0;
 }
@@ -808,7 +996,7 @@ static void cd_wr(u32 r, u8 v)
     case 2: if (cd_np < 16) cd_param[cd_np++] = v; break;
     case 3: if (v & 0x80) { if (cd_sector_ready) { cd_dpos = 0; cd_sector_ready = 0; } } else { cd_dlen = 0; cd_dpos = 0; } break;
     case 6: cd_ie = v & 0x1F; break;
-    case 7: cd_if &= ~(v & 0x1F); if (v & 0x40) cd_np = 0; if (v & 7) { cd_nresp = 0; cd_rpos = 0; } break;
+    case 7: if (v & 7) cd_gl_arm = 0; cd_if &= ~(v & 0x1F); if (v & 0x40) cd_np = 0; if (v & 7) { cd_nresp = 0; cd_rpos = 0; } break;
     default: break;
     }
 }
@@ -891,7 +1079,15 @@ static u32 io_read(u32 a, int sz, int *cost)
     case 0x0F0: return DPCR;
     case 0x0F4: return DICR;
     case 0x100: return (u32)(((cyc - t0_base)) & 0xFFFF);
-    case 0x110: return (u32)((u64)((cyc - t1_base) / LINE_CYC) & 0xFFFF);
+    case 0x110: {
+        u64 n = (u64)((cyc - t1_base) / LINE_CYC); u32 v = (u32)(n & 0xFFFF);
+        /* T1_GLITCH: la lectura coincide con el cambio (menos de un ciclo) y hay acarreo: el bit mas alto que cambia
+           aun no ha cambiado */
+        if (o_t1g && n && (double)(cyc - t1_base) - n * LINE_CYC < 1.0 && (v & 1) == 0 && ++t1_lect % o_t1g == 0) {
+            u32 c = (v ^ (v - 1)) & 0xFFFF, hb = 0x8000; while (!(c & hb)) hb >>= 1;
+            t1_rotas++; eventf("T1_ROTO %04x se lee %04x", v, v ^ hb); v ^= hb;
+        }
+        return v; }
     case 0x114: return t1_mode;
     case 0x120: return (u32)(((cyc - t2_base) / ((t2_mode & 0x200) ? 8 : 1)) & 0xFFFF);
     }
@@ -956,6 +1152,7 @@ static u32 mem_read(u32 a, int sz)
     u32 p = a & 0x1FFFFFFF;
     int c = 0; u32 v;
     if (a == 0xFFFE0130) return cache_ctrl;
+    if (o_cola && ((a >> 29) == 5 || p == 0x1F801800)) cola_t = 0;   /* KSEG1, o leer lo escrito: se vacia la cola */
     if (p < 0x800000) {
         p &= 0x1FFFFF;
         stall_cyc += RAM_LD;
@@ -971,6 +1168,12 @@ static u32 mem_read(u32 a, int sz)
     }
     if (p >= 0x1F801000 && p < 0x1F803000) {
         u32 al = p & ~3;
+        if (cola_t && p > 0x1F801800 && p < 0x1F801804 && cyc + stall_cyc < cola_t && cola_idx != cd_idx) {
+            /* CD_COLA: la escritura del banco aun esta en la cola y la lectura sale antes: banco anterior */
+            u8 ix = cd_idx, bueno = (ix & 1) ? 0xE0 | cd_if : 0xE0 | cd_ie;
+            cd_idx = cola_idx; v = io_read(p, sz, &c); cd_idx = ix; cola_n++;
+            if (p == 0x1F801803 && (v & 0xFF) != bueno) eventf("CD_COLA 1F801803 en el banco %d (no %d): %02x en vez de %02x", cola_idx, ix, v & 0xFF, bueno);
+        } else
         v = io_read(sz == 1 ? p : (sz == 2 ? p & ~1 : al), sz, &c);
         stall_cyc += c;
         if (sz == 1 && !(p >= 0x1F801800 && p < 0x1F801804) && p != 0x1F801040) v >>= (p & 3) * 8;
@@ -984,6 +1187,7 @@ static void mem_write(u32 a, u32 v, int sz)
     int c = 0;
     if (a == 0xFFFE0130) { cache_ctrl = v; return; }
     if (SR & 0x10000) return;   /* cache aislada */
+    if (o_cola && (a >> 29) == 5) cola_t = 0;
     if (p < 0x800000) {
         p &= 0x1FFFFF;
         ram[p] = v; if (sz >= 2) ram[p + 1] = v >> 8; if (sz == 4) { ram[p + 2] = v >> 16; ram[p + 3] = v >> 24; }
@@ -994,7 +1198,12 @@ static void mem_write(u32 a, u32 v, int sz)
         scratch[p] = v; if (sz >= 2) scratch[p + 1] = v >> 8; if (sz == 4) { scratch[p + 2] = v >> 16; scratch[p + 3] = v >> 24; }
         return;
     }
-    if (p >= 0x1F801000 && p < 0x1F803000) { io_write(p, v, sz, &c); stall_cyc += c; }
+    if (p >= 0x1F801000 && p < 0x1F803000) {
+        u8 ix = cd_idx;
+        io_write(p, v, sz, &c); stall_cyc += c;
+        /* CD_COLA: banco escrito por KUSEG/KSEG0: sigue en la cola hasta o_cola ciclos despues de la instruccion */
+        if (o_cola && p == 0x1F801800 && (a >> 29) != 5) { cola_idx = ix; cola_t = cyc + 1 + stall_cyc + o_cola; }
+    }
 }
 
 /* ---------------------------------------------------------------- CPU */
@@ -1029,6 +1238,36 @@ static void exception(int code)
     fprintf(stderr, "excepcion %d en %08X (ciclo %llu, cuadro %ld)\n", code, PC - 4, (unsigned long long)cyc, game_frame);
     if (code == 9) fprintf(stderr, "  break %x\n", (fetch(PC - 4) >> 6) & 0xFFFFF);
     halted = 1;
+}
+/* ---- LOADER_IRQ: el EXE empieza con las interrupciones activadas (LoadExec del menu de PSIO) y psxprof las entrega:
+   el vector 80000080h salta a la rutina del menu (en lo que es la BSS del EXE: I_STAT = 0, jr EPC, rfe; sin ceros) */
+static u32 irq_h, irq_b0, irq_b1, sym_main; static long irq_n; static int irq_en, irq_main;
+static void irq_init(u32 b0, u32 b1)
+{
+    static const u32 h[5] = { 0x401A7000, 0x3C1B1F80, 0xAF601070, 0x03400008, 0x42000010 };
+    const char *e = getenv("LOADER_IRQ_PC"); int k;
+    irq_b0 = b0; irq_b1 = b1; irq_h = e ? (u32)strtoul(e, 0, 16) : b0 + 0x40;
+    for (k = 0; k < 5; k++) wr32ram(irq_h + k * 4, h[k]);
+    wr32ram(0x80000080, 0x08000000 | ((irq_h >> 2) & 0x3FFFFFF)); wr32ram(0x80000084, 0);
+    SR = 0x401; I_MASK = 1;
+    fprintf(stderr, "LOADER_IRQ: SR=401h I_MASK=1, rutina del menu en %08X (BSS %08X-%08X)\n", irq_h, b0, b1);
+}
+static void irq_check(void)
+{
+    if (!irq_main && PC == sym_main) { irq_main = 1; eventf("MAIN sr %x i_mask %x interrupciones_antes %ld", SR, I_MASK, irq_n); }
+    if (irq_en && PC == EPC) irq_en = 0;                       /* volvio de la interrupcion */
+    if (irq_en && PC >= irq_b0 && PC < irq_b1 && !rd32ram(PC)) {
+        eventf("IRQ_CUELGUE pc %08x epc %08x", PC, EPC);
+        fprintf(stderr, "LOADER_IRQ: la interrupcion %ld salta a la rutina %08X, ya borrada por crt0 (se ejecutan ceros en %08X; EPC %08X, ciclo %llu): cuelgue antes de main\n",
+                irq_n, irq_h, PC, EPC, (unsigned long long)cyc);
+        halted = 1; return;
+    }
+    if ((SR & 0x401) == 0x401 && (I_STAT & I_MASK) && NPC == PC + 4) {   /* no en el hueco de un salto tomado */
+        irq_n++; irq_en = 1;
+        eventf("IRQ_CARGADOR %ld epc %08x i_stat %x rutina %s", irq_n, PC, I_STAT, rd32ram(irq_h) ? "intacta" : "borrada");
+        EPC = PC; CAUSE = (CAUSE & ~0x7C) | 0x400; SR = (SR & ~0x3F) | ((SR << 2) & 0x3C);
+        PC = 0x80000080; NPC = PC + 4;
+    }
 }
 static void step(void)
 {
@@ -1163,9 +1402,26 @@ int main(int argc, char **argv)
     if (getenv("ICF_WORD")) ICF_WORD = atoi(getenv("ICF_WORD"));
     if (getenv("SHOT")) shot_every = atol(getenv("SHOT"));
     if (getenv("PROF_FROM")) prof_from_frame = atol(getenv("PROF_FROM"));
+    {   /* modelos del hardware real (perfil ODE=... para lo que no se ponga a mano) */
+        const char *od = getenv("ODE");
+        if (od && !strcmp(od, "xstation")) ode_pre = "CD_STAT=1 CD_PAUSA_REAL=1 CD_SEEK_MUL=1.3 CD_SEEK_JIT=80 CD_INT3_RND=1 CD_BUSY=1 CD_GLITCH=1000 CD_GLITCH5=100";
+        else if (od && !strcmp(od, "psio")) ode_pre = "CD_STAT=1 CD_SEEK_MUL=0.05 CD_SPEED_MS=0 CD_INIT_MS=5 CD_AP=1 CD_BUSY=1";
+        else if (od) { fprintf(stderr, "ODE=%s desconocido (xstation o psio)\n", od); return 1; }
+        o_stat = cfgf("CD_STAT", 0); o_pausa = cfgf("CD_PAUSA_REAL", 0); o_int3 = cfgf("CD_INT3_RND", 0); o_busy = cfgf("CD_BUSY", 0);
+        o_seek_mul = cfgf("CD_SEEK_MUL", 1); o_seek_jit = cfgf("CD_SEEK_JIT", 0); o_speed_ms = cfgf("CD_SPEED_MS", -1);
+        o_glitch = cfgf("CD_GLITCH", 0); o_glitch5 = cfgf("CD_GLITCH5", o_glitch ? (o_glitch / 10 > 0 ? o_glitch / 10 : 1) : 0);
+        o_glvent = (long)cfgf("CD_GLITCH_VENT", 2048);
+        o_err = cfgf("CD_ERR", 0); o_err80 = cfgf("CD_ERR80", 0); o_ap = cfgf("CD_AP", 0); o_init_ms = cfgf("CD_INIT_MS", -1);
+        o_cola = cfgf("CD_COLA", 0); if (o_cola == 1) o_cola = 8;
+        o_t1g = cfgf("T1_GLITCH", 0); o_irq = (long)cfgf("LOADER_IRQ", 0);
+        if (cfg("CD_SEED")) { o_rng ^= (u32)cfgf("CD_SEED", 0) * 0x9E3779B9u; if (!o_rng) o_rng = 1; }   /* cada n su semilla (n | 1 juntaba 2k y 2k+1) */
+        if (getenv("LINE_CYC")) LINE_CYC = atof(getenv("LINE_CYC"));
+        if (od) fprintf(stderr, "ODE=%s: %s\n", od, ode_pre);
+    }
     sym_vblank = sym_lookup(nmfile, "rc_vblank");
     if (!sym_vblank) { fprintf(stderr, "sin rc_vblank en %s\n", nmfile); return 1; }
     sym_ram = sym_lookup(nmfile, "rc_ram"); sym_vram = sym_lookup(nmfile, "rc_vram"); sym_pal = sym_lookup(nmfile, "rc_pal"); sym_spr = sym_lookup(nmfile, "rc_spr"); sym_vregs = sym_lookup(nmfile, "rc_vregs");
+    sym_main = sym_lookup(nmfile, "main");
     sym_tslot = sym_lookup(nmfile, "tslot"); sym_loading = sym_lookup(nmfile, "loading"); sym_in_race = sym_lookup(nmfile, "in_race");
     if (getenv("MISSLOG")) { char fn[600]; snprintf(fn, sizeof fn, "%s/falta.txt", outdir); misslog = fopen(fn, "w"); }
     dump_init();
@@ -1177,11 +1433,19 @@ int main(int argc, char **argv)
        carrera: variable in_race del port */
     if (framef) fprintf(framef, "cuadro_juego,ciclo,vblank,ciclos_desde_anterior,gpu_ticks,estado,lista,gpu_fin,imagen,falta_capa,falta_spr,carga,carrera\n");
     sp = 0x801FFFF0;
+    if (getenv("LOADER_SP")) sp = (u32)strtoul(getenv("LOADER_SP"), 0, 16);   /* $sp que deja el cargador */
     R[29] = sp; R[30] = sp;
     PC = pc0; NPC = pc0 + 4;
     SR = 0;
     frame_cyc = (u64)(LINE_CYC * LINES);
     next_vbl = frame_cyc;
+    if (o_irq) {   /* BSS del EXE: de __bss_start a __bss_end (o lo que sigue al EXE) */
+        u32 b0 = sym_lookup(nmfile, "__bss_start"), b1 = sym_lookup(nmfile, "__bss_end");
+        if (!b0) b0 = taddr + tsize;
+        if (b1 <= b0) b1 = b0 + 0x1000;
+        irq_init(b0, b1);
+        if (o_irq > 1) next_vbl = o_irq;
+    }
     joy_rx_at = (u64)-1;
     maxcyc_frames = 0; (void)maxcyc_frames;
     while (!halted) {
@@ -1193,8 +1457,20 @@ int main(int argc, char **argv)
                 static int nw = -1; static u32 wa[8], wv[8]; static char wn[8][64]; int k;
                 if (nw < 0) { const char *q = getenv("WATCH"); nw = 0;
                     while (q && *q && nw < 8) { k = 0; while (*q && *q != ',' && k < 63) wn[nw][k++] = *q++; wn[nw][k] = 0; if (*q == ',') q++;
-                        wa[nw] = sym_lookup(nmfile, wn[nw]); wv[nw] = 0xDEADBEEF; nw++; } }
+                        {   char *pl = strchr(wn[nw], '+'); if (pl) *pl = 0;
+                            wa[nw] = sym_lookup(nmfile, wn[nw]); if (pl) { *pl = '+'; if (wa[nw]) wa[nw] += strtol(pl + 1, 0, 0); } }
+                        wv[nw] = 0xDEADBEEF; nw++; } }
                 for (k = 0; k < nw; k++) if (wa[k] && misslog) { u32 v = rd32ram(wa[k]); if (v != wv[k]) { wv[k] = v; fprintf(misslog, "%ld W %s %d\n", game_frame, wn[k], (int)v); } }
+            }
+            {   /* POKE68=dir:valor[:desde],...: palabras del 68000 fijas (escenarios: reloj de la carrera parado) */
+                const char *q = getenv("POKE68");
+                while (q && *q && sym_ram) {
+                    long ad = strtol(q, (char **)&q, 16), v = 0, d = 0;
+                    if (*q == ':') v = strtol(q + 1, (char **)&q, 16);
+                    if (*q == ':') d = strtol(q + 1, (char **)&q, 10);
+                    if (game_frame >= d) { u32 o = (sym_ram & 0x1FFFFF) + (ad & 0x3FFE); ram[o] = v; ram[o + 1] = v >> 8; }
+                    if (*q == ',') q++; else break;
+                }
             }
             was_loading = 0;
             last_vblank_call = cyc;
@@ -1216,6 +1492,7 @@ int main(int argc, char **argv)
             }
         }
         if (cyc >= next_cd) { cd_tick(); next_cd = cyc + 64; if (sym_loading && rd32ram(sym_loading)) was_loading = 1; }
+        if (o_irq) irq_check();
     }
     {
         char fn[600];
@@ -1231,6 +1508,10 @@ int main(int argc, char **argv)
     if (misslog) fclose(misslog);
     fprintf(stderr, "perfil desde ciclo %llu (%.2f s)\n", (unsigned long long)prof_from_cyc, (cyc - prof_from_cyc) / CLK);
     fprintf(stderr, "SPU: %ld teclas pisadas antes de que su voz las viera\n", spu_perdidas);
+    if (o_glitch || o_glitch5) fprintf(stderr, "CD_GLITCH: %ld INT3 y %ld INT5 (leidos sondeando al cambiar: %ld y %ld), %ld lecturas de HINTSTS a medias\n", cd_gl_n3, cd_gl_n5, cd_gl_e3, cd_gl_e5, cd_gl_hechos);
+    if (o_cola) fprintf(stderr, "CD_COLA: %ld lecturas de 1F801801-3 en el banco anterior\n", cola_n);
+    if (o_t1g) fprintf(stderr, "T1_GLITCH: %ld lecturas del temporizador 1 al cambiar con acarreo, %ld rotas\n", t1_lect, t1_rotas);
+    if (o_irq) fprintf(stderr, "LOADER_IRQ: %ld interrupciones, main %s\n", irq_n, irq_main ? "alcanzado" : "NO alcanzado");
     fprintf(stderr, "fin: %ld cuadros de juego, %llu vblanks, %.2f s emulados, %.1f cuadros de juego/s\n", game_frame, (unsigned long long)vbl_count,
             cyc / CLK, game_frame / (cyc / CLK));
     return 0;
