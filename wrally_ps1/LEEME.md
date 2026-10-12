@@ -38,16 +38,18 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - Caché de tiles en VRAM.
   - Prioridades de la placa.
   - Faros y sombras con semitransparencia.
-  - Pantalla de carga.
+  - Pantalla de carga al estilo del juego (bandas de bandera a cuadros, CARGANDO con el degradado de las cifras del marcador y la barra START-FINISH). Al arrancar, encima, el logo de `ps1/logo_pina.png` (en lugar del de PlayStation: la imagen no lleva los sectores del logo de Sony).
   - La lista de la GPU se hace en una sola pasada por las capas y los sprites (un cubo por paso de dibujo).
   - Si un cuadro llega tarde, el siguiente no se dibuja y el juego sigue a 60 Hz (`FRAMESKIP`, `-DFRAMESKIP=0` lo quita).
 - `ps1/cd.c`: lector de CD por sondeo (datos y CD-DA).
   - Caché: en carrera quedan fijos los paquetes del recorrido y de carrera, y los de menús guardados (se sustituyen antes que los fijos y después de lo demás); al salir (el fondo deja de ser el mapa) los de menús vuelven a ser fijos y se leen de fondo, y el de carrera queda guardado. En carrera lo fijo no se sustituye nunca (antes, lo que no se usaba en 10 s sí, y en la meta faltaban trozos).
   - Los tiles iguales a otro del paquete (o del de carrera) no llevan datos: en carrera usan el hueco de ese (de 250 a 380 por recorrido).
   - En carrera, con el CD libre, se leen de antemano los sectores de `TILES.BIN` de al lado de los sprites del coche y del haz de los faros que se ven: sus poses van de 16 en 16 tiles en el orden en que se suceden.
+  - Al acabar la carrera el juego funde la paleta a negro (~50 cuadros): al verlo (6 bajadas seguidas de la luminosidad, sin subir) lo de la carrera deja de ser fijo y se leen de fondo `POST`, `POST2` y los menús, para que la pantalla siguiente no salga a trozos.
   - Lo que falte se pide a `TILES.BIN` sin esperar; si suena una frase de CD-DA y faltan muchos tiles en pantalla, se corta y luego sigue. Fuera de la carrera, una frase que aún no suena espera a que se lean los menús (como mucho 4 s).
 - `ps1/snd.c`: el OKI M6295 sobre la SPU (frases cortas) y sobre pistas de audio (frases largas).
-- `ps1/gen2.py`: genera `TILES.BIN` y los paquetes `LEVELnn.BIN`, `RACE.BIN`, `MENU.BIN` y `MENU2.BIN` a partir de los registros del banco de pruebas. Cada recorrido se llena hasta la capacidad con los sprites del jugador (poses del coche, marcador y, de noche, el haz de los faros), los más vistos primero.
+- `ps1/gen2.py`: genera `TILES.BIN` y los paquetes `LEVELnn.BIN`, `RACE.BIN`, `MENU.BIN`, `MENU2.BIN`, `POST.BIN` y `POST2.BIN` a partir de los registros del banco de pruebas. Cada recorrido se llena hasta la capacidad con los sprites del jugador (poses del coche, marcador y, de noche, el haz de los faros), los más vistos primero. Fuera de la carrera los menús llenan la caché (sustituyen a lo de carrera, que se vuelve a leer al empezar). `POST`/`POST2`: lo que sale al acabar una carrera ('Your Time', 'Continue ?', las fotos del attract).
+- `ps1/logo.py`: el logo de arranque a `LOGO.BIN` (15 bits, 128 de ancho).
 - `snd/sndps1.py`, `snd/psxadpcm.c`: muestras a PS-ADPCM y pistas WAV.
 - `ps1/mkiso.py`: genera las dos imágenes.
 - `perf/`: medidas con el emulador `psxprof` (modelo de tiempos aproximado).

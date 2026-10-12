@@ -274,27 +274,62 @@ static void gp_rect(int x, int y, int w, int h, u32 c)
     dma_wait(); gpu_wait(); GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
     GP0 = 0x60000000 | c; GP0 = ((u32)y << 16) | x; GP0 = ((u32)h << 16) | w;
 }
-static const u16 lfont[8] = {0x7927, 0x2BED, 0x6BAD, 0x796F, 0x2BED, 0x6B6D, 0x6B6E, 0x7B6F};   /* CARGANDO */
+/* pantalla de carga al estilo del juego: bandas de cuadros de bandera arriba y abajo, CARGANDO en cursiva con el
+   degradado amarillo-rojo y el borde negro de las cifras del marcador, y la barra START-FINISH del marcador (verde).
+   Al arrancar, encima, el logo (LOGO.BIN) */
+static const char lchars[] = "CARGNDOSTFIH";
+static const u8 lglyph[12][7] = {                   /* 5x7, bit 4 a la izquierda */
+    {14, 17, 16, 16, 16, 17, 14}, {14, 17, 17, 31, 17, 17, 17}, {30, 17, 17, 30, 20, 18, 17}, {14, 17, 16, 23, 17, 17, 15},
+    {17, 25, 21, 19, 17, 17, 17}, {30, 17, 17, 17, 17, 17, 30}, {14, 17, 17, 17, 17, 17, 14}, {15, 16, 16, 14, 1, 1, 30},
+    {31, 4, 4, 4, 4, 4, 4}, {31, 16, 16, 30, 16, 16, 16}, {14, 4, 4, 4, 4, 4, 14}, {17, 17, 17, 31, 17, 17, 17}};
+static const u32 lgrad[7] = {0x60F0FF, 0x40D8FF, 0x20B8FF, 0x1098FF, 0x0070FF, 0x0048F0, 0x0020D0};   /* 0xBBGGRR */
+static const u32 lwhite[7] = {0xF8F8F8, 0xF8F8F8, 0xF0F0F0, 0xE8E8E8, 0xE0E0E0, 0xD0D0D0, 0xC0C0C0};
+static const u32 lgreen[6] = {0x90FF90, 0x40F040, 0x20D820, 0x10B810, 0x089808, 0x047804};
+static void gp_text(int b, int x, int y, const char *t, int sc, const u32 *col)
+{
+    int pass, k, r, c, n;
+    for (pass = 0; pass < 2; pass++)
+        for (k = 0; t[k]; k++) {
+            for (n = 0; lchars[n] && lchars[n] != t[k]; n++);
+            if (!lchars[n]) continue;
+            for (r = 0; r < 7; r++) for (c = 0; c < 5; c++) if (lglyph[n][r] & (16 >> c)) {
+                int px = x + k * (6 * sc) + c * sc + (6 - r) * sc / 3, py = b * 256 + y + r * sc;
+                if (!pass) gp_rect(px - 1, py - 1, sc + 3, sc + 2, 0);     /* borde negro */
+                else gp_rect(px, py, sc + 1, sc, col[r]);
+            }
+        }
+}
+static int bar_x, bar_y, bar_w;                     /* barra: interior */
 static int load_total, load_done, loading;
 static void t1_update(void);
 static void load_bar(void)
 {
-    int b, w = load_total ? load_done * 256 / load_total : 0;
+    int b, r, w = load_total ? load_done * bar_w / load_total : 0;
     t1_update();
-    if (w > 256) w = 256;
-    for (b = 0; b < 2; b++) gp_fill(56, b * 256 + 150, (w + 15) & ~15, 8, 0xC0C0C0);
+    if (w > bar_w) w = bar_w;
+    if (w > 0) for (b = 0; b < 2; b++) for (r = 0; r < 6; r++) gp_rect(bar_x, b * 256 + bar_y + r, w, 1, lgreen[r]);
 }
+static int logo_lba = -1, logo_ns;
+static void logo_cb(int i, const unsigned char *d) { int b; for (b = 0; b < 2; b++) upload(120, b * 256 + 18 + i * 8, 128, 8, d); }
 static void load_screen(int total)
 {
-    int b, n, k;
+    int b, k, logo = logo_lba >= 0 && logo_ns > 0, sc = logo ? 3 : 4, ty = logo ? 176 : 88, tw = 8 * 6 * sc - sc;
     load_total = total; load_done = 0; loading = 1;
+    bar_w = logo ? 200 : 240; bar_x = (W - bar_w) / 2; bar_y = logo ? 204 : 134;
     for (b = 0; b < 2; b++) {
         gp_fill(0, b * 256, 368, 240, 0);
-        gp_fill(48, b * 256 + 142, 272, 24, 0x404040);
-        gp_fill(56, b * 256 + 150, 256, 8, 0x101010);
-        for (n = 0; n < 8; n++) for (k = 0; k < 15; k++)
-            if (lfont[n] & (1 << (14 - k))) gp_rect(120 + n * 16 + (k % 3) * 4, b * 256 + 110 + (k / 3) * 4, 4, 4, 0x40C0FF);
+        for (k = 0; k < 46 * 4; k++) {                 /* cuadros de bandera: 2 filas arriba y 2 abajo */
+            int row = k / 46, col = k % 46, y = row < 2 ? row * 8 : 224 + (row - 2) * 8;
+            if ((row + col) & 1) gp_rect(col * 8, b * 256 + y, 8, 8, 0xE0E0E0);
+        }
+        gp_text(b, (W - tw) / 2, ty, "CARGANDO", sc, lgrad);
+        gp_rect(bar_x - 3, b * 256 + bar_y - 1, bar_w + 6, 8, 0xB0B0B0);   /* marco gris redondeado y el interior oscuro */
+        gp_rect(bar_x - 1, b * 256 + bar_y - 3, bar_w + 2, 12, 0xB0B0B0);
+        gp_rect(bar_x - 1, b * 256 + bar_y - 1, bar_w + 2, 8, 0x181818);
+        gp_text(b, bar_x - 6, bar_y + 12, "START", 1, lwhite);
+        gp_text(b, bar_x + bar_w - 6 * 6 + 4, bar_y + 12, "FINISH", 1, lwhite);
     }
+    if (logo) { if (cd_stream(logo_lba, logo_ns, logo_cb, 1)) pack_err++; logo_ns = 0; }   /* el logo, solo al arrancar */
 }
 /* ---- paquetes: sectores de cabecera (u16 n, u16 na, u16 tiles[n], ordenados, y na pares (tile, igual a): tiles sin
    datos porque son iguales a otro del paquete o del de carrera; en los de recorrido el bit 15 marca los tiles de su
@@ -302,8 +337,9 @@ static void load_screen(int total)
    todos; hn los que son, hr los que ya se han leido en orden). pin: lo que llega queda fijo (1), guardado (2) o
    suelto (0) */
 typedef struct { u16 *ids; int max, n, hs, pin, lba, ns, hn, hr; u16 *al; int maxal, nal; } pack_t;
-static u16 lvl_ids[4000], race_ids[2000], menu_ids[1280], menu2_ids[4000], lvl_al[768 * 2], race_al[256 * 2];
-static pack_t menu_pk = {menu_ids, 1280, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1};
+static u16 lvl_ids[4000], race_ids[2000], menu_ids[1280], menu2_ids[4000], post_ids[512], post2_ids[512], lvl_al[768 * 2], race_al[256 * 2];
+static pack_t menu_pk = {menu_ids, 1280, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1}, post_pk = {post_ids, 512, 0, 0, 1, -1},
+    post2_pk = {post2_ids, 512, 0, 0, 1, -1};
 static pack_t lvl_pk = {lvl_ids, 4000, 0, 0, 0, -1, 0, 0, 0, lvl_al, 768}, race_pk = {race_ids, 2000, 0, 0, 0, -1, 0, 0, 0, race_al, 256};
 static u8 lvl_map[16384 / 8];                       /* tiles del mapa del recorrido de lvl_pk */
 /* los tiles del paquete que ya estan quedan fijos o guardados segun p->pin (use: y como recien usados) */
@@ -393,6 +429,7 @@ static void pack_runs(pack_t *p, int from, int fast)
 static int job_on;                                  /* lectura en curso: 1 tiles (a cdbuf), 2 paquete de fondo (al anillo) */
 static u16 job_t[256]; static int job_n, job_s0, job_s1, job_st, job_i, job_f; /* job_st: resultado aun por subir; job_i: por donde va; job_f: cuadro en que se pidio */
 static int job_pf;                                  /* la lectura de tiles es de antemano (prefetch): lo que falte va antes */
+static int race_end, lum_prev, lum_ref, lum_steps;  /* la carrera se esta fundiendo a negro (y luminosidad de la paleta) */
 static pack_t *bgq[4]; static int nbg, bg_from, bg_jump = -1, bg_err;     /* bg_from: siguiente sector de bgq[0] que mirar */
 #define RING 16
 static u8 ring[RING * 2048] __attribute__((aligned(4)));
@@ -552,9 +589,9 @@ static void cache_load(void)
     /* seguir la frase cuando ya no falte nada ni queden paquetes de fondo (como mucho 3 s cortada); en carrera no se
        vuelve a cortar en 2 s, fuera en 0,5 s */
     if (snd_cut_on() && ((!nmiss && !nbg) || frame_id > cut_end)) { snd_resume(); cut_until = frame_id + (in_race ? 120 : 30); }
-    /* fuera de la carrera una frase que aun no suena espera a los paquetes de fondo (los menus tras una carrera, como
-       mucho 4 s): mejor empezar un poco tarde que cortarla luego */
-    if (nbg && !in_race && cd_audio() && !cd_playing() && !snd_cut_on() && frame_id >= cut_until && snd_cut()) cut_end = frame_id + 240;
+    /* fuera de la carrera (o fundiendose) una frase que aun no suena espera a los paquetes de fondo (los menus tras una
+       carrera, como mucho 4 s): mejor empezar un poco tarde que cortarla luego */
+    if (nbg && (!in_race || race_end) && cd_audio() && !cd_playing() && !snd_cut_on() && frame_id >= cut_until && snd_cut()) cut_end = frame_id + 240;
     if (nmiss && tiles_lba >= 0) {
         /* urgente: muchos en pantalla, o desde hace rato (en carrera antes). Con una frase sonando solo se mira lo
            que se ve (para cortarla) */
@@ -591,7 +628,7 @@ static void cache_load(void)
         return;
     }
     if (nbg && !job_on && !bg_n && !cd_audio()) bg_start();
-    else if (in_race && !nmiss && !nbg && !job_on && !job_st && tiles_lba >= 0 && !cd_audio()) prefetch();
+    else if (in_race && !race_end && !nmiss && !nbg && !job_on && !job_st && tiles_lba >= 0 && !cd_audio()) prefetch();
 }
 /* ---- carrera: entrar (paquetes del recorrido y de carrera fijos, los de menus guardados: se sustituyen antes que
    los fijos y despues de lo demas, y asi al salir hay menos que volver a leer) y salir (los de menus fijos y se
@@ -600,6 +637,7 @@ static void level_load(int k)
 {
     int i, hs, fast, need, same = k == cur_level && lvl_pk.hs;
     alias_set(&lvl_pk, 0); alias_set(&race_pk, 0);
+    race_end = lum_prev = lum_steps = 0;
     for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
     for (i = 0; i < NTS; i++) slot_age[i] = frame_id - 1000;
     min_cls_frame = -1; hand = 0;
@@ -640,6 +678,40 @@ static void race_enter(int k)
     t1_skip();                                          /* el tiempo de la carga no cuenta para el sonido */
     snd_resume();
 }
+/* fin de la carrera: el juego funde la paleta a negro (~50 cuadros) antes de la pantalla siguiente ('Your Time',
+   'Continue ?', las fotos del attract). Entonces lo de la carrera deja de ser fijo y pasa a viejo (salvo lo que se ve;
+   de los repetidos solo siguen los que se ven, con su hueco fijo) y se leen de fondo POST.BIN y POST2.BIN, lo que
+   sale al acabar una carrera, y luego los menus: asi esa pantalla no sale a trozos */
+static void race_ending(void)
+{
+    int i, k;
+    pack_t *ap[2] = {&lvl_pk, &race_pk};
+    race_end = 1;
+    for (i = 0; i < NTS / 8; i++) slot_pin[i] = 0;
+    for (i = 0; i < NTS; i++) if (frame_id - slot_age[i] >= 2 && !LOW(i)) slot_age[i] = frame_id - 1000;
+    for (k = 0; k < 2; k++) for (i = 0; i < ap[k]->nal; i++) {
+        u16 d = ap[k]->al[i * 2] & 0x3FFF, s = tslot[d];
+        if (s == 0xFFFF || slot_tile[s] == d) continue;
+        if (frame_id - slot_age[s] < 2) slot_pin[s >> 3] |= 1 << (s & 7); else tslot[d] = 0xFFFF;
+    }
+    min_cls_frame = -1;
+    if (job_on == 1 && job_pf) { cd_cancel(); job_on = 0; }
+    bg_stop(); bg_add(&post_pk); bg_add(&post2_pk); bg_add(&menu_pk); bg_add(&menu2_pk);
+}
+/* luminosidad de las paletas 0-63 (una de cada 4 entradas). El fundido del final la baja cada 2 o 3 cuadros, sin
+   subir nunca y como mucho un 20 % cada vez, hasta 0 (unos 45 cuadros). En carrera la paleta animada sube y baja un
+   poco y a veces cae a 0 de golpe y vuelve (de noche). Fundido: 6 bajadas seguidas de menos de un cuarto, sin subir, y
+   ya por debajo de la mitad de donde empezo */
+static void race_fade(void)
+{
+    const u16 *p = (const u16 *)rc_pal;
+    int i, l = 0;
+    for (i = 0; i < 1024; i += 4) { u16 c = p[i]; l += (c & 15) + ((c >> 4) & 15) + ((c >> 8) & 15); }
+    if (l > lum_prev || (lum_prev - l) * 4 > lum_prev) lum_steps = 0;
+    else if (l < lum_prev && !lum_steps++) lum_ref = lum_prev;
+    lum_prev = l;
+    if (lum_steps >= 6 && l * 2 < lum_ref && !race_end) race_ending();
+}
 static void race_exit(void)
 {
     int i;
@@ -655,7 +727,8 @@ static void race_exit(void)
         for (i = 0; i < job_n; i++) miss_mark[job_t[i] >> 3] = 0;
         job_n = 0;
     }
-    bg_stop(); bg_add(&menu_pk); bg_add(&menu2_pk);
+    if (!race_end) { bg_stop(); bg_add(&menu_pk); bg_add(&menu2_pk); }   /* si se fundio, ya se estan leyendo */
+    race_end = 0;
 }
 /* de una muestra de 30 tiles del fondo visible, cuantos son del mapa del recorrido cargado */
 static int map_score(void)
@@ -681,6 +754,7 @@ static void level_check(void)
         if (k < 12 && k != cur_level) { race_enter(k); return; }
     }
     if (cur_level < 0) return;
+    if (in_race) race_fade();
     sc = level_ptr[cur_level] == p ? map_score() : 0;
     if (in_race ? sc < 8 : sc >= 15) {
         if (++race_cnt >= (in_race ? (nmiss >= 16 ? 2 : 8) : 2)) { if (in_race) race_exit(); else race_enter(cur_level); }
@@ -706,11 +780,12 @@ static void boot_load(void)
     void snd_init(void);
     int sz, k; char nm[] = "LEVEL00.BIN";
     if (cd_find("TILES.BIN", &tiles_lba, &sz)) tiles_lba = -1;
+    if (cd_find("LOGO.BIN", &logo_lba, &sz)) logo_lba = -1; else logo_ns = sz / 2048;
     pk_find(&race_pk, "RACE.BIN");
     for (k = 0; k < 12; k++) { nm[5] = '0' + k / 10; nm[6] = '0' + k % 10; if (cd_find(nm, &level_lba[k], &sz)) level_lba[k] = -1; else level_sec[k] = sz / 2048; }
     if (cd_find("TRACKS.BIN", &b_trk, &sz)) b_trk = -1;
     if (cd_find("SNDFX.BIN", &b_fx, &sz)) b_fx = -1; else b_nfx = (sz + 2047) / 2048;
-    pk_find(&menu_pk, "MENU.BIN"); pk_find(&menu2_pk, "MENU2.BIN");
+    pk_find(&menu_pk, "MENU.BIN"); pk_find(&menu2_pk, "MENU2.BIN"); pk_find(&post_pk, "POST.BIN"); pk_find(&post2_pk, "POST2.BIN");
     menu_pk.pin = menu2_pk.pin = 1; race_pk.pin = 2;
     snd_init();
     load_screen(1 + b_nfx + menu_pk.ns);

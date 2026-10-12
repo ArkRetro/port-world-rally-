@@ -3,6 +3,7 @@
    lecturas de RAM de 6 ciclos, GPU con coste por pixel, CD con busqueda/lectura/pausa, mando SIO0.
    Uso: psxprof imagen.cue wr2.elf.bin(PS-EXE) wr2.nm cuadros_juego [salida_dir]
    Entradas (botones) segun el cuadro del juego (llamadas a rc_vblank), como rc_host (ver inputs_for).
+   SHOTV=v1,v2,...: capturas en esos vblanks (tambien antes del juego: la pantalla de carga del arranque);
    MISSLOG=1: falta.txt con los tiles que faltan en cada cuadro; WATCH=var,...: cambios de esas variables.
    CD_VIEJOS=n: tras un ReadN sin Pause llegan aun n sectores de la posicion anterior (psxprof no los da si no). */
 #include <stdio.h>
@@ -1173,7 +1174,13 @@ int main(int argc, char **argv)
         }
         step();
         if ((R[29] & 0x1FFFFF) < minsp && (R[29] >> 24) == 0x80) { minsp = R[29] & 0x1FFFFF; minsp_fr = game_frame; }
-        while (cyc >= next_vbl) { I_STAT |= 1; vbl_set_cyc = next_vbl; next_vbl += frame_cyc; vbl_count++; }
+        while (cyc >= next_vbl) {
+            I_STAT |= 1; vbl_set_cyc = next_vbl; next_vbl += frame_cyc; vbl_count++;
+            {   /* SHOTV=v1,v2,...: captura de lo que se ve en esos vblanks (p. ej. la pantalla de carga del arranque) */
+                const char *q = getenv("SHOTV");
+                while (q && *q) { long v = strtol(q, (char **)&q, 10); if (v == (long)vbl_count) { char nm[64]; snprintf(nm, sizeof nm, "vbl_%05ld", v); screenshot(nm); } if (*q == ',') q++; else break; }
+            }
+        }
         if (cyc >= next_cd) { cd_tick(); next_cd = cyc + 64; if (sym_loading && rd32ram(sym_loading)) was_loading = 1; }
     }
     {

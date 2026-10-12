@@ -65,6 +65,7 @@ rate = np.zeros((12, N)); nlog = np.zeros((12, N), np.int64)
 seen = np.zeros((2, N), bool)                # sprites de carrera vistos sin y con direccion oscilante
 vis1 = np.zeros((12, N), bool)               # vistos en carrera en las partidas del primer tramo (para RACE)
 menu = np.zeros((2, N), np.int64)            # cuadros fuera de la carrera: 0 attract, 1 partidas
+post = np.zeros(N, np.int64)                 # en cuantos finales de carrera se ve cada tile en los 2,5 s siguientes
 for fn in sorted(f for f in os.listdir(work('.')) if f.startswith('tl_') and f.endswith('.bin')):
     coin, steer, auto = fn != 'tl_nc.bin', fn.startswith('tl_s'), fn.startswith('tl_a')
     f, t, l = np.fromfile(work(fn), '<u4').reshape(-1, 3).T.astype(np.int64)
@@ -82,6 +83,9 @@ for fn in sorted(f for f in os.listdir(work('.')) if f.startswith('tl_') and f.e
         rate[k] = np.maximum(rate[k], (cs + ce) / n); nlog[k] += (cs + ce) > 0
     key = np.unique(f[~rr] * N + tt[~rr])        # cada tile una vez por cuadro
     menu[int(coin)] += np.bincount(key % N, minlength=N)
+    for e in uf[:-1][rf[:-1] & ~rf[1:]]:          # finales de carrera (como mucho uno cada 10 s)
+        if np.any((uf > e) & (uf <= e + 600) & rf[np.arange(len(uf))]): continue
+        post[np.unique(tt[(f > e) & (f <= e + 150)])] += 1
 def tl(a): return set(np.nonzero(a)[0].tolist())
 # RACE: lo que se ve en carrera en al menos 3 de los 4 rallies (su primer tramo, de las partidas registradas sin el
 # piloto automatico) y los sprites que solo salen con la direccion oscilante (los del coche al chocar o derrapar, que
@@ -164,13 +168,18 @@ for k in range(12):
     assert n[0] <= 4000, n                   # lvl_ids[] en main.c
     print('LEVEL%02d' % k, n, 'iguales %d, huecos con RACE %d' % (len(al), ndist(lvp[k] | race)))
 print('RACE', pack('RACE.BIN', rdat, (), ral), 'iguales', len(ral))
+# POST: lo que se ve al acabar una carrera (foto 'Your Time', 'Continue ?', fotos del attract tras la demostracion): se
+# lee de fondo mientras la carrera se funde a negro, para que la pantalla siguiente no salga a trozos. Lo que sale tras
+# mas finales primero (POST) y luego lo demas (POST2, p. ej. las fotos del attract tras cada demostracion)
+pt = sorted(tl(post >= 2) - race, key=lambda t: (-post[t], t))[:1024]
+print('POST', pack('POST.BIN', pt[:512]), 'POST2', pack('POST2.BIN', pt[512:]), 'de', int(np.sum(post >= 2)))
 # MENU: lo mas visto fuera de la carrera en las partidas. MENU2: lo demas que se ve fuera de la carrera (3 cuadros o
-# mas), lo mas visto primero, hasta llenar la cache con MENU y RACE (que se lee antes, de fondo, al arrancar) dejando
-# 200 huecos
+# mas), lo mas visto primero, hasta llenar la cache con MENU dejando 200 huecos: fuera de la carrera sustituye a lo de
+# RACE (guardado), que se vuelve a leer al entrar en carrera (antes RACE se quedaba y faltaban fotos del attract)
 co, nc = menu[1], menu[0]
 m1 = set(sorted(tl(co), key=lambda t: -co[t])[:1280])
 tot = co + nc
 m2 = sorted(tl(tot >= 3) - m1 - race, key=lambda t: (-tot[t], t))
-cap = max(0, min(4000, NTS - 200 - len(race | m1)))
+cap = max(0, min(4000, NTS - 200 - len(m1)))
 print('MENU2: %d de %d (fuera los vistos en menos de %d cuadros)' % (min(cap, len(m2)), len(m2), tot[m2[cap]] if cap < len(m2) else 0))
 print('MENU', pack('MENU.BIN', m1), 'MENU2', pack('MENU2.BIN', m2[:cap]))

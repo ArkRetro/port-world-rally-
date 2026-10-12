@@ -8,7 +8,7 @@ import subprocess, sys, os, struct
 import licencia
 LIC = licencia.TXT
 tracks = [l.strip() for l in open('../snd/tracks.txt') if l.strip()]
-files = ['SYSTEM.CNF', 'TRACKS.BIN', 'SNDFX.BIN', 'MENU.BIN', 'RACE.BIN', 'MENU2.BIN', 'WRPS1.EXE', 'TILES.BIN'] + ['LEVEL%02d.BIN' % k for k in range(12)]
+files = ['SYSTEM.CNF', 'LOGO.BIN', 'TRACKS.BIN', 'SNDFX.BIN', 'MENU.BIN', 'RACE.BIN', 'MENU2.BIN', 'POST.BIN', 'POST2.BIN', 'WRPS1.EXE', 'TILES.BIN'] + ['LEVEL%02d.BIN' % k for k in range(12)]
 def build(reg):
     open('cd_lic_%s.dat' % reg, 'wb').write(lic[reg])    # sectores 0-11: licencia y logo (licencia.py)
     x = ['<?xml version="1.0" encoding="UTF-8"?>',

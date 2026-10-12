@@ -27,7 +27,7 @@ echo "      tramos de cada rally hasta la meta); regiones de memoria (recompilad
        INPUTS=${r#*:} AUTOP=1900-24000 WR_WORK=../work BLKLOG=../work/tl_a${r%%:*}.bin RCREG=/dev/null ./rc_host 24000 ../work/run || exit 1; done \
   && python3 regiones.py ../work/reg_*.bin && python3 rc68.py wr_rc.c)
 echo "== 5. graficos y sonido para el CD"
-(cd ps1 && python3 gen2.py)
+(cd ps1 && python3 gen2.py && python3 logo.py)
 (cd snd && python3 sndps1.py)
 echo "== 6. ejecutable de PS1 e imagenes de CD"
 (cd ps1 && RCOPT=${RCOPT:--Os} ./build.sh)
