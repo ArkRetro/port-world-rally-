@@ -19,7 +19,7 @@ $P-gcc $CF -DMCS51_XOR=1 -c rc/mcs51.c -o $B/mcs51.o
 $P-gcc $CF -c rc/gcrypt.c -o $B/gcrypt.o
 $P-gcc $CF $CFX -DRC_ROM_EXTERN -c rc/rc_mem.c -o $B/rc_mem.o
 (cd ps1 && $P-gcc $ARCH -c data.s -o $B/data.o)
-$P-gcc $ARCH -I$N -c $N/common/crt0/crt0.s -o $B/crt0.o
+$P-gcc $ARCH -c ps1/crt0.s -o $B/crt0.o
 $P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,--oformat=elf32-tradlittlemips -o $B/wr2g.elf \
   $B/crt0.o $B/main.o $B/wr_rc.o $B/mcs51.o $B/mcu_rc.o $B/gcrypt.o $B/rc_mem.o $B/cd.o $B/snd.o $B/snd_tab.o $B/oki_tab.o $B/data.o -lgcc
 $P-objcopy -O binary $B/wr2g.elf $B/wr2g.ps-exe

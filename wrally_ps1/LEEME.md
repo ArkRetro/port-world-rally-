@@ -6,7 +6,7 @@ No distribuyas las imágenes de CD que salen.
 
 ## Requisitos
 - Linux con `python3` (numpy, scipy), `gcc`, `mipsel-linux-gnu-gcc` (binutils/gcc cruzados para MIPS).
-- **nugget** (de pcsx-redux, `src/mips`): `crt0.s`, `ps-exe.ld`, `nooverlay.ld`. Ruta en `NUGGET`.
+- **nugget** (de pcsx-redux, `src/mips`): `ps-exe.ld`, `nooverlay.ld`. Ruta en `NUGGET`.
 - **mkpsxiso** (en `MKPSXISO` o en el PATH).
 - ROM de MAME `wrally`: `worldr14.c01 worldr15.c03 worldr16.c22 worldr17.c23 worldr18.i07 worldr19.i09 worldr20.i11 worldr21.i13 wrdallas.bin` en `WR_ROM` (por defecto `./rom`).
 
@@ -15,9 +15,35 @@ No distribuyas las imágenes de CD que salen.
 
 `LICENCIA` (opcional) es para el logo de PlayStation del arranque: la BIOS solo lo dibuja si los sectores 5-11 del
 disco son iguales al que lleva dentro, así que se saca de **tu** BIOS al construir (`ps1/licencia.py`; también vale un
-`LICENSEA.DAT` o la imagen de un juego original). Sin ella la imagen arranca igual, pero sin el logo.
+`LICENSEA.DAT` o la imagen de un juego original). Sin ella arranca en consolas americanas (sin el logo), pero no en
+las PAL con BIOS 4.0E o posterior (SCPH-7002/7502/9002/102) ni en las japonesas, que comparan el logo con el suyo:
+para una PS1 real con PSIO o XStation construye siempre con `LICENCIA`.
 
-Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/.bin` (PSone PAL).
+Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/.bin` (PSone PAL), y en `ps1/sd/` las
+carpetas para la tarjeta de PSIO o XStation (`SD_NOMBRE` cambia el nombre; por defecto `World Rally PS1`).
+
+## PS1 real con PSIO o XStation
+- Consolas: PSIO necesita el puerto paralelo (SCPH-1000 a 7503) y su Switch Board; XStation va en placas PU-7, PU-8 y
+  PU-18 (SCPH-1000 a 5903). La PSone (SCPH-101/102) no admite ninguno.
+- Tarjeta (FAT32 o exFAT): copia a la raíz la carpeta de tu sistema y región, tal cual:
+
+      World Rally PS1 (USA)/        .bin y .cue   -> XStation (y CD grabado)
+      World Rally PS1 (USA) PSIO/   .bin y .cu2   -> PSIO
+
+  El nombre de los ficheros tiene que ser el de la carpeta (la línea FILE del .cue y el .cu2 dependen de él): para
+  cambiarlo, `SD_NOMBRE` al construir (hasta 45 caracteres ASCII en total, sin puntos ni `\ / : * ? " < > |`).
+- PSIO no lee el .cue: sin el `.cu2` no hay pistas de audio. Su imagen es otra: el CD-DA de PSIO no pasa por el lector
+  de la consola sino por la entrada externa de la SPU (la del puerto paralelo), y el EXE de esa imagen la enciende (el
+  menú de PSIO lo hace con un gancho en el kernel que aquí no correría: el juego va sin interrupciones). Usa el
+  firmware al día (2.6.11 o posterior para el `.cu2`; con uno más antiguo, construye con `CU2_REV=1`) y arranca en
+  modo Midboot.
+- XStation: firmware 2.0.2 (la beta 2.2.0 tiene fallos con el CD-DA). Tras copiar, «Refresh game list». Prueba primero
+  con FULL LOAD y luego con FAST LOAD.
+- Región: cualquiera de las dos imágenes arranca en cualquier consola con PSIO o XStation (solo cambia el texto de
+  licencia), siempre que se haya construido con `LICENCIA`. El juego sale siempre en NTSC a 60 Hz: en una consola PAL
+  usa RGB.
+- Si algo falla, anota la consola, el firmware del ODE, el modo de arranque (Midboot/LoadExec, FULL/FAST LOAD) y la
+  tarjeta, y mira las cifras de L2 (errores del CD).
 
 ## Estructura
 - `tools/prep.py`: programa del 68000, MCU y tiles a partir de las ROM (`work/`).
@@ -45,7 +71,18 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - Pantalla de carga al estilo del juego (bandas de bandera a cuadros, CARGANDO con el degradado de las cifras del marcador y la barra START-FINISH). Al arrancar, encima, el logo de `ps1/logo_pina.png` (después del de PlayStation de la BIOS, si se construye con `LICENCIA`).
   - La lista de la GPU se hace en una sola pasada por las capas y los sprites (un cubo por paso de dibujo).
   - Si un cuadro llega tarde, el siguiente no se dibuja y el juego sigue a 60 Hz (`FRAMESKIP`, `-DFRAMESKIP=0` lo quita).
+- `ps1/crt0.s`: arranque del EXE: sin interrupciones y con la pila en su sitio antes de borrar la BSS (un cargador de
+  ODE puede saltar al EXE con las interrupciones activas).
 - `ps1/cd.c`: lector de CD por sondeo (datos y CD-DA).
+  - Para el hardware real y los ODE (XStation usa el controlador de la consola; PSIO lo imita): registros por KSEG1
+    (sin la cola de escritura de la CPU), HINTSTS leído hasta que dos lecturas coinciden (en placas antiguas las
+    banderas cambian sin sincronizar), una Pause rechazada mientras la unidad aún busca (INT5 80h) se repite a los
+    2 cuadros, el CD-DA cuenta desde que suena de verdad (bit 7 del stat, con GetStat cada 2 cuadros tras Play, y no
+    desde su primera respuesta), tras un error de lectura se espera 0,25 s antes de reintentar y solo los errores
+    seguidos abandonan la lectura (80h, «aún no lista», no cuenta). Al empezar: tiempos del bus como la BIOS, lo que
+    dejara pendiente el cargador se reconoce y vacía, e Init se repite si no contesta. Los ficheros del disco se
+    buscan hasta 3 veces.
+  - El temporizador 1 (líneas de vídeo) se lee hasta que dos lecturas coinciden (cuenta con el reloj de la GPU).
   - Caché: en carrera quedan fijos los paquetes del recorrido y de carrera, y los de menús guardados (se sustituyen antes que los fijos y después de lo demás); al salir (el fondo deja de ser el mapa) los de menús vuelven a ser fijos y se leen de fondo, y el de carrera queda guardado. En carrera lo fijo no se sustituye nunca (antes, lo que no se usaba en 10 s sí, y en la meta faltaban trozos).
   - Los tiles iguales a otro del paquete (o del de carrera) no llevan datos: en carrera usan el hueco de ese (de 250 a 380 por recorrido).
   - En carrera, con el CD libre, se leen de antemano los sectores de `TILES.BIN` de al lado de los sprites del coche y del haz de los faros que se ven: sus poses van de 16 en 16 tiles en el orden en que se suceden.
@@ -58,12 +95,20 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
   - `mkiso.py` comprueba que `SYSTEM.CNF` y el ejecutable estén en el primer sector del directorio raíz: la BIOS no lee más (si no, se queda en su logo).
   - Opciones sin probar en MiSTer: `-DCD_DMA` (datos por DMA) y `-DCD_SIN_INIT` (sin Init al arrancar).
 - `ps1/snd.c`: el OKI M6295 sobre la SPU (frases cortas) y sobre pistas de audio (frases largas).
+  - Las duraciones de las frases de CD-DA (75 sectores por segundo) se pasan a cuadros con la frecuencia medida al
+    arrancar contra el temporizador 2: 59,83 cuadros por segundo en una consola NTSC, 59,28 en una PAL.
+  - `ode_cfg`: en la imagen para PSIO (`mkiso.py` cambia ese byte del EXE) el CD-DA entra por la entrada externa de la
+    SPU (I2SB); en las demás, apagada.
   - Las frases que el juego encadena (la música de los menús y de 'Your Time') van seguidas en una misma pista: la siguiente sigue sin parar la unidad ni buscar.
   - Pausa (START en carrera): calla las voces y el CD, oscurece la pantalla con PAUSA y el juego queda parado; al seguir, todo continúa donde estaba.
 - `ps1/gen2.py`: genera `TILES.BIN` y los paquetes `LEVELnn.BIN`, `RACE.BIN`, `MENU.BIN`, `MENU2.BIN`, `POST.BIN` y `POST2.BIN` a partir de los registros del banco de pruebas. Cada recorrido se llena hasta la capacidad con los sprites del jugador (poses del coche, marcador y, de noche, el haz de los faros), los más vistos primero. Fuera de la carrera los menús llenan la caché (sustituyen a lo de carrera, que se vuelve a leer al empezar). `POST`/`POST2`: lo que sale al acabar una carrera ('Your Time', 'Continue ?', las fotos del attract).
 - `ps1/logo.py`: el logo de arranque a `LOGO.BIN` (15 bits, 128 de ancho).
 - `snd/sndps1.py`, `snd/psxadpcm.c`: muestras a PS-ADPCM y pistas WAV (el ADPCM del OKI se pasa a muestras lineales; `CADENAS`: frases encadenadas en una pista).
-- `ps1/mkiso.py`: genera las dos imágenes.
+- `ps1/mkiso.py`: genera las dos imágenes, las de PSIO (el EXE con `ode_cfg` a 1) y las carpetas de `ps1/sd/` con el
+  `.cue` (CRLF, con el nombre de la carpeta) y el `.cu2` de PSIO (igual byte a byte que el de Cue2cu2; `CU2_REV=1` para
+  firmware anterior a 2.6.11). Detrás de la última pista de música va una pista de 2 s de silencio, para que acabe
+  como las demás (pausa automática) y no en el final del disco. Comprueba que `SYSTEM.CNF` y el ejecutable estén en
+  el primer sector del directorio raíz.
 - `perf/`: medidas con el emulador `psxprof` (modelo de tiempos aproximado).
   - `medir.sh`: ritmo y perfil del recorrido estándar.
   - `escenarios.sh`: partida, segunda partida, attract, dirección oscilante, los otros rallies, attract de 8 minutos, partida hasta los records y segunda partida en otro rally; compara cuadro a cuadro con la versión original (`BASE`), cuenta los tiles que faltan en pantalla y lo resume por escenario (`tabla.py`).
@@ -81,4 +126,4 @@ Salen `ps1/wrps1_USA.cue/.bin` (MiSTer con BIOS americana) y `ps1/wrps1_EUR.cue/
 | X | acelerar |
 | Cuadrado | marcha |
 | cruceta | dirección |
-| L2 | cifras de rendimiento |
+| L2 | cifras de rendimiento; abajo, las del CD: sectores perdidos, errores, vigilancias, último código de error, Pause rechazadas y cuadros por segundo ×1000 |

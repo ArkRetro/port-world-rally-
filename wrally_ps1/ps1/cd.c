@@ -4,30 +4,38 @@
    cabecera (MSF) de cada uno: si se pierde alguno se vuelve a buscar. El audio CD-DA va a velocidad normal y con
    pausa automatica al final de la pista (INT4); los datos a doble velocidad solo en las cargas grandes (cambiar
    de velocidad tarda casi un segundo). Al acabar una lectura la unidad sigue leyendo un momento (sin pausa) por si
-   llega otra que empiece un poco mas adelante. */
+   llega otra que empiece un poco mas adelante.
+   Para el hardware real (y PSIO/XStation, que usan o imitan el controlador de Sony): registros por KSEG1 (la cola de
+   escritura de la CPU no adelanta una lectura a la escritura del indice), HINTSTS leido dos veces (en placas antiguas
+   las banderas cambian sin sincronizar: 1 antes de 3, 4 antes de 5), Pause rechazada mientras busca (INT5 80h)
+   repetida, el audio cuenta desde que suena (bit 7 del stat, no desde la respuesta de Play), espera tras un error
+   antes de reintentar y errores contados seguidos. */
 #include "cd.h"
 typedef unsigned char u8; typedef unsigned short u16;
-#define CD0 (*(volatile u8 *)0x1F801800)
-#define CD1 (*(volatile u8 *)0x1F801801)
-#define CD2 (*(volatile u8 *)0x1F801802)
-#define CD3 (*(volatile u8 *)0x1F801803)
-#define T1 (*(volatile u16 *)0x1F801110)     /* temporizador 1: lineas de video (263 por cuadro) */
-#define D3_MADR (*(volatile unsigned *)0x1F8010B0)   /* DMA 3: CD -> RAM */
-#define D3_BCR (*(volatile unsigned *)0x1F8010B4)
-#define D3_CHCR (*(volatile unsigned *)0x1F8010B8)
-#define DPCR (*(volatile unsigned *)0x1F8010F0)
+#define CD0 (*(volatile u8 *)0xBF801800)
+#define CD1 (*(volatile u8 *)0xBF801801)
+#define CD2 (*(volatile u8 *)0xBF801802)
+#define CD3 (*(volatile u8 *)0xBF801803)
+#define T1 t1_get()                         /* temporizador 1: lineas de video (263 por cuadro) */
+#define D3_MADR (*(volatile unsigned *)0xBF8010B0)   /* DMA 3: CD -> RAM */
+#define D3_BCR (*(volatile unsigned *)0xBF8010B4)
+#define D3_CHCR (*(volatile unsigned *)0xBF8010B8)
+#define DPCR (*(volatile unsigned *)0xBF8010F0)
 #define M_AUDIO 0x22                        /* velocidad normal, sectores de 0x924, pausa al final de la pista */
 #define M_FAST 0xA2                         /* lo mismo a doble velocidad */
 #define SEG(s) ((s) * 15750)                /* lineas por segundo */
 #define GRACE 526                           /* lineas (2 cuadros) que se sigue leyendo al acabar una lectura */
 
-int cd_dbg[8];                              /* 0 sectores, 1 perdidos, 2 errores, 3 vigilancia */
+int cd_dbg[8];                              /* 0 sectores, 1 perdidos, 2 errores, 3 vigilancia, 4 modo, 5 ultimo codigo de error,
+                                               6 Pause rechazadas */
 static u8 resp[16]; static int nresp;
 static int drv;                             /* unidad: 0 parada, 1 leyendo, 2 audio */
 static int cmd, cmd_arg, wait2;             /* comando sin primera respuesta (INT3); Pause sin segunda (INT2) */
 static u16 t_cmd, t_ev, t_done;             /* lineas: envio del comando, ultimo sector, fin de la ultima lectura */
 static int mode = -1, want_mode = M_AUDIO, loc_at = -1, drv_next = -1, lost;
 static int seek_to = -1, seek_n;            /* ReadN sin Pause: hasta ver este sector (o 3) los que lleguen son de antes */
+static int heard; static u16 t_play;        /* Play: ya suena (bit 7 del stat; antes busca) y cuando se acepto */
+static int hold; static u16 t_hold, n_hold; /* tras una Pause rechazada o un error: no mandar nada en n_hold lineas */
 /* peticion de lectura de los sectores lba..lba+n-1: a buf (como mucho 32, en cualquier orden: rd_got), o en orden
    a cb (por sbuf) o a donde diga dst (0: aun no hay sitio, se volvera a buscar). rd_i: el primero que falta */
 static int rd_on, rd_lba, rd_n, rd_i, rd_fast, rd_err, rd_res; static unsigned rd_got;
@@ -97,11 +105,14 @@ static void event(int t)
         switch (cmd) {
         case 0x02: loc_at = cmd_arg; break;
         case 0x06: drv = 1; drv_next = seek_to = loc_at; seek_n = 0; loc_at = -1; t_ev = T1; lost = 0; break;
-        case 0x03: drv = 2; loc_at = -1; break;
+        case 0x03: drv = 2; heard = 0; t_play = T1; loc_at = -1; break;
         case 0x09: case 0x0A: wait2 = cmd; break;
         case 0x0E: mode = cmd_arg; break;
         case 0x11: loc_res = nresp >= 8 ? msf(resp + 5) : -1; loc_req = 0; break;
         }
+        /* GetStat tras Play: ya suena (bit 7), o no dice ni que busca (bit 6) ni que toca (un ODE que no los diera: no
+           esperar por ellos) */
+        if (cmd == 0x01 && drv == 2 && !heard && nresp && (resp[0] & 0x80 || !(resp[0] & 0x40))) heard = 1;
         cmd = 0;
     } else if (t == 2) {                    /* segunda respuesta (Pause, Init) */
         if (wait2) { drv = 0; wait2 = 0; }
@@ -109,10 +120,16 @@ static void event(int t)
         if (drv == 2) cd_ended = 1;
         drv = 0;
     } else if (t == 5) {                    /* error */
-        cd_dbg[2]++;
+        cd_dbg[2]++; cd_dbg[5] = nresp > 1 ? resp[1] : 0x100;
+        if (cmd == 0x09) {                  /* Pause rechazada (aun busca: Play o ReadN): repetirla dentro de 2 cuadros */
+            cd_dbg[6]++; hold = 1; t_hold = T1; n_hold = 526;
+            if (drv == 2 && play_at < 0) stop_req = 1;
+            cmd = 0; return;
+        }
+        if (rd_on && (cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1))) { hold = 1; t_hold = T1; n_hold = 15 * 263; }   /* ~0,25 s */
         if (cmd == 0x11) { loc_res = -1; loc_req = 0; }
         if (cmd == 0x03 || (cmd == 0x02 && play_at >= 0) || (!cmd && drv == 2)) { play_at = -1; cd_ended = 1; }
-        if (cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1)) rd_err++;
+        if ((cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1)) && !(nresp > 1 && resp[1] == 0x80)) rd_err++;   /* 80h: aun no lista */
         if (cmd == 0x02) loc_at = -1;
         if (cmd == 0x06 || cmd == 0x03 || !cmd) drv = 0;
         if (wait2 && !cmd) { wait2 = 0; drv = 0; }
@@ -124,6 +141,7 @@ static void event(int t)
 static void step(void)
 {
     if (cmd || wait2 || (CD0 & 0x80)) return;
+    if (hold) { if ((u16)(T1 - t_hold) < n_hold) return; hold = 0; }
     if (loc_req) { if (drv == 2) { send(0x11, 0, 0, 0); return; } loc_req = 0; loc_res = -1; }
     if (play_at >= 0) {
         if (drv == 1) { send(0x09, 0, 0, 0); return; }          /* la lectura sigue luego */
@@ -132,6 +150,11 @@ static void step(void)
         send(0x03, 0, 0, 0); play_at = -1; cd_ended = 0; return;
     }
     if (stop_req) { stop_req = 0; if (drv) { send(0x09, 0, 0, 0); return; } }
+    /* Play: GetStat cada 2 cuadros hasta que suene (como mucho 1,5 s: la busqueda no cuenta como sonando) */
+    if (drv == 2 && !heard) {
+        if ((u16)(T1 - t_play) > SEG(3) / 2) heard = 1;
+        else if ((u16)(T1 - t_cmd) >= 526) { send(0x01, 0, 0, 0); return; }
+    }
     if (rd_on) {
         int at = rd_lba + rd_i, m = rd_fast ? M_FAST : want_mode;
         if (drv == 2) return;                                   /* el audio tiene prioridad */
@@ -155,19 +178,21 @@ void cd_poll(void)
         u8 *d = 0; int i = 0;
         CD0 = 1; t = CD3 & 7;
         if (!t) break;
+        while (t != (CD3 & 7)) t = CD3 & 7;   /* dos lecturas iguales (psx-spx: 0 -> 1 -> 3, 0 -> 4 -> 5) */
         nresp = 0;
         while ((CD0 & 0x20) && nresp < 16) resp[nresp++] = CD1;
         if (t == 1 && drv == 1) d = sector(&i);
         CD0 = 1; CD3 = 7;                   /* reconocer */
         if (t != 1) event(t);
         else if (d) {
+            rd_err = 0;                     /* errores seguidos: uno bueno los borra */
             if (rd_buf) { rd_got |= 1u << i; while (rd_i < rd_n && (rd_got & (1u << rd_i))) rd_i++; } else rd_i++;
             if (rd_i == rd_n) { rd_on = 0; rd_res = 1; t_done = T1; }
             if (rd_cb) rd_cb(i, d);
         }
     }
     /* vigilancia: respuestas que no llegan */
-    if ((cmd && (u16)(T1 - t_cmd) > SEG(2)) || (wait2 && (u16)(T1 - t_cmd) > SEG(2))) {
+    if ((cmd && (u16)(T1 - t_cmd) > SEG(2)) || (wait2 && (u16)(T1 - t_cmd) > (wait2 == 0x0A ? SEG(4) : SEG(2)))) {
         cd_dbg[3]++; cmd = 0; wait2 = 0; loc_at = -1; seek_to = -1;
         if (drv != 2) drv = 1;              /* estado incierto: parar y volver a empezar */
         if (rd_on) rd_err++;
@@ -230,17 +255,36 @@ void cd_sync(void)
 /* velocidad para cuando no haya trabajo (normal: lista para el audio) */
 void cd_speed(int fast) { want_mode = fast ? M_FAST : M_AUDIO; }
 
+/* lo que haya dejado la BIOS o el cargador del ODE (p. ej. la segunda respuesta de su ultima Pause): reconocerlo
+   hasta que pasen estas lineas sin nada y el controlador no este ocupado (como mucho 1 s) */
+static void cd_drain(int lines)
+{
+    u16 t0 = T1, tq = t0;
+    while ((u16)(T1 - tq) < lines || (CD0 & 0x80)) {
+        CD0 = 1;
+        if (CD3 & 7) { while (CD0 & 0x20) (void)CD1; CD0 = 1; CD3 = 0x5F; tq = T1; }
+        if ((u16)(T1 - t0) > SEG(1)) break;
+    }
+}
 int cd_init(void)
 {
     int k;
+    *(volatile unsigned *)0xBF801018 = 0x00020943;   /* tiempos del bus del CD y COM_DELAY como los deja la BIOS (por si */
+    *(volatile unsigned *)0xBF801020 = 0x0000132C;   /* un cargador de ODE los cambio) */
+    CD0 = 0; CD3 = 0;                       /* HCHPCTL: sin peticiones de datos */
     CD0 = 1; CD2 = 0x1F;                    /* habilitar banderas de interrupcion del controlador */
     CD0 = 1; CD3 = 0x1F;
     DPCR |= 0x8000;                         /* DMA 3 (CD) */
-    cmd = wait2 = 0; drv = 1; want_mode = M_FAST;
+    cd_drain(800);                          /* 50 ms sin nada */
 #ifndef CD_SIN_INIT
-    send(0x0A, 0, 0, 0);                    /* Init: para la unidad, motor en marcha */
-    cd_sync();
+    for (k = 0; k < 3 && mode != M_FAST; k++) {   /* Init: para la unidad, motor en marcha; si no contesta, otra vez */
+        cmd = wait2 = 0; drv = 1; want_mode = M_FAST; mode = -1;
+        send(0x0A, 0, 0, 0);
+        cd_sync();
+        if (mode != M_FAST) cd_drain(800);
+    }
 #else
+    cmd = wait2 = 0; drv = 1; want_mode = M_FAST;
     /* (-DCD_SIN_INIT, sin probar en MiSTer) sin Init: la BIOS acaba de leer el EXE (a doble velocidad) y deja la unidad lista; Init la pondria a velocidad
        normal y buscaria el sector 0 (en DuckStation y MiSTer, mas de un segundo) para volver luego a doble. Basta
        Pause (por si seguia leyendo) y Setmode, que no cambia la velocidad si ya era doble. Si la unidad contesta con
@@ -295,16 +339,16 @@ void cd_volume(int v)
 void cd_play(int lba) { play_at = lba; stop_req = 0; cd_ended = 0; }
 void cd_stop(void) { play_at = -1; stop_req = 1; }
 int cd_audio(void) { return drv == 2 || play_at >= 0 || cmd == 0x03; }
-int cd_playing(void) { return drv == 2; }
+int cd_playing(void) { return drv == 2 && heard; }
 /* posicion del audio sin esperar: cd_loc_start() pide GetlocP y cd_loc_get() da -2 mientras no llega la
    respuesta, luego la posicion (-1 si no suena o no contesta) */
-void cd_loc_start(void) { loc_res = -1; loc_req = drv == 2; }
+void cd_loc_start(void) { loc_res = -1; loc_req = drv == 2 && heard; }
 int cd_loc_get(void) { return loc_req ? -2 : loc_res; }
 /* posicion del audio (sincrona, GetlocP); -1 si no suena */
 int cd_where(void)
 {
     u16 t0 = T1;
-    if (drv != 2) return -1;
+    if (drv != 2 || !heard) return -1;      /* aun busca: GetlocP no (y la frase aun no ha empezado) */
     loc_req = 1; loc_res = -1;
     while (loc_req && (u16)(T1 - t0) < SEG(1)) cd_poll();
     loc_req = 0;

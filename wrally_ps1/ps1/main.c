@@ -107,7 +107,8 @@ static void pk_send(int fy)
     dma_wait(); gpu_wait(); D2_MADR = (u32)hdr; D2_BCR = 0; D2_CHCR = 0x01000401;
 }
 static int vbl_count;
-#define T1 (*(volatile u16 *)0x1F801110)
+extern int fps_mil;
+#define T1 t1_get()
 static u16 t_vbl;                                    /* temporizador 1 (lineas) en un vblank visto al momento */
 /* espera al siguiente vblank (atendiendo al CD mientras tanto, salvo cerca del vblank: leer un sector tarda hasta
    ~11 lineas en psxprof, mas con un bus del CD lento, y retrasaria el cambio de bufer) y lo reconoce: la bandera que
@@ -877,18 +878,20 @@ static void boot_cb(int i, const unsigned char *d)
     load_done++; load_bar();
 }
 static void boot_read(int lba, int n) { if (lba >= 0 && n > 0) { b_base = lba; if (cd_stream(lba, n, boot_cb, 1)) pack_err++; } }
-static void pk_find(pack_t *p, const char *nm) { int sz; if (cd_find(nm, &p->lba, &sz)) p->lba = -1; else p->ns = sz / 2048; }
+/* en un lector real un fallo de lectura al arrancar no deja sin ese fichero toda la partida: hasta 3 veces */
+static int find(const char *nm, int *lba, int *sz) { int k; for (k = 0; k < 3; k++) if (!cd_find(nm, lba, sz)) return 0; return -1; }
+static void pk_find(pack_t *p, const char *nm) { int sz; if (find(nm, &p->lba, &sz)) p->lba = -1; else p->ns = sz / 2048; }
 static void boot_load(void)
 {
     void snd_init(void);
     int sz, k; char nm[] = "LEVEL00.BIN";
-    if (cd_find("TILES.BIN", &tiles_lba, &sz)) tiles_lba = -1;
-    if (cd_find("LOGO.BIN", &logo_lba, &sz)) logo_lba = -1; else logo_ns = sz / 2048;
+    if (find("TILES.BIN", &tiles_lba, &sz)) tiles_lba = -1;
+    if (find("LOGO.BIN", &logo_lba, &sz)) logo_lba = -1; else logo_ns = sz / 2048;
     pk_find(&race_pk, "RACE.BIN");
-    for (k = 0; k < 12; k++) { nm[5] = '0' + k / 10; nm[6] = '0' + k % 10; if (cd_find(nm, &level_lba[k], &sz)) level_lba[k] = -1; else level_sec[k] = sz / 2048; }
+    for (k = 0; k < 12; k++) { nm[5] = '0' + k / 10; nm[6] = '0' + k % 10; if (find(nm, &level_lba[k], &sz)) level_lba[k] = -1; else level_sec[k] = sz / 2048; }
     for (k = 0; k < 12; k++) { char rn[] = "ZRACE00.BIN"; rn[5] = '0' + k / 10; rn[6] = '0' + k % 10; if (cd_find(rn, &race_cp[k], &sz) || sz / 2048 != race_pk.ns) race_cp[k] = -1; }
-    if (cd_find("TRACKS.BIN", &b_trk, &sz)) b_trk = -1;
-    if (cd_find("SNDFX.BIN", &b_fx, &sz)) b_fx = -1; else b_nfx = (sz + 2047) / 2048;
+    if (find("TRACKS.BIN", &b_trk, &sz)) b_trk = -1;
+    if (find("SNDFX.BIN", &b_fx, &sz)) b_fx = -1; else b_nfx = (sz + 2047) / 2048;
     pk_find(&menu_pk, "MENU.BIN"); pk_find(&menu2_pk, "MENU2.BIN"); pk_find(&post_pk, "POST.BIN"); pk_find(&post2_pk, "POST2.BIN");
     menu_pk.pin = menu2_pk.pin = 1; race_pk.pin = 2;
     snd_init();
@@ -908,7 +911,7 @@ static void boot_load(void)
 /* al principio de cada cuadro: avanzar el CD, subir los tiles que llegaron (la GPU esta parada) y llevar el tiempo
    del OKI en pasos de 1/60 s por el temporizador 1 (tiempo real, no cuadros del juego; OKI_CUADROS: como antes) */
 static u16 t1_last; static u32 t1_acc;
-static void t1_update(void) { u16 t = *(volatile u16 *)0x1F801110; t1_acc += (u16)(t - t1_last); t1_last = t; }
+static void t1_update(void) { u16 t = t1_get(), d = t - t1_last; if (d < 0x8000) t1_acc += d; t1_last = t; }
 static void t1_skip(void) { t1_update(); t1_acc = 0; }
 static void cd_frame(void)
 {
@@ -1198,7 +1201,7 @@ static void digits(int x, int y, u32 v)
             }
 }
 static void upload(int x, int y, int w, int h, const void *d);
-#define T1 (*(volatile u16 *)0x1F801110)
+#define T1 t1_get()
 static u32 lines_acc, lines_avg, rend_acc, rend_avg; static u16 t_rend0, t_pad, t_pal, t_l0, t_l1, t_end, t_cd0; static u32 l1_acc, l1_avg, all_acc, all_avg; static u32 pad_acc, pal_acc, pad_avg, pal_avg;
 static int lastv;
 /* ---- pausa: START mientras el jugador corre. El 68000 (y la MCU) se quedan parados aqui dentro; la pantalla que se
@@ -1300,7 +1303,10 @@ void rc_vblank(void)
             lines_acc = pad_acc = pal_acc = l1_acc = all_acc = 0;
         }
         if (show_dbg) { digits(4, 4, lines_avg); digits(48, 4, rend_avg); digits(92, 4, cd_loads); digits(136, 4, tiles_up); digits(180, 4, pack_err);
-            digits(4, 16, pad_avg); digits(48, 16, pal_avg); digits(92, 16, l1_avg); digits(136, 16, all_avg); digits(180, 16, skips); }
+            digits(4, 16, pad_avg); digits(48, 16, pal_avg); digits(92, 16, l1_avg); digits(136, 16, all_avg); digits(180, 16, skips);
+            /* CD: sectores perdidos, errores, vigilancias, ultimo codigo de error, Pause rechazadas; cuadros/s x1000 */
+            digits(4, 28, cd_dbg[1]); digits(48, 28, cd_dbg[2]); digits(92, 28, cd_dbg[3]); digits(136, 28, cd_dbg[5]);
+            digits(180, 28, cd_dbg[6]); digits(224, 28, fps_mil); }
         pk_send(fb ? 256 : 0);
     }
     t_cd0 = T1;
@@ -1318,6 +1324,19 @@ void rc_vblank(void)
     }
 }
 
+/* cuadros de 263 lineas por segundo x1000, medidos contra el temporizador 2 (reloj del sistema / 8, igual en todas las
+   consolas): 59826 en una NTSC, 59280 en una PAL (el video NTSC con su reloj). Un cuadro, de un cambio de linea a otro */
+int fps_mil = 60000;
+static void medir_fps(void)
+{
+    volatile u16 *t2 = (volatile u16 *)0xBF801120; u16 a, p, l0; u32 ck = 0, x = 4233600;
+    int k = 0;
+    *(volatile u16 *)0xBF801124 = 0x0200;              /* reloj / 8, libre */
+    l0 = t1_get(); while (t1_get() == l0 && ++k < 100000);   /* desde el principio de una linea */
+    l0 = t1_get(); p = *t2;
+    while ((u16)(t1_get() - l0) < 263 && ++k < 2000000) { a = *t2; ck += (u16)(a - p); p = a; }
+    if (ck > 62500 && ck < 77500) fps_mil = x / ck * 1000 + (x % ck) * 1000 / ck;
+}
 int main(void)
 {
     int i;
@@ -1334,6 +1353,7 @@ int main(void)
     tables_init();
     joy_init();
     *(volatile u16 *)0x1F801114 = 0x0100;   /* temporizador 1: cuenta lineas */
+    medir_fps();
     if (cd_init() == 0) boot_load();         /* el CD vigila sus respuestas con el temporizador 1 */
     rc_mem_init();
     mcu.code = mcu_rom; mcu.xram = rc_ram;

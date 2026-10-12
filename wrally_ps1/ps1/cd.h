@@ -22,4 +22,12 @@ void cd_loc_start(void);
 int cd_loc_get(void);
 int cd_where(void);
 extern int cd_ended, cd_dbg[8];
+/* temporizador 1 (lineas de video): cuenta con el reloj de la GPU, no con el de la CPU, y una lectura puede pillarlo
+   cambiando (psx-spx): se lee hasta que dos lecturas seguidas coinciden */
+static inline unsigned short t1_get(void)
+{
+    volatile unsigned short *r = (volatile unsigned short *)0xBF801110; unsigned short a = *r, b;
+    while ((b = *r) != a) a = b;
+    return a;
+}
 #endif

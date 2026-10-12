@@ -8,7 +8,9 @@ las dos):
  - un fichero de licencia de 28032 bytes (12 sectores de 2336: subcabecera + datos + EDC/ECC), p. ej. LICENSEA.DAT
    del SDK de Sony (LICENSEE.DAT para Europa), o
  - la imagen .bin (sectores de 2352 bytes) de un juego original de esa region: se copian sus sectores 0-11.
-Sin fichero se genera solo el texto del sector 4 (arranca igual, pero sin el logo). Uso personal."""
+Sin fichero se genera solo el texto del sector 4: arranca en las BIOS americanas (sin el logo), pero no en las PAL 4.0E
+o posteriores (SCPH-7002/7502/9002/102) ni en las japonesas, que comparan el logo con el suyo y no siguen si no es
+identico (p. ej. con XStation en FULL LOAD o con PSIO arrancando por la BIOS). Uso personal."""
 import os, sys, struct
 
 SEC = 2336
@@ -87,7 +89,8 @@ def _de_fichero(fn, reg):
 def datos(reg):
     fn = os.environ.get('LICENCIA_' + reg) or os.environ.get('LICENCIA')
     if not fn:
-        print('  %s: sin LICENCIA_%s -> solo el texto de licencia (la BIOS no mostrara el logo)' % (reg, reg))
+        print('  AVISO %s: sin LICENCIA_%s -> solo el texto de licencia: no hay logo, y las BIOS PAL 4.0E o posteriores y '
+              'las japonesas no arrancaran la imagen' % (reg, reg))
         return _texto(reg)
     d = _de_fichero(fn, reg)
     s4 = d[4 * SEC + 8:4 * SEC + 8 + 2048]

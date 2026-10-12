@@ -22,4 +22,6 @@ ps1/*.nm
 ps1/*.ps-exe
 ps1/*.dat
 ps1/iso_*.xml
+ps1/*.cu2
+ps1/sd/
 perf/psxprof

@@ -19,7 +19,7 @@ $P-gcc $CF -DMCS51_XOR=1 -c ../rc/mcs51.c -o mcs51.o
 $P-gcc $CF -c ../rc/gcrypt.c -o gcrypt.o
 $P-gcc $CF -DRC_ROM_EXTERN -c ../rc/rc_mem.c -o rc_mem.o
 $P-gcc $ARCH -c data.s -o data.o
-$P-gcc $ARCH -I$N -c $N/common/crt0/crt0.s -o crt0.o
+$P-gcc $ARCH -c crt0.s -o crt0.o                       # sin interrupciones y con pila antes de borrar la BSS
 $P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,-Map=wr2.map -Wl,--oformat=elf32-tradlittlemips -o wr2.elf crt0.o main.o wr_rc.o mcs51.o mcu_rc.o gcrypt.o rc_mem.o cd.o snd.o snd_tab.o oki_tab.o data.o -lgcc
 $P-objcopy -O binary wr2.elf wr2.ps-exe
 ls -l wr2.ps-exe

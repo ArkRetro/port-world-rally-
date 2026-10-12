@@ -5,21 +5,30 @@
    frases que el juego encadena van seguidas en una pista (sndps1.py): al llegar al final de una (por tiempo) el canal
    queda libre y, si el juego pide la que va detras, la unidad sigue sin buscar (sin el hueco de 0,13 s de una
    busqueda); si no, se para en el silencio de entre las dos. Para leer del CD la frase se corta (apuntando por donde
-   iba) y luego se sigue desde ahi. Uso personal. */
+   iba) y luego se sigue desde ahi. Los cuadros son de 263 lineas del temporizador 1: en una consola son 59,83 por
+   segundo (59,28 en una PAL, que da el NTSC con su reloj de video), y el CD-DA va a 75 sectores por segundo justos:
+   las duraciones se pasan con fps_mil, medido al arrancar. Uso personal. */
 #include "cd.h"
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32;
-#define R16(a) (*(volatile u16 *)(a))
-#define R32(a) (*(volatile u32 *)(a))
+#define R16(a) (*(volatile u16 *)((a) | 0xA0000000))   /* por KSEG1: sin la cola de escritura de la CPU */
+#define R32(a) (*(volatile u32 *)((a) | 0xA0000000))
 #define SPUCNT R16(0x1F801DAA)
 #define SPUSTAT R16(0x1F801DAE)
 #define SPUADDR R16(0x1F801DA6)
 #define VOICE(v, r) R16(0x1F801C00 + (v) * 16 + (r))
-#define T1 R16(0x1F801110)                  /* temporizador 1: lineas de video */
+#define T1 t1_get()                         /* temporizador 1: lineas de video */
 extern const u16 snd_addr[128];
 extern const u8 snd_inst[128], ap_trk[], ap_sig[], ap_phr[];
 extern const u16 ap_sec[], ap_n[];
 extern const u16 oki_len[16][128];
 void rc_oki_hold(int c, int on), rc_oki_end(int c);
+extern int fps_mil;                         /* cuadros (263 lineas) por segundo x1000 (main.c) */
+static int fr_of(int sec) { return sec * fps_mil / 75000; }      /* sectores de CD-DA -> cuadros */
+static int sec_of(int fr) { return fr * 75000 / fps_mil; }
+/* lo que mkiso.py cambia en el EXE de la imagen para PSIO: '1' = el CD-DA llega por la entrada externa de la SPU
+   (I2SB, la del puerto paralelo: PSIO no pasa por el CD real; su menu lo hace con un gancho en el kernel que aqui, sin
+   interrupciones, no correria). En las demas, apagada: en una consola sin PSIO esa entrada podria meter ruido */
+volatile const char ode_cfg[] = "WRPS1-ODE:0";
 static const u8 okivol[16] = {32, 22, 16, 11, 8, 6, 4, 3, 2, 0, 0, 0, 0, 0, 0, 0};   /* tabla del OKI (MAME): de 9 en adelante, nada */
 static int trk_lba[32], trk_end[32];        /* pistas: principio exacto y final (TRACKS.BIN) */
 /* frase larga: canal, aparicion en el CD (ap_*) y su final (sector), desde donde suena, 1/60 s sonando y lo que
@@ -62,7 +71,13 @@ void snd_init(void)
     R16(0x1F801D98) = 0; R16(0x1F801D9A) = 0;
     R16(0x1F801DB0) = 0x7FFF; R16(0x1F801DB2) = 0x7FFF;   /* audio del CD */
     R16(0x1F801DAC) = 0x0004;
-    SPUCNT = 0xC001;                                       /* SPU, sin silencio, audio del CD */
+    if (ode_cfg[10] == '1') {                              /* PSIO: el CD-DA por la entrada externa */
+        R16(0x1F801DB4) = 0x7FFF; R16(0x1F801DB6) = 0x7FFF;
+        SPUCNT = 0xC003;
+    } else {
+        R16(0x1F801DB4) = 0; R16(0x1F801DB6) = 0;
+        SPUCNT = 0xC001;                                   /* SPU, sin silencio, audio del CD */
+    }
     for (v = 0; v < 24; v++) { VOICE(v, 0) = 0; VOICE(v, 2) = 0; }
     cd_volume(0x80);
     snd_ok = 1;
@@ -94,7 +109,7 @@ void snd_play(int ch, int p, int bank, int att)
         if (ch == cd_ch && cd_rel && cd_susp < 0 && ap_sig[cd_ap] && ap_phr[ap_sig[cd_ap]] == p) {
             /* la que va detras en la pista: ya esta sonando, sin buscar */
             cd_t -= cd_len; cd_ap = ap_sig[cd_ap]; cd_from = cd_ibeg = cd_iend; cd_iend = cd_from + ap_n[cd_ap];
-            cd_len = ap_n[cd_ap] * 60 / 75; cd_rel = 0;
+            cd_len = fr_of(ap_n[cd_ap]); cd_rel = 0;
             cd_volume(vol);
             rc_oki_hold(ch, 1);
             return;
@@ -104,7 +119,7 @@ void snd_play(int ch, int p, int bank, int att)
         cd_ap = i; cd_from = cd_ibeg = trk_lba[t] + ap_sec[i]; cd_iend = cd_from + ap_n[i];
         cd_play(cd_from);
         cd_ch = ch; cd_t = cd_wait = 0; cd_susp = -1; cut_st = 0; cd_rel = 0;
-        cd_len = ap_n[i] * 60 / 75;
+        cd_len = fr_of(ap_n[i]);
         rc_oki_hold(ch, 1);
     } else if (snd_addr[p] && fx_ready(p)) {
         u32 vol = okivol[att] * 0x3FFF / 16;
@@ -150,7 +165,7 @@ void snd_frame(int n)
        pocos cuadros y pide la siguiente); si a 1 del final nadie la ha pedido, parar (en el silencio de en medio) */
     if (ap_sig[cd_ap] && !cd_rel && cd_t >= cd_len - 6) { cd_rel = 1; rc_oki_end(cd_ch); }
     if (cd_rel && cd_t >= cd_len - 1) { cd_stop(); cd_done(); return; }
-    if ((cd_ended && !cd_audio()) || cd_t > cd_len + 120 || cd_wait > 600) {
+    if ((cd_ended && !cd_audio()) || cd_t > cd_len + 60 || cd_wait > 600) {   /* +1 s: en el silencio de antes de la pista siguiente */
         if (!cd_ended) cd_stop();               /* sin pausa automatica: pararla a mano */
         cd_done();
     }
@@ -161,7 +176,7 @@ static int cd_over(int margin) { return cd_ended || cd_t + margin >= cd_len; }
 static int cd_pos(int pos)
 {
     if (pos < cd_from || pos >= cd_iend) {
-        pos = cd_from + (cd_t > 20 ? cd_t - 20 : 0) * 75 / 60;
+        pos = cd_from + sec_of(cd_t > 20 ? cd_t - 20 : 0);
         if (pos >= cd_iend) pos = cd_iend - 1;
     }
     return pos;
@@ -223,6 +238,6 @@ void snd_resume(void)
 {
     if (cd_ch < 0 || cd_susp < 0) return;
     cd_play(cd_susp);
-    cd_from = cd_susp; cd_t = cd_wait = 0; cd_len = (cd_iend - cd_susp) * 60 / 75;
+    cd_from = cd_susp; cd_t = cd_wait = 0; cd_len = fr_of(cd_iend - cd_susp);
     cd_susp = -1;
 }
