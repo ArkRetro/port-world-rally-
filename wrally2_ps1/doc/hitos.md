@@ -20,10 +20,11 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [x] GAE1 contado en ciclos del 68000
 - [x] Compilacion del conjunto de modos 1-15; `rc_bad` con el PC
 - [ ] `rc_romtab` + trampa en el banco con `-DROMCHK`
-- [ ] `BLKLOG`, `ROMSTAT`, `RCREG`; volcados en el `frame_done`
-  (hecho: `ROMSTAT` con `rc_host_rom` y `tools/romstat.py`, suceso en PC 0x2616; attract 30 000 + Portugal: residente
-  67,0 KB, banco PT1 157,5 KB con bordes, bancos de las demos 76-93 KB; falta `BLKLOG`)
-- [ ] Puerta G-MUS: 0 diferencias en >= 30 000 cuadros de attract + >= 12 000 de partida
+- [x] `BLKLOG`, `ROMSTAT`, `RCREG`; volcados en el `frame_done`
+  (`ROMSTAT` con `rc_host_rom` y `tools/romstat.py`, suceso en PC 0x2616; attract 30 000 + Portugal: residente
+  67,0 KB, banco PT1 157,5 KB con bordes, bancos de las demos 76-93 KB. `BLKLOG` en `rc/blklog.c` + `tools/blklog.py`:
+  attract de 12 000 cuadros, 16 781 codigos distintos; demos 8 437 de plano + 3 777 de sprites)
+- [x] Puerta G-MUS: 0 diferencias en >= 30 000 cuadros de attract + >= 12 000 de partida (343 M instrucciones comparadas)
 - [ ] Puerta G-MAME: attract 1-9 389 igual (salvo FC10/FC11); carreras <= 10 B/cuadro (FC37), meta en el mismo cuadro
 - [ ] Puerta G-MCU: <= 10 conflictos / 3 500 trabajos en carrera y demo; 0 escrituras sin gancho
 - [ ] Puerta G-SNDLOG: registro del GAE1 = MAME en los 19 escenarios
@@ -38,9 +39,11 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [ ] Sonda `prueba/spucad` (encadenado por direccion de repeticion)
 - [x] Puerta G-RAM: R0 pool >= 160 KB; R1 area >= 960 KB (198,4 KB y 964,4 KB: el area queda 19 KB por debajo de la
   tabla 2.1 por la MCU traducida, 22 KB y no 14, y `rc_xram`, 8 KB; P1 sigue en el plan)
-- [ ] Puerta G-CPU: 68000 + MCU en carrera mediana <= 30 %, p99 <= 45 %
-- [ ] Puerta G-ESTADO: huella PS1 = banco en 20 000 cuadros
-- [ ] Arranca en `psxprof2` (ODE psio, xstation) y en Mednafen con BIOS
+- [x] Puerta G-CPU: 68000 + MCU en carrera mediana <= 30 %, p99 <= 45 % (`perf/psxprof2` + `perf/cpu.py`, partida de
+  Portugal: 26,3 % / 34,3 %, max 43 %; demo 27,9 / 33,5 %; con el dibujo del mosaico va a 60 Hz)
+- [x] Puerta G-ESTADO: huella PS1 = banco en 20 000 cuadros (`HUELLA` en `rc_host` y `psxprof2`, `tools/huella.py`:
+  attract 19 980 llamadas y partida de Portugal 10 710 iguales)
+- [x] Arranca en `psxprof2` (ODE psio, xstation: 3 000 cuadros iguales al banco) y en Mednafen con BIOS
 - Usuario (prueba 0): EXE mosaico en MiSTer, PSIO y XStation; las dos sondas con sus cifras
 
 ## H3 Attract sin sonido; ROM por bancos (L)

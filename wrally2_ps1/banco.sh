@@ -15,7 +15,7 @@ python3 rc/rc51c.py rc/mcu_rc.c
 cd rc
 CF="-O1 -w -DMCS51_XOR=1 -I."
 gcc $CF -c wr2_rc.c -o wr2_rc.o
-gcc $CF -o rc_host rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c wr2_rc.o
+gcc $CF -o rc_host rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c blklog.c wr2_rc.o
 if [ -n "$MUSASHI" ]; then
   B=../work/musashi; mkdir -p $B
   if [ ! -f $B/m68kops.o ]; then
@@ -27,11 +27,11 @@ if [ -n "$MUSASHI" ]; then
     gcc -O1 -w -I$B -c $B/softfloat/softfloat.c -o $B/softfloat.o
   fi
   gcc $CF -DRCDBG -I$B -c wr2_rc.c -o $B/wr2_rc_dbg.o
-  gcc $CF -DRCDBG -I$B -o rc_host_dbg rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c $B/wr2_rc_dbg.o \
+  gcc $CF -DRCDBG -I$B -o rc_host_dbg rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c blklog.c $B/wr2_rc_dbg.o \
       $B/m68kcpu.o $B/m68kops.o $B/m68kdasm.o $B/softfloat.o -lm
 fi
 if [ -n "$PERFILES" ]; then   # perfiles del banco: bloques de la ROM leidos por fase (ROMSTAT)
   gcc $CF -DROMSTAT -c wr2_rc.c -o ../work/wr2_rc_rom.o
-  gcc $CF -DROMSTAT -o rc_host_rom rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c romstat.c ../work/wr2_rc_rom.o
+  gcc $CF -DROMSTAT -o rc_host_rom rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c blklog.c romstat.c ../work/wr2_rc_rom.o
 fi
 echo "banco listo: rc/rc_host$( [ -n "$MUSASHI" ] && echo ' y rc/rc_host_dbg')$( [ -n "$PERFILES" ] && echo ' y rc/rc_host_rom')"

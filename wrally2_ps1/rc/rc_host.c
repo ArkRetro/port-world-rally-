@@ -9,6 +9,8 @@
                              <carpeta>/dumps.bin (como WR2_DUMPCAT=1); se comparan con cmpdump.py
      LOG=1                   <carpeta>/log.txt, una linea por cuadro con las columnas del log.txt de MAME
      SNDLOG=fichero          sucesos del GAE1 (canal, trozo, registros)
+     HUELLA=fichero          huella del estado al entrar en rc_vblank, una linea por llamada (= psxprof2; tools/huella.py)
+     BLKLOG=fichero          codigos de tile visibles y nuevos por cuadro (rc/blklog.c; tools/blklog.py)
      V=1                     cuadros y ciclos por stderr cada 100 cuadros
      FASE=n                  momento del primer vblank en % de cuadro (98, como MAME)
      MCU=0                   trabajo de la MCU al momento (por defecto 1: con su tiempo, como la placa)
@@ -32,6 +34,7 @@ static const char *WORKF(const char *n) { static char b[4][512]; static int k; c
 void rc_mem_init(void); void rc_set_io(u16 in0, u16 in1, u16 in2, u16 in3); void rc_snd_vblank(void);
 void mcu_boot(u8 *ram, const u8 *code, mcs51_t *c); void mcu_trabajo(u8 *ram, mcs51_t *c, int b); void mcu_cuadro(u8 *ram, mcs51_t *c);
 void mcu_eco(u8 *ram);
+void rc_blklog(long frame, const u8 *vram_vb);   /* blklog.c */
 extern mcs51_t rc_mcu; extern u16 rc_latch; extern int mcu_modelo; extern u32 rc_cuadro; extern unsigned mcu_vigila;
 static s32 fase0;
 static u8 mcurom[0x8000], rombe[0x100000];
@@ -278,11 +281,23 @@ static void cmp_mem(void)
 }
 #endif
 
+/* HUELLA=fichero: huella FNV-1a del estado (RAM, VRAM, paleta, RAM extra) al entrar en rc_vblank, una linea por
+   llamada ("llamada hash"), la misma que escribe psxprof2 en la PS1: puerta G-ESTADO con tools/huella.py */
+static u32 fnv1a(u32 h, const u8 *p, u32 n) { u32 i; for (i = 0; i < n; i++) { h ^= p[i]; h *= 16777619u; } return h; }
+static void huella(void)
+{
+    static FILE *f; static long llam; u32 h;
+    if (!getenv("HUELLA")) return;
+    if (!f && !(f = fopen(getenv("HUELLA"), "w"))) { perror("HUELLA"); exit(1); }
+    h = fnv1a(2166136261u, rc_ram, 0x10000); h = fnv1a(h, rc_vram, 0x10000); h = fnv1a(h, rc_pal, 0x2000); h = fnv1a(h, rc_xram, 0x2000);
+    fprintf(f, "%ld %08x\n", ++llam, h);
+}
 void rc_vblank(void)
 {
     /* vblanks pasados desde la IRQ anterior (con la IRQ enmascarada mas de un cuadro, MAME los cuenta todos) */
     long n = 1 + (RC_REL > 0 ? RC_REL / CYC_FRAME : 0);
     static long dsum;
+    huella();
     frame += n; rc_cuadro = frame;
 #ifdef ROMSTAT
     rc_romstat_cuadro(frame);
@@ -297,6 +312,7 @@ void rc_vblank(void)
     /* con la IRQ atendida tarde (enmascarada en el vblank) el estado no es el del vblank: sin volcado */
     if (dump_a >= 0 && frame >= dump_a && frame <= dump_b && (frame - dump_a) % dump_p == 0 && rc_r.cyrel < 2000) dump_state();
     if (logf || getenv("LOG")) log_line();
+    if (getenv("BLKLOG")) rc_blklog(frame, vram_vb);
     memcpy(vram_vb, rc_vram, 0x10000);
     /* las del guion de este cuadro: MAME las fija justo tras el frame_done y la IRQ6 ya las ve (el volcado y el
        registro de este cuadro llevan las de antes, como los suyos) */

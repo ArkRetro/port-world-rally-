@@ -34,3 +34,4 @@ prueba/*/*.dat
 prueba/*/iso_*.xml
 prueba/*/cd/
 prueba/*/sd/
+perf/psxprof2
