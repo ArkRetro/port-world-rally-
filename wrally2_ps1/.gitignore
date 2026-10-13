@@ -1,0 +1,9 @@
+# generado a partir de las ROM del usuario (no se distribuye)
+rom/
+work/
+__pycache__/
+rc/wr2_rc.c
+rc/mcu_rc.c
+rc/*.o
+rc/rc_host
+rc/rc_host_dbg*
