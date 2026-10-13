@@ -5,8 +5,10 @@
 # Uso: ./banco.sh            (despues: cd rc && ./rc_host 12000 ../work/run, ver la cabecera de rc/rc_host.c)
 set -e
 cd "$(dirname "$0")"
+tools/guardia_wr1.sh
 python3 tools/prep.py
 python3 tools/descent.py
+python3 tools/alcance15.py
 python3 rc/rc68.py rc/wr2_rc.c
 python3 rc/rc51c.py rc/mcu_rc.c
 cd rc

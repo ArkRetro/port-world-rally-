@@ -1,0 +1,109 @@
+# WR2 -> PS1: hitos (lista de comprobacion)
+
+Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia, M 1-3 dias, L > 3 dias.
+
+## H0 Base del repositorio (S; casi hecho)
+- [ ] Commit de los cambios locales del banco (`mcu.c`, `rc51c.py`, `rc68.py`, `rc_host.c`, `rc_mem.c`, `rc_rt.h`, `cmpmame.py`)
+- [ ] `.gitignore` de `work/` y binarios
+- [ ] `tools/guardia_wr1.sh`, llamada desde `banco.sh`
+- [ ] `tools/alcance15.py` (Monitors=One, modos 1-15)
+- [ ] LEEME de esqueleto
+- [ ] Puerta G-WR1: `wrally_ps1/` sin cambios
+- [ ] Puerta G-PREP: prog `a0c6ab91...`, gfx1 `5212d577...`, MCU `4c532e9e` con mascaras y con EPROM
+- [ ] Puerta G-ALC: 13 852 instr. que contienen las 9 343 direcciones trazadas
+- Usuario: nada nuevo
+
+## H1 Banco exacto (L; en curso)
+- [ ] Sucesos en `rc_rt.h` (`cyc_next`, `RC_PLAZO` tras escrituras de SR y `rte`)
+- [ ] MCU por acceso: copia en la recogida, sellos de lectura, escrituras en su sello, repeticion por gancho; `MCU_AL_MOMENTO`
+- [ ] `-DMCUCHK` y lista de PC que escriben entradas del trabajo
+- [ ] GAE1 contado en ciclos del 68000
+- [ ] Compilacion del conjunto de modos 1-15; `rc_bad` con el PC
+- [ ] `rc_romtab` + trampa en el banco con `-DROMCHK`
+- [ ] `BLKLOG`, `ROMSTAT`, `RCREG`; volcados en el `frame_done`
+- [ ] Puerta G-MUS: 0 diferencias en >= 30 000 cuadros de attract + >= 12 000 de partida
+- [ ] Puerta G-MAME: attract 1-9 389 igual (salvo FC10/FC11); carreras <= 10 B/cuadro (FC37), meta en el mismo cuadro
+- [ ] Puerta G-MCU: <= 10 conflictos / 3 500 trabajos en carrera y demo; 0 escrituras sin gancho
+- [ ] Puerta G-SNDLOG: registro del GAE1 = MAME en los 19 escenarios
+- Usuario: nada (hojas PNG opcionales)
+
+## H2 Esqueleto en la PS1, CPU y sondas (M)
+- [ ] EXE R0 (ROM contigua en el EXE) con todos los buferes a su tamano final
+- [ ] Video mosaico + cifras (FEC298, cuadro, CPU, RAM libre); mando, moneda, START
+- [ ] `mkiso` de una pista
+- [ ] EXE de tamanos R1 enlazado para medir el area
+- [ ] Sonda `prueba/cdfondo` (2x de fondo, CPU ocupada, con y sin `CD_DMA`)
+- [ ] Sonda `prueba/spucad` (encadenado por direccion de repeticion)
+- [ ] Puerta G-RAM: R0 pool >= 160 KB; R1 area >= 960 KB
+- [ ] Puerta G-CPU: 68000 + MCU en carrera mediana <= 30 %, p99 <= 45 %
+- [ ] Puerta G-ESTADO: huella PS1 = banco en 20 000 cuadros
+- [ ] Arranca en `psxprof2` (ODE psio, xstation) y en Mednafen con BIOS
+- Usuario (prueba 0): EXE mosaico en MiSTer, PSIO y XStation; las dos sondas con sus cifras
+
+## H3 Attract sin sonido; ROM por bancos (L)
+- [ ] R1: residente y bancos desde `ROMSTAT`, `romres.txt`, trampa con CD
+- [ ] `ROM.BIN` entera en el arranque; suceso en 0x2616 libera lo no residente
+- [ ] Renderizador A (menus) y B (demos, mapas): regla de sprites, efectos, paletas, CLUT por hueco, variantes
+- [ ] Gestor de bloques de VRAM
+- [ ] `tiles4.py`, `tilesa.py`; `MENUS.PAK`, `DEMOr.PAK` (8 ciclos del banco)
+- [ ] Cargador bloqueante (CARGANDO > 0,5 s) y de fondo (titulo)
+- [ ] `DUMPAT`, `arcade2.py`, `difref2.py`
+- [ ] Puerta G-PIXEL: A 0 px; B solo COLOR, PSNR >= 38 dB; efectos <= 0,02 %
+- [ ] Puertas G-ROM, G-ESTADO, G-SONDEO (hueco <= 4 ms, 0 sectores perdidos)
+- [ ] Attract a 60 cuadros/s, <= 0,4 s por transicion, 0 faltas en demos
+- Usuario (prueba 1): el attract entero sin sonido
+
+## H4 Datos de carrera (M; solo PC)
+- [ ] Piloto del banco por FEFD08 con `fork`; `POKE68` del reloj
+- [ ] >= 6 lineas completas por tramo x estilos, + una por coche (dia y noche); guiones en `escenarios/`
+- [ ] Busqueda de la posicion maestra del coche (decide el barrido)
+- [ ] `paquetes.py` con cierre (plano entero, familias de 64, poses del coche)
+- [ ] `sim.py` con la politica protectora; N y bancos de los 12 tramos
+- [ ] Presupuesto de RAM recalculado con codigo real (perfiles); palancas P1-P3 si hace falta
+- [ ] Puerta G-TILES en simulacion (12 tramos, una fuera)
+- [ ] Puerta G-ROM: corrida nueva sin bloques fuera de residente + banco
+- [ ] Puerta G-RAM con los N finales
+- Usuario: nada
+
+## H5 Partidas completas, carrera sin CD, sin sonido (L)
+- [ ] `STkk.PAK`, `GAMEc.PAK`
+- [ ] Carga de fondo del mapa a 2x con puntos de sondeo; `CARGA_1X`; CARGANDO solo si falta
+- [ ] Politica de carrera: prelectura por avance, muerte por avance, victimas con copia en L2 primero
+- [ ] Proxies y lecturas de emergencia; pantalla de cifras L2
+- [ ] Cargas de §7.2 en todos los menus; pausa con START
+- [ ] Puerta G-CD: 0 sectores en carrera
+- [ ] Puerta G-TILES con `count_missing` en lineas fuera del paquete
+- [ ] Puerta G-CARGA: negro antes del mapa <= 0,5 s; mapa -> carrera 0 s a 2x, <= 3,5 s en 1x; START <= 1,2 s
+- [ ] Puertas G-ROM, G-CPU (p99 <= 85 %, <= 0,5 % saltados), G-ESTADO
+- [ ] 12 etapas, «Continue?», fin de partida, nombre y records en `psxprof2` sin cuelgues
+- Usuario (prueba 2): partidas enteras de los 4 rallies sin sonido
+
+## H6 Sonido (M-L)
+- [ ] `sndwr2.py`: banco fijo, conjuntos por fase, bancos de coche
+- [ ] GAE1 -> SPU con encadenado; tono escalado por fps (0x2DF en NTSC); `RITMO=591`
+- [ ] Cambio del hueco M en el negro del attract; voces congeladas en cargas y pausa
+- [ ] Puerta G-SNDLOG en la PS1
+- [ ] Puerta G-SON: 0 huecos/saltos; deriva <= 1 cuadro en 60 s; `cortes.py` sin cortes nuevos
+- Usuario (prueba 3): el juego completo con sonido
+
+## H7 Imagen final y hardware (M)
+- [ ] `mkiso.py` con manifiesto: una pista, USA y EUR
+- [ ] Carpetas de PSIO y XStation
+- [ ] `construir.sh` de punta a punta; LEEME con la matriz de pruebas
+- [ ] `psxprof2` con todos los modelos de ODE en todos los escenarios; Mednafen con BIOS
+- [ ] Todas las puertas en el EXE final
+- [ ] Puerta G-HW
+- Usuario (prueba 4): candidata en MiSTer, PSIO y XStation (consolas USA y PAL)
+
+## H8 Opciones de fidelidad (S-M; opcional)
+- [ ] 384 de ancho fuera de carrera
+- [ ] Mapa del tramo en A
+- [ ] Musica de la demo sin pausa
+- [ ] Volante analogico / NeGcon (TLC549 y marcha)
+- [ ] ID de sonido nunca vistos y final del campeonato
+- [ ] Tarjeta de memoria para records y contadores
+
+## H9 `comun/` (M; opcional)
+- [ ] `git mv` de lo generico en un commit que solo mueve
+- [ ] Arreglo de `mcs51.c:77` en su propio commit
+- [ ] Puerta G-WR1 completa: md5 de `wr_rc.c`, `wr2.ps-exe` e imagen; `escenarios.sh` del WR1 igual que `BASE`

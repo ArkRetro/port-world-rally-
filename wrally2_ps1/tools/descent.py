@@ -1,6 +1,7 @@
 """Descubrimiento de codigo del 68000 por descenso recursivo (decodificador dec68 del port de WR1).
 Semillas: los 64 vectores que apuntan a la ROM + tools/semillas.txt (tablas de saltos halladas con trazas de MAME).
-Salida: work/code_addrs.txt (direcciones de instrucciones, lo que lee rc/rc68.py) y work/descent.txt (informe)"""
+Salida: work/code_todo.txt (todas las instrucciones alcanzables; tools/alcance15.py elige las de un monitor) y
+work/descent.txt (informe)"""
 import sys, os, struct, collections
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from paths import work, WR1
@@ -33,7 +34,7 @@ while work_:
 A = sorted(INS)
 ov = sum(1 for a in A for k in range(a + 2, a + INS[a].size, 2) if k in INS)
 ops = collections.Counter(INS[a].op for a in A)
-open(work('code_addrs.txt'), 'w').write(''.join('%06x\n' % a for a in A))
+open(work('code_todo.txt'), 'w').write(''.join('%06x\n' % a for a in A))
 with open(work('descent.txt'), 'w') as f:
     f.write('semillas %d, instrucciones %d, rango %06x-%06x, solapadas %d, no decodificables %d\n' % (len(seeds), len(A), A[0], A[-1], ov, len(bad)))
     for a in sorted(bad): f.write('  %06x %04x %s\n' % (a, struct.unpack('>H', D[a:a+2])[0], bad[a]))

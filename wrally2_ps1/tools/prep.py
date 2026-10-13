@@ -13,6 +13,8 @@ assert len(a) == len(b) == 0x80000
 p = bytearray(0x100000); p[0::2] = a; p[1::2] = b
 open(work('prog.bin'), 'wb').write(p)
 m = rs.read('wrally2_ds5002fp_sram.bin'); assert len(m) == 0x8000
+import zlib
+if zlib.crc32(m) != 0x4c532e9e: print('AVISO: la SRAM de la MCU no es la de MAME (CRC %08x, se espera 4c532e9e)' % zlib.crc32(m))
 open(work('mcu.bin'), 'wb').write(m)
 g, juego = gfx.construir(rs)
 open(work('gfx1.bin'), 'wb').write(g)

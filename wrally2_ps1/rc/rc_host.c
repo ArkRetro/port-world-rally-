@@ -2,7 +2,7 @@
    (instruccion a instruccion) y se comparan registros, banderas vivas y la memoria en cada cuadro.
    Uso: rc_host cuadros [carpeta]. Ficheros de trabajo en $WR2_WORK (por defecto ../work).
    Los cuadros se cuentan como en MAME (lua de referencia del analisis): el cuadro n es el n-esimo vblank y el juego ve
-   en su IRQ las entradas del guion del cuadro n-1. Variables:
+   en su IRQ las entradas del guion del cuadro n (el volcado y el registro del cuadro n, las del n-1). Variables:
      INPUTS=a-b:LETRAS,...   botones en los cuadros [a, b) (a-b%P/W: cuando (cuadro - a) % P < W): C moneda, S START,
                              X acelerar, G marcha (pulsada = larga), L R U D cruceta, V servicio (como to_inputs.py)
      DUMP=a-b/p              volcado del estado en esos cuadros, en el formato de wr2ref.lua (WR2D), todos seguidos en
@@ -249,7 +249,6 @@ void rc_vblank(void)
     static long dsum;
     frame += n; rc_cuadro = frame;
     if (getenv("VIRQ") && frame < atol(getenv("VIRQ"))) fprintf(stderr, "irq cuadro %ld (+%ld) pc %06X cyr %d fe8118 %08X sp %06X\n", frame, n, rc_r.pc, RC_REL, (W(0x8118) << 16) | W(0x811A), rc_r.a[7]);
-    inputs(frame - 1); rc_set_io(in0, in1, in2, in3);   /* MAME las fija al empezar el cuadro */
     rc_snd_vblank();
     mcu_cuadro(rc_ram, &rc_mcu);
 #ifdef RCDBG
@@ -260,6 +259,9 @@ void rc_vblank(void)
     if (dump_a >= 0 && frame >= dump_a && frame <= dump_b && (frame - dump_a) % dump_p == 0 && rc_r.cyrel < 2000) dump_state();
     if (logf || getenv("LOG")) log_line();
     memcpy(vram_vb, rc_vram, 0x10000);
+    /* las del guion de este cuadro: MAME las fija justo tras el frame_done y la IRQ6 ya las ve (el volcado y el
+       registro de este cuadro llevan las de antes, como los suyos) */
+    inputs(frame); rc_set_io(in0, in1, in2, in3);
     if (getenv("V") && frame % 100 < n) { fprintf(stderr, "cuadro %ld pc %06X ciclos/cuadro %ld\n", frame, rc_r.pc, dsum / 100); dsum = 0; }
     dsum += CYC_FRAME + RC_REL;
     if (frame >= nframes) {
