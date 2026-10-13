@@ -20,14 +20,21 @@ u32 rc_rd8(u32 a), rc_rd16(u32 a);
 void rc_wr8(u32 a, u32 v, u32 pc), rc_wr16(u32 a, u32 v, u32 pc), rc_wr32(u32 a, u32 v, u32 pc);
 void rc_vblank(void);
 void rc_bad(u32 pc);
-void rc_mcu_a(void), rc_mcu_b(void);
+void rc_mcu_a(void), rc_mcu_b(void), rc_mcu_eco(void);
 void rc_run(u32 start_pc);
 extern const u32 rc_ntaken;
 
-/* estado visible desde fuera (depuracion / reanudar). Dentro de rc_run el contador va relativo al proximo
-   vblank (cyr = cyc - cyc_next): la comprobacion de IRQ es un signo, sin leer cyc_next */
+/* estado visible desde fuera (depuracion / reanudar). Dentro de rc_run el contador va relativo al proximo plazo
+   (cyr = ahora - plazo): la comprobacion de IRQ y sucesos es un signo. El plazo es el primero de: el vblank (si la IRQ
+   no esta enmascarada) y el proximo suceso (la MCU con su tiempo); rc_dl = plazo - proximo vblank. Fuera de rc_run
+   (tras RC_SYNC), RC_REL = ciclos desde el proximo vblank (>= 0: ya ha pasado) */
 typedef struct { u32 d[8], a[8], fX, fN, fZ, fV, fC, imask, pc; s32 cyc, cyc_next, cyrel; } rc_regs_t;
 extern rc_regs_t rc_r;
+extern s32 rc_dl;
+#define RC_REL (rc_r.cyrel + rc_dl)
+void rc_plazo(void);        /* rc_mem.c: recalcula el plazo (con rc_r.imask) */
+int rc_sucesos(void);       /* rc_mem.c: hace los sucesos vencidos; 1 = toca la IRQ del vblank */
+void rc_vb_cuadro(void);    /* rc_mem.c: tomada la IRQ, el contador pasa al vblank siguiente */
 
 #if defined(__mips__) && defined(RC_GEN) && !defined(RCDBG)
 #define RC_GREGS 1
@@ -297,23 +304,23 @@ static inline u32 sh_roxr(u32 v, u32 c, int b, u32 *x, u32 *cf, u32 *vf) { *vf =
 
 #define RC_SYNC do { rc_r.d[0]=d0; rc_r.d[1]=d1; rc_r.d[2]=d2; rc_r.d[3]=d3; rc_r.d[4]=d4; rc_r.d[5]=d5; rc_r.d[6]=d6; rc_r.d[7]=d7; \
     rc_r.a[0]=a0; rc_r.a[1]=a1; rc_r.a[2]=a2; rc_r.a[3]=a3; rc_r.a[4]=a4; rc_r.a[5]=a5; rc_r.a[6]=a6; rc_r.a[7]=a7; \
-    rc_r.fX=fX; rc_r.fN=fN; rc_r.fZ=fZ; rc_r.fV=fV; rc_r.fC=fC; rc_r.imask=imask; rc_r.cyc=cyr+cyc_next; rc_r.cyc_next=cyc_next; \
+    rc_r.fX=fX; rc_r.fN=fN; rc_r.fZ=fZ; rc_r.fV=fV; rc_r.fC=fC; rc_r.imask=imask; \
     rc_r.cyrel=cyr; } while (0)
 
 /* copia rapida de bucles: desplazamiento del contador de ciclos y parte alta de los Dn partidos (rc68.py). Solo se
    usan al entrar y al salir: en la pila (volatile), sin quitar registros al cuerpo del bucle */
 #define RC_FLOCALS volatile s32 fb = 0; volatile u32 dh0 = 0, dh1 = 0, dh2 = 0, dh3 = 0, dh4 = 0, dh5 = 0, dh6 = 0, dh7 = 0;
 #ifdef RC_GREGS
-#define RC_LOCALS volatile u32 fX = rc_r.fX, fV = rc_r.fV, fN = rc_r.fN; u32 a6 = rc_r.a[6], imask = rc_r.imask; s32 cyc_next = rc_r.cyc_next; \
+#define RC_LOCALS volatile u32 fX = rc_r.fX, fV = rc_r.fV, fN = rc_r.fN; u32 a6 = rc_r.a[6], imask = rc_r.imask; \
     u32 vs, vd, vr, eas, ead, dpc; void *dl; RC_FLOCALS
 #define RC_ENTER d0 = rc_r.d[0]; d1 = rc_r.d[1]; d2 = rc_r.d[2]; d3 = rc_r.d[3]; d4 = rc_r.d[4]; d5 = rc_r.d[5]; \
-    d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; RC_TLOAD; cyr = rc_r.cyc - rc_r.cyc_next;
+    d6 = rc_r.d[6]; d7 = rc_r.d[7]; a7 = rc_r.a[7]; RC_TLOAD;
 #else
 #define RC_LOCALS u32 d0 = rc_r.d[0], d1 = rc_r.d[1], d2 = rc_r.d[2], d3 = rc_r.d[3], d4 = rc_r.d[4], d5 = rc_r.d[5], d6 = rc_r.d[6], d7 = rc_r.d[7]; \
     u32 a0 = rc_r.a[0], a1 = rc_r.a[1], a2 = rc_r.a[2], a3 = rc_r.a[3], a4 = rc_r.a[4], a5 = rc_r.a[5], a6 = rc_r.a[6], a7 = rc_r.a[7]; \
     u32 fX = rc_r.fX, fN = rc_r.fN, fZ = rc_r.fZ, fV = rc_r.fV, fC = rc_r.fC, imask = rc_r.imask; \
-    s32 cyc_next = rc_r.cyc_next; u32 vs, vd, vr, eas, ead, dpc; void *dl; RC_FLOCALS
-#define RC_ENTER cyr = rc_r.cyc - rc_r.cyc_next;
+    u32 vs, vd, vr, eas, ead, dpc; void *dl; RC_FLOCALS
+#define RC_ENTER
 #endif
 /* sin sacar invariantes de los bucles: en las copias rapidas (bucles sin etiquetas con direccion tomada) gcc sacaria
    las direcciones constantes (paginas, regiones) y, sin registros libres, las dejaria en la pila: una lectura de la
@@ -349,7 +356,9 @@ void rc_dbg_idle(u32 o, u32 v);     /* la referencia (Musashi) da las vueltas de
 #endif
 #define IDLECNT(cond, o, n) do { if ((cond) && cyr < 0) { u32 _iv = (u32)(-cyr + (n) - 1) / (n); \
     SETL(RAMB, o, ML(RAMB, o) + _iv); cyr += (s32)(_iv * (n)); IDLEDBG(o, _iv); } } while (0)
-#define IRQCHK(t) do { if (cyr >= 0 && imask < 6) { dpc = (t); goto irq_take; } } while (0)
+#define IRQCHK(t) do { if (cyr >= 0) { dpc = (t); goto irq_take; } } while (0)
+/* tras cambiar la mascara (move to SR, andi/eori SR, rte): el plazo cambia (la IRQ pendiente se atiende ya) */
+#define RC_PLAZO(t) do { rc_r.imask = imask; RC_CALL(rc_plazo()); IRQCHK(t); } while (0)
 #define DIVZERO(pc) do { RC_SYNC; rc_divzero(pc); } while (0)
 void rc_divzero(u32 pc);
 
@@ -376,12 +385,15 @@ void rc_dbg_irq(void);
 #define IRQ_DBG()
 #endif
 
-/* irq_take: el contador absoluto pasa a contar desde este vblank (cyc -= cyc_next) y cyc_next se recalcula */
+/* irq_take: vencido el plazo, los sucesos; si toca la IRQ del vblank, rc_vblank y el contador pasa al vblank siguiente;
+   si no, se sigue donde se estaba */
 #define RC_EXIT_CODE \
 irq_take: \
-    RC_SYNC; rc_r.pc = dpc; rc_vblank(); RC_TLOAD; \
-    { s32 _c = cyr; cyc_next = CYC_FRAME; while (cyc_next <= _c) cyc_next += CYC_FRAME; cyr = _c - cyc_next; } \
+    RC_SYNC; rc_r.pc = dpc; \
+    if (!rc_sucesos()) { RC_TLOAD; DISPATCH(dpc); } \
+    rc_vblank(); rc_vb_cuadro(); RC_TLOAD; \
     { u32 sr = GETSR(); a7 -= 4; WRP32(ram, a7, dpc, 0); a7 -= 2; WRP16(ram, a7, sr, 0); imask = 6; } \
+    rc_r.imask = 6; RC_CALL(rc_plazo()); \
     IRQ_DBG(); \
     DISPATCH(RC_IRQ6); \
 rc_rts: \

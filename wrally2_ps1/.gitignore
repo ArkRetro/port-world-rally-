@@ -7,3 +7,4 @@ rc/mcu_rc.c
 rc/*.o
 rc/rc_host
 rc/rc_host_dbg*
+rc/rc_host_reg

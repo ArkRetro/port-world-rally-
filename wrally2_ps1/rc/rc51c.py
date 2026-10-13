@@ -55,6 +55,33 @@ while todo:
     funcs[f] = body
     todo.extend(calls)
 
+# ciclos maquina por opcode (mcs51_cycles de MAME): el trabajo cuenta los suyos en MC por bloque basico, para el
+# modelo de tiempo de la MCU (mcu.c: cada escritura con su momento)
+CYC = [int(x) for x in """1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,
+2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1,
+2,2,2,2,1,2,1,1,1,1,1,1,1,1,1,1, 2,2,2,2,4,2,2,2,2,2,2,2,2,2,2,2, 2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,2,4,1,2,2,2,2,2,2,2,2,2,2,
+2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2, 2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,1,1,2,1,1,2,2,2,2,2,2,2,2, 2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,
+2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1""".replace('\n', ' ').split(',')]
+assert len(CYC) == 256
+
+def bloques(f, body):
+    """ciclos de cada bloque basico de la funcion f, en su primera instruccion"""
+    lead = {f}
+    for pc in body:
+        op = code[pc]; o1 = code[pc + 1]; o2 = code[pc + 2]; nx = pc + L[op]
+        t = None
+        if op == 0x02: t = (o1 << 8) | o2
+        elif op & 0x1F == 0x01: t = (nx & 0xF800) | ((op & 0xE0) << 3) | o1
+        elif op in (0x80, 0x40, 0x50, 0x60, 0x70) or 0xD8 <= op <= 0xDF: t = (nx + s8(o1)) & 0xFFFF
+        elif op in (0xB4, 0xB5, 0xD5) or 0xB8 <= op <= 0xBF: t = (nx + s8(o2)) & 0xFFFF
+        if t is not None or op in (0x22, 0x32): lead.add(nx)
+        if t is not None: lead.add(t)
+    cyc = {}; cur = None
+    for pc in body:
+        if pc in lead or cur is None or pc != prev_nx: cur = pc; cyc[cur] = 0
+        cyc[cur] += CYC[code[pc]]; prev_nx = pc + L[code[pc]]
+    return cyc
+
 out = []
 def E(s): out.append('    ' + s)
 def lab(f, a): return 'L%04x_%04x' % (f, a)
@@ -80,6 +107,7 @@ def gen_func(f):
     name = 'mcu_loop' if is_main else 'mcu_f%04x' % f
     out.append('static void %s(void)\n{' % name)
     if f != body[0]: E('goto %s;' % lab(f, f))
+    bc = bloques(f, body)
     def jump(cond, t):
         if is_main and t in ENDS: tgt = 'return;'
         else: tgt = 'goto %s;' % lab(f, t)
@@ -87,6 +115,7 @@ def gen_func(f):
     for i, pc in enumerate(body):
         op = code[pc]; o1 = code[pc + 1]; o2 = code[pc + 2]; n = L[op]; nx = pc + n
         out.append('%s: /* %04x: %s */' % (lab(f, pc), pc, code[pc:pc + n].hex()))
+        if pc in bc: E('MC += %d;' % bc[pc])
         rel1 = (nx + s8(o1)) & 0xFFFF; rel2 = (nx + s8(o2)) & 0xFFFF
         term = False
         R = lambda k: 'IR[%d]' % k
@@ -144,7 +173,7 @@ def gen_func(f):
         elif 0xD8 <= op <= 0xDF: E('%s--;' % R(op & 7)); jump('%s != 0' % R(op & 7), rel1)
         elif op == 0xD5: E(wr(o1, '%s - 1' % rd(o1))); jump('%s != 0' % rd(o1), rel2)
         elif op == 0xE0: E('A = XR(DPTR);')
-        elif op == 0xF0: E('XR(DPTR) = A;')
+        elif op == 0xF0: E('XW(DPTR, A);')
         elif op == 0xE4: E('A = 0;')
         elif op == 0xF4: E('A = (u8)~A;')
         elif op == 0xC4: E('A = (u8)((A << 4) | (A >> 4));')
@@ -169,7 +198,11 @@ hdr = ['/* generado por rc51c.py: trabajos del DS5002FP (8051) de World Rally 2 
        'typedef unsigned char u8; typedef unsigned short u16;',
        'static u8 A, CY, *IR, *SF, *XM; static u16 DPTR; static const u8 *CODE;',
        '#ifndef MCS51_XOR', '#define MCS51_XOR 0', '#endif',
-       '#define XR(a) XM[((a) & 0x7FFF) ^ MCS51_XOR]   /* MOVX >= 8000h = 68000 FE8000-FEFFFF (los trabajos solo tocan FC1A-FDD5) */']
+       '#define XR(a) XM[((a) & 0x7FFF) ^ MCS51_XOR]   /* MOVX >= 8000h = 68000 FE8000-FEFFFF (los trabajos solo tocan FC1A-FDD5) */',
+       '/* ciclos maquina del trabajo y escrituras con su momento (mcu.c, modelo con tiempo) */',
+       'unsigned mcu_mc; int mcu_sellos; void mcu_log(unsigned short a, unsigned char v);',
+       '#define MC mcu_mc',
+       '#define XW(a, v) do { u16 xa_ = (a); u8 xv_ = (v); XR(xa_) = xv_; if (mcu_sellos) mcu_log(xa_, xv_); } while (0)']
 for f in sorted(funcs):
     hdr.append('static void mcu_f%04x(void);' % f)
 for f in sorted(funcs): gen_func(f)
@@ -183,5 +216,15 @@ void mcu_job_%s(mcs51_t *c)
     c->sfr[0x60] = A; c->sfr[0x50] = (u8)((c->sfr[0x50] & 0x7F) | (CY << 7));
     c->sfr[0x02] = (u8)DPTR; c->sfr[0x03] = (u8)(DPTR >> 8);
 }''' % (j, f1, f2, j, f1, f2))
+partes = [f for j, fs in sorted(JOBS.items()) for f in fs]
+out.append('''/* una parte de un trabajo (0: %s), con el estado del interprete */
+void mcu_part(mcs51_t *c, int k)
+{
+    IR = c->iram; SF = c->sfr; XM = c->xram; CODE = c->code;
+    A = c->sfr[0x60]; CY = c->sfr[0x50] >> 7; DPTR = (u16)((c->sfr[0x03] << 8) | c->sfr[0x02]);
+    switch (k) { %s }
+    c->sfr[0x60] = A; c->sfr[0x50] = (u8)((c->sfr[0x50] & 0x7F) | (CY << 7));
+    c->sfr[0x02] = (u8)DPTR; c->sfr[0x03] = (u8)(DPTR >> 8);
+}''' % (' '.join('%d %04X' % (k, f) for k, f in enumerate(partes)), ' '.join('case %d: mcu_f%04x(); break;' % (k, f) for k, f in enumerate(partes))))
 open(sys.argv[1] if len(sys.argv) > 1 else 'mcu_rc.c', 'w').write('\n'.join(hdr + out) + '\n')
 print('funciones', len(funcs), 'instrucciones', sum(len(b) for b in funcs.values()), file=sys.stderr)

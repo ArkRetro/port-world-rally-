@@ -1,7 +1,8 @@
 """Compara los volcados del banco de pruebas (rc_host DUMP=..., <carpeta>/dumps.bin) con los de MAME (lua de referencia
 del analisis: d<cuadro>.bin o dumps.bin, formato WR2D). Por cada cuadro comun: bytes distintos por region y los primeros
-tramos. Se ignoran la estadistica de la espera de cada cuadro (FE8118-FE8123), el contador vivo de la MCU (FEFC10) y
-los registros del GAE1 (VRAM 0x2890-0x28FF).
+tramos. Se ignoran la estadistica de la espera de cada cuadro (FE8118-FE8123), el contador vivo de la MCU (FEFC10),
+los registros del GAE1 (VRAM 0x2890-0x28FF) y la pila libre (256 bytes por debajo del SP: restos de las IRQ, que el
+recompilado atiende entre bloques y no entre instrucciones).
 Uso: cmpmame.py banco/dumps.bin carpeta_mame|mame/dumps.bin [regiones] [-n tramos] [-q]"""
 import sys, os, struct, glob
 
@@ -25,12 +26,12 @@ def lee_mame(arg):
 REG = {'ram': (0xFE0000, 0x10000), 'vram': (0x200000, 0x10000), 'pal': (0x210000, 0x2000), 'vregs': (0x218004, 6)}
 IGN = [(0xFE8118, 0xFE8124), (0xFEFC10, 0xFEFC12), (0x202890, 0x202900)]
 
-def tramos(a, b, base):
+def tramos(a, b, base, ign):
     r = []; i = 0; n = len(a)
     while i < n:
-        if a[i] != b[i] and not any(x <= base + i < y for x, y in IGN):
+        if a[i] != b[i] and not any(x <= base + i < y for x, y in ign):
             j = i
-            while j < n and (a[j] != b[j] or any(x <= base + j < y for x, y in IGN)): j += 1
+            while j < n and (a[j] != b[j] or any(x <= base + j < y for x, y in ign)): j += 1
             r.append((base + i, j - i)); i = j
         else: i += 1
     return r
@@ -48,7 +49,8 @@ def main():
             base, n = REG[r]
             x, y = A[fr].get(base), B[fr].get(base)
             if x is None or y is None: continue
-            t = tramos(x[:n], y[:n], base)
+            sp = min(struct.unpack('>I', D[fr][0x68000000][60:64])[0] & 0xFFFFFF for D in (A, B) if 0x68000000 in D[fr])
+            t = tramos(x[:n], y[:n], base, IGN + [(sp - 0x100, sp)])
             if t:
                 msg.append('%s %d bytes: %s' % (r, sum(l for _, l in t), ' '.join('%06X+%d' % s for s in t[:nt])))
         if msg:
@@ -57,4 +59,6 @@ def main():
         else: iguales += 1
     print('%d cuadros comunes, %d iguales%s' % (len(comunes), iguales, ', primero distinto %d' % primero if primero else ''))
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    try: main()
+    except BrokenPipeError: pass

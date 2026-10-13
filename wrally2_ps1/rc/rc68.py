@@ -163,6 +163,7 @@ def labels():
         if i.op not in ('bra', 'jmp', 'rts', 'rte', 'rtr'): reach.add(NEXT[a])
         if i.op in ('bsr', 'jsr'): taken.add(NEXT[a]); reach.add(NEXT[a])
         if i.op in ('bcc', 'bra', 'dbcc') and i.target <= a: taken.add(i.target)   # vuelta de IRQ
+        if i.op in ('move_to_sr', 'andi_sr', 'eori_sr', 'ori_sr'): taken.add(NEXT[a])   # IRQ al bajar la mascara
     for a in ADDRS:
         if a not in reach and a not in direct: taken.add(a)   # solo alcanzable de forma indirecta
     # punteros a codigo en la ROM (tablas de saltos, punteros a funcion copiados a RAM)
@@ -199,12 +200,16 @@ def rd_const(a, sz):
 
 # peticiones de trabajo a la MCU (move.w #1 en 0x3684 y 0x37C8): se hace al momento (determinista, como el WR1)
 MCU_PET = {0xFEFC14: 'rc_mcu_a', 0xFEFC18: 'rc_mcu_b'}
+# eco complementado (not.w $fefc08 / $fefc0c): la MCU lo contesta en menos de 150 us y el juego lo comprueba en el
+# mismo cuadro (pantalla de prueba del arranque): tambien al momento
+MCU_ECO = (0xFEFC08, 0xFEFC0C)
 
 def wr_const(a, sz, v, pc):
     reg, o = region(a, True)
     if reg and reg != 'rom':
         if sz == 1: return 'MB(%s, 0x%x) = (u8)(%s);' % (reg, o, v)
         if sz == 2 and a in MCU_PET: return 'MW(%s, 0x%x) = (u16)(%s); if (((%s) & 0xFF) == 1) RC_CALL(%s());' % (reg, o, v, v, MCU_PET[a])
+        if sz == 2 and a in MCU_ECO: return 'MW(%s, 0x%x) = (u16)(%s); RC_CALL(rc_mcu_eco());' % (reg, o, v)
         if sz == 2: return 'MW(%s, 0x%x) = (u16)(%s);' % (reg, o, v)
         return 'SETL(%s, 0x%x, %s);' % (reg, o, v)
     return 'WR%d(0x%06xu, %s, 0x%x);' % (sz * 8, a, v, pc)
@@ -633,7 +638,7 @@ def gen_ins(i, live_out, labelset, taken, cx=None):
     elif o == 'rts':
         e('RTS();')
     elif o == 'rte':
-        e('vs = RDP16(ram, a7); SETSR(vs); ead = a7 + 2; vd = RDP32(ram, ead); a7 += 6; DISPATCH(vd);')
+        e('vs = RDP16(ram, a7); SETSR(vs); ead = a7 + 2; vd = RDP32(ram, ead); a7 += 6; RC_PLAZO(vd); DISPATCH(vd);')
     elif o == 'nop':
         pass
     elif o == 'movem':
@@ -708,12 +713,14 @@ def gen_ins(i, live_out, labelset, taken, cx=None):
     elif o == 'move_from_sr':
         g.write(i.dst, 2, 'GETSR()')
     elif o == 'move_to_sr':
-        v = g.read(i.src, 2); e('SETSR(%s);' % v)
+        # al bajar la mascara, la IRQ pendiente se atiende ya (como el 68000: el arranque del WR2 lo necesita para
+        # contar los vblank igual que MAME)
+        v = g.read(i.src, 2); e('SETSR(%s); RC_PLAZO(0x%xu);' % (v, nxt))
     elif o == 'move_to_ccr':
         v = g.read(i.src, 2); e('SETCCR(%s);' % v)
     elif o in ('ori_sr', 'andi_sr', 'eori_sr'):
         op = {'ori_sr': '|', 'andi_sr': '&', 'eori_sr': '^'}[o]
-        e('SETSR(GETSR() %s 0x%xu);' % (op, i.src.v))
+        e('SETSR(GETSR() %s 0x%xu); RC_PLAZO(0x%xu);' % (op, i.src.v, nxt))
     else:
         raise ValueError('sin implementar: %r' % i)
     # transferencia de control al final
@@ -966,7 +973,7 @@ def guarda(L):
         s.append('if (fx >= 0x%xu || fy >= 0x%xu) fn = 0;%s' % (n, n, ' else { fx = %s; if (fx < fn) fn = fx; }' % k if k else ''))
     for r, o in sorted(L.al): s.append('if ((a%d + %du) & 2) fn = 0;' % (r, o))
     # con cmin redondeado a potencia de 2 por abajo (desplazamiento): sale antes, nunca despues
-    s.append('if (fn) { fb = cyr + (s32)(fn << %d); if (imask < 6 && fb > 0) fb = 0; cyr -= fb; %sgoto F_%06x; } }'
+    s.append('if (fn) { fb = cyr + (s32)(fn << %d); if (fb > 0) fb = 0; cyr -= fb; %sgoto F_%06x; } }'
              % (L.cmin.bit_length() - 1, L.enter, L.h))
     return ' '.join(s)
 

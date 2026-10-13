@@ -3,36 +3,114 @@
    arranque. Fuera: puerto serie, grabador de entradas, contador FC10 y aviso de fallo de tension. Los contadores de
    explotacion (FDDA-FDEB) empiezan a 0, como una NVRAM nueva. Direcciones de la MCU (0x8000 + n = byte 0xFE8000 + n
    del 68000; aqui con la parte alta, como en la RAM compartida: 0xFC15 = byte bajo de la palabra 0xFEFC14) */
+#include <string.h>
 #include "rc_rt.h"
 #include "mcs51.h"
 mcs51_t rc_mcu;
 #define SH(m, a) (m)[(0x8000 + ((a) & 0x7FFF)) ^ 1]
+/* 0: el trabajo al momento de la peticion (como el WR1; el banco contra Musashi lo necesita en los dos lados).
+   1: con su tiempo, como en la placa (la MCU trabaja en paralelo; el 68000 lee justo despues de pedir y ve lo anterior):
+   la MCU recoge la peticion cuando su bucle principal vuelve a mirar FC15 y hace sus dos partes (0x074D y el guion
+   0x40E5) leyendo la RAM compartida al empezar cada una; sus escrituras se aplican cada una en su momento (ciclos
+   maquina contados por rc51c.py, MCK). Su bucle mira FC15 cada PERIODO ciclos: tras un trabajo, los arranques posibles
+   son fin + DESFASE + n PERIODO, y vale el primero que llegue AVISO ciclos despues de la peticion (ajustado con los
+   tiempos de MAME de 6 600 trabajos: 139,075 us, 7,7 us y 8 us; acierta el 99,7 %). Sin un trabajo en los ultimos
+   cuadros (primero de una carrera) no se sabe la fase: RECOGIDA, la media de MAME (77 us) */
+int mcu_modelo = 1;
+void (*mcu_traza)(int k, s32 t);    /* depuracion (rc_host MCUV): 0 peticion, 1 y 2 partes, 3 fin */
+#define MCU_INF 0x3FFFFFFF
+#define RECOGIDA 1006
+#define PERIODO 1808
+#define DESFASE 101
+#define AVISO 104
+/* ciclos maquina -> ciclos del 68000 (los dos a 13 MHz; 12 relojes por ciclo, y la IRQ del temporizador 1 se lleva 4
+   de cada 113) */
+#define MCK(mc) ((s32)((mc) * 12u * 113u / 109u))
+extern unsigned mcu_mc; extern int mcu_sellos;
+void mcu_part(mcs51_t *c, int k);
+static s32 t1 = MCU_INF, t2 = MCU_INF, tbase;     /* inicio de las dos partes (ciclos desde el proximo vblank) */
+static s32 ranura = MCU_INF;                       /* un arranque posible del bucle de la MCU (tras el ultimo trabajo) */
+static struct { s32 t; u16 a; u8 v; } lg[256];    /* escrituras del trabajo con su momento, en orden */
+static int nlg, ilg;
+static u8 sh[0x200] RC_AL;                          /* FC00-FDFF tal como la ve el trabajo */
+void mcu_log(unsigned short a, unsigned char v) { if (nlg < 256) { lg[nlg].t = tbase + MCK(mcu_mc); lg[nlg].a = a; lg[nlg].v = v; nlg++; } }
+s32 mcu_proximo(void) { s32 e = t1 < t2 ? t1 : t2; if (ilg < nlg && lg[ilg].t <= e) e = lg[ilg].t; return e; }
+static void parte(int k, s32 t)
+{
+    memcpy(sh, rc_ram + 0xFC00, 0x200);
+    rc_mcu.xram = sh - 0x7C00;
+    tbase = t; mcu_mc = 0; mcu_sellos = 1;
+    mcu_part(&rc_mcu, k);
+    mcu_sellos = 0;
+}
+/* lo vencido hasta ahora (ciclos desde el proximo vblank), en orden */
+void mcu_sucesos(s32 ahora)
+{
+    for (;;) {
+        s32 e = mcu_proximo();
+        if (e > ahora || e == MCU_INF) break;
+        if (ilg < nlg && lg[ilg].t == e) { rc_ram[lg[ilg].a ^ 1] = lg[ilg].v; ilg++; }
+        else if (t1 == e) {
+            SH(rc_ram, 0xFC15) = 0; SH(rc_ram, 0xFC13) = 0; nlg = ilg = 0; parte(0, e); t1 = MCU_INF; t2 = e + MCK(mcu_mc);
+            if (mcu_traza) { mcu_traza(1, e); mcu_traza(2, t2); }
+        }
+        else {
+            parte(1, e); mcu_log(0xFC13, 1); t2 = MCU_INF; ranura = lg[nlg - 1].t + DESFASE;
+            if (mcu_traza) mcu_traza(3, lg[nlg - 1].t);
+        }
+    }
+}
+void mcu_desplaza(s32 d)
+{
+    int i;
+    if (t1 != MCU_INF) t1 -= d;
+    if (t2 != MCU_INF) t2 -= d;
+    if (ranura != MCU_INF) ranura = ranura - d < -4 * CYC_FRAME ? MCU_INF : ranura - d;   /* fase vieja: no vale */
+    for (i = ilg; i < nlg; i++) lg[i].t -= d;
+}
 
-void mcu_boot(u8 *ram, const u8 *code, mcs51_t *c)
+void mcu_boot(u8 *m, const u8 *code, mcs51_t *c)
 {
     int i;
     for (i = 0; i < 256; i++) c->iram[i] = 0;
     for (i = 0; i < 128; i++) c->sfr[i] = 0;
     c->sfr[0x01] = 0x70;                          /* SP */
-    c->code = code; c->xram = ram + 0x8000;
-    SH(ram, 0xFC01) = 0;                          /* sin fallo de tension */
-    SH(ram, 0xFDD8) = 0x0E; SH(ram, 0xFDD9) = 0x06;
-    for (i = 0xFDDA; i <= 0xFDEB; i++) SH(ram, i) = 0;
+    c->code = code; c->xram = m + 0x8000;
+    SH(m, 0xFC01) = 0;                          /* sin fallo de tension */
+    SH(m, 0xFDD8) = 0x0E; SH(m, 0xFDD9) = 0x06;
+    for (i = 0xFDDA; i <= 0xFDEB; i++) SH(m, i) = 0;
 }
 /* trabajo A (jugador 1) o B (jugador 2): el 68000 escribe 1 en FC15/FC19 y la MCU lo hace al momento */
-void mcu_trabajo(u8 *ram, mcs51_t *c, int b)
+void mcu_trabajo(u8 *m, mcs51_t *c, int b)
 {
-    if (!b) { SH(ram, 0xFC15) = 0; SH(ram, 0xFC13) = 0; mcu_job_a(c); SH(ram, 0xFC13) = 1; }
-    else { SH(ram, 0xFC19) = 0; SH(ram, 0xFC17) = 0; mcu_job_b(c); SH(ram, 0xFC17) = 1; }
+    c->xram = m + 0x8000;
+    if (!b) { SH(m, 0xFC15) = 0; SH(m, 0xFC13) = 0; mcu_job_a(c); SH(m, 0xFC13) = 1; }
+    else { SH(m, 0xFC19) = 0; SH(m, 0xFC17) = 0; mcu_job_b(c); SH(m, 0xFC17) = 1; }
+}
+/* eco complementado de FC08 y FC0C (su bucle lo hace cada ~150 us: aqui al escribirlos el 68000 y en cada cuadro) */
+void mcu_eco(u8 *m)
+{
+    SH(m, 0xFC0A) = ~SH(m, 0xFC08); SH(m, 0xFC0B) = ~SH(m, 0xFC09);
+    SH(m, 0xFC0E) = ~SH(m, 0xFC0C); SH(m, 0xFC0F) = ~SH(m, 0xFC0D);
 }
 /* una vez por cuadro (rc_vblank): lo que su bucle principal hace sin parar */
-void mcu_cuadro(u8 *ram, mcs51_t *c)
+void mcu_cuadro(u8 *m, mcs51_t *c)
 {
-    SH(ram, 0xFDD8) = 0x0E; SH(ram, 0xFDD9) = 0x06;
-    SH(ram, 0xFC0A) = ~SH(ram, 0xFC08); SH(ram, 0xFC0B) = ~SH(ram, 0xFC09);
-    SH(ram, 0xFC0E) = ~SH(ram, 0xFC0C); SH(ram, 0xFC0F) = ~SH(ram, 0xFC0D);
-    if (SH(ram, 0xFC15) == 1) mcu_trabajo(ram, c, 0);   /* por si una peticion no paso por el gancho */
-    if (SH(ram, 0xFC19) == 1) mcu_trabajo(ram, c, 1);
+    SH(m, 0xFDD8) = 0x0E; SH(m, 0xFDD9) = 0x06;
+    mcu_eco(m);
+    if (SH(m, 0xFC15) == 1 && (m != rc_ram || (t1 == MCU_INF && t2 == MCU_INF)))
+        mcu_trabajo(m, c, 0);                             /* por si una peticion no paso por el gancho */
+    if (SH(m, 0xFC19) == 1) mcu_trabajo(m, c, 1);
 }
-void rc_mcu_a(void) { mcu_trabajo(rc_ram, &rc_mcu, 0); }
+void rc_mcu_a(void)
+{
+    s32 ahora = RC_REL;
+    if (!mcu_modelo) { mcu_trabajo(rc_ram, &rc_mcu, 0); return; }
+    mcu_sucesos(MCU_INF - 1);                  /* si quedara algo del anterior, se termina ya */
+    if (mcu_traza) mcu_traza(0, ahora);
+    if (ranura == MCU_INF) t1 = ahora + RECOGIDA;
+    else { s32 n = (ahora + AVISO - ranura + PERIODO - 1) / PERIODO; t1 = ranura + (n > 0 ? n : 0) * PERIODO; }
+    if (t1 < rc_dl) { rc_dl = t1; rc_r.cyrel = ahora - t1; }
+}
 void rc_mcu_b(void) { mcu_trabajo(rc_ram, &rc_mcu, 1); }
+void rc_mcu_eco(void) { mcu_eco(rc_ram); }

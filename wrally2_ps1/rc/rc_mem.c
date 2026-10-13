@@ -8,6 +8,7 @@ u8 rc_rom[0x100000 + 4] RC_AL;
 u8 rc_ram[0x10000 + 4] RC_AL, rc_vram[0x10000 + 4] RC_AL, rc_pal[0x2000 + 4] RC_AL, rc_xram[0x2000 + 4] RC_AL;
 u8 rc_vregs[0x1000 + 4] RC_AL, rc_iopg[0x1000 + 4] RC_AL, rc_ffpg[0x1000 + 4] RC_AL;
 rc_regs_t rc_r;
+u32 rc_cuadro;         /* cuadro (lo pone la plataforma: perfiles por cuadros) */
 u16 rc_latch;          /* LS259 de 0x400000 (bit n = 0x400000 + 8n): contadores de monedas y el ADC del volante */
 #ifdef RCREG
 static u32 rc_fr;      /* cuadro, para el perfil de regiones */
@@ -33,7 +34,7 @@ static u32 snd_acu, snd_nfr, snd_hecho;
 static void snd_cuadro_nuevo(void) { snd_acu += 7812500; snd_nfr = snd_acu / 59100; snd_acu %= 59100; snd_hecho = 0; }
 static void snd_al_dia(void)
 {
-    s32 pos = CYC_FRAME + rc_r.cyrel;
+    s32 pos = CYC_FRAME + RC_REL;
     u32 obj;
     if (pos < 0) pos = 0;
     if (pos > CYC_FRAME) pos = CYC_FRAME;
@@ -45,6 +46,31 @@ void rc_snd_vblank(void)
 {
     if (snd_nfr > snd_hecho) gae1_avanza(snd_nfr - snd_hecho);
     snd_cuadro_nuevo();
+}
+
+/* ---- plazos del contador de ciclos (rc_rt.h): el vblank si la IRQ no esta enmascarada y los sucesos de la MCU */
+#define RC_INF 0x3FFFFFFF
+s32 rc_dl;
+s32 mcu_proximo(void); void mcu_sucesos(s32 ahora); void mcu_desplaza(s32 d);
+void rc_plazo(void)
+{
+    s32 rel = RC_REL, dl = rc_r.imask < 6 ? 0 : RC_INF, e = mcu_proximo();
+    if (e < dl) dl = e;
+    rc_dl = dl; rc_r.cyrel = rel - dl;
+}
+int rc_sucesos(void)
+{
+    s32 rel = RC_REL;
+    mcu_sucesos(rel);
+    rc_plazo();
+    return rel >= 0 && rc_r.imask < 6;
+}
+/* tomada la IRQ: el contador pasa al vblank siguiente (los que hayan pasado con la IRQ enmascarada cuentan como uno) */
+void rc_vb_cuadro(void)
+{
+    s32 rel = RC_REL, k = 1 + rel / CYC_FRAME;
+    rel -= k * CYC_FRAME; mcu_desplaza(k * CYC_FRAME);
+    rc_dl = 0; rc_r.cyrel = rel;
 }
 
 void rc_mem_init(void)
@@ -75,13 +101,18 @@ u32 rc_rd8(u32 a) { return RD8(a); }
    maximo en un cuadro; el cuadro lo marca rc_set_io) */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 u32 rc_cur; u16 rc_regmask[0x10000];
 static u32 rc_cnt[0x10000], rc_fmax[0x10000], rc_fcnt[0x10000], rc_fst[0x10000], rc_bk[0x10000];
 void rc_regbk(u32 pc) { rc_bk[(pc >> 1) & 0xFFFF]++; }
+static long rc_va = -1, rc_vb;      /* REGWIN=a-b: solo cuenta en los cuadros [a, b] (rc_cuadro, de la plataforma) */
 void rc_regck(u32 pc)
 {
     u32 i = (pc >> 1) & 0xFFFF;
-    rc_cur = pc; rc_cnt[i]++;
+    if (rc_va < 0) { const char *q = getenv("REGWIN"); rc_va = q ? atol(q) : 0; rc_vb = q && strchr(q, '-') ? atol(strchr(q, '-') + 1) : 0x7FFFFFFF; }
+    rc_cur = pc;
+    if ((long)rc_cuadro < rc_va || (long)rc_cuadro > rc_vb) return;
+    rc_cnt[i]++;
     if (rc_fst[i] != rc_fr) { rc_fst[i] = rc_fr; rc_fcnt[i] = 0; }
     if (++rc_fcnt[i] > rc_fmax[i]) rc_fmax[i] = rc_fcnt[i];
 }

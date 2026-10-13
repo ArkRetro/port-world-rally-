@@ -10,7 +10,8 @@
      LOG=1                   <carpeta>/log.txt, una linea por cuadro con las columnas del log.txt de MAME
      SNDLOG=fichero          sucesos del GAE1 (canal, trozo, registros)
      V=1                     cuadros y ciclos por stderr cada 100 cuadros
-     FASE=n                  momento del primer vblank en % de cuadro (50, como MAME)
+     FASE=n                  momento del primer vblank en % de cuadro (98, como MAME)
+     MCU=0                   trabajo de la MCU al momento (por defecto 1: con su tiempo, como la placa)
      VIRQ=n                  cada IRQ hasta el cuadro n por stderr (pc, ciclos, contador de la espera)
    Solo con -DRCDBG (rc_host_dbg, comparado con Musashi):
      TRAZA=n                 cada instruccion de los cuadros n y n+1
@@ -28,7 +29,9 @@ static const char *WORKF(const char *n) { static char b[4][512]; static int k; c
 
 void rc_mem_init(void); void rc_set_io(u16 in0, u16 in1, u16 in2, u16 in3); void rc_snd_vblank(void);
 void mcu_boot(u8 *ram, const u8 *code, mcs51_t *c); void mcu_trabajo(u8 *ram, mcs51_t *c, int b); void mcu_cuadro(u8 *ram, mcs51_t *c);
-extern mcs51_t rc_mcu; extern u16 rc_latch;
+void mcu_eco(u8 *ram);
+extern mcs51_t rc_mcu; extern u16 rc_latch; extern int mcu_modelo; extern u32 rc_cuadro;
+static s32 fase0;
 static u8 mcurom[0x8000], rombe[0x100000];
 static u16 in0, in1 = 0xFFFF, in2, in3 = 0xFFFF;
 static long frame, nframes = 3000;
@@ -103,6 +106,14 @@ static void log_line(void)
         *(u16 *)(rc_vram + 0x2800), *(u16 *)(rc_vram + 0x2802), W(0xC298), W(0xC29C), W(0xC146), W(0xC290), W(0xC3C6), W(0xC3CE),
         W(0xFD0A), W(0x80FE), W(0xFD14), W(0x8114));
 }
+extern void (*mcu_traza)(int k, s32 t);
+static void mcu_tr(int k, s32 t)
+{
+    static double t0; static const char *nom[] = {"peticion", "parte1", "parte2", "fin"};
+    double us = (frame * (double)CYC_FRAME + t) / 13.0;     /* us desde el cuadro 0 (como los tiempos de MAME, salvo el origen) */
+    if (k == 0) t0 = us;
+    fprintf(stderr, "MCU cuadro %ld %-8s %.1f us (+%.1f)\n", frame, nom[k], us, us - t0);
+}
 static void snd_suceso(int ch, int t)
 {
     if (!sndlog) return;
@@ -153,6 +164,7 @@ void m68k_write_memory_16(unsigned int a, unsigned int v)
     if (!p) return;
     *(u16 *)p = v;
     if ((a == 0xFEFC14 || a == 0xFEFC18) && (v & 0xFF) == 1) mcu_trabajo(m_ram, &mcu_ref, a == 0xFEFC18);
+    if (a == 0xFEFC08 || a == 0xFEFC0C) mcu_eco(m_ram);
 }
 void m68k_write_memory_8(unsigned int a, unsigned int v)
 {
@@ -193,13 +205,13 @@ void rc_ck(u32 pc, u32 live)
     lastck = pc;
     nck++;
     if (getenv("RELOJ") && !frame) {    /* arranque: pc al pasar cada cuarto de cuadro (antes de la primera IRQ) */
-        static long q; long c = rc_r.cyc;
+        static long q; long c = RC_REL + fase0;
         if (c >= q * (CYC_FRAME / 4)) { fprintf(stderr, "R %ld/4 cuadro %06X ciclo %ld\n", q, pc, c); while (c >= q * (CYC_FRAME / 4)) q++; }
     }
     if (getenv("MARCAS")) {             /* primera vez en cada pc de la lista: cuadro y ciclos del cuadro (0..CYC_FRAME) */
         static u32 m[32]; static int nm = -1; int k;
         if (nm < 0) { const char *q = getenv("MARCAS"); for (nm = 0; *q && nm < 32; ) { m[nm++] = strtoul(q, (char **)&q, 16); if (*q == ',') q++; } }
-        for (k = 0; k < nm; k++) if (m[k] == pc) { fprintf(stderr, "M %06X cuadro %ld +%.3f\n", pc, frame, frame ? (CYC_FRAME + rc_r.cyrel) / (double)CYC_FRAME : rc_r.cyc / (double)CYC_FRAME); m[k] = 1; }
+        for (k = 0; k < nm; k++) if (m[k] == pc) { fprintf(stderr, "M %06X cuadro %ld +%.3f\n", pc, frame, frame ? (CYC_FRAME + RC_REL) / (double)CYC_FRAME : (RC_REL + fase0) / (double)CYC_FRAME); m[k] = 1; }
     }
     if (getenv("TRAZA") && frame >= atol(getenv("TRAZA")) && frame <= atol(getenv("TRAZA")) + 1)
         fprintf(stderr, "T %ld %06X cyr %d fe8114 %04X fe8118 %04X%04X ref %04X%04X\n", frame, pc, rc_r.cyrel,
@@ -233,10 +245,10 @@ static void cmp_mem(void)
 void rc_vblank(void)
 {
     /* vblanks pasados desde la IRQ anterior (con la IRQ enmascarada mas de un cuadro, MAME los cuenta todos) */
-    long n = 1 + (rc_r.cyrel > 0 ? rc_r.cyrel / CYC_FRAME : 0);
+    long n = 1 + (RC_REL > 0 ? RC_REL / CYC_FRAME : 0);
     static long dsum;
-    frame += n;
-    if (getenv("VIRQ") && frame < atol(getenv("VIRQ"))) fprintf(stderr, "irq cuadro %ld (+%ld) pc %06X cyr %d fe8118 %08X sp %06X\n", frame, n, rc_r.pc, rc_r.cyrel, (W(0x8118) << 16) | W(0x811A), rc_r.a[7]);
+    frame += n; rc_cuadro = frame;
+    if (getenv("VIRQ") && frame < atol(getenv("VIRQ"))) fprintf(stderr, "irq cuadro %ld (+%ld) pc %06X cyr %d fe8118 %08X sp %06X\n", frame, n, rc_r.pc, RC_REL, (W(0x8118) << 16) | W(0x811A), rc_r.a[7]);
     inputs(frame - 1); rc_set_io(in0, in1, in2, in3);   /* MAME las fija al empezar el cuadro */
     rc_snd_vblank();
     mcu_cuadro(rc_ram, &rc_mcu);
@@ -244,11 +256,12 @@ void rc_vblank(void)
     mcu_cuadro(m_ram, &mcu_ref);
     cmp_mem();
 #endif
-    if (dump_a >= 0 && frame >= dump_a && frame <= dump_b && (frame - dump_a) % dump_p == 0) dump_state();
+    /* con la IRQ atendida tarde (enmascarada en el vblank) el estado no es el del vblank: sin volcado */
+    if (dump_a >= 0 && frame >= dump_a && frame <= dump_b && (frame - dump_a) % dump_p == 0 && rc_r.cyrel < 2000) dump_state();
     if (logf || getenv("LOG")) log_line();
     memcpy(vram_vb, rc_vram, 0x10000);
     if (getenv("V") && frame % 100 < n) { fprintf(stderr, "cuadro %ld pc %06X ciclos/cuadro %ld\n", frame, rc_r.pc, dsum / 100); dsum = 0; }
-    dsum += CYC_FRAME + rc_r.cyrel;
+    dsum += CYC_FRAME + RC_REL;
     if (frame >= nframes) {
         if (dumpf) fclose(dumpf);
         if (logf) fclose(logf);
@@ -281,8 +294,15 @@ int main(int argc, char **argv)
     memset(&rc_r, 0, sizeof(rc_r));
     rc_r.a[7] = (rombe[0] << 24) | (rombe[1] << 16) | (rombe[2] << 8) | rombe[3];
     rc_r.imask = 7;
-    /* el primer vblank hacia la mitad del cuadro, como en MAME (mismos cuadros que su log); FASE = % del cuadro */
-    rc_r.cyc_next = (s32)((long long)CYC_FRAME * (getenv("FASE") ? atol(getenv("FASE")) : 50) / 100);
+    /* el primer vblank al 98 % del cuadro, como en MAME (medido con el bucle de borrado del arranque: mismos cuadros
+       que su log); FASE = % del cuadro */
+    fase0 = (s32)((long long)CYC_FRAME * (getenv("FASE") ? atol(getenv("FASE")) : 98) / 100);
+    rc_r.cyrel = -fase0; rc_dl = 0;
+    if (getenv("MCU")) mcu_modelo = atoi(getenv("MCU"));
+    if (getenv("MCUV")) mcu_traza = mcu_tr;
+#ifdef RCDBG
+    mcu_modelo = 0;      /* Musashi hace el trabajo al momento: los dos lados igual */
+#endif
 #ifdef RCDBG
     mcu_boot(m_ram, mcurom, &mcu_ref);
     m68k_init();
