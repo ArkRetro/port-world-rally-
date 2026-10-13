@@ -40,3 +40,13 @@ reinicia. En MAME nunca ocurre.
 
 `tools/lab/BRIEF.md` documenta el laboratorio MAME (rutas, recetas de depurador y Lua).
 Los scripts tienen rutas absolutas de la sesión como valores por defecto; pasa tus rutas por argumento.
+
+## HALLAZGO EN HARDWARE REAL (capturador, AES + NeoSD Pro)
+Dos capturas en la consola del usuario, ambas **VEC 04 ILLEGAL INSTR** en código de P2 y en momentos distintos:
+* PC 0x205308, SR 2004, CNT 0002, SP 108FB8 — 0x205308 es el interior de `move.l A3,$10BE4E` (0x205306, 6 bytes).
+* PC 0x204248, SR 2000, CNT 0023, SP 108FC8 — 0x204248 es la última palabra (`00FF`) de `andi.l #$FF,D0` (0x204244).
+La CPU ejecutó desde la mitad de instrucciones válidas en P2 ⇒ lecturas de instrucciones corruptas en la zona
+PORT/P2 (0x200000-0x2FFFFF) en el hardware real (p. ej. `0280`→`0200`, un bit). En MAME nunca ocurre.
+Kizuna (que funciona) no ejecuta código en P2; el port ejecuta ahí ~50 % del código y todas sus IRQ.
+Siguiente diagnóstico: `build_catcher2.py` (MEM alrededor del PC, relectura x4096 de ventanas P2/P1, sumas P1/P2;
+en hex, B se muestra como X y D como Y).
