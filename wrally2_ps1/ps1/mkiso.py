@@ -5,13 +5,14 @@ Para una PS1 real con un emulador de lector deja en sd/ una carpeta por region y
 de la tarjeta (SD_NOMBRE, por defecto 'World Rally 2 PS1'): '<nombre> (USA)' con .bin y .cue (XStation; tambien CD
 grabado, MiSTer) y '<nombre> (USA) PSIO' con .bin y .cu2 (la hoja de pistas de PSIO).
 Ficheros del disco en orden: SYSTEM.CNF y el EXE en el primer sector del directorio (lo unico que lee la BIOS); los
-demas, del manifiesto FICHEROS de mas abajo (los que existan en cd/)."""
+demas, del manifiesto FICHEROS de mas abajo (los que existan en cd/). Para otro EXE (las sondas de prueba/): MKISO_EXE
+(nombre en cd/), MKISO_IMG (prefijo de la imagen), MKISO_MAS (mas ficheros de cd/, en orden) y SD_NOMBRE."""
 import subprocess, os, struct, shutil, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'wrally_ps1', 'ps1'))
 import licencia
-EXE = 'WR2PS1.EXE'
-FICHEROS = ['SYSTEM.CNF', EXE]
-IMG = 'wr2ps1_%s'
+EXE = os.environ.get('MKISO_EXE', 'WR2PS1.EXE')          # las sondas de prueba/ usan el mismo guion con lo suyo
+FICHEROS = ['SYSTEM.CNF', EXE] + os.environ.get('MKISO_MAS', '').split()
+IMG = os.environ.get('MKISO_IMG', 'wr2ps1') + '_%s'
 
 def build(reg):
     img = IMG % reg

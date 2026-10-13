@@ -20,3 +20,16 @@ ps1/*.dat
 ps1/iso_*.xml
 ps1/cd/
 ps1/sd/
+# sondas de prueba/: lo que sale de construirlas (datos de prueba generados, EXE, imagenes)
+prueba/*/*.o
+prueba/*/*.elf
+prueba/*/*.map
+prueba/*/*.nm
+prueba/*/*.ps-exe
+prueba/*/*.bin
+prueba/*/*.cue
+prueba/*/*.cu2
+prueba/*/*.dat
+prueba/*/iso_*.xml
+prueba/*/cd/
+prueba/*/sd/
