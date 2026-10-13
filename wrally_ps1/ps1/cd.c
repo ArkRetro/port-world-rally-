@@ -33,7 +33,8 @@ static int drv;                             /* unidad: 0 parada, 1 leyendo, 2 au
 static int cmd, cmd_arg, wait2;             /* comando sin primera respuesta (INT3); Pause sin segunda (INT2) */
 static u16 t_cmd, t_ev, t_done;             /* lineas: envio del comando, ultimo sector, fin de la ultima lectura */
 static int mode = -1, want_mode = M_AUDIO, loc_at = -1, drv_next = -1, lost;
-static int seek_to = -1, seek_n;            /* ReadN sin Pause: hasta ver este sector (o 3) los que lleguen son de antes */
+static int seek_to = -1, seek_n, seek_old; /* ReadN sin Pause: hasta ver este sector, los que sigan a donde iba la unidad
+                                               (seek_old; como mucho 8) son de antes */
 static int heard; static u16 t_play;        /* Play: ya suena (bit 7 del stat; antes busca) y cuando se acepto */
 static int hold; static u16 t_hold, n_hold; /* tras una Pause rechazada o un error: no mandar nada en n_hold lineas */
 /* peticion de lectura de los sectores lba..lba+n-1: a buf (como mucho 32, en cualquier orden: rd_got), o en orden
@@ -101,7 +102,7 @@ static u8 *sector(int *idx)
     CD0 = 0; CD3 = 0;                       /* soltar el resto */
     cd_dbg[0]++;
     if (rd_on && !d && i > rd_i && !rd_buf) cd_dbg[1]++;
-    if (seek_to >= 0 && (l == seek_to || ++seek_n > 2)) seek_to = -1;
+    if (seek_to >= 0) { if (l != seek_to && l == seek_old && seek_n++ < 8) seek_old++; else seek_to = -1; }
     if (seek_to < 0 && i >= -8 && i <= rd_n + 8) drv_next = l + 1;   /* los de antes de buscar no cuentan */
     t_ev = T1; *idx = i;
     return d;
@@ -119,7 +120,7 @@ static void event(int t)
     if (t == 3) {                           /* primera respuesta */
         switch (cmd) {
         case 0x02: loc_at = cmd_arg; break;
-        case 0x06: drv = 1; drv_next = seek_to = loc_at; seek_n = 0; loc_at = -1; t_ev = T1; lost = 0; break;
+        case 0x06: seek_old = drv == 1 ? drv_next : -1; drv = 1; drv_next = seek_to = loc_at; seek_n = 0; loc_at = -1; t_ev = T1; lost = 0; break;
         case 0x03: drv = 2; heard = 0; t_play = T1; loc_at = -1; break;
         case 0x09: case 0x0A: wait2 = cmd; break;
         case 0x0E:                          /* cambio de velocidad: 3 cuadros antes de lo siguiente (como Sony) */
@@ -145,7 +146,8 @@ static void event(int t)
             if (drv == 2 && play_at < 0) stop_req = 1;
             cmd = 0; return;
         }
-        if (rd_on && (cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1))) { hold = 1; t_hold = T1; n_hold = ec == 0x80 ? 15 * 263 : 526; }   /* aun no lista: 0,25 s; si no, 2 cuadros */
+        /* aun no lista, o un error tras otro (sin un sector bueno entre ellos): 0,25 s; el primero, 2 cuadros */
+        if (rd_on && (cmd == 0x02 || cmd == 0x06 || (!cmd && drv == 1))) { hold = 1; t_hold = T1; n_hold = ec == 0x80 || rd_err ? 15 * 263 : 526; }
         if (cmd == 0x11) { loc_res = -1; loc_req = 0; }
         if (cmd == 0x03 && ec == 0x80 && !stop_req && ++play_try < 8) {   /* Play: aun no lista, otra vez */
             play_at = play_last; hold = 1; t_hold = T1; n_hold = 15 * 263;
@@ -231,7 +233,10 @@ static void rd_start(int lba, int n, void *buf, void (*cb)(int, const unsigned c
         if (spill_lba[k] >= 0 && spill_lba[k] == rd_lba + rd_i) {
             u8 *d = rd_buf ? rd_buf + rd_i * 2048 : rd_dst ? rd_dst(rd_i) : spill[k];
             if (!d) break;
-            if (d != spill[k]) for (j = 0; j < 512; j++) ((unsigned *)d)[j] = ((const unsigned *)spill[k])[j];
+            if (d != spill[k]) {
+                if ((unsigned)d & 3) for (j = 0; j < 2048; j++) d[j] = spill[k][j];
+                else for (j = 0; j < 512; j++) ((unsigned *)d)[j] = ((const unsigned *)spill[k])[j];
+            }
             got(rd_i, d);
         }
 }
