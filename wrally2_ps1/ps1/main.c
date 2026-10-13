@@ -39,7 +39,8 @@ static inline u16 t1_get(void)
 #define H 240
 static void gpu_wait(void) { while (!(GP1 & (1 << 26))); }
 static void dma_wait(void) { while (D2_CHCR & (1 << 24)); }
-/* lista de la GPU: nodos de hasta 254 palabras seguidos en un bufer (lst), enlazados en orden */
+/* lista de la GPU: nodos de hasta 16 palabras (el FIFO de la GPU; con nodos mas largos Mednafen pierde palabras y la
+   GPU se queda a medio comando) seguidos en un bufer (lst), enlazados en orden y con primitivas enteras */
 #define LSTN 24576
 static u32 lst[LSTN];
 static u32 *lp, *node;
@@ -51,7 +52,7 @@ static void l_close(u32 *next)
 }
 static void l_room(int n)
 {
-    if (lp + n - node - 1 > 254 || lp + n + 2 >= lst + LSTN) {
+    if (lp + n - node - 1 > 16 || lp + n + 2 >= lst + LSTN) {
         if (lp + n + 2 >= lst + LSTN) return;             /* lleno: se pierde el resto */
         l_close(lp); node = lp; lp = node + 1;
     }
@@ -249,6 +250,13 @@ int main(void)
     rc_r.a[7] = ((u32)*(u16 *)(rc_rom) << 16) | *(u16 *)(rc_rom + 2);
     rc_r.imask = 7;
     rc_r.cyrel = -(s32)(CYC_FRAME * 98 / 100);    /* el primer vblank como en MAME (rc_host FASE) */
+    {   /* los dos bufer en azul y la pantalla encendida antes del primer cuadro del juego */
+        int k;
+        for (k = 0; k < 2; k++) {
+            gpu_wait(); GP0 = 0x02200000; GP0 = (u32)(k * 256) << 16; GP0 = (H << 16) | W;
+        }
+        gpu_wait(); GP1 = 0x05000000; GP1 = 0x03000000;
+    }
     lastv = T1;
     rc_run(((u32)*(u16 *)(rc_rom + 4) << 16) | *(u16 *)(rc_rom + 6));
     for (;;);

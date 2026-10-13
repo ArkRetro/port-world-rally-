@@ -14,7 +14,7 @@ mkdir -p cd && cp SYSTEM.CNF cd/
 ARCH="-march=mips1 -mabi=32 -EL -fno-pic -mno-shared -mno-abicalls -mfp32 -mno-llsc -fno-stack-protector -nostdlib -ffreestanding"
 CF="$ARCH -O2 -G0 -mno-gpopt -fomit-frame-pointer -fno-builtin -fno-strict-aliasing -fdata-sections -ffunction-sections -w -I$N"
 [ wr2_rc.o -nt ../rc/wr2_rc.c ] && [ wr2_rc.o -nt ../rc/rc_rt.h ] && [ wr2_rc.o -nt build.sh ] || $P-gcc $CF ${RCOPT:--Os} -c ../rc/wr2_rc.c -o wr2_rc.o
-$P-gcc $CF -c main.c -o main.o
+$P-gcc $CF $MAINOPT -c main.c -o main.o
 $P-gcc $CF -DRC_ROM_EXTERN -c ../rc/rc_mem.c -o rc_mem.o
 $P-gcc $CF -c ../rc/gae1.c -o gae1.o
 $P-gcc $CF -DMCS51_XOR=1 -c ../rc/mcu.c -o mcu.o
