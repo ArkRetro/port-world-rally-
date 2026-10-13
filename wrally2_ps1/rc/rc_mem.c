@@ -94,6 +94,9 @@ void rc_mem_init(void)
     gae1_init((u16 *)(rc_vram + 0x2890));
     snd_acu = 0; snd_cuadro_nuevo();
 }
+/* fin de la suma de la ROM del arranque (suceso de rc68.py en PC 0x2616): en R1 se libera aqui lo no residente */
+int rc_suma_hecha;
+void rc_rom_suma(void) { rc_suma_hecha = 1; }
 u32 rc_rd16(u32 a) { return RD16(a); }
 u32 rc_rd8(u32 a) { return RD8(a); }
 #ifdef RCREG

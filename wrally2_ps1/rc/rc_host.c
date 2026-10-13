@@ -17,7 +17,8 @@
      TRAZA=n                 cada instruccion de los cuadros n y n+1
      MARCAS=pc,pc,...        cuadro y momento del cuadro de la primera vez en cada pc
      RELOJ=1                 pc en cada cuarto de cuadro hasta la primera IRQ
-   Compilado con -DHPROF: veces por destino del despacho (rts, rte, jmp indirecto) en $HPROF o work/hprof.txt. */
+   Compilado con -DHPROF: veces por destino del despacho (rts, rte, jmp indirecto) en $HPROF o work/hprof.txt.
+   rc_host_rom (banco.sh con PERFILES=1, -DROMSTAT y romstat.c): bloques de la ROM leidos por fase en $ROMSTAT. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +40,9 @@ static long frame, nframes = 3000;
 static const char *outdir = ".";
 static FILE *logf, *dumpf, *sndlog;
 static long dump_a = -1, dump_b, dump_p = 1;
+#ifdef ROMSTAT
+void rc_romstat_cuadro(long cuadro), rc_romstat_fin(void);
+#endif
 #ifdef HPROF
 /* perfil del despacho (rts, rte, jmp indirecto): veces por destino, a $HPROF o work/hprof.txt al acabar */
 static unsigned hprof[0x10000];
@@ -280,6 +284,9 @@ void rc_vblank(void)
     long n = 1 + (RC_REL > 0 ? RC_REL / CYC_FRAME : 0);
     static long dsum;
     frame += n; rc_cuadro = frame;
+#ifdef ROMSTAT
+    rc_romstat_cuadro(frame);
+#endif
     if (getenv("VIRQ") && frame < atol(getenv("VIRQ"))) fprintf(stderr, "irq cuadro %ld (+%ld) pc %06X cyr %d fe8118 %08X sp %06X\n", frame, n, rc_r.pc, RC_REL, (W(0x8118) << 16) | W(0x811A), rc_r.a[7]);
     rc_snd_vblank();
     mcu_cuadro(rc_ram, &rc_mcu);
@@ -303,6 +310,9 @@ void rc_vblank(void)
         { extern unsigned mcu_movc_fuera; if (mcu_movc_fuera) fprintf(stderr, "MOVC fuera de las tablas: %u\n", mcu_movc_fuera); }
 #ifdef HPROF
         hprof_fin();
+#endif
+#ifdef ROMSTAT
+        rc_romstat_fin();
 #endif
 #ifdef RCDBG
         fprintf(stderr, "instrucciones comparadas: %lu\n", nck);

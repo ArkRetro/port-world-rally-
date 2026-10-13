@@ -21,6 +21,8 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [x] Compilacion del conjunto de modos 1-15; `rc_bad` con el PC
 - [ ] `rc_romtab` + trampa en el banco con `-DROMCHK`
 - [ ] `BLKLOG`, `ROMSTAT`, `RCREG`; volcados en el `frame_done`
+  (hecho: `ROMSTAT` con `rc_host_rom` y `tools/romstat.py`, suceso en PC 0x2616; attract 30 000 + Portugal: residente
+  67,0 KB, banco PT1 157,5 KB con bordes, bancos de las demos 76-93 KB; falta `BLKLOG`)
 - [ ] Puerta G-MUS: 0 diferencias en >= 30 000 cuadros de attract + >= 12 000 de partida
 - [ ] Puerta G-MAME: attract 1-9 389 igual (salvo FC10/FC11); carreras <= 10 B/cuadro (FC37), meta en el mismo cuadro
 - [ ] Puerta G-MCU: <= 10 conflictos / 3 500 trabajos en carrera y demo; 0 escrituras sin gancho

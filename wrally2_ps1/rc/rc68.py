@@ -193,9 +193,10 @@ def region(a, w=False):
 def rd_const(a, sz):
     reg, o = region(a)
     if reg:
-        if sz == 1: return 'MB(%s, 0x%x)' % (reg, o)
-        if sz == 2: return 'MW(%s, 0x%x)' % (reg, o)
-        return '%s(%s, 0x%x)' % ('ML' if o & 3 else 'MLA', reg, o)
+        if sz == 1: e = 'MB(%s, 0x%x)' % (reg, o)
+        elif sz == 2: e = 'MW(%s, 0x%x)' % (reg, o)
+        else: e = '%s(%s, 0x%x)' % ('ML' if o & 3 else 'MLA', reg, o)
+        return '(ROMREC(0x%x, %d), %s)' % (o, sz, e) if reg == 'rom' else e   # ROMSTAT apunta las de la ROM
     return 'RD%d(0x%06xu)' % (sz * 8, a)
 
 # peticiones de trabajo a la MCU (move.w #1 en 0x3684 y 0x37C8): se hace al momento (determinista, como el WR1)
@@ -804,6 +805,8 @@ for _a in ADDRS:
 # addq.l #1,$fe8118 / 0x3390 tst.w $fe8114 / 0x3396 beq 0x338A (FE8118 solo da la estadistica de FE811C/FE8120, pero
 # asi el estado es el mismo que dando todas las vueltas). Se guardan con los ciclos de una vuelta segun cycles()
 ESPERAS = {0x3396: 0xFE8118}
+# sucesos por PC (antes de la instruccion): fin de la suma de la ROM del arranque (diseno 3.4: en R1 libera lo no residente)
+SUCESOS_PC = {0x2616: 'rc_rom_suma'}
 for _b, _c in list(ESPERAS.items()):
     _i = INS[_b]; _h = _i.target
     assert _i.op == 'bcc' and _i.cond == 'eq' and INS[_h].op == 'addq' and INS[_h].sz == 4 and INS[_h].dst.v == _c and \
@@ -1051,6 +1054,7 @@ def main(out):
         w('%sCK(0x%x, %d);%s' % (lab, a, live_in[a], cy))
         if a in IDLE: w(' IDLEHINT(%s);' % COND_EXPR[i.cond])
         if a in ESPERAS: w(' IDLECNT(%s, 0x%x, %d);' % (COND_EXPR[i.cond], ESPERAS[a][0] - 0xFE0000, ESPERAS[a][1]))
+        if a in SUCESOS_PC: w(' RC_CALL(%s());' % SUCESOS_PC[a])
         w(' /* %r */\n' % i)
         for l in lines: w('    ' + l + '\n')
     w('rc_k0:\n    dpc = 0; goto bad_dispatch;\n')

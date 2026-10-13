@@ -3,6 +3,7 @@
 # defecto ./rom), descubre el codigo del 68000, lo recompila a C y compila rc/rc_host. Con MUSASHI (ruta de Musashi,
 # https://github.com/kstenerud/Musashi) compila tambien rc_host_dbg, que compara instruccion a instruccion.
 # Uso: ./banco.sh            (despues: cd rc && ./rc_host 12000 ../work/run, ver la cabecera de rc/rc_host.c)
+# PERFILES=1: ademas rc/rc_host_rom (ROMSTAT: bloques de la ROM leidos por fase, tools/romstat.py)
 set -e
 cd "$(dirname "$0")"
 tools/guardia_wr1.sh
@@ -29,4 +30,8 @@ if [ -n "$MUSASHI" ]; then
   gcc $CF -DRCDBG -I$B -o rc_host_dbg rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c $B/wr2_rc_dbg.o \
       $B/m68kcpu.o $B/m68kops.o $B/m68kdasm.o $B/softfloat.o -lm
 fi
-echo "banco listo: rc/rc_host$( [ -n "$MUSASHI" ] && echo ' y rc/rc_host_dbg')"
+if [ -n "$PERFILES" ]; then   # perfiles del banco: bloques de la ROM leidos por fase (ROMSTAT)
+  gcc $CF -DROMSTAT -c wr2_rc.c -o ../work/wr2_rc_rom.o
+  gcc $CF -DROMSTAT -o rc_host_rom rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c romstat.c ../work/wr2_rc_rom.o
+fi
+echo "banco listo: rc/rc_host$( [ -n "$MUSASHI" ] && echo ' y rc/rc_host_dbg')$( [ -n "$PERFILES" ] && echo ' y rc/rc_host_rom')"

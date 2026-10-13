@@ -21,6 +21,7 @@ void rc_wr8(u32 a, u32 v, u32 pc), rc_wr16(u32 a, u32 v, u32 pc), rc_wr32(u32 a,
 void rc_vblank(void);
 void rc_bad(u32 pc);
 void rc_mcu_a(void), rc_mcu_b(void), rc_mcu_eco(void);
+void rc_rom_suma(void);     /* suceso en PC 0x2616: acaba la suma de la ROM del arranque (rc_mem.c) */
 void rc_run(u32 start_pc);
 extern const u32 rc_ntaken;
 
@@ -108,11 +109,18 @@ static inline u32 rc_regbit(u32 a)
 #define REGREC32(a, w) ((void)0)
 #define REGBK(pc)
 #endif
+/* ROMSTAT (banco, romstat.c): cada lectura de la ROM del 68000 apunta su bloque de 256 B en el conjunto de la fase */
+#ifdef ROMSTAT
+void rc_romrec(u32 a, u32 n);
+#define ROMREC(a, n) (((a) & 0xFFFFFF) < 0x100000 ? rc_romrec((a) & 0xFFFFFF, n) : (void)0)
+#else
+#define ROMREC(a, n) ((void)0)
+#endif
 /* lectura: todas las paginas apuntan a algo (E/S en una pagina que se rellena cada cuadro, sin mapear =
    pagina de 0xFF); las regiones tienen 4 bytes de margen al final para leer un long sin mirar el cruce */
-static inline __attribute__((always_inline)) u32 RD8(u32 a) { REGREC(a, 0); return rc_rpg[(a >> 12) & 0xFFF][(a & 0xFFF) ^ 1]; }
-static inline __attribute__((always_inline)) u32 RD16(u32 a) { REGREC(a, 0); return *(u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); }
-static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; REGREC32(a, 0); q = (u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); return ((u32)q[0] << 16) | q[1]; }
+static inline __attribute__((always_inline)) u32 RD8(u32 a) { REGREC(a, 0); ROMREC(a, 1); return rc_rpg[(a >> 12) & 0xFFF][(a & 0xFFF) ^ 1]; }
+static inline __attribute__((always_inline)) u32 RD16(u32 a) { REGREC(a, 0); ROMREC(a, 2); return *(u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); }
+static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; REGREC32(a, 0); ROMREC(a, 4); q = (u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); return ((u32)q[0] << 16) | q[1]; }
 /* caminos lentos fuera de linea: escrituras a paginas sin puntero (la de la VRAM con los registros del GAE1, latch,
    lo que no esta mapeado), en rc_mem.c (guardan los registros del 68000 que viven en temporales) */
 #ifdef RC_GEN
@@ -166,7 +174,7 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
 #define RS_pal 0x2000
 #define RS_vram 0x10000
 #define RS_vregs 0x1000
-#ifdef RCREG
+#if defined(RCREG) || defined(ROMSTAT)
 #define RDP8(r, a) RD8(a)
 #define RDP16(r, a) RD16(a)
 #define RDP32(r, a) RD32(a)
@@ -190,7 +198,7 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
 #define RPTR(r, a) (RBO_##r + RO_##r(a))
 /* copia rapida de un bucle (rc68.py, bucles rapidos): accesos por An de induccion ya comprobados a la entrada del
    bucle para todas las vueltas, sin mirar la region */
-#ifdef RCREG
+#if defined(RCREG) || defined(ROMSTAT)
 #define RDU8(r, a) RD8(a)
 #define RDU16(r, a) RD16(a)
 #define RDU32(r, a) RD32(a)

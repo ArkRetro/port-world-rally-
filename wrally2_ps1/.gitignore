@@ -8,6 +8,7 @@ rc/*.o
 rc/rc_host
 rc/rc_host_dbg*
 rc/rc_host_reg
+rc/rc_host_rom
 # EXE, imagenes de CD (llevan el logo de tu BIOS) y lo que sale de las ROM
 ps1/*.o
 ps1/*.elf
