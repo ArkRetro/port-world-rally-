@@ -50,3 +50,17 @@ PORT/P2 (0x200000-0x2FFFFF) en el hardware real (p. ej. `0280`→`0200`, un bit)
 Kizuna (que funciona) no ejecuta código en P2; el port ejecuta ahí ~50 % del código y todas sus IRQ.
 Siguiente diagnóstico: `build_catcher2.py` (MEM alrededor del PC, relectura x4096 de ventanas P2/P1, sumas P1/P2;
 en hex, B se muestra como X y D como Y).
+
+## Capturador v2 en hardware: P2 deja de responder (bus abierto)
+Dos capturas más (VEC 04 en PC 0x204108, CNT 0007; VEC 03 address error en PC 0x200DAC, CNT 001D).
+* `MEM 7204 7204 7204>7204 7204 7204`: 0x7204 es `moveq #4,d1`, la instrucción siguiente del propio capturador
+  (prefetch). Es la firma del **bus abierto**: al leer P2 nadie conduce el bus.
+* `BAD1 ...: 51C8>B25A` = opcodes `dbra` / `cmp.w` del bucle de relectura (prefetch) ⇒ confirma bus abierto.
+* `RRD ... 0000` = 65536 fallos de 65536 (el contador de 4 cifras desborda).
+* `SUM P2 9A2A 9A2A` correcto ~1 s después ⇒ P2 vuelve a responder. `SUM P1` (1F15/1F16) no cuadra
+  (esperado 36F7/BD5C): algunas lecturas de P1 también fallaron durante esa ventana.
+* El capturador (código en P1) se ejecutó sin problemas mientras P2 no respondía.
+Conclusión: NeoSD deja de servir la zona PORT/P2 de forma intermitente; la CPU ejecuta el bus abierto → excepción.
+`build_catcher3.py`: experimento cronometrado en el momento del fallo (fases A sin cambios, B sprites apagados,
+C reset Z80, D reescritura de 0x2FFFF0, E espera; 32 muestras de ~15 ms por fase; '.' ok, 1-6 = ventanas P2 malas,
+P = falla P1, Z = ambas).
