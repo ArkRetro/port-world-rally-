@@ -172,7 +172,7 @@ def gen_func(f):
         elif 0xB8 <= op <= 0xBF: E('CY = %s < %d;' % (R(op & 7), o1)); jump('%s != %d' % (R(op & 7), o1), rel2)
         elif 0xD8 <= op <= 0xDF: E('%s--;' % R(op & 7)); jump('%s != 0' % R(op & 7), rel1)
         elif op == 0xD5: E(wr(o1, '%s - 1' % rd(o1))); jump('%s != 0' % rd(o1), rel2)
-        elif op == 0xE0: E('A = XR(DPTR);')
+        elif op == 0xE0: E('A = XRD(DPTR);')
         elif op == 0xF0: E('XW(DPTR, A);')
         elif op == 0xE4: E('A = 0;')
         elif op == 0xF4: E('A = (u8)~A;')
@@ -200,8 +200,9 @@ hdr = ['/* generado por rc51c.py: trabajos del DS5002FP (8051) de World Rally 2 
        '#ifndef MCS51_XOR', '#define MCS51_XOR 0', '#endif',
        '#define XR(a) XM[((a) & 0x7FFF) ^ MCS51_XOR]   /* MOVX >= 8000h = 68000 FE8000-FEFFFF (los trabajos solo tocan FC1A-FDD5) */',
        '/* ciclos maquina del trabajo y escrituras con su momento (mcu.c, modelo con tiempo) */',
-       'unsigned mcu_mc; int mcu_sellos; void mcu_log(unsigned short a, unsigned char v);',
+       'unsigned mcu_mc; int mcu_sellos; void mcu_log(unsigned short a, unsigned char v); unsigned char mcu_lee(unsigned short a);',
        '#define MC mcu_mc',
+       '#define XRD(a) (mcu_sellos ? mcu_lee(a) : XR(a))',
        '#define XW(a, v) do { u16 xa_ = (a); u8 xv_ = (v); XR(xa_) = xv_; if (mcu_sellos) mcu_log(xa_, xv_); } while (0)']
 for f in sorted(funcs):
     hdr.append('static void mcu_f%04x(void);' % f)

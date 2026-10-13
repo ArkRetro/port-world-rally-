@@ -9,15 +9,22 @@
 mcs51_t rc_mcu;
 #define SH(m, a) (m)[(0x8000 + ((a) & 0x7FFF)) ^ 1]
 /* 0: el trabajo al momento de la peticion (como el WR1; el banco contra Musashi lo necesita en los dos lados).
-   1: con su tiempo, como en la placa (la MCU trabaja en paralelo; el 68000 lee justo despues de pedir y ve lo anterior):
-   la MCU recoge la peticion cuando su bucle principal vuelve a mirar FC15 y hace sus dos partes (0x074D y el guion
-   0x40E5) leyendo la RAM compartida al empezar cada una; sus escrituras se aplican cada una en su momento (ciclos
-   maquina contados por rc51c.py, MCK). Su bucle mira FC15 cada PERIODO ciclos: tras un trabajo, los arranques posibles
-   son fin + DESFASE + n PERIODO, y vale el primero que llegue AVISO ciclos despues de la peticion (ajustado con los
-   tiempos de MAME de 6 600 trabajos: 139,075 us, 7,7 us y 8 us; acierta el 99,7 %). Sin un trabajo en los ultimos
-   cuadros (primero de una carrera) no se sabe la fase: RECOGIDA, la media de MAME (77 us) */
+   1: con su tiempo, como en la placa (la MCU trabaja en paralelo con el 68000):
+   - Recogida: su bucle principal mira FC15 cada PERIODO ciclos; tras un trabajo, los arranques posibles son fin +
+     DESFASE + n PERIODO, y vale el primero que llegue AVISO ciclos despues de la peticion (ajustado con los tiempos de
+     MAME de 6 600 trabajos: 139,075 us, 7,7 us y 8 us; acierta el 99,7 %). Sin un trabajo en los ultimos cuadros
+     (primero de una carrera) no se sabe la fase: RECOGIDA, la media de MAME (77 us).
+   - En la recogida el trabajo (0x074D y el guion 0x40E5) corre entero sobre una copia de FC00-FDFF y apunta cada lectura
+     y cada escritura con su momento (ciclos maquina contados por rc51c.py, MCK). Las escrituras se aplican a la RAM en su
+     momento; cada lectura se comprueba en el suyo: si el 68000 ha cambiado ese byte desde la recogida (en las demos
+     escribe la entrada grabada en FC46 cientos de us despues de pedir, y la MCU la lee mas tarde), el trabajo se repite
+     desde la copia con el valor nuevo; de la repeticion valen lo que va desde ese momento (lo anterior ya se aplico).
+     El trabajo es una funcion pura de la RAM compartida (mcu.md), asi que la repeticion es exacta salvo las lecturas
+     anteriores del mismo byte. */
 int mcu_modelo = 1;
-void (*mcu_traza)(int k, s32 t);    /* depuracion (rc_host MCUV): 0 peticion, 1 y 2 partes, 3 fin */
+void (*mcu_traza)(int k, s32 t);    /* depuracion (rc_host MCUV): 0 peticion, 1 recogida, 3 fin, 4 repeticion */
+unsigned long mcu_repes;            /* repeticiones (cifra) */
+unsigned mcu_vigila;                /* depuracion: escrituras del trabajo a esta direccion (MCUVA) */
 #define MCU_INF 0x3FFFFFFF
 #define RECOGIDA 1006
 #define PERIODO 1808
@@ -28,19 +35,33 @@ void (*mcu_traza)(int k, s32 t);    /* depuracion (rc_host MCUV): 0 peticion, 1 
 #define MCK(mc) ((s32)((mc) * 12u * 113u / 109u))
 extern unsigned mcu_mc; extern int mcu_sellos;
 void mcu_part(mcs51_t *c, int k);
-static s32 t1 = MCU_INF, t2 = MCU_INF, tbase;     /* inicio de las dos partes (ciclos desde el proximo vblank) */
+static s32 t1 = MCU_INF, tbase;                    /* recogida pendiente; momento de la recogida en curso */
 static s32 ranura = MCU_INF;                       /* un arranque posible del bucle de la MCU (tras el ultimo trabajo) */
-static struct { s32 t; u16 a; u8 v; } lg[256];    /* escrituras del trabajo con su momento, en orden */
-static int nlg, ilg;
-static u8 sh[0x200] RC_AL;                          /* FC00-FDFF tal como la ve el trabajo */
-void mcu_log(unsigned short a, unsigned char v) { if (nlg < 256) { lg[nlg].t = tbase + MCK(mcu_mc); lg[nlg].a = a; lg[nlg].v = v; nlg++; } }
-s32 mcu_proximo(void) { s32 e = t1 < t2 ? t1 : t2; if (ilg < nlg && lg[ilg].t <= e) e = lg[ilg].t; return e; }
-static void parte(int k, s32 t)
+/* accesos del trabajo con su momento, en orden: escritura (se aplica) o lectura (se comprueba) */
+typedef struct { s32 t; u16 a; u8 v, lee; } mcu_acc;
+#define NQ 1024
+static mcu_acc q[NQ], q2[NQ], *qw = q;
+static int nq, iq, nqw;
+static u8 sh0[0x200] RC_AL, sh[0x200] RC_AL;      /* FC00-FDFF en la recogida (con lo cambiado por el 68000) y la copia */
+void mcu_log(unsigned short a, unsigned char v)
 {
-    memcpy(sh, rc_ram + 0xFC00, 0x200);
+    if (nqw < NQ) { qw[nqw].t = tbase + MCK(mcu_mc); qw[nqw].a = a; qw[nqw].v = v; qw[nqw].lee = 0; nqw++; }
+}
+unsigned char mcu_lee(unsigned short a)
+{
+    u8 v = sh[(a - 0xFC00) ^ 1];
+    if (nqw < NQ) { qw[nqw].t = tbase + MCK(mcu_mc); qw[nqw].a = a; qw[nqw].v = v; qw[nqw].lee = 1; nqw++; }
+    return v;
+}
+s32 mcu_proximo(void) { s32 e = t1; if (iq < nq && q[iq].t < e) e = q[iq].t; return e; }
+/* corre el trabajo entero desde sh0 apuntando en qw */
+static void corre(mcu_acc *dst)
+{
+    memcpy(sh, sh0, 0x200);
     rc_mcu.xram = sh - 0x7C00;
-    tbase = t; mcu_mc = 0; mcu_sellos = 1;
-    mcu_part(&rc_mcu, k);
+    qw = dst; nqw = 0; mcu_mc = 0; mcu_sellos = 1;
+    mcu_part(&rc_mcu, 0); mcu_part(&rc_mcu, 1);
+    mcu_log(0xFC13, 1);                            /* fin: FC13 = 1 */
     mcu_sellos = 0;
 }
 /* lo vencido hasta ahora (ciclos desde el proximo vblank), en orden */
@@ -49,14 +70,30 @@ void mcu_sucesos(s32 ahora)
     for (;;) {
         s32 e = mcu_proximo();
         if (e > ahora || e == MCU_INF) break;
-        if (ilg < nlg && lg[ilg].t == e) { rc_ram[lg[ilg].a ^ 1] = lg[ilg].v; ilg++; }
-        else if (t1 == e) {
-            SH(rc_ram, 0xFC15) = 0; SH(rc_ram, 0xFC13) = 0; nlg = ilg = 0; parte(0, e); t1 = MCU_INF; t2 = e + MCK(mcu_mc);
-            if (mcu_traza) { mcu_traza(1, e); mcu_traza(2, t2); }
-        }
-        else {
-            parte(1, e); mcu_log(0xFC13, 1); t2 = MCU_INF; ranura = lg[nlg - 1].t + DESFASE;
-            if (mcu_traza) mcu_traza(3, lg[nlg - 1].t);
+        if (iq < nq && q[iq].t == e) {
+            mcu_acc *x = &q[iq];
+            if (!x->lee) { rc_ram[x->a ^ 1] = x->v; iq++; if (mcu_traza && x->a == mcu_vigila) mcu_traza(5, e); }
+            else if (rc_ram[x->a ^ 1] == x->v) iq++;
+            else {
+                /* el 68000 cambio el byte antes de que el trabajo lo leyera: se repite con lo que hay ahora; de la
+                   repeticion se toma lo que va desde esta lectura */
+                int k = 0, n = iq;
+                sh0[(x->a - 0xFC00) ^ 1] = rc_ram[x->a ^ 1];
+                corre(q2);
+                while (k < nqw && q2[k].t < e) k++;
+                while (k < nqw && n < NQ) q[n++] = q2[k++];
+                nq = n; qw = q; mcu_repes++;
+                ranura = q[nq - 1].t + DESFASE;
+                if (mcu_traza) mcu_traza(4, e);
+            }
+        } else {
+            /* recogida: FC15 = 0 y FC13 = 0 al momento; el trabajo corre sobre la copia */
+            SH(rc_ram, 0xFC15) = 0; SH(rc_ram, 0xFC13) = 0;
+            memcpy(sh0, rc_ram + 0xFC00, 0x200);
+            tbase = e; t1 = MCU_INF;
+            corre(q); nq = nqw; iq = 0;
+            ranura = q[nq - 1].t + DESFASE;
+            if (mcu_traza) { mcu_traza(1, e); mcu_traza(3, q[nq - 1].t); }
         }
     }
 }
@@ -64,9 +101,9 @@ void mcu_desplaza(s32 d)
 {
     int i;
     if (t1 != MCU_INF) t1 -= d;
-    if (t2 != MCU_INF) t2 -= d;
     if (ranura != MCU_INF) ranura = ranura - d < -4 * CYC_FRAME ? MCU_INF : ranura - d;   /* fase vieja: no vale */
-    for (i = ilg; i < nlg; i++) lg[i].t -= d;
+    for (i = iq; i < nq; i++) q[i].t -= d;
+    tbase -= d;
 }
 
 void mcu_boot(u8 *m, const u8 *code, mcs51_t *c)
@@ -98,7 +135,7 @@ void mcu_cuadro(u8 *m, mcs51_t *c)
 {
     SH(m, 0xFDD8) = 0x0E; SH(m, 0xFDD9) = 0x06;
     mcu_eco(m);
-    if (SH(m, 0xFC15) == 1 && (m != rc_ram || (t1 == MCU_INF && t2 == MCU_INF)))
+    if (SH(m, 0xFC15) == 1 && (m != rc_ram || (t1 == MCU_INF && iq >= nq)))
         mcu_trabajo(m, c, 0);                             /* por si una peticion no paso por el gancho */
     if (SH(m, 0xFC19) == 1) mcu_trabajo(m, c, 1);
 }

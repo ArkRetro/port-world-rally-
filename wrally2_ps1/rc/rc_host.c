@@ -30,7 +30,7 @@ static const char *WORKF(const char *n) { static char b[4][512]; static int k; c
 void rc_mem_init(void); void rc_set_io(u16 in0, u16 in1, u16 in2, u16 in3); void rc_snd_vblank(void);
 void mcu_boot(u8 *ram, const u8 *code, mcs51_t *c); void mcu_trabajo(u8 *ram, mcs51_t *c, int b); void mcu_cuadro(u8 *ram, mcs51_t *c);
 void mcu_eco(u8 *ram);
-extern mcs51_t rc_mcu; extern u16 rc_latch; extern int mcu_modelo; extern u32 rc_cuadro;
+extern mcs51_t rc_mcu; extern u16 rc_latch; extern int mcu_modelo; extern u32 rc_cuadro; extern unsigned mcu_vigila;
 static s32 fase0;
 static u8 mcurom[0x8000], rombe[0x100000];
 static u16 in0, in1 = 0xFFFF, in2, in3 = 0xFFFF;
@@ -109,7 +109,7 @@ static void log_line(void)
 extern void (*mcu_traza)(int k, s32 t);
 static void mcu_tr(int k, s32 t)
 {
-    static double t0; static const char *nom[] = {"peticion", "parte1", "parte2", "fin"};
+    static double t0; static const char *nom[] = {"peticion", "recogida", "-", "fin", "repite", "escribe"};
     double us = (frame * (double)CYC_FRAME + t) / 13.0;     /* us desde el cuadro 0 (como los tiempos de MAME, salvo el origen) */
     if (k == 0) t0 = us;
     fprintf(stderr, "MCU cuadro %ld %-8s %.1f us (+%.1f)\n", frame, nom[k], us, us - t0);
@@ -155,10 +155,29 @@ unsigned int m68k_read_memory_16(unsigned int a) { return rd16(a); }
 unsigned int m68k_read_memory_32(unsigned int a) { return (rd16(a) << 16) | rd16(a + 2); }
 unsigned int m68k_read_disassembler_16(unsigned int a) { return rd16(a); }
 unsigned int m68k_read_disassembler_32(unsigned int a) { return m68k_read_memory_32(a); }
+/* MCUCHK=fichero: instrucciones del 68000 que escriben en la ventana de la MCU (FEFC00-FEFDFF), con las direcciones:
+   las que escriben entradas del trabajo llevan gancho en rc68.py (MCU_PCS) para el modelo por acceso */
+static unsigned long mchk_n; static u32 mchk[4096][2];
+static void mcu_chk(u32 a)
+{
+    u32 pc, i;
+    if ((a & 0xFFFE00) != 0xFEFC00 || !getenv("MCUCHK")) return;
+    pc = m68k_get_reg(NULL, M68K_REG_PPC) & 0xFFFFFF;
+    for (i = 0; i < mchk_n; i++) if (mchk[i][0] == pc && mchk[i][1] == a) return;
+    if (mchk_n < 4096) { mchk[mchk_n][0] = pc; mchk[mchk_n][1] = a; mchk_n++; }
+}
+static void mcu_chk_fin(void)
+{
+    FILE *f; u32 i;
+    if (!getenv("MCUCHK") || !(f = fopen(getenv("MCUCHK"), "w"))) return;
+    for (i = 0; i < mchk_n; i++) fprintf(f, "%06x %06x\n", mchk[i][0], mchk[i][1]);
+    fclose(f);
+}
 void m68k_write_memory_16(unsigned int a, unsigned int v)
 {
     u8 *p;
     a &= 0xFFFFFE; v &= 0xFFFF;
+    mcu_chk(a);
     if (gae1_win(a)) return;
     p = m_map(a);
     if (!p) return;
@@ -170,6 +189,7 @@ void m68k_write_memory_8(unsigned int a, unsigned int v)
 {
     u8 *p;
     a &= 0xFFFFFF;
+    mcu_chk(a & 0xFFFFFE);
     if (gae1_win(a)) return;
     p = m_map(a);
     if (p) p[(a & 1) ^ 1] = v;
@@ -270,6 +290,7 @@ void rc_vblank(void)
         fprintf(stderr, "fin: %ld cuadros\n", frame);
 #ifdef RCDBG
         fprintf(stderr, "instrucciones comparadas: %lu\n", nck);
+        mcu_chk_fin();
 #endif
         exit(0);
     }
@@ -302,6 +323,7 @@ int main(int argc, char **argv)
     rc_r.cyrel = -fase0; rc_dl = 0;
     if (getenv("MCU")) mcu_modelo = atoi(getenv("MCU"));
     if (getenv("MCUV")) mcu_traza = mcu_tr;
+    if (getenv("MCUVA")) mcu_vigila = strtoul(getenv("MCUVA"), 0, 16);
 #ifdef RCDBG
     mcu_modelo = 0;      /* Musashi hace el trabajo al momento: los dos lados igual */
 #endif

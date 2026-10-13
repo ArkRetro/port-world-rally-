@@ -111,6 +111,11 @@ void rc_regck(u32 pc)
     u32 i = (pc >> 1) & 0xFFFF;
     if (rc_va < 0) { const char *q = getenv("REGWIN"); rc_va = q ? atol(q) : 0; rc_vb = q && strchr(q, '-') ? atol(strchr(q, '-') + 1) : 0x7FFFFFFF; }
     rc_cur = pc;
+    {   /* PCT=pc: momento de cada paso por pc en la ventana REGWIN (us desde el cuadro 0) */
+        static long pct = -2; if (pct == -2) pct = getenv("PCT") ? strtol(getenv("PCT"), 0, 16) : -1;
+        if ((long)pc == pct && (long)rc_cuadro >= rc_va && (long)rc_cuadro <= rc_vb)
+            fprintf(stderr, "PC %06X cuadro %u %.1f us\n", pc, rc_cuadro, (rc_cuadro * (double)CYC_FRAME + RC_REL) / 13.0);
+    }
     if ((long)rc_cuadro < rc_va || (long)rc_cuadro > rc_vb) return;
     rc_cnt[i]++;
     if (rc_fst[i] != rc_fr) { rc_fst[i] = rc_fr; rc_fcnt[i] = 0; }
