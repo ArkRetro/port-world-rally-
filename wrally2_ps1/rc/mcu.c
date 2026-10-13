@@ -3,7 +3,6 @@
    arranque. Fuera: puerto serie, grabador de entradas, contador FC10 y aviso de fallo de tension. Los contadores de
    explotacion (FDDA-FDEB) empiezan a 0, como una NVRAM nueva. Direcciones de la MCU (0x8000 + n = byte 0xFE8000 + n
    del 68000; aqui con la parte alta, como en la RAM compartida: 0xFC15 = byte bajo de la palabra 0xFEFC14) */
-#include <string.h>
 #include "rc_rt.h"
 #include "mcs51.h"
 mcs51_t rc_mcu;
@@ -43,6 +42,7 @@ typedef struct { s32 t; u16 a; u8 v, lee; } mcu_acc;
 static mcu_acc q[NQ], q2[NQ], *qw = q;
 static int nq, iq, nqw;
 static u8 sh0[0x200] RC_AL, sh[0x200] RC_AL;      /* FC00-FDFF en la recogida (con lo cambiado por el 68000) y la copia */
+static void cp512(u8 *d, const u8 *s) { int i; for (i = 0; i < 0x200 / 4; i++) ((u32 *)d)[i] = ((const u32 *)s)[i]; }   /* sin libc en la PS1 */
 void mcu_log(unsigned short a, unsigned char v)
 {
     if (nqw < NQ) { qw[nqw].t = tbase + MCK(mcu_mc); qw[nqw].a = a; qw[nqw].v = v; qw[nqw].lee = 0; nqw++; }
@@ -57,7 +57,7 @@ s32 mcu_proximo(void) { s32 e = t1; if (iq < nq && q[iq].t < e) e = q[iq].t; ret
 /* corre el trabajo entero desde sh0 apuntando en qw */
 static void corre(mcu_acc *dst)
 {
-    memcpy(sh, sh0, 0x200);
+    cp512(sh, sh0);
     rc_mcu.xram = sh - 0x7C00;
     qw = dst; nqw = 0; mcu_mc = 0; mcu_sellos = 1;
     mcu_part(&rc_mcu, 0); mcu_part(&rc_mcu, 1);
@@ -89,7 +89,7 @@ void mcu_sucesos(s32 ahora)
         } else {
             /* recogida: FC15 = 0 y FC13 = 0 al momento; el trabajo corre sobre la copia */
             SH(rc_ram, 0xFC15) = 0; SH(rc_ram, 0xFC13) = 0;
-            memcpy(sh0, rc_ram + 0xFC00, 0x200);
+            cp512(sh0, rc_ram + 0xFC00);
             tbase = e; t1 = MCU_INF;
             corre(q); nq = nqw; iq = 0;
             ranura = q[nq - 1].t + DESFASE;
@@ -122,7 +122,7 @@ void mcu_trabajo(u8 *m, mcs51_t *c, int b)
 {
     c->xram = m + 0x8000;
     if (!b) { SH(m, 0xFC15) = 0; SH(m, 0xFC13) = 0; mcu_job_a(c); SH(m, 0xFC13) = 1; }
-    else { SH(m, 0xFC19) = 0; SH(m, 0xFC17) = 0; mcu_job_b(c); SH(m, 0xFC17) = 1; }
+    else { SH(m, 0xFC19) = 0; SH(m, 0xFC17) = 1; }  /* el trabajo B (jugador 2) no se pide con un monitor: no se traduce */
 }
 /* eco complementado de FC08 y FC0C (su bucle lo hace cada ~150 us: aqui al escribirlos el 68000 y en cada cuadro) */
 void mcu_eco(u8 *m)

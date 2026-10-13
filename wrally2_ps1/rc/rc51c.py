@@ -30,7 +30,7 @@ def succ(pc):
 
 ENTRY = -1                    # sin bucle principal: solo las funciones de los trabajos (acaban en RET)
 ENDS = set()
-JOBS = {'a': (0x074D, 0x40E5), 'b': (0x0982, 0x4AC9)}
+JOBS = {'a': (0x074D, 0x40E5)}           # el trabajo B (jugador 2) no se pide con un monitor: fuera (20 KB)
 
 def reach(entry, stops):
     seen = set(); work = [entry]; calls = set(); first = True

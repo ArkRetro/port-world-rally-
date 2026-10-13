@@ -38,7 +38,7 @@ static void snd_al_dia(void)
     u32 obj;
     if (pos < 0) pos = 0;
     if (pos > CYC_FRAME) pos = CYC_FRAME;
-    obj = (u32)((u64)snd_nfr * (u32)pos / CYC_FRAME);
+    obj = snd_nfr * (u32)pos / CYC_FRAME;          /* <= 133 x 219 966: cabe en 32 bits (sin division de 64 en la PS1) */
     if (obj > snd_hecho) { gae1_avanza(obj - snd_hecho); snd_hecho = obj; }
 }
 /* al tomar la IRQ del vblank (antes de que el juego lea los registros) */

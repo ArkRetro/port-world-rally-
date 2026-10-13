@@ -8,3 +8,15 @@ rc/*.o
 rc/rc_host
 rc/rc_host_dbg*
 rc/rc_host_reg
+# EXE, imagenes de CD (llevan el logo de tu BIOS) y lo que sale de las ROM
+ps1/*.o
+ps1/*.elf
+ps1/*.map
+ps1/*.nm
+ps1/*.ps-exe
+ps1/*.bin
+ps1/*.cue
+ps1/*.dat
+ps1/iso_*.xml
+ps1/cd/
+ps1/sd/

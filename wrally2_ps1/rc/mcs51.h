@@ -9,5 +9,5 @@ typedef struct {
     unsigned char *xram;         /* 32 KB compartidos con el 68000 (0xFE8000-0xFEFFFF, MOVX >= 0x8000) */
     unsigned long steps;
 } mcs51_t;
-void mcu_job_a(mcs51_t *c), mcu_job_b(mcs51_t *c);
+void mcu_job_a(mcs51_t *c);
 #endif
