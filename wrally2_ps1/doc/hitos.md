@@ -2,23 +2,23 @@
 
 Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia, M 1-3 dias, L > 3 dias.
 
-## H0 Base del repositorio (S; casi hecho)
-- [ ] Commit de los cambios locales del banco (`mcu.c`, `rc51c.py`, `rc68.py`, `rc_host.c`, `rc_mem.c`, `rc_rt.h`, `cmpmame.py`)
-- [ ] `.gitignore` de `work/` y binarios
-- [ ] `tools/guardia_wr1.sh`, llamada desde `banco.sh`
-- [ ] `tools/alcance15.py` (Monitors=One, modos 1-15)
-- [ ] LEEME de esqueleto
-- [ ] Puerta G-WR1: `wrally_ps1/` sin cambios
-- [ ] Puerta G-PREP: prog `a0c6ab91...`, gfx1 `5212d577...`, MCU `4c532e9e` con mascaras y con EPROM
-- [ ] Puerta G-ALC: 13 852 instr. que contienen las 9 343 direcciones trazadas
+## H0 Base del repositorio (S; hecho)
+- [x] Commit de los cambios locales del banco (`mcu.c`, `rc51c.py`, `rc68.py`, `rc_host.c`, `rc_mem.c`, `rc_rt.h`, `cmpmame.py`)
+- [x] `.gitignore` de `work/` y binarios
+- [x] `tools/guardia_wr1.sh`, llamada desde `banco.sh`
+- [x] `tools/alcance15.py` (Monitors=One, modos 1-15)
+- [x] LEEME de esqueleto
+- [x] Puerta G-WR1: `wrally_ps1/` sin cambios
+- [x] Puerta G-PREP: prog `a0c6ab91...`, gfx1 `5212d577...`, MCU `4c532e9e` con mascaras y con EPROM
+- [x] Puerta G-ALC: 13 852 instr. que contienen las 9 343 direcciones trazadas
 - Usuario: nada nuevo
 
 ## H1 Banco exacto (L; en curso)
-- [ ] Sucesos en `rc_rt.h` (`cyc_next`, `RC_PLAZO` tras escrituras de SR y `rte`)
-- [ ] MCU por acceso: copia en la recogida, sellos de lectura, escrituras en su sello, repeticion por gancho; `MCU_AL_MOMENTO`
-- [ ] `-DMCUCHK` y lista de PC que escriben entradas del trabajo
-- [ ] GAE1 contado en ciclos del 68000
-- [ ] Compilacion del conjunto de modos 1-15; `rc_bad` con el PC
+- [x] Sucesos en `rc_rt.h` (`cyc_next`, `RC_PLAZO` tras escrituras de SR y `rte`)
+- [x] MCU por acceso: copia en la recogida, sellos de lectura, escrituras en su sello, repeticion por gancho; `MCU_AL_MOMENTO`
+- [x] `-DMCUCHK` y lista de PC que escriben entradas del trabajo
+- [x] GAE1 contado en ciclos del 68000
+- [x] Compilacion del conjunto de modos 1-15; `rc_bad` con el PC
 - [ ] `rc_romtab` + trampa en el banco con `-DROMCHK`
 - [ ] `BLKLOG`, `ROMSTAT`, `RCREG`; volcados en el `frame_done`
 - [ ] Puerta G-MUS: 0 diferencias en >= 30 000 cuadros de attract + >= 12 000 de partida
@@ -28,13 +28,14 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - Usuario: nada (hojas PNG opcionales)
 
 ## H2 Esqueleto en la PS1, CPU y sondas (M)
-- [ ] EXE R0 (ROM contigua en el EXE) con todos los buferes a su tamano final
-- [ ] Video mosaico + cifras (FEC298, cuadro, CPU, RAM libre); mando, moneda, START
-- [ ] `mkiso` de una pista
-- [ ] EXE de tamanos R1 enlazado para medir el area
+- [x] EXE R0 (ROM contigua en el EXE) con todos los buferes a su tamano final (`ps1/reservas.c`: los que aun no existen)
+- [x] Video mosaico + cifras (FEC298, cuadro, CPU, RAM libre); mando, moneda, START
+- [x] `mkiso` de una pista
+- [x] EXE de tamanos R1 enlazado para medir el area (`build.sh`, `tools/gram.py`)
 - [ ] Sonda `prueba/cdfondo` (2x de fondo, CPU ocupada, con y sin `CD_DMA`)
 - [ ] Sonda `prueba/spucad` (encadenado por direccion de repeticion)
-- [ ] Puerta G-RAM: R0 pool >= 160 KB; R1 area >= 960 KB
+- [x] Puerta G-RAM: R0 pool >= 160 KB; R1 area >= 960 KB (198,4 KB y 964,4 KB: el area queda 19 KB por debajo de la
+  tabla 2.1 por la MCU traducida, 22 KB y no 14, y `rc_xram`, 8 KB; P1 sigue en el plan)
 - [ ] Puerta G-CPU: 68000 + MCU en carrera mediana <= 30 %, p99 <= 45 %
 - [ ] Puerta G-ESTADO: huella PS1 = banco en 20 000 cuadros
 - [ ] Arranca en `psxprof2` (ODE psio, xstation) y en Mednafen con BIOS

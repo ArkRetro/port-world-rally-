@@ -12,7 +12,9 @@ Diseno y plan: `doc/diseno.md` y `doc/hitos.md`.
 - H0-H1 (banco de pruebas en el PC): hecho en buena parte. El juego corre en el PC con el codigo recompilado; comparado
   con Musashi instruccion a instruccion (12 000 cuadros sin diferencias) y con MAME cuadro a cuadro (arranque, attract y
   una partida de Portugal de 10 730 cuadros con las mismas pantallas en los mismos cuadros y las mismas puntuaciones).
-- Siguiente: el primer EXE para la PS1 (H2).
+- H2 (primer EXE para la PS1): el juego entero corre en la PS1 con la ROM dentro del EXE y la imagen en mosaico (cada
+  tile y cada sprite es un cuadrado de su color), con cifras de CPU y RAM. Arranca en Mednafen con BIOS desde la imagen de
+  CD. Falta: las sondas de CD y de la SPU, medir la CPU en carrera y la prueba en MiSTer, PSIO y XStation (prueba 0).
 
 ## Banco de pruebas
 

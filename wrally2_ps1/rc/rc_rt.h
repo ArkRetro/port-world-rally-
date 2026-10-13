@@ -213,6 +213,13 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
 /* despacho general (rts, rte, jmp indirecto): tabla hash de etiquetas por el pc con las palabras cambiadas
    (k), sondeo lineal hasta una entrada vacia (clave 0). La genera rc68.py (RC_HN, RC_HS). rts mira la primera
    entrada en linea y solo llama aqui si no esta */
+/* RC_HPROF(k): perfil de destinos del despacho en el banco (rc_host -DHPROF, fichero $HPROF o work/hprof.txt) */
+#ifdef HPROF
+void rc_hprof(u32 k);
+#define RC_HPROF(k) rc_hprof(k)
+#else
+#define RC_HPROF(k)
+#endif
 static __attribute__((noinline)) void *rc_hfind(const rc_lab *e, u32 k)
 {
     e += (k ^ (k >> RC_HS)) & (RC_HN - 1);
@@ -400,11 +407,11 @@ rc_rts: \
     { u32 _k; \
       if (RG_ram(a7)) { if (!(a7 & 2)) _k = RAW32(a7); else { u8 *_q = RAMB + RO_ram(a7); _k = ((u32)MW(_q, 2) << 16) | MW(_q, 0); } } \
       else _k = RC_SW16(rc_rdg32(a7)); \
-      a7 += 4; \
+      a7 += 4; RC_HPROF(_k); \
       { const rc_lab *_e = ht + ((_k ^ (_k >> RC_HS)) & (RC_HN - 1)); if (_e->pc == _k) goto *_e->l; } \
       dl = rc_hfind(ht, _k); if (dl) goto *dl; dpc = RC_SW16(_k); goto bad_dispatch; } \
 rc_disp: \
-    dl = rc_hfind(ht, RC_SW16(dpc)); if (!dl) goto bad_dispatch; goto *dl; \
+    RC_HPROF(RC_SW16(dpc)); dl = rc_hfind(ht, RC_SW16(dpc)); if (!dl) goto bad_dispatch; goto *dl; \
 bad_dispatch: \
     RC_SYNC; rc_r.pc = dpc; rc_bad(dpc); return;
 #endif

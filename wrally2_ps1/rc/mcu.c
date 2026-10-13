@@ -32,13 +32,18 @@ unsigned mcu_vigila;                /* depuracion: escrituras del trabajo a esta
 /* ciclos maquina -> ciclos del 68000 (los dos a 13 MHz; 12 relojes por ciclo, y la IRQ del temporizador 1 se lleva 4
    de cada 113) */
 #define MCK(mc) ((s32)((mc) * 12u * 113u / 109u))
-extern unsigned mcu_mc; extern int mcu_sellos;
+#ifndef MCS51_XOR
+#define MCS51_XOR 0
+#endif
+#define mcu_mc mcu_x.mc
+#define mcu_sellos mcu_x.sellos
+#define XRM(a) mcu_x.xm[((a) & 0x7FFF) ^ MCS51_XOR]
 void mcu_part(mcs51_t *c, int k);
 static s32 t1 = MCU_INF, tbase;                    /* recogida pendiente; momento de la recogida en curso */
 static s32 ranura = MCU_INF;                       /* un arranque posible del bucle de la MCU (tras el ultimo trabajo) */
 /* accesos del trabajo con su momento, en orden: escritura (se aplica) o lectura (se comprueba) */
 typedef struct { s32 t; u16 a; u8 v, lee; } mcu_acc;
-#define NQ 1024
+#define NQ 256                                    /* el trabajo mas largo apunta 92 accesos */
 static mcu_acc q[NQ], q2[NQ], *qw = q;
 static int nq, iq, nqw;
 static u8 sh0[0x200] RC_AL, sh[0x200] RC_AL;      /* FC00-FDFF en la recogida (con lo cambiado por el 68000) y la copia */
@@ -47,10 +52,36 @@ void mcu_log(unsigned short a, unsigned char v)
 {
     if (nqw < NQ) { qw[nqw].t = tbase + MCK(mcu_mc); qw[nqw].a = a; qw[nqw].v = v; qw[nqw].lee = 0; nqw++; }
 }
+/* MOVC: el trabajo solo lee tablas en 1025-40E3 y 5488-54CD (mcu.md 2.1). En la PS1 (MCU_TABLAS) solo estan esas,
+   seguidas en mcu_tab (build.sh); en el banco se lee la ROM entera y se cuentan las lecturas de fuera (rc_host) */
+#define TAB0 0x1025
+#define TAB1 0x40E4
+#define TAB2 0x5488
+#define TAB3 0x54CE
+#ifdef MCU_TABLAS
+extern const u8 mcu_tab[];
+#define TB(i, b, o) mcu_tab[(i) - (b) + (o)]
+#else
+#define TB(i, b, o) mcu_x.code[i]
+#endif
+unsigned mcu_movc_fuera;
+u8 mcu_movc(u16 i)
+{
+    if (i >= TAB0 && i < TAB1) return TB(i, TAB0, 0);
+    if (i >= TAB2 && i < TAB3) return TB(i, TAB2, TAB1 - TAB0);
+    mcu_movc_fuera++;
+#ifdef MCU_TABLAS
+    return 0;
+#else
+    return mcu_x.code[i];
+#endif
+}
+/* MOVX del trabajo traducido: con sellos (modelo con tiempo) sobre la copia sh y apuntado; sin ellos, directo */
+void mcu_xw(unsigned short a, unsigned char v) { XRM(a) = v; if (mcu_sellos) mcu_log(a, v); }
 unsigned char mcu_lee(unsigned short a)
 {
-    u8 v = sh[(a - 0xFC00) ^ 1];
-    if (nqw < NQ) { qw[nqw].t = tbase + MCK(mcu_mc); qw[nqw].a = a; qw[nqw].v = v; qw[nqw].lee = 1; nqw++; }
+    u8 v = XRM(a);
+    if (mcu_sellos && nqw < NQ) { qw[nqw].t = tbase + MCK(mcu_mc); qw[nqw].a = a; qw[nqw].v = v; qw[nqw].lee = 1; nqw++; }
     return v;
 }
 s32 mcu_proximo(void) { s32 e = t1; if (iq < nq && q[iq].t < e) e = q[iq].t; return e; }

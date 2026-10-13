@@ -162,7 +162,7 @@ def gen_func(f):
         elif 0x88 <= op <= 0x8F: E(wr(o1, R(op & 7)))
         elif 0xA8 <= op <= 0xAF: E('%s = %s;' % (R(op & 7), rd(o1)))
         elif op == 0x90: E('DPTR = 0x%04x;' % ((o1 << 8) | o2))
-        elif op == 0x93: E('A = CODE[(u16)(A + DPTR) & 0x7FFF];')
+        elif op == 0x93: E('A = mcu_movc((u16)(A + DPTR) & 0x7FFF);')
         elif op == 0xA3: E('DPTR++;')
         elif op == 0xB3: E('CY ^= 1;')
         elif op == 0xC3: E('CY = 0;')
@@ -196,14 +196,17 @@ def gen_func(f):
 hdr = ['/* generado por rc51c.py: trabajos del DS5002FP (8051) de World Rally 2 -> C (uso personal) */',
        '#include "mcs51.h"',
        'typedef unsigned char u8; typedef unsigned short u16;',
-       'static u8 A, CY, *IR, *SF, *XM; static u16 DPTR; static const u8 *CODE;',
-       '#ifndef MCS51_XOR', '#define MCS51_XOR 0', '#endif',
-       '#define XR(a) XM[((a) & 0x7FFF) ^ MCS51_XOR]   /* MOVX >= 8000h = 68000 FE8000-FEFFFF (los trabajos solo tocan FC1A-FDD5) */',
-       '/* ciclos maquina del trabajo y escrituras con su momento (mcu.c, modelo con tiempo) */',
-       'unsigned mcu_mc; int mcu_sellos; void mcu_log(unsigned short a, unsigned char v); unsigned char mcu_lee(unsigned short a);',
-       '#define MC mcu_mc',
-       '#define XRD(a) (mcu_sellos ? mcu_lee(a) : XR(a))',
-       '#define XW(a, v) do { u16 xa_ = (a); u8 xv_ = (v); XR(xa_) = xv_; if (mcu_sellos) mcu_log(xa_, xv_); } while (0)']
+       '/* registros y punteros en una estructura (mcs51.h): en la PS1 una sola base para todos (con variables sueltas cada',
+       '   acceso carga su direccion y el codigo dobla) */',
+       'mcs51_x mcu_x;',
+       '#define A mcu_x.a', '#define CY mcu_x.cy', '#define DPTR mcu_x.dptr', '#define IR mcu_x.ir', '#define SF mcu_x.sf',
+       '#define XM mcu_x.xm', '#define CODE mcu_x.code',
+       '/* ciclos maquina del trabajo; MOVX >= 8000h = 68000 FE8000-FEFFFF (los trabajos solo tocan FC1A-FDD5) fuera de linea en',
+       '   mcu.c, que apunta cada acceso con su momento (modelo con tiempo) */',
+       '#define MC mcu_x.mc',
+       'void mcu_xw(unsigned short a, unsigned char v); unsigned char mcu_lee(unsigned short a); u8 mcu_movc(u16 i);',
+       '#define XRD(a) mcu_lee(a)',
+       '#define XW(a, v) mcu_xw((a), (v))']
 for f in sorted(funcs):
     hdr.append('static void mcu_f%04x(void);' % f)
 for f in sorted(funcs): gen_func(f)

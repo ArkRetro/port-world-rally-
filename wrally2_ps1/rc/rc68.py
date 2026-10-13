@@ -989,7 +989,7 @@ def block_cycles(labs):
         bcyc[cur] += cycles(INS[a]); cur_last = a
     return bcyc
 
-HN, HS = 4096, 17
+HN, HS = 2048, 17
 # los perfiles (rc_regmask, regiones.py) guardan el pc en 16 bits de palabra
 assert ADDRS[-1] < 0x20000, 'codigo 68k por encima de 0x20000: ampliar los perfiles'
 
@@ -1003,8 +1003,9 @@ def main(out):
     w('const u32 rc_ntaken = %d;\n' % len(taken))
     w('RC_RUN_ATTR void rc_run(u32 start_pc)\n{\n    RC_LOCALS\n')
     # despacho (rts, rte, jmp indirecto): tabla hash por el pc con las palabras cambiadas (como queda en la RAM,
-    # rts lo usa tal cual), sondeo lineal hasta una entrada vacia (clave 0: el pc 0 no es codigo). Con 4096
-    # entradas y la clave (k ^ k >> 17) sale a 1,2 lecturas de media
+    # rts lo usa tal cual), sondeo lineal hasta una entrada vacia (clave 0: el pc 0 no es codigo). Con 2048
+    # entradas (16 KB, diseno 2.1) y la clave (k ^ k >> 17) sale a 1,8 lecturas de media; hay ~140 despachos por
+    # cuadro (perfil HPROF del banco en attract y partida: el 19 % no esta en su sitio), un coste despreciable
     def sw(pc): return ((pc << 16) | (pc >> 16)) & 0xFFFFFFFF
     slots = {}
     for t in sorted(taken):

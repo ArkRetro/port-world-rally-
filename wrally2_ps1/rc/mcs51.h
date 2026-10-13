@@ -9,5 +9,12 @@ typedef struct {
     unsigned char *xram;         /* 32 KB compartidos con el 68000 (0xFE8000-0xFEFFFF, MOVX >= 0x8000) */
     unsigned long steps;
 } mcs51_t;
+/* registros del 8051 y estado del trabajo traducido (rc51c.py): ciclos maquina, apuntar accesos (mcu.c) y punteros */
+typedef struct {
+    unsigned mc; int sellos;
+    unsigned char *ir, *sf, *xm; const unsigned char *code;
+    unsigned short dptr; unsigned char a, cy;
+} mcs51_x;
+extern mcs51_x mcu_x;
 void mcu_job_a(mcs51_t *c);
 #endif

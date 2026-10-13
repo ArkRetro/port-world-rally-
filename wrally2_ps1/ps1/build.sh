@@ -7,7 +7,8 @@ cd "$(dirname "$0")"
 WR1=../../wrally_ps1
 P=mipsel-linux-gnu
 N=${NUGGET:?define NUGGET con la ruta de pcsx-redux/src/mips (nugget)}
-cp ../work/mcu.bin mcu.bin
+# de la MCU solo las tablas que lee MOVC, seguidas (mcu.c, MCU_TABLAS)
+python3 -c "d = open('../work/mcu.bin', 'rb').read(); open('mcu_tab.bin', 'wb').write(d[0x1025:0x40E4] + d[0x5488:0x54CE])"
 # la ROM del 68000 hasta 0xDD7FF (lo de detras no lo lee nadie) con las palabras en el orden de la PS1
 python3 -c "import sys; d = open('../work/prog.bin', 'rb').read()[:0xDD800]; o = bytearray(len(d)); o[0::2] = d[1::2]; o[1::2] = d[0::2]; open('rom_sw.bin', 'wb').write(o)"
 mkdir -p cd && cp SYSTEM.CNF cd/
@@ -17,12 +18,20 @@ CF="$ARCH -O2 -G0 -mno-gpopt -fomit-frame-pointer -fno-builtin -fno-strict-alias
 $P-gcc $CF $MAINOPT -c main.c -o main.o
 $P-gcc $CF -DRC_ROM_EXTERN -c ../rc/rc_mem.c -o rc_mem.o
 $P-gcc $CF -c ../rc/gae1.c -o gae1.o
-$P-gcc $CF -DMCS51_XOR=1 -c ../rc/mcu.c -o mcu.o
+$P-gcc $CF -DMCS51_XOR=1 -DMCU_TABLAS -c ../rc/mcu.c -o mcu.o
+$P-gcc $CF -c reservas.c -o reservas.o
 $P-gcc $CF -DMCS51_XOR=1 -c ../rc/mcu_rc.c -o mcu_rc.o
 $P-gcc $ARCH -c data.s -o data.o
 $P-gcc $ARCH -c $WR1/ps1/crt0.s -o crt0.o
-$P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,-Map=w2ps1.map -Wl,--oformat=elf32-tradlittlemips \
-    -o w2ps1.elf crt0.o main.o wr2_rc.o rc_mem.o gae1.o mcu.o mcu_rc.o data.o -lgcc
+LD="$P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,--oformat=elf32-tradlittlemips"
+O="crt0.o main.o wr2_rc.o rc_mem.o gae1.o mcu.o mcu_rc.o"
+$LD -Wl,-Map=w2ps1.map -o w2ps1.elf $O reservas.o data.o -lgcc
+# puerta G-RAM: R0 (este EXE) y el EXE de tamanos R1, que solo se enlaza para medir el area de tramo
+python3 ../tools/gram.py w2ps1.map
+$P-gcc $CF -DR1 -DRES_CODIGO=$(python3 ../tools/gram.py --codigo w2ps1.map) -c reservas.c -o reservas_r1.o
+$P-gcc $ARCH -c data_r1.s -o data_r1.o
+$LD -Wl,-Map=w2ps1_r1.map -o w2ps1_r1.elf $O reservas_r1.o data_r1.o -lgcc
+python3 ../tools/gram.py --r1 w2ps1_r1.map
 $P-objcopy -O binary w2ps1.elf w2ps1.ps-exe
 $P-size w2ps1.elf
 nm -S --size-sort w2ps1.elf | tail -8

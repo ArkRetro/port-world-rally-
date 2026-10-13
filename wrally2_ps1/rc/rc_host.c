@@ -16,7 +16,8 @@
    Solo con -DRCDBG (rc_host_dbg, comparado con Musashi):
      TRAZA=n                 cada instruccion de los cuadros n y n+1
      MARCAS=pc,pc,...        cuadro y momento del cuadro de la primera vez en cada pc
-     RELOJ=1                 pc en cada cuarto de cuadro hasta la primera IRQ */
+     RELOJ=1                 pc en cada cuarto de cuadro hasta la primera IRQ
+   Compilado con -DHPROF: veces por destino del despacho (rts, rte, jmp indirecto) en $HPROF o work/hprof.txt. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,17 @@ static long frame, nframes = 3000;
 static const char *outdir = ".";
 static FILE *logf, *dumpf, *sndlog;
 static long dump_a = -1, dump_b, dump_p = 1;
+#ifdef HPROF
+/* perfil del despacho (rts, rte, jmp indirecto): veces por destino, a $HPROF o work/hprof.txt al acabar */
+static unsigned hprof[0x10000];
+void rc_hprof(u32 k) { hprof[(((k << 16) | (k >> 16)) >> 1) & 0xFFFF]++; }
+static void hprof_fin(void)
+{
+    FILE *f = fopen(getenv("HPROF") ? getenv("HPROF") : WORKF("hprof.txt"), "w"); int i;
+    for (i = 0; i < 0x10000; i++) if (hprof[i]) fprintf(f, "%06x %u\n", i * 2, hprof[i]);
+    fclose(f);
+}
+#endif
 
 static void load(const char *fn, u8 *d, int n)
 {
@@ -288,6 +300,10 @@ void rc_vblank(void)
         if (dumpf) fclose(dumpf);
         if (logf) fclose(logf);
         fprintf(stderr, "fin: %ld cuadros\n", frame);
+        { extern unsigned mcu_movc_fuera; if (mcu_movc_fuera) fprintf(stderr, "MOVC fuera de las tablas: %u\n", mcu_movc_fuera); }
+#ifdef HPROF
+        hprof_fin();
+#endif
 #ifdef RCDBG
         fprintf(stderr, "instrucciones comparadas: %lu\n", nck);
         mcu_chk_fin();
