@@ -89,15 +89,18 @@ def reg_b(t, c, pal, fl=0, avance=0):
     idx, rec, f, psnr = receta(tile(t), pal, bool(fl & EFECTO))
     return empaqueta(t, idx, rec, c, f | (fl & SPRITE), avance), psnr
 
+CORRIDA = 1 << 24                               # cuadro + corrida x CORRIDA: cada corrida cuenta desde 0
+
 class Paletas:
-    """las 64 paletas (2048 colores) de cada volcado WR2D del banco, por cuadro; y la palabra FE8124 (coche elegido)"""
+    """las 64 paletas (2048 colores) de cada volcado WR2D del banco, por cuadro; y la palabra FE8124 (coche elegido).
+    Con varios ficheros (uno por corrida, en el mismo orden que los BLKLOG) el cuadro va desplazado CORRIDA x indice"""
     def __init__(self, fns):
         self.p = {}; self.coche = {}
-        for fn in fns:
+        for i, fn in enumerate(fns):
             d = open(fn, 'rb').read(); o = 0
             while o < len(d):
                 assert d[o:o + 4] == b'WR2D', (fn, o)
-                fr, nb = struct.unpack('>II', d[o + 8:o + 16]); o += 24
+                fr, nb = struct.unpack('>II', d[o + 8:o + 16]); o += 24; fr += i * CORRIDA
                 for _ in range(nb):
                     base, n = struct.unpack('>II', d[o:o + 8]); o += 8
                     if base == 0x210000: self.p[fr] = np.frombuffer(d[o:o + 0x1000], dtype='>u2').astype(np.int32)
@@ -107,24 +110,28 @@ class Paletas:
         v = np.stack([self.p[fr] for fr in self.cuadros.tolist()]).reshape(-1, 64, 32)
         self.brillo = (((v >> 10) & 31) + ((v >> 5) & 31) + (v & 31)).sum(2)      # (volcado, paleta): suma de RGB
     def elige(self, c, intervalos):
-        """cuadro del volcado con la paleta c mas viva dentro de los intervalos [a, b] (los fundidos la apagan);
-        si ninguno cae dentro, el volcado mas cercano al primero"""
+        """cuadro de un volcado con la paleta c que mas se repite dentro de los intervalos [a, b] (los fundidos y los
+        destellos duran poco); a igualdad, la mas viva. Si ninguno cae dentro, el volcado mas cercano al primero"""
         m = np.zeros(len(self.cuadros), bool)
         for a, b in intervalos: m[np.searchsorted(self.cuadros, a):np.searchsorted(self.cuadros, b, 'right')] = True
         if not m.any(): m[min(np.searchsorted(self.cuadros, intervalos[0][0]), len(self.cuadros) - 1)] = True
-        return int(self.cuadros[np.where(m, self.brillo[:, c], -1).argmax()])
+        cnt = {}
+        for i in np.flatnonzero(m).tolist():
+            k = self.p[int(self.cuadros[i])][c * 32:c * 32 + 32].tobytes(); n, _, j = cnt.get(k, (0, 0, i))
+            cnt[k] = (n + 1, int(self.brillo[j, c]), j)
+        return int(self.cuadros[max(cnt.values())[2]])
     def paleta(self, fr, c): return self.p[fr][c * 32:c * 32 + 32].tolist()
 
 def cuenta(fns):
     """estadistica por codigo de los BLKLOG: codigo -> [Counter de color, banderas (SPRITE/EFECTO), primer cuadro,
-    ultimo cuadro, intervalos de cuadros [(a, b)] en que se ve]. Con numpy: decenas de millones de entradas"""
+    ultimo cuadro, intervalos de cuadros [(a, b)] en que se ve]; cuadros con la corrida como en Paletas. Con numpy: decenas de millones de entradas"""
     from collections import Counter, defaultdict
     st = defaultdict(lambda: [Counter(), 0, 1 << 30, -1, []])
-    for fn in fns:
+    for i, fn in enumerate(fns):
         w = np.fromfile(fn, dtype='<u4'); p = 0; frs = []; ents = []
         while p + 5 <= len(w):
             n = int(w[p + 4] >> 16); e = w[p + 5:p + 5 + n]; e = e[(e >> 28) < 3]
-            frs.append(np.full(len(e), int(w[p] & 0x7FFFFFFF), dtype=np.int64)); ents.append(e); p += 5 + n
+            frs.append(np.full(len(e), int(w[p] & 0x7FFFFFFF) + i * CORRIDA, dtype=np.int64)); ents.append(e); p += 5 + n
         e = np.concatenate(ents); fr = np.concatenate(frs)
         key = (e & 0xFFFF).astype(np.int64) << 16 | (e >> 16) & 0x7F | ((e >> 28) & 3) << 8
         u, inv, cn = np.unique(key, return_inverse=True, return_counts=True)

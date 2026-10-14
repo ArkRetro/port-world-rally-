@@ -62,8 +62,9 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [ ] `ROM.BIN` entera en el arranque; suceso en 0x2616 libera lo no residente
 - [x] Renderizador A (menus) y B (demos, mapas): regla de sprites, efectos, paletas, CLUT por hueco, variantes (A: 8 bpp
   exacto; B: 4 bpp, 4 352 huecos, CLUT por hueco rehecha con los fundidos; demos y mapas casi iguales a MAME; huella igual
-  al banco con ODE y CLUTCACHE; negros <= 15 ms. Pendiente: recetas de tiles4.py malas en ~300 tiles de DEMO0/DEMO2;
-  en R0 la L2 de DEMO0 no cabe: faltas al final de la demo de Portugal)
+  al banco con ODE y CLUTCACHE; negros <= 15 ms. Recetas B: las paletas de cada corrida van aparte (los cuadros de attract y pt
+  chocaban) y se toma la paleta mas repetida en la pantalla: error medio por pixel <= 3,0 (5 bits x 3) en todas las
+  demos. Pendiente: en R0 la L2 de DEMO0 no cabe: faltas al final de la demo de Portugal)
 - [x] Gestor de bloques de VRAM (huecos A con reloj, tabla codigo -> hueco de dos niveles, 34 KB)
 - [x] `tiles4.py`, `tilesbin.py`; `MENUS.PAK`, `DEMOr.PAK` (8,5 ciclos del banco + partida; `tools/construir_cd.sh`, `verpak.py`)
 - [x] Cargador bloqueante (CARGANDO > 0,5 s) y de fondo (`ps1/carga.c`: `MENUS.PAK` por pantalla, `TILESA.BIN` de
