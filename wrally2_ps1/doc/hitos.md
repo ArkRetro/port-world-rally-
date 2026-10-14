@@ -57,14 +57,18 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   cifras del hardware)
 
 ## H3 Attract sin sonido; ROM por bancos (L)
-- [ ] R1: residente y bancos desde `ROMSTAT`, `romres.txt`, trampa con CD (hecho en `rc/`: paginas de ROM a NULL,
-  `rc_romtab`, `rc_romp`/`rc_romf`, `rc_rom_mapa`, `rc_rom_residente`; falta la PS1: `ROM.BIN` al arrancar y la trampa)
-- [ ] `ROM.BIN` entera en el arranque; suceso en 0x2616 libera lo no residente
+- [x] R1 en la PS1 (el EXE del CD; `build.sh` enlaza ademas R0 solo para la puerta G-RAM): `ROM.BIN` entera al area al
+  arrancar (residente a `rc_romres`, todos los bloques a la tabla); al acabar la suma (PC 0x2616) solo lo residente.
+  Bancos en el area desde la seccion ROM de `DEMOr.PAK` (de fondo, antes que la L2; lo que falte, en el negro de antes
+  de la demo) y de `STkk.PAK` (en el negro de antes de la carrera, bloqueando ~1,1 s): sectores compactados en su sitio,
+  cambiados de orden y apuntados por tramos. Trampa: sector de `ROM.BIN` (y el principio del siguiente) a 4 entradas.
+  EXE 473 KB (antes 1,38 MB). `psxprof2`: attract 12 000 cuadros y Portugal 10 700 con 0 trampas, G-ESTADO y G-SNDLOG
+  iguales; L2 de las demos 502 sectores (69 en R0): faltas en demos 47 027 -> 1 152
 - [x] Renderizador A (menus) y B (demos, mapas): regla de sprites, efectos, paletas, CLUT por hueco, variantes (A: 8 bpp
   exacto; B: 4 bpp, 4 352 huecos, CLUT por hueco rehecha con los fundidos; demos y mapas casi iguales a MAME; huella igual
   al banco con ODE y CLUTCACHE; negros <= 15 ms. Recetas B: las paletas de cada corrida van aparte (los cuadros de attract y pt
   chocaban) y se toma la paleta mas repetida en la pantalla: error medio por pixel <= 3,0 (5 bits x 3) en todas las
-  demos. Pendiente: en R0 la L2 de DEMO0 no cabe: faltas al final de la demo de Portugal)
+  demos)
 - [x] Gestor de bloques de VRAM (huecos A con reloj, tabla codigo -> hueco de dos niveles, 34 KB)
 - [x] `tiles4.py`, `tilesbin.py`; `MENUS.PAK`, `DEMOr.PAK` (8,5 ciclos del banco + partida; `tools/construir_cd.sh`, `verpak.py`)
 - [x] Cargador bloqueante (CARGANDO > 0,5 s) y de fondo (`ps1/carga.c`: `MENUS.PAK` por pantalla, `TILESA.BIN` de

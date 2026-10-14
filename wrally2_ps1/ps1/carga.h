@@ -14,7 +14,13 @@ void carga_demo_titulo(int r);           /* titulo (3/16): prelectura de la demo
 void carga_demo_negro(int ped, int fb);  /* negro antes del mapa (ped 9) o de la demo (ped 5): lo que falte, bloqueando */
 void carga_demo_modo(int modo);          /* cada cuadro del mapa (9) o la demo (5): comprueba la demo (FEC3C6) */
 void carga_demo_fin(void);
-void carga_para(void);                   /* corta el fondo y la emergencia: el CD libre para una lectura de otro */               /* vuelta a los menus (reparto A) */
+void carga_para(void);
+#ifdef R1
+int carga_rom_arranque(void);            /* ROM.BIN entera al area y la trampa puesta; -1 si no se puede */
+void carga_rom_suma(void);               /* fin de la suma del arranque: solo lo residente, el area libre */
+void carga_rom_tramo(int c6, int c8);    /* el banco de ROM del tramo desde STkk.PAK, bloqueando (si no esta ya) */
+extern u32 carga_rom_trampas, carga_rom_lin, carga_rom_max, carga_rom_tramo_lin, carga_rom_kb;
+#endif                   /* corta el fondo y la emergencia: el CD libre para una lectura de otro */               /* vuelta a los menus (reparto A) */
 extern u32 carga_emerg_sec, carga_dm_neg[2], carga_dm_neg_max[2], carga_dm_neg_n[2], carga_dm_fallo, carga_dm_nositio, carga_area_kb, carga_l2_cap;
 extern u32 carga_sectores, carga_emerg, carga_emerg_lin, carga_emerg_max, carga_bloq, carga_bloq_lin, carga_bloq_max, carga_fondo, carga_err, carga_hueco_max;
 extern int carga_menus;                  /* secciones del indice de MENUS.PAK (0: no esta en el disco) */

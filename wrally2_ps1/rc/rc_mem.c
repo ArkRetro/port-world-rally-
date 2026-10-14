@@ -23,6 +23,16 @@ void rc_rom_residente(const u8 *rom)
         o += n;
     }
 }
+/* los tramos residentes ya copiados en rc_romres, otra vez a la tabla (R1: tras la suma del arranque y al quitar un
+   banco que tocara alguno) */
+void rc_rom_res_mapa(void)
+{
+    u32 k, o = 0;
+    for (k = 0; k < rc_romres_n; k++) {
+        rc_rom_mapa(rc_romres_tab[k][0], rc_romres_tab[k][1], rc_romres + o);
+        o += rc_romres_tab[k][1] - rc_romres_tab[k][0] + 4;
+    }
+}
 #ifndef RC_ROM_EXTERN
 u8 rc_rom[0x100000 + 4] RC_AL;
 #endif
@@ -107,7 +117,9 @@ void rc_mem_init(void)
     for (i = 0; i < 0x1004; i++) rc_ffpg[i] = rc_iopg[i] = 0xFF;
     for (i = 0; i < 4096; i++) { rc_rpg[i] = rc_ffpg; rc_wpg[i] = 0; }
     for (i = 0; i < 256; i++) rc_rpg[i] = 0;                 /* ROM: por bloques (rc_romtab) */
+#ifndef R1
     rc_rom_mapa(0, 0x100000, rc_rom); rc_rom_residente(rc_rom);   /* banco y R0 (ROM en el EXE): toda la ROM debajo */
+#endif                                                       /* R1: la plataforma (carga.c, ROM.BIN al arrancar) */
     for (i = 0; i < 16; i++) {
         rc_rpg[0x200 + i] = rc_wpg[0x200 + i] = rc_vram + i * 0x1000;
         rc_rpg[0xFE0 + i] = rc_wpg[0xFE0 + i] = rc_ram + i * 0x1000;

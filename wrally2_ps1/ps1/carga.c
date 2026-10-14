@@ -23,6 +23,7 @@
 #include "../../wrally_ps1/ps1/cd.h"
 #include "video.h"
 #include "carga.h"
+#include "snd.h"
 #define T1 t1_get()
 #define SEC 2048
 #ifndef LIN_05
@@ -42,6 +43,11 @@ static int k_tit = -1;                          /* seccion del titulo (3/16) en 
 static u8 *area, *area_l2; static int l2_cap;   /* area de tramo; sectores que caben detras de las recetas */
 static int dm_r = -1, dm_fase;                  /* demo del paquete; fase: 0 nada, 1 titulo, 2 mapa, 3 demo */
 static int dm_map, dm_vo, dm_l2, dm_rom, dm_l2reg, dm_lleno;   /* registros en la VRAM, sectores en el area (dm_rom -1: no cabe) */
+static int dm_rom_ok;                           /* R1: la ROM de la demo ya compactada y en rc_romtab */
+static int rom_arr;                             /* R1: la ROM entera en el area (desde el arranque hasta la suma) */
+#ifdef R1
+static void bk_quita(void); static void rom_pon(u8 *b, int n);
+#endif
 u32 carga_emerg_sec, carga_dm_neg[2], carga_dm_neg_max[2], carga_dm_neg_n[2], carga_dm_fallo, carga_dm_nositio, carga_area_kb, carga_l2_cap;
 typedef struct { u32 clave, sec, n; } sec_t;
 #define NSEC 64
@@ -268,6 +274,14 @@ static void dm_stream(const u32 *x, int a, int n)
     bg_got = 0; bg_a = a;
     if (n > 0 && !cd_stream_async(lba_dm[dm_r] + (int)x[0] + a, n, bg_dst)) bg_on = 1;
 }
+/* la seccion ROM de la demo al area detras de toda la L2 (la ROM entera o nada); 1 si se pidio */
+static int dm_rom_trae(int n, const u32 *o)
+{
+    if ((u32)dm_rom >= o[1]) return 0;
+    if (n < (int)dmi[dm_r][2][1] || n + (int)o[1] > l2_cap) { dm_rom = -1; return 0; }
+    bg_cuenta = &dm_rom; bg_dir = area_l2 + (n + dm_rom) * SEC; dm_stream(o, dm_rom, (int)o[1] - dm_rom);
+    return 1;
+}
 /* lo siguiente de la demo: mapa, VO, L2 y ROM, en ese orden (VRAM mientras haya sitio; area mientras quepa) */
 static void dm_start(void)
 {
@@ -279,11 +293,15 @@ static void dm_start(void)
     if (!dm_lleno && (u32)dm_vo < v[2]) { dm_stream(v, dm_vo / 14, (int)v[1] - dm_vo / 14); return; }
     bg_tipo = 2;
     n = (int)l[1] < l2_cap ? (int)l[1] : l2_cap;
+#ifdef R1
+    if (rom_arr) return;
+    if (dm_rom >= 0 && !dm_rom_ok && (u32)dm_rom >= o[1] && o[1]) { bk_quita(); rom_pon(area_l2 + n * SEC, (int)o[1]); dm_rom_ok = 1; }
+    if (!dm_rom_ok && dm_rom >= 0 && dm_rom_trae(n, o)) return;   /* en R1 la ROM antes que la L2: la demo la lee desde el principio */
+#endif
     if (dm_l2 < n) { bg_cuenta = &dm_l2; bg_dir = area_l2 + dm_l2 * SEC; dm_stream(l, dm_l2, n - dm_l2); return; }
-    if (dm_rom >= 0 && (u32)dm_rom < o[1]) {
-        if (n < (int)l[1] || n + (int)o[1] > l2_cap) { dm_rom = -1; return; }   /* la ROM entera o nada */
-        bg_cuenta = &dm_rom; bg_dir = area_l2 + (n + dm_rom) * SEC; dm_stream(o, dm_rom, (int)o[1] - dm_rom);
-    }
+#ifndef R1
+    if (dm_rom >= 0 && (u32)dm_rom < o[1]) dm_rom_trae(n, o);
+#endif
 }
 void carga_atiende(void)
 {
@@ -317,6 +335,104 @@ void carga_atiende(void)
         else dm_start();
     }
 }
+
+#ifdef R1
+/* ---- R1: la ROM del 68000 fuera del EXE (diseno 3). Al arrancar, ROM.BIN entera al area (3 s a 2x): los tramos
+   residentes a rc_romres y todos los bloques a la tabla; al acabar la suma del arranque (PC 0x2616) se quita todo menos
+   lo residente y el area queda libre. Bancos: la seccion ROM (clave 4) de DEMOr.PAK (de fondo, con el resto de la
+   demo) o de STkk.PAK (bloqueando, al entrar en la carrera): sectores de tipo 2 que se compactan en su sitio (fuera las
+   cabeceras), se cambian de orden (la ROM viene como en la placa) y se apuntan por tramos. Trampa: un bloque que no
+   esta se lee de ROM.BIN (su sector y el principio del siguiente, por la cola) a una de 4 entradas por turno */
+#define ROMFIN 0xDD800
+static int lba_rom = -1;
+u32 carga_rom_trampas, carga_rom_lin, carga_rom_max, carga_rom_tramo_lin, carga_rom_kb;
+static u8 rtmp[2 * SEC] __attribute__((aligned(4)));
+static u8 remb[4][SEC + 256] __attribute__((aligned(4)));
+static int remb_s[4] = {-1, -1, -1, -1}, remb_t;
+#define NTR 192
+static struct { u32 a0, a1; u8 *p; } btr[NTR]; static int btr_n;   /* tramos del banco apuntados desde el area */
+static int bk_c6 = -1, bk_c8 = -1;              /* clave del banco de carrera que esta en el area */
+static void rom_swap(u8 *p, u32 n)
+{
+    u32 *w = (u32 *)p;
+    for (n >>= 2; n; n--, w++) { u32 x = *w; *w = ((x & 0x00FF00FFu) << 8) | ((x >> 8) & 0x00FF00FFu); }
+}
+static void bk_quita(void)
+{
+    int i;
+    for (i = 0; i < btr_n; i++) rc_rom_mapa(btr[i].a0, btr[i].a1, 0);
+    if (btr_n) rc_rom_res_mapa();               /* por si un margen del banco tocaba un bloque residente */
+    btr_n = 0; bk_c6 = bk_c8 = -1;
+}
+static void rom_pon(u8 *b, int n)
+{
+    u8 *w = b; u32 fin = 0xFFFFFFFFu; int i;
+    btr_n = 0;
+    for (i = 0; i < n; i++) {
+        u8 *s = b + i * SEC; u32 a, m, j;
+        if (!cab(s, 2)) { carga_err++; break; }
+        a = le32(s + 16); m = le32(s + 20);
+        if (m > SEC - 32 || (m & 3)) { carga_err++; break; }
+        if (a != fin) { if (btr_n == NTR) { carga_err++; break; } btr[btr_n].a0 = a; btr[btr_n].p = w; btr_n++; }
+        for (j = 0; j < m; j += 4) *(u32 *)(w + j) = *(const u32 *)(s + 32 + j);   /* hacia delante: w <= s */
+        w += m; fin = a + m; btr[btr_n - 1].a1 = fin - 4;
+    }
+    rom_swap(b, (u32)(w - b));
+    for (i = 0; i < btr_n; i++) rc_rom_mapa(btr[i].a0, btr[i].a1, btr[i].p);
+    carga_rom_kb = (u32)(w - b) >> 10;
+}
+static void rom_trampa(u32 a)
+{
+    u32 s = a >> 11, b; int k = remb_t; u8 *e = remb[k]; u16 t0 = T1, l;
+    if (lba_rom < 0 || a >= ROMFIN) rc_bad(0xA00000 | a);
+    remb_t = (k + 1) & 3;
+    if (remb_s[k] >= 0)                         /* la entrada se reusa: fuera sus bloques */
+        for (b = (u32)remb_s[k] * 8; b < (u32)remb_s[k] * 8 + 8; b++) if (rc_romtab[b] == e - ((u32)remb_s[k] << 11)) rc_romtab[b] = 0;
+    bg_corta(); em_corta(); snd_pausa(1);
+    if (cd_read(lba_rom + (int)s, (s + 1) * SEC < ROMFIN ? 2 : 1, rtmp, 1)) rc_bad(0xA00000 | a);
+    for (b = 0; b < SEC + 256; b += 4) *(u32 *)(e + b) = *(const u32 *)(rtmp + b);
+    rom_swap(e, SEC + 256);
+    for (b = s * 8; b < s * 8 + 8; b++) if (!rc_romtab[b]) rc_romtab[b] = e - (s << 11);
+    remb_s[k] = (int)s; snd_pausa(0);
+    l = (u16)(T1 - t0); carga_rom_trampas++; carga_rom_lin += l; if (l > carga_rom_max) carga_rom_max = l;
+}
+int carga_rom_arranque(void)
+{
+    int sz;
+    if (!area || (u32)carga_area_kb << 10 < ROMFIN || cd_find("ROM.BIN", &lba_rom, &sz) || (u32)sz < ROMFIN) { lba_rom = -1; return -1; }
+    if (cd_read(lba_rom, ROMFIN / SEC, area, 1)) return -1;
+    rom_swap(area, ROMFIN);
+    rc_rom_mapa(0, ROMFIN, area); rc_rom_residente(area);
+    rc_romf_gancho = rom_trampa; rom_arr = 1;
+    return 0;
+}
+void carga_rom_suma(void)
+{
+    if (!rom_arr) return;
+    rc_rom_mapa(0, 0x100000, 0); rc_rom_res_mapa(); rom_arr = 0;
+}
+static void dm_nuevo(int r);
+/* el banco del tramo (FEC3C6, FEC3C8) desde STkk.PAK, bloqueando (en el negro de antes de la carrera o, si no, en
+   el primer cuadro): el area pasa a la carrera (la demo que hubiera, fuera) */
+void carga_rom_tramo(int c6, int c8)
+{
+    static const u8 tk[12] = {4, 8, 5, 2, 9, 7, 10, 6, 0, 11, 1, 3};   /* formatos.md 8.3 */
+    static char stn[] = "ST00.PAK";
+    int k, lba, sz, i; u32 sec = 0, n = 0; u16 t0;
+    if (!area || rom_arr || (c6 == bk_c6 && c8 == bk_c8) || c6 < 0 || c6 > 3 || c8 < 0 || c8 > 2) return;
+    t0 = T1;
+    k = tk[c6 * 3 + c8]; stn[2] = (char)('0' + k / 10); stn[3] = (char)('0' + k % 10);
+    bg_corta(); em_corta(); dm_nuevo(-1); bk_quita();
+    bk_c6 = c6; bk_c8 = c8;                     /* aunque falle: no se reintenta cada cuadro */
+    if (cd_find(stn, &lba, &sz) || cd_read(lba, 1, ebuf, 1) || !cab(ebuf, 5)) return;
+    for (i = 0; i < ebuf[5] && i < 8; i++) { const u8 *e = ebuf + 32 + i * 16; if (le32(e) == 4) { sec = le32(e + 4); n = le32(e + 8); } }
+    if (!n || (int)n > l2_cap) return;
+    if (cd_read(lba + (int)sec, (int)n, area_l2, 1)) { carga_err++; return; }
+    rom_pon(area_l2, (int)n);
+    bk_c6 = c6; bk_c8 = c8;
+    carga_rom_tramo_lin = (u16)(T1 - t0);
+}
+#endif
 
 /* ---- el CD para otro (la SPU): se corta el fondo y la emergencia (se reanudan solos en carga_atiende) */
 void carga_para(void) { bg_corta(); em_corta(); }
@@ -362,7 +478,10 @@ int carga_pantalla(u32 clave, int fb)
 /* ---- la demo */
 static void dm_nuevo(int r)
 {   /* paquete de otra demo: todo por cargar */
-    dm_r = r; dm_map = dm_vo = dm_l2 = dm_rom = dm_l2reg = 0; dm_lleno = 0;
+#ifdef R1
+    if (dm_rom_ok) bk_quita();
+#endif
+    dm_r = r; dm_map = dm_vo = dm_l2 = dm_rom = dm_l2reg = 0; dm_lleno = 0; dm_rom_ok = 0;
 }
 void carga_demo_titulo(int r)
 {   /* titulo: prelectura de la demo r en b12-b15 y en el area; el fondo de MENUS se deja (la VRAM libre es para esto) */
@@ -417,6 +536,15 @@ void carga_demo_negro(int ped, int fb)
         if (vid_lay() != 2) dm_a_b(dm_r, 3);
         vid_quita_mapa(); dm_fase = 3; dm_lleno = 0;
         if (dm_r >= 0) dm_bloq(dmi[dm_r][1], dm_vo, (int)dmi[dm_r][1][2] < NFIJ ? (int)dmi[dm_r][1][2] : NFIJ);
+#ifdef R1
+        if (dm_r >= 0 && !dm_rom_ok && dm_rom >= 0 && !rom_arr) {   /* lo que falte de la ROM de la demo */
+            const u32 *o = dmi[dm_r][3]; int n = (int)dmi[dm_r][2][1] < l2_cap ? (int)dmi[dm_r][2][1] : l2_cap;
+            if (o[1] && n == (int)dmi[dm_r][2][1] && n + (int)o[1] <= l2_cap) {
+                if ((u32)dm_rom < o[1] && cd_read(lba_dm[dm_r] + (int)o[0] + dm_rom, (int)o[1] - dm_rom, area_l2 + (n + dm_rom) * SEC, 1)) carga_err++;
+                else { dm_rom = (int)o[1]; bk_quita(); rom_pon(area_l2 + n * SEC, (int)o[1]); dm_rom_ok = 1; }
+            }
+        }
+#endif
     }
     l = (u16)(T1 - bloq_t0); carga_dm_neg[k] = l; carga_dm_neg_n[k]++; if (l > carga_dm_neg_max[k]) carga_dm_neg_max[k] = l;
 }

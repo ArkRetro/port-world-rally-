@@ -139,6 +139,9 @@ static void pantalla(u32 modo)
         if (modo_ped == 9 || modo_ped == 5) carga_demo_negro(modo_ped, fb ^ 1);
         else { carga_demo_fin(); carga_pantalla(modo_ped << 16 | f146, fb ^ 1); }
         precarga_spu(modo_ped);
+#ifdef R1
+        if (modo_ped == 1) carga_rom_tramo(RW(0xFEC3C6), RW(0xFEC3C8));   /* el banco de ROM del tramo */
+#endif
         snd_pausa(0);
     } else if (modo == 9 || modo == 5) carga_demo_modo(modo);
     else if (modo != 0 && modo != 1 && (modo != modo_ant || f146 != f146_ant)) {
@@ -170,6 +173,10 @@ void rc_vblank(void)
     mcu_cuadro(rc_ram, &rc_mcu);
     modo = RW(0xFEC298); menu = modo != 1;
     pantalla(modo);
+#ifdef R1
+    if (rc_suma_hecha) carga_rom_suma();
+    if (modo == 1) { snd_pausa(1); carga_rom_tramo(RW(0xFEC3C6), RW(0xFEC3C8)); snd_pausa(0); }   /* si no se pudo en el negro */
+#endif
     b = vid_lay() == 2;                         /* mapa de la demo y demo (y sus negros): formato B */
     if (draw) {
         if (menu) vid_paletas();
@@ -252,7 +259,6 @@ int main(void)
     rc_mem_init();
     mcu_boot(rc_ram, mcu_tab, &rc_mcu);            /* MCU_TABLAS: el trabajo solo lee las tablas de MOVC */
     reservas();
-    rc_r.a[7] = ((u32)*(u16 *)(rc_rom) << 16) | *(u16 *)(rc_rom + 2);
     rc_r.imask = 7;
     rc_r.cyrel = -(s32)(CYC_FRAME * 98 / 100);    /* el primer vblank como en MAME (rc_host FASE) */
     {   /* los dos bufer en azul y la pantalla encendida antes del primer cuadro del juego */
@@ -265,10 +271,14 @@ int main(void)
     vid_init();                                   /* paletas y CLUT de efecto en S0, huecos vacios */
     carga_init();                                 /* la unidad, el directorio y el indice de MENUS.PAK */
     snd_init(); gae1_suceso = snd_suceso;         /* SPUFIJO.BIN; la zona variable la piden los trozos */
+#ifdef R1
+    if (carga_rom_arranque()) rc_bad(0xB00000);   /* ROM.BIN entera al area (la suma del arranque la lee toda) */
+#endif
+    rc_r.a[7] = (rc_rd16(0) << 16) | rc_rd16(2);  /* vectores del 68000 */
 #ifndef SIN_GANCHO
     rc_sondeo_gancho = carga_poll; rc_sondeo_per = 16384; rc_sondeo_t = 0;   /* el CD se sondea tambien mientras corre el 68000 */
 #endif
     lastv = T1;
-    rc_run(((u32)*(u16 *)(rc_rom + 4) << 16) | *(u16 *)(rc_rom + 6));
+    rc_run((rc_rd16(4) << 16) | rc_rd16(6));
     for (;;);
 }
