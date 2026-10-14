@@ -22,12 +22,24 @@ corrida() {  # nombre cuadros periodo_de_volcado
   (cd rc && WR2_WORK=$W ROMSTAT=$W/$1/romstat.txt ./rc_host_rom $2 "$W/$1/rom" > "$W/$1/salida_rom.txt" 2>&1)
   echo "corrida $1: $2 cuadros, $(tail -1 "$W/$1/salida.txt")"
 }
+# menus: elegir coche recorriendo los tres (el cursor da la vuelta) y quedandose con cada uno, y elegir rally pasando por
+# los cuatro, hasta el mapa del primer tramo (las demas corridas solo ven el coche y el rally por defecto)
+MENU_C="1200-1208:C,1300-1308:S,1380-1386:R,1460-1466:R,1540-1546:R,1620-1626:L,1700-1706:L,1780-1786:L"
+MENU_R="1880-1886:R,1950-1956:R,2020-2026:R,2090-2096:R,2160-2166:L"
 if [ -z "$SIN_CORRIDAS" ]; then
   INPUTS= corrida attract 80000 125
   INPUTS=$(cat "$T/inputs_pt.txt") corrida pt 36000 60
 fi
+if [ -z "$SIN_CORRIDAS" ] || [ ! -s "$W/menus2/blk.bin" ]; then
+  INPUTS="$MENU_C,1840-1846:X,$MENU_R,2240-2246:X" corrida menus0 2800 30
+  INPUTS="$MENU_C,1800-1806:L,1840-1846:X,$MENU_R,2240-2246:X" corrida menus1 2800 30
+  INPUTS="$MENU_C,1800-1806:R,1840-1846:X,$MENU_R,2240-2246:X" corrida menus2 2800 30
+fi
 T1=$(date +%s); echo "corridas: $((T1 - T0)) s"
-BLK="$W/attract/blk.bin $W/pt/blk.bin"; DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin"; RS="$W/attract/romstat.txt $W/pt/romstat.txt $(ls $W/tramos/*/romstat.txt 2>/dev/null)"
+MEN="$W/menus0 $W/menus1 $W/menus2"
+BLK="$W/attract/blk.bin $W/pt/blk.bin $(for d in $MEN; do echo $d/blk.bin; done)"
+DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin $(for d in $MEN; do echo $d/dumps.bin; done)"
+RS="$W/attract/romstat.txt $W/pt/romstat.txt $(for d in $MEN; do echo $d/romstat.txt; done) $(ls $W/tramos/*/romstat.txt 2>/dev/null)"
 TR="$(ls -d $W/tramos/*/ 2>/dev/null | while read d; do [ -s $d/blk.bin ] && echo $d; done) $W/pt"
 python3 "$T/tilesbin.py" --a "$CD/TILESA.BIN"
 python3 "$T/rombank.py" $RS -o "$CD" --romres "$W/romres.txt"

@@ -72,6 +72,9 @@ static void snd_al_dia(void)
     obj = snd_nfr * (u32)pos / CYC_FRAME;          /* <= 133 x 219 966: cabe en 32 bits (sin division de 64 en la PS1) */
     if (obj > snd_hecho) { gae1_avanza(obj - snd_hecho); snd_hecho = obj; }
 }
+/* la plataforma: paso un cuadro mas de tiempo real sin cuadro del juego (cuadro lento; la SPU no espera) */
+static u32 snd_acu2;
+void rc_snd_cuadro_extra(void) { u32 n; snd_acu2 += 7812500; n = snd_acu2 / 59100; snd_acu2 %= 59100; gae1_avanza(n); }
 /* al tomar la IRQ del vblank (antes de que el juego lea los registros) */
 void rc_snd_vblank(void)
 {

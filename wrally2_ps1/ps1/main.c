@@ -142,7 +142,7 @@ static void pantalla(u32 modo)
         precarga_spu(modo_ped);
         snd_pausa(0);
     } else if (modo == 9 || modo == 5 || modo == 0xB || modo == 1) {
-        snd_pausa(1); carga_demo_modo(modo, fb ^ 1); snd_pausa(0);   /* recarga si no hubo negro (bloquea) */
+        carga_demo_modo(modo, fb ^ 1);          /* recarga si no hubo negro (bloquea, con las voces quietas) */
     }
     else if (modo != 0 && modo != 1 && (modo != modo_ant || f146 != f146_ant)) {
         int tit = modo == 3 && f146 == 0x16;
@@ -167,6 +167,20 @@ void rc_vblank(void)
     GP1 = 0x03000000;
     t0 = T1;
     rc_snd_vblank();
+#ifndef SND_JUEGO
+    {   /* el modelo del GAE1 a tiempo real, como el chip de la placa: la SPU toca 132 muestras por vblank y el modelo
+           por cuadro del juego; en los cuadros lentos (mas de un vblank) avanza tambien los vblank de mas, sin las
+           pausas de las cargas. -DSND_JUEGO: solo por cuadros (huella igual al banco aunque haya cuadros lentos) */
+        static u16 tv; static s32 acu; static int ini;
+        u16 t = T1; s32 d = (s32)(u16)(t - tv) - (s32)snd_lin_pausa;
+        snd_lin_pausa = 0; tv = t;
+        if (!ini) { ini = 1; d = 263; }
+        acu += d - 263;
+        if (acu < 0) acu = 0;
+        if (acu > 263 * 8) acu = 263 * 8;
+        while (acu >= 263) { acu -= 263; rc_snd_cuadro_extra(); }
+    }
+#endif
     snd_modo_tit = RW(0xFEC298) == 3;
     if (snd_pide) { carga_para(); snd_pausa(1); snd_atiende(); snd_pausa(0); }
     snd_vblank();

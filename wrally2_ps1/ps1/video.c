@@ -255,7 +255,9 @@ void vid_init(void)
 int vid_hueco(u32 codigo) { u16 h = ts_get(codigo & 0x7FFF); return h == 0xFFFF ? -1 : h; }
 static int sec_cargando = -1;             /* la seccion que se esta cargando no se desaloja a si misma */
 static int evita67;                       /* la seccion del titulo no va a las paginas 6 y 7 (alli va la prelectura B) */
-void vid_carga_ini(int sec, int titulo) { carga_ini = now; en_carga = 1; sec_cargando = sec; evita67 = titulo; }
+/* now avanza: lo dibujado en el cuadro anterior (un negro de transicion pinta aun la pantalla vieja) no cuenta como
+   visible mientras dura la carga */
+void vid_carga_ini(int sec, int titulo) { carga_ini = ++now; en_carga = 1; sec_cargando = sec; evita67 = titulo; }
 void vid_carga_fin(void) { en_carga = 0; sec_cargando = -1; evita67 = 0; }
 static u32 prot[2]; static int agotado;   /* secciones del modo actual: se desalojan las ultimas (una pasada entera cuando no queda otra cosa) */
 void vid_sec_prot(u32 lo, u32 hi) { prot[0] = lo; prot[1] = hi; agotado = 0; }

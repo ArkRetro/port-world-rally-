@@ -572,10 +572,12 @@ void carga_demo_modo(int modo, int fb)
     if (r >= 0 && (lba_dm[r] < 0 || !area)) r = -1;
     if (vid_lay() == 2 && dm_fase >= 2 && r == dm_r) { if (dm_fase < f) dm_fase = f; return; }
     carga_dm_fallo++;
+    snd_pausa(1);
     bg_corta(); em_corta();
     dm_a_b(r, f);
     if (r >= 0 && f == 2) {                   /* el mapa del tramo (la clave cambia al entrar en el): bloqueando */
         bloq_t0 = T1; bloq_vis = 0; bloq_fb = fb;
         dm_bloq(dmi[r][0], dm_map, (int)dmi[r][0][2]);
     }
+    snd_pausa(0);
 }

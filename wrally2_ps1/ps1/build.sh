@@ -26,6 +26,8 @@ done
 ARCH="-march=mips1 -mabi=32 -EL -fno-pic -mno-shared -mno-abicalls -mfp32 -mno-llsc -fno-stack-protector -nostdlib -ffreestanding"
 CF="$ARCH -O2 -G0 -mno-gpopt -fomit-frame-pointer -fno-builtin -fno-strict-aliasing -fdata-sections -ffunction-sections -w -I$N"
 [ wr2_rc.o -nt ../rc/wr2_rc.c ] && [ wr2_rc.o -nt ../rc/rc_rt.h ] && [ wr2_rc.o -nt build.sh ] || $P-gcc $CF ${RCOPT:--Os} -c ../rc/wr2_rc.c -o wr2_rc.o
+# MAINOPT=-DSND_JUEGO: el modelo del GAE1 solo por cuadros del juego (para la puerta G-ESTADO con psxprof2: si no, en
+# los cuadros lentos avanza a tiempo real y la huella se separa del banco)
 # lo que cambia entre R0 (la ROM dentro del EXE) y R1 (ROM.BIN al arrancar, residente + bancos del area + trampa)
 for v in r0 r1; do
   D=""; [ $v = r1 ] && D="-DR1"

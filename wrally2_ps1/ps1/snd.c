@@ -34,6 +34,7 @@ static u32 ult_carga = 0xFFFF0000u;
 /* por canal del GAE1: direccion que toca, repeticion pendiente, y trozos que no estaban (registro + 1) */
 static struct { u32 dir, pend; u16 vol; u8 act, cuadro_kon, falta, falta_enc; } voz[8];
 static u32 cuadro;
+static int pausa_n;                             /* pausas anidadas abiertas (snd_pausa) */
 
 static void lineas(int n) { u16 a = t1_get(); while ((u16)(t1_get() - a) < (u16)n); }
 static void spu_wait_mode(u16 m) { int n; for (n = 0; n < 100000 && (SPUSTAT & 0x3F) != (m & 0x3F); n++); }
@@ -60,7 +61,7 @@ static u16 volumen(int ch, int t)
 }
 static void kon(int ch, u32 dir, u16 vol)
 {
-    VOICE(ch, 0) = vol; VOICE(ch, 2) = vol; VOICE(ch, 4) = tono; VOICE(ch, 6) = (u16)(dir >> 3);
+    VOICE(ch, 0) = vol; VOICE(ch, 2) = vol; VOICE(ch, 4) = pausa_n ? 0 : tono; VOICE(ch, 6) = (u16)(dir >> 3);
     VOICE(ch, 8) = 0x000F; VOICE(ch, 10) = 0x0000;   /* ADSR: ataque inmediato, sostenido maximo, sin caida */
     while ((u16)(t1_get() - t_key) < 2);
     R16(0x1F801D88) = 1u << ch; t_key = t1_get(); snd_kon++;
@@ -93,10 +94,15 @@ void snd_vblank(void)
         if (voz[ch].pend == SIL) voz[ch].pend = 0;
     }
 }
+/* anidada (una carga bloqueante puede llamar a otra); las lineas en pausa se apuntan en snd_lin_pausa (main.c las
+   descuenta del tiempo real del modelo del GAE1) */
+u32 snd_lin_pausa; static u16 pausa_t;
 void snd_pausa(int on)
 {
     int ch;
+    if (on ? pausa_n++ : --pausa_n) { if (pausa_n < 0) pausa_n = 0; return; }
     for (ch = 0; ch < 7; ch++) VOICE(ch, 4) = on ? 0 : tono;
+    if (on) pausa_t = t1_get(); else snd_lin_pausa += (u16)(t1_get() - pausa_t);
 }
 static void spu_dma_write(u32 addr, const void *src, int bytes)
 {
