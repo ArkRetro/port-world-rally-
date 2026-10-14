@@ -103,7 +103,8 @@ static void sprites(void)
 }
 
 /* ------------------------------------------------------------ cuadro */
-static int fb, gear, sq_last, show, lr_last, skipped;   /* show: cifras de depuracion (L2 + R2) */
+static int fb, gear, sq_last, show, lr_last, skipped, start_up;
+static u16 snd_tv;                              /* ultima lectura del temporizador 1 del reloj del sonido */   /* show: cifras de depuracion (L2 + R2) */
 static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc, lvid, lvid_acc;
 static u32 modo_ant, f146_ant, modo_ped;
 int fps_mil = 60000;
@@ -135,24 +136,42 @@ static void pantalla(u32 modo)
     u32 f146 = RW(0xFEC146), ped = RW(0xFEC29C);
     if (ped) modo_ped = ped;
     if (modo == 0 && modo_ant != 0) {
-        snd_pausa(1);                           /* las cargas bloqueantes con las voces quietas (diseno 5.2) */
+        /* las voces siguen sonando durante las cargas bloqueantes: el modelo del GAE1 va con el reloj (tiempo real) */
         if (modo_ped == 0xB) ;                  /* mapa del tramo: la clave cambia al entrar en el (carga_demo_modo) */
         else if (modo_ped == 9 || modo_ped == 5 || modo_ped == 1) carga_demo_negro(modo_ped, fb ^ 1);
-        else { carga_demo_fin(); carga_pantalla(modo_ped << 16 | f146, fb ^ 1); }
+        else { carga_demo_fin(); carga_pantalla(modo_ped << 16 | f146, fb ^ 1, 0); }
         precarga_spu(modo_ped);
-        snd_pausa(0);
     } else if (modo == 9 || modo == 5 || modo == 0xB || modo == 1) {
         carga_demo_modo(modo, fb ^ 1);          /* recarga si no hubo negro (bloquea, con las voces quietas) */
     }
     else if (modo != 0 && modo != 1 && (modo != modo_ant || f146 != f146_ant)) {
         int tit = modo == 3 && f146 == 0x16;
-        snd_pausa(1);
         if (!tit) carga_demo_fin();
-        carga_pantalla(modo << 16 | f146, fb ^ 1);
+        carga_pantalla(modo << 16 | f146, fb ^ 1, modo == modo_ant);   /* a la vista: parcial */
         if (tit) carga_demo_titulo((RW(0xFEC3C6) + 1) & 3);
-        snd_pausa(0);
     }
     modo_ant = modo; f146_ant = f146;
+}
+/* ---- pausa: START mientras se corre (como el WR1). El 68000 y la MCU se quedan parados aqui dentro; el cuadro que
+   se ve se oscurece con PAUSA encima; las voces a tono 0; el CD acaba lo que estaba leyendo (y el fondo sigue llegando:
+   la pausa tambien sirve de bufer) pero no se dibuja nada. El tiempo de la pausa no cuenta para el reloj del sonido.
+   Sale con otra pulsacion de START */
+static void pausa(void)
+{
+    int up = 0;
+    snd_pausa(1);
+    while (D2_CHCR & (1 << 24)) carga_poll();   /* la lista de este cuadro acabada antes de tocar la GPU */
+    vid_pausa(fb ^ 1);                          /* el bufer que se ve (el otro se mostraria al volver) */
+    for (;;) {
+        u16 p;
+        while (!(I_STAT & 1)) carga_poll();
+        I_STAT = ~1u;
+        p = joy_read();
+        if (p & 0x0008) up = 1; else if (up) break;
+    }
+    snd_pausa(0);
+    snd_lin_pausa = 0; snd_tv = T1;             /* la pausa no cuenta (el temporizador da la vuelta en 4,2 s) */
+    start_up = 0;                               /* START sigue pulsado: no vuelve a pausar hasta soltarlo */
 }
 void rc_vblank(void)
 {
@@ -170,8 +189,8 @@ void rc_vblank(void)
     {   /* el modelo del GAE1 a tiempo real, como el chip de la placa: muestras de 7 812,5 Hz por lineas del temporizador 1
            (15 734,27 por segundo: 5 000 / 10 070) sin las pausas de las cargas; la SPU toca a 0x2D6, el mismo reloj.
            -DSND_JUEGO: por cuadros del juego y tono escalado por fps (huella igual al banco para G-ESTADO/G-SNDLOG) */
-        static u16 tv; static u32 acu; static int ini;
-        u16 t = T1; u32 d = (u16)(t - tv); tv = t;
+        static u32 acu; static int ini;
+        u16 t = T1; u32 d = (u16)(t - snd_tv); snd_tv = t;
         d = d > snd_lin_pausa ? d - snd_lin_pausa : 0; snd_lin_pausa = 0;
         if (!ini) { ini = 1; d = 263; rc_snd_real_on = 1; }
         if (d > 263 * 30) d = 263;              /* algo raro (no deberia pasar): un cuadro */
@@ -219,7 +238,7 @@ void rc_vblank(void)
         if (!(pad & 0x8000) && sq_last) gear ^= 1;      /* cuadrado: cambio de marcha */
         sq_last = (pad & 0x8000) != 0;
         if (gear) in0 |= 0x20;
-        if (!(pad & 0x0008)) in0 &= ~0x80;             /* START */
+        if (!(pad & 0x0008) && RW(0xFEC298) != 1) in0 &= ~0x80;   /* START (en carrera es la pausa) */
         if (!(pad & 0x0001)) in2 &= ~0x100;            /* SELECT: moneda */
         {   /* L2 + R2: cifras de depuracion si/no */
             int lr = !(pad & 0x0100) && !(pad & 0x0200);
@@ -228,6 +247,11 @@ void rc_vblank(void)
         }
         rc_set_io(in0, 0xFFFF, in2, 0xFFFF);
     }
+    if (!(pad & 0x0008) && start_up && RW(0xFEC298) == 1) {   /* carrera (la demo es el modo 5) */
+        pausa(); pad = joy_read();
+        sq_last = (pad & 0x8000) != 0;          /* lo que siga pulsado al volver no cambia nada */
+    }
+    start_up = (pad & 0x0008) != 0;
     carga_poll();
     ldraw_acc += (u16)(T1 - t0);
     if ((++nframe & 31) == 0) { l68 = l68_acc >> 5; ldraw = ldraw_acc >> 5; lvid = lvid_acc >> 5; l68_acc = ldraw_acc = lvid_acc = 0; }

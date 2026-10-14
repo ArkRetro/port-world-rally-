@@ -123,6 +123,15 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   los vecinos del sector de TILES.BIN). Prelectura por avance (CON_PRE): menos bloques por el tope de subidas, pero
   mas cuadros lentos; apagada. Pantalla de carga al estilo del juego (la del WR1: cuadros de bandera, CARGANDO con el
   degradado del marcador, barra START-FINISH con el progreso) en las cargas bloqueantes de mas de 0,5 s
+- [x] Flechas de giro sin artefactos: tiles de 16 colores con paleta animada (la 19, 15 estados) fundidos con el error
+  sumado sobre todos los estados de la paleta (`tiles4.py receta`, `Paletas.estados`, `paquetes.paletas_estados`)
+- [x] Paron del titulo: las secciones de MENUS van por primer cuadro en pantalla; un cambio de seccion con la pantalla
+  a la vista (la animacion del titulo con la musica) bloquea solo los primeros 40 sectores y deja el resto de fondo,
+  lo primero de la lista (`carga_pantalla(..., parcial)`); en el negro, entera. Attract: el bloqueo de 385 ms del
+  cuadro 651 desaparece; 0 faltas en el titulo; las voces ya no se paran en las cargas de menu
+- [x] Pausa en carrera (START, como el WR1): el 68000 y la MCU parados, el cuadro que se ve oscurecido con PAUSA, voces a
+  tono 0, el CD sigue leyendo lo pedido; el tiempo de la pausa no cuenta para el reloj del sonido. START no llega al
+  juego en carrera (modo 1)
 - [~] Carga de fondo del mapa a 2x con puntos de sondeo; `CARGA_1X`; CARGANDO solo si falta
 - [ ] Politica de carrera: prelectura por avance, muerte por avance, victimas con copia en L2 primero
 - [ ] Proxies y lecturas de emergencia; pantalla de cifras L2

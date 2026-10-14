@@ -23,6 +23,7 @@ void vid_carga_ini(int sec, int titulo); void vid_carga_fin(void);   /* mientras
 void vid_sec_prot(u32 lo, u32 hi);  /* mascara de secciones del modo actual: se desalojan las ultimas */
 int vid_hueco(u32 codigo);          /* hueco del codigo o -1 */
 void vid_cargando(int fb);          /* pantalla de carga al estilo del juego en el bufer que se ve */
+void vid_pausa(int fb);                       /* el bufer que se ve oscurecido con PAUSA */
 void vid_cargando_barra(int fb, int hecho, int total);   /* su barra START-FINISH */
 /* demo y mapa de la demo (formato B) */
 int vid_lay(void);                  /* reparto: 0 A, 1 A con b12-b15 en B (titulo), 2 B */

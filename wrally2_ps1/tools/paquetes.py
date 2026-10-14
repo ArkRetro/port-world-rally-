@@ -166,6 +166,14 @@ def lee_corridas(ds):
     print('corridas: %d en %.1f s; coche %s' % (len(cors), time.time() - t0, ' '.join('%s=%s' % (co.nom, co.coche) for co in cors)))
     return cors
 
+def paletas_estados(ivs, c, n=32):
+    """los estados de la paleta c entre varias corridas (tiles4.Paletas.estados), como mucho n"""
+    from collections import Counter
+    cnt = Counter()
+    for co, iv in ivs:
+        for p in co.pal.estados(c, iv, n): cnt[tuple(p)] += 1
+    return [list(k) for k, _ in cnt.most_common(n)]
+
 def paleta_viva(ivs, c):
     """los 32 colores de la paleta c del volcado mas vivo (los fundidos la apagan) entre varias corridas:
     ivs = [(corrida, [(a, b)])]"""
@@ -239,7 +247,7 @@ def carrera(cors, out, margen, rot, nfij, romres, area):
     """GAMEc.PAK y ST00-11.PAK; cifras por tramo y G-RAM"""
     t0 = time.time(); psnr = []; cache = {}
     def reg(t, info, ivs, clave, av):
-        if (clave, info[0]) not in cache: cache[(clave, info[0])] = paleta_viva(ivs, info[0])
+        if (clave, info[0]) not in cache: cache[(clave, info[0])] = paletas_estados(ivs, info[0]) or [paleta_viva(ivs, info[0])]
         r, p = tiles4.reg_b(t, info[0], cache[(clave, info[0])], info[1], min(av, 0xFFFF))
         if p is not None and p != float('inf'): psnr.append(p)
         return r
@@ -292,14 +300,15 @@ def attract(blks, dumps, rss, out, margen, nvo):
     psnr = []; cache = {}
     def reg_b(k, t, col, fl, av):
         """registro B del tile t con la paleta mas viva de las instancias de la pantalla k"""
-        if (k, col) not in cache: cache[(k, col)] = pal.paleta(pal.elige(col, v.inst[k]), col)
+        if (k, col) not in cache: cache[(k, col)] = pal.estados(col, v.inst[k])
         r, p = tiles4.reg_b(t, col, cache[(k, col)], fl, min(av, 0xFFFF))
         if p is not None and p != float('inf'): psnr.append(p)
         return r
     # MENUS.PAK: una seccion A por pantalla
     menus = sorted(k for k in v.inst if k[0] == 'menu'); secciones = []; cifras = []
     for i, k in enumerate(menus):
-        cods = sorted(por_codigo(v.resumen(k)))
+        pcod = por_codigo(v.resumen(k))
+        cods = sorted(pcod, key=lambda t: (pcod[t][2], t))   # por primer cuadro en pantalla: la PS1 bloquea solo el principio
         if len(cods) > MAX_A: print('AVISO: la pantalla %X tiene %d tiles, mas de %d huecos A' % (k[1], len(cods), MAX_A))
         regs = [tilesbin.reg_a(t) for t in cods]
         ss = [tilesbin.sector(0, regs[j:j + 12], 0x0100 + i, j // 12) for j in range(0, len(regs), 12)]

@@ -780,11 +780,12 @@ static void gp_rect(int x, int y, int w, int h, u32 c)
     dma_wait(); gpu_wait(); GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
     GP0 = 0x60000000 | c; GP0 = ((u32)y << 16) | (u32)x; GP0 = ((u32)h << 16) | (u32)w;
 }
-static const char lchars[] = "CARGNDOSTFIH";
-static const u8 lglyph[12][7] = {                   /* 5x7, bit 4 a la izquierda */
+static const char lchars[] = "CARGNDOSTFIHPU";
+static const u8 lglyph[14][7] = {                   /* 5x7, bit 4 a la izquierda */
     {14, 17, 16, 16, 16, 17, 14}, {14, 17, 17, 31, 17, 17, 17}, {30, 17, 17, 30, 20, 18, 17}, {14, 17, 16, 23, 17, 17, 15},
     {17, 25, 21, 19, 17, 17, 17}, {30, 17, 17, 17, 17, 17, 30}, {14, 17, 17, 17, 17, 17, 14}, {15, 16, 16, 14, 1, 1, 30},
-    {31, 4, 4, 4, 4, 4, 4}, {31, 16, 16, 30, 16, 16, 16}, {14, 4, 4, 4, 4, 4, 14}, {17, 17, 17, 31, 17, 17, 17}};
+    {31, 4, 4, 4, 4, 4, 4}, {31, 16, 16, 30, 16, 16, 16}, {14, 4, 4, 4, 4, 4, 14}, {17, 17, 17, 31, 17, 17, 17},
+    {30, 17, 17, 30, 16, 16, 16}, {17, 17, 17, 17, 17, 17, 14}};
 static const u32 lgrad[7] = {0x60F0FF, 0x40D8FF, 0x20B8FF, 0x1098FF, 0x0070FF, 0x0048F0, 0x0020D0};   /* 0xBBGGRR */
 static const u32 lwhite[7] = {0xF8F8F8, 0xF8F8F8, 0xF0F0F0, 0xE8E8E8, 0xE0E0E0, 0xD0D0D0, 0xC0C0C0};
 static const u32 lgreen[6] = {0x90FF90, 0x40F040, 0x20D820, 0x10B810, 0x089808, 0x047804};
@@ -826,4 +827,14 @@ void vid_cargando_barra(int fb, int hecho, int total)
     int r, w = total > 0 ? hecho * BAR_W / total : 0, y0 = fb ? 256 : 0;
     if (w > BAR_W) w = BAR_W;
     if (w > 0) for (r = 0; r < 6; r++) gp_rect(BAR_X, y0 + BAR_Y + r, w, 1, lgreen[r]);
+}
+/* pausa (START en carrera, como el WR1): el cuadro que se ve oscurecido a la mitad (rectangulo negro semitransparente,
+   B/2 + F/2) con PAUSA encima, con las mismas letras que CARGANDO */
+void vid_pausa(int fb)
+{
+    int sc = 4, y0 = fb ? 256 : 0;
+    dma_wait(); gpu_wait();
+    GP0 = 0xE1000400; GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
+    GP0 = 0x62000000; GP0 = (u32)y0 << 16; GP0 = ((u32)H << 16) | W;
+    gp_text(y0, (W - (5 * 6 * sc - sc)) / 2, 100, "PAUSA", sc, lgrad);
 }

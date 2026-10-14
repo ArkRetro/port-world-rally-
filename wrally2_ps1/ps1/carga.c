@@ -148,6 +148,10 @@ static void pedidos_fuera(void)
 /* primer tramo de sectores que faltan de la seccion k (huecos de hasta GAP sectores se leen de paso: mas barato
    que otra busqueda); 0 si esta entera */
 #define GAP 16
+#define BLOQ_MAX 40                             /* carga parcial (cambio de seccion con la pantalla a la vista, p. ej. la
+                                                   animacion del titulo con la musica): sectores que se cargan bloqueando
+                                                   (480 tiles, ~0,3 s a 2x); lo demas de fondo mientras se ve. En el negro
+                                                   la seccion entera */
 static int rango(int k, int *a, int *b)
 {
     int i, p = -1, q = -1;
@@ -456,7 +460,7 @@ static void bloq_cb(int i, const unsigned char *d)
     if (!bloq_vis && (u16)(T1 - bloq_t0) > LIN_05) { vid_cargando(bloq_fb); bloq_vis = 1; }
     if (bloq_vis && !(bloq_hecho & 3)) vid_cargando_barra(bloq_fb, bloq_hecho, bloq_total);
 }
-int carga_pantalla(u32 clave, int fb)
+int carga_pantalla(u32 clave, int fb, int parcial)
 {
     int k, j, a, b;
     if (lba_me < 0) return -1;
@@ -469,18 +473,23 @@ int carga_pantalla(u32 clave, int fb)
         vid_sec_prot(m[0], m[1]);
     }
     if (rango(k, &a, &b)) {
-        u32 l; int n = 0;
+        u32 l; int n = 0, hechos = 0;
         if (em_on) em_on = 0;                 /* cd_stream la cancela; el codigo sigue pedido */
         bloq_t0 = T1; bloq_vis = 0; bloq_fb = fb; bloq_sec = k; bloq_hecho = 0; bloq_total = (int)idx[k].n;
         vid_carga_ini(k, k == k_tit);
         do {                                  /* tramo a tramo (como mucho uno por sector: no se repite ninguno) */
+            if (parcial && a < BLOQ_MAX && b >= BLOQ_MAX) b = BLOQ_MAX - 1;
+            if (parcial && a >= BLOQ_MAX) break;   /* lo que sale despues (la seccion va por primer cuadro): de fondo */
             bloq_a = a;
             if (cd_stream(lba_me + (int)idx[k].sec + a, b - a + 1, bloq_cb, 1)) { carga_err++; break; }
+            hechos += b - a + 1;
         } while (++n < MAXS && rango(k, &a, &b));
         vid_carga_fin();
         l = (u16)(T1 - bloq_t0); carga_bloq++; carga_bloq_lin += l; if (l > carga_bloq_max) carga_bloq_max = l;
     }
-    for (bg_n = 0, j = 1; j < carga_menus; j++) {
+    bg_n = 0;
+    if (rango(k, &a, &b)) bg_lista[bg_n++] = k;   /* lo que quedo de esta (seccion grande), lo primero de fondo */
+    for (j = 1; j < carga_menus; j++) {
         int q = (k + j) % carga_menus;
         if ((idx[q].clave >> 16) == (clave >> 16) && rango(q, &a, &b)) bg_lista[bg_n++] = q;
     }

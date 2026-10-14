@@ -31,8 +31,10 @@ def rgb5(pal):
     v = np.asarray(pal, np.int64); return np.stack([(v >> 10) & 31, (v >> 5) & 31, v & 31], 1)
 
 def receta(px, pal, efecto=False):
-    """px (16, 16) pens, pal 32 colores del juego -> (indices (16, 16), pens[15] del indice 1-15 (0 = libre),
-    banderas, psnr (None si exacto; inf si solo se fundieron pens del mismo color)). Efecto: indice = pen"""
+    """px (16, 16) pens, pal 32 colores del juego (o varias paletas: los estados que toma en pantalla, p. ej. las
+    flechas de la carrera, que se animan; la fusion minimiza el error sumado en todos) -> (indices (16, 16), pens[15]
+    del indice 1-15 (0 = libre), banderas, psnr (None si exacto; inf si solo se fundieron pens del mismo color)).
+    Efecto: indice = pen"""
     cnt = np.bincount(px.ravel(), minlength=32); cnt[0] = 0
     pens = np.flatnonzero(cnt); fl = 0; psnr = None
     if len(pens) == 0 or pens.max() <= 15:
@@ -41,7 +43,9 @@ def receta(px, pal, efecto=False):
         mapa = np.arange(32) - 16; fl |= ALTA; rec = [k + 16 if cnt[k + 16] else 0 for k in range(1, 16)]
     else:
         assert not efecto, 'celda de efecto con pens > 15'
-        c = rgb5(pal); D = ((c[:, None, :] - c[None, :, :]) ** 2).sum(2)
+        P = np.asarray(pal)
+        if P.ndim == 1: P = P[None]
+        D = sum(((c[:, None, :] - c[None, :, :]) ** 2).sum(2) for c in (rgb5(q) for q in P)) / len(P)
         dest = np.arange(32); act = list(pens); n = cnt.astype(np.int64).copy()
         while len(act) > 15:                        # fusion voraz: minimo error (distancia^2 x pixeles que cambian)
             a = np.array(act); cost = D[a][:, a] * np.minimum(n[a][:, None], n[a][None, :])
@@ -121,6 +125,17 @@ class Paletas:
             cnt[k] = (n + 1, int(self.brillo[j, c]), j)
         return int(self.cuadros[max(cnt.values())[2]])
     def paleta(self, fr, c): return self.p[fr][c * 32:c * 32 + 32].tolist()
+    def estados(self, c, intervalos, n=32):
+        """los estados distintos de la paleta c en los volcados dentro de los intervalos (los mas repetidos, como mucho n;
+        sin los apagados de los fundidos: brillo < 1/4 del mas vivo)"""
+        from collections import Counter
+        m = np.zeros(len(self.cuadros), bool)
+        for a, b in intervalos: m[np.searchsorted(self.cuadros, a):np.searchsorted(self.cuadros, b, 'right')] = True
+        if not m.any(): return [self.paleta(self.elige(c, intervalos), c)]
+        ix = np.flatnonzero(m); bmax = self.brillo[ix, c].max(); cnt = Counter()
+        for i in ix.tolist():
+            if self.brillo[i, c] * 4 >= bmax: cnt[tuple(self.paleta(int(self.cuadros[i]), c))] += 1
+        return [list(k) for k, _ in cnt.most_common(n)]
 
 def cuenta(fns):
     """estadistica por codigo de los BLKLOG: codigo -> [Counter de color, banderas (SPRITE/EFECTO), primer cuadro,
