@@ -12,6 +12,11 @@
      SNDW=fichero            escrituras al GAE1 como el snd.lua de MAME (W cuadro palabra dato mascara; tools/sndcmp.py)
      HUELLA=fichero          huella del estado al entrar en rc_vblank, una linea por llamada (= psxprof2; tools/huella.py)
      BLKLOG=fichero          codigos de tile visibles y nuevos por cuadro (rc/blklog.c; tools/blklog.py)
+     POKE68=dir:valor[:desde|@cuadro],...  palabra del 68000 (hex) fija cada cuadro desde 'desde' (o solo en el cuadro
+                             '@cuadro': p. ej. FEC3C8:1@2000 elige la etapa antes del mapa, como los guiones de MAME)
+     AUTOP=a-b               piloto automatico de a a b: cada AP_STEP (10) cuadros prueba en procesos hijos girar a un lado,
+                             al otro, a ratos o nada durante AP_LOOK (150) cuadros y sigue con lo que mas avanza (FEFD08);
+                             AP_V=1 lo cuenta; al acabar escribe el guion INPUTS que ha seguido (para repetirlo)
      ROMCHK=romres.txt       ROM por bancos como en la PS1 (tools/romstat.py -o): tras la suma del arranque solo el residente
                              y el banco del tramo (FEC3C6/FEC3C8 en carrera y demo); cada lectura fuera es una trampa (se
                              cuenta y se carga el bloque): puerta G-ROM = 0 trampas
@@ -30,6 +35,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #include "rc_rt.h"
 #include "mcs51.h"
 #include "gae1.h"
@@ -119,6 +126,67 @@ static void dump_state(void)
     blk(dumpf, 0x300000, io, 8, 0);
 }
 static u16 W(u32 a) { return *(u16 *)(rc_ram + (a & 0xFFFE)); }
+/* POKE68: palabras del 68000 fijas (cada cuadro desde 'desde') o puestas una vez (@cuadro) */
+static void poke68(void)
+{
+    const char *q = getenv("POKE68");
+    while (q && *q) {
+        long ad = strtol(q, (char **)&q, 16), v = 0, d = 0, una = 0;
+        if (*q == ':') v = strtol(q + 1, (char **)&q, 16);
+        if (*q == ':') d = strtol(q + 1, (char **)&q, 10);
+        else if (*q == '@') { d = strtol(q + 1, (char **)&q, 10); una = 1; }
+        if (una ? frame == d : frame >= d) *(u16 *)(rc_ram + (ad & 0xFFFE)) = (u16)v;
+        if (*q == ',') q++; else break;
+    }
+}
+/* piloto automatico (AUTOP=a-b, como el del WR1): de a a b, cada AP_STEP cuadros se prueba cada candidato (direccion a
+   un lado, al otro, a ratos o nada) en un proceso hijo durante AP_LOOK cuadros y se sigue con el que mas avanza en el
+   tramo (FEFD08, lo lleva la MCU). Los hijos no escriben registros ni volcados */
+static const char *ap_pat[] = {"", "L", "R", "Lh", "Rh", "Lq", "Rq"};
+#define AP_NC 7
+static int ap_child = -1, ap_cur, ap_fd; static long ap_a = -2, ap_b, ap_step, ap_look, ap_eval, ap_from, ap_t0;
+static char ap_out[1 << 16]; static int ap_outn;
+static int ap_progress(void) { return W(0xFD08); }
+static void ap_apply(int c, long fr, long t0)
+{
+    const char *p = ap_pat[c];
+    if (*p && (!p[1] || (fr - t0) % 8 < (p[1] == 'h' ? 4 : 2))) in0 &= p[0] == 'L' ? ~0x08 : ~0x04;
+}
+static void ap_log(long to)
+{
+    const char *p = ap_pat[ap_cur];
+    if (*p && ap_outn < (int)sizeof ap_out - 64)
+        ap_outn += sprintf(ap_out + ap_outn, "%ld-%ld%s:%c,", ap_from, to, p[1] == 'h' ? "%8/4" : p[1] == 'q' ? "%8/2" : "", p[0]);
+}
+static void autop(void)
+{
+    if (ap_a == -2) {
+        const char *q = getenv("AUTOP");
+        ap_a = q ? atol(q) : -1; ap_b = q && strchr(q, '-') ? atol(strchr(q, '-') + 1) : -1; ap_from = ap_a;
+        ap_step = getenv("AP_STEP") ? atol(getenv("AP_STEP")) : 10; ap_look = getenv("AP_LOOK") ? atol(getenv("AP_LOOK")) : 150;
+    }
+    if (ap_a < 0) return;
+    if (ap_child >= 0) {                        /* hijo: su candidato hasta ap_eval, y entonces cuenta cuanto ha avanzado */
+        if (frame >= ap_eval) { int v = ap_progress(); if (write(ap_fd, &v, sizeof v) < 0) {} _exit(0); }
+        ap_apply(ap_child, frame, ap_t0); return;
+    }
+    if (frame >= ap_a && frame < ap_b && frame + ap_look < nframes && (frame - ap_a) % ap_step == 0) {
+        int c, best = ap_cur, bv = -1, fd[AP_NC], v;
+        fflush(NULL);
+        for (c = 0; c < AP_NC; c++) {
+            int pp[2];
+            if (pipe(pp)) { perror("pipe"); exit(1); }
+            if (!fork()) { close(pp[0]); ap_child = c; ap_fd = pp[1]; ap_eval = frame + ap_look; ap_t0 = frame; ap_apply(c, frame, frame); return; }
+            close(pp[1]); fd[c] = pp[0];
+        }
+        for (c = 0; c < AP_NC; c++) { v = -1; if (read(fd[c], &v, sizeof v) < 0) v = -1; close(fd[c]); if (v > bv || (v == bv && c == ap_cur)) { bv = v; best = c; } }
+        while (wait(0) > 0);
+        if (best != ap_cur) { ap_log(frame); ap_cur = best; ap_from = frame; }
+        if (getenv("AP_V")) fprintf(stderr, "cuadro %ld avance %d modo %x: %s\n", frame, ap_progress(), W(0xC298), ap_pat[best]);
+    }
+    if (frame == ap_b) { ap_log(frame); ap_cur = 0; if (ap_outn) ap_out[ap_outn - 1] = 0; fprintf(stderr, "INPUTS=%s\n", ap_out); }
+    if (frame >= ap_a && frame < ap_b) ap_apply(ap_cur, frame, ap_from);
+}
 extern void (*rc_romf_gancho)(u32 a); extern int rc_suma_hecha;
 /* ROMCHK: residente y bancos de romres.txt; la trampa cuenta y carga el bloque de la ROM entera (rombe en rc_rom) */
 static struct { u16 t6, t8; u32 a0, a1; } rchk_b[2048]; static int rchk_n, rchk_on, rchk_suma; static u16 rchk_t6 = 0xFFFF, rchk_t8;
@@ -348,7 +416,7 @@ void rc_vblank(void)
     /* vblanks pasados desde la IRQ anterior (con la IRQ enmascarada mas de un cuadro, MAME los cuenta todos) */
     long n = 1 + (RC_REL > 0 ? RC_REL / CYC_FRAME : 0);
     static long dsum;
-    huella();
+    if (ap_child < 0) huella();
     frame += n; rc_cuadro = frame;
 #ifdef ROMSTAT
     rc_romstat_cuadro(frame);
@@ -361,17 +429,18 @@ void rc_vblank(void)
     cmp_mem();
 #endif
     /* con la IRQ atendida tarde (enmascarada en el vblank) el estado no es el del vblank: sin volcado */
-    if (dump_a >= 0 && frame >= dump_a && frame <= dump_b && (frame - dump_a) % dump_p == 0 && rc_r.cyrel < 2000) dump_state();
-    if (logf || getenv("LOG")) log_line();
-    if (getenv("BLKLOG")) rc_blklog(frame, vram_vb);
+    if (ap_child < 0 && dump_a >= 0 && frame >= dump_a && frame <= dump_b && (frame - dump_a) % dump_p == 0 && rc_r.cyrel < 2000) dump_state();
+    if (ap_child < 0 && (logf || getenv("LOG"))) log_line();
+    if (ap_child < 0 && getenv("BLKLOG")) rc_blklog(frame, vram_vb);
     rchk_cuadro();
     memcpy(vram_vb, rc_vram, 0x10000);
     /* las del guion de este cuadro: MAME las fija justo tras el frame_done y la IRQ6 ya las ve (el volcado y el
        registro de este cuadro llevan las de antes, como los suyos) */
-    inputs(frame); rc_set_io(in0, in1, in2, in3);
+    inputs(frame); poke68(); autop(); rc_set_io(in0, in1, in2, in3);
     if (getenv("V") && frame % 100 < n) { fprintf(stderr, "cuadro %ld pc %06X ciclos/cuadro %ld\n", frame, rc_r.pc, dsum / 100); dsum = 0; }
     dsum += CYC_FRAME + RC_REL;
     if (frame >= nframes) {
+        if (ap_child >= 0) _exit(0);
         if (dumpf) fclose(dumpf);
         if (logf) fclose(logf);
         { extern unsigned long mcu_repes, mcu_trabajos; fprintf(stderr, "fin: %ld cuadros; MCU: %lu trabajos, %lu repetidos\n", frame, mcu_trabajos, mcu_repes); }

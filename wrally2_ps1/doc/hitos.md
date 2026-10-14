@@ -75,7 +75,8 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - Usuario (prueba 1): el attract entero sin sonido
 
 ## H4 Datos de carrera (M; solo PC)
-- [ ] Piloto del banco por FEFD08 con `fork`; `POKE68` del reloj
+- [x] Piloto del banco por FEFD08 con `fork`; `POKE68` del reloj (`AUTOP`, `POKE68` en `rc_host`: Portugal entero sin
+  guion, los 3 tramos; no hace falta congelar el reloj)
 - [ ] >= 6 lineas completas por tramo x estilos, + una por coche (dia y noche); guiones en `escenarios/`
 - [ ] Busqueda de la posicion maestra del coche (decide el barrido)
 - [ ] `paquetes.py` con cierre (plano entero, familias de 64, poses del coche)
