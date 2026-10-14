@@ -511,12 +511,12 @@ static int b_libre(int propia)
     for (; ba_hi >= lo; ba_hi--) if (hcode[ba_hi] == 0xFFFF) return ba_hi;
     return -1;
 }
-/* victima (solo en el reparto B): libre; muerto (en la demo, FEFD08 ya paso su muerte, tambien los fijos); rotativo
+/* victima (solo en el reparto B): libre; muerto (en la demo y la carrera, FEFD08 ya paso su muerte, tambien los fijos); rotativo
    no visto en 60 cuadros; si no, el VO aun sin dibujar que mas tarde muere (el que hara falta mas tarde: luego vuelve
    por emergencia); si no, el rotativo mas viejo. Nunca uno dibujado en este cuadro */
 static int b_victima(int propia)
 {
-    int k, h, best = -1, nbest = -1, nmu = -1, lim = propia ? NBCL : NB, dem = *(const u16 *)(rc_ram + 0xC298) == 5;
+    int k, h, best = -1, nbest = -1, nmu = -1, lim = propia ? NBCL : NB, dem = *(const u16 *)(rc_ram + 0xC298) == 5 || *(const u16 *)(rc_ram + 0xC298) == 1;
     u16 av = *(const u16 *)(rc_ram + 0xFD08), bage = 0, age;
     for (k = 0; k < NB; k++) {
         h = bhand; bhand = bhand + 1 < NB ? bhand + 1 : 0;
@@ -584,8 +584,13 @@ static int b_l2(u32 j)
 
 /* ---- repartos */
 void vid_lay_a(void)
-{   /* vuelta a los menus: la VRAM de los bloques ya no vale para nada */
+{   /* vuelta a los menus: la VRAM de los bloques ya no vale para nada; desde el titulo (reparto 1) solo se vacian los
+   huecos B de la prelectura (los de A siguen ahi y carga.c los cuenta como cargados) */
     int h;
+    if (lay == 1) {
+        for (h = BT_LO; h < BT_HI; h++) { hcode[h] = 0xFFFF; hstamp[h] = 0xFFFF; hsec[h] = 0xFF; hfl[h] = 0; }
+        lay = 0; return;
+    }
     ts_vacia();
     for (h = 0; h < NB; h++) { hcode[h] = 0xFFFF; hstamp[h] = 0xFFFF; hsec[h] = 0xFF; hfl[h] = 0; }
     lay = 0; hand = 0;

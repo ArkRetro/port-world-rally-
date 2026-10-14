@@ -6,7 +6,7 @@ los ficheros de la SPU de work/cd/:
   SPUFIJO.BIN  bloque de silencio (0x1000) + los 33 efectos, el motor comun y la musica corta: se sube a 0x1000
   SPUTIT.BIN, SPUDEMO0-3.BIN, SPUMENU.BIN, SPUCAR0-2.BIN: la zona variable, se suben a 0x5D5E0; SPUS7E.BIN al
   final de la RAM (alineado a 64), junto a SPUMENU (S7C) o al coche
-Y work/snd_tab.c: por trozo, clave (banco << 16 | final) -> direccion en la SPU | fichero << 24, y bloques; ordenado por
+SPU.BIN: todos seguidos, cada uno desde un sector (el que va al CD). Y work/snd_tab.c: por trozo, clave (banco << 16 | final) -> direccion en la SPU | fichero << 24, y bloques; ordenado por
 clave (busqueda binaria). Las demos: 0 Portugal (0xA2), 1 Safari (0xA3), 2 Corcega (0xA4), 3 RAC (0xA5)."""
 import os, sys, struct, subprocess, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -80,12 +80,23 @@ def main():
     todos = {(i, k) for i in T for k in range(len(T[i]))}
     fuera = sorted(set(i for i, k in todos) - set(FIJO) - set(x for _, l in VARIABLES for x in l))
     print('muestras fuera de los ficheros:', ' '.join('S%02X' % i for i in fuera))
+    # SPU.BIN: los 11 ficheros seguidos, cada uno desde un sector (el directorio raiz del CD tiene que dejar SYSTEM.CNF y
+    # el EXE en su primer sector); su sector y su largo van a snd_tab.c (snd_fsec, snd_flen; 0 = SPUFIJO)
+    noms = ['SPUFIJO'] + [n for n, _ in VARIABLES]; fsec = []; flen = []; todo = bytearray()
+    for n in noms:
+        d = open(work('cd/%s.BIN' % n), 'rb').read(); fsec.append(len(todo) // 2048); flen.append(len(d))
+        todo += d + bytes(-len(d) % 2048)
+    open(work('cd/SPU.BIN'), 'wb').write(todo)
+    print('SPU.BIN %d B (%d ficheros)' % (len(todo), len(noms)))
     with open(work('snd_tab.c'), 'w') as f:
         f.write('/* generado por tools/sndwr2.py: trozos del GAE1 en la SPU (uso personal) */\n')
         f.write('#define SND_N %d\n' % len(ent))
         f.write('const unsigned snd_key[SND_N] = {%s};\n' % ', '.join('0x%x' % k for k, _, _ in ent))
         f.write('const unsigned snd_val[SND_N] = {%s};\n' % ', '.join('0x%x' % v for _, v, _ in ent))
         f.write('const unsigned short snd_nblk[SND_N] = {%s};\n' % ', '.join(str(b) for _, _, b in ent))
+        f.write('#define SND_NF %d\n' % len(noms))
+        f.write('const unsigned snd_fsec[SND_NF] = {%s};\n' % ', '.join(map(str, fsec)))
+        f.write('const unsigned snd_flen[SND_NF] = {%s};\n' % ', '.join(map(str, flen)))
     print('snd_tab.c: %d trozos' % len(ent))
 
 if __name__ == '__main__': main()

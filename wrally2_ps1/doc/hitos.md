@@ -99,8 +99,15 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - Usuario: nada
 
 ## H5 Partidas completas, carrera sin CD, sin sonido (L)
-- [ ] `STkk.PAK`, `GAMEc.PAK`
-- [ ] Carga de fondo del mapa a 2x con puntos de sondeo; `CARGA_1X`; CARGANDO solo si falta
+- [x] `STkk.PAK`, `GAMEc.PAK` en la PS1 (solo `GAMEN`): la carrera con el renderizador B, como la demo (paquete 4 de
+  carga.c = el `STkk.PAK` de la clave FEC3C6/FEC3C8). La clave cambia al entrar en el mapa del tramo (0xB): en su primer
+  cuadro, el mapa bloqueando; durante el mapa, de fondo, GAMEN, el VO, la ROM y la L2 (listos ~100 cuadros antes de la
+  carrera); en el negro de antes de la carrera lo que falte. `SPU*.BIN` juntos en `SPU.BIN` (el directorio raiz tiene
+  que dejar SYSTEM.CNF y el EXE en su primer sector). Portugal (2 tramos, 6 885 cuadros de carrera): 0 trampas,
+  G-ESTADO y G-SNDLOG iguales, ~15 000 faltas (casi todas en la 2.a mitad del tramo 1: lineas fuera de los paquetes,
+  puerta G-TILES de H4). Arreglado de paso: al salir del titulo (reparto 1) se vaciaban todos los huecos A (32 000
+  faltas en la pantalla de START)
+- [~] Carga de fondo del mapa a 2x con puntos de sondeo; `CARGA_1X`; CARGANDO solo si falta
 - [ ] Politica de carrera: prelectura por avance, muerte por avance, victimas con copia en L2 primero
 - [ ] Proxies y lecturas de emergencia; pantalla de cifras L2
 - [ ] Cargas de §7.2 en todos los menus; pausa con START

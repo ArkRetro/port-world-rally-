@@ -1,5 +1,5 @@
 /* Sonido del World Rally 2 en la PS1 (diseno 5.2): cada trozo del GAE1 es un sample PS-ADPCM en la RAM de la SPU
-   (tools/sndwr2.py: SPUFIJO.BIN en 0x1000, la zona variable en 0x5D5E0, tabla work/snd_tab.c por clave banco/final).
+   (tools/sndwr2.py: SPU.BIN con SPUFIJO en 0x1000 y los de la zona variable en 0x5D5E0, tabla work/snd_tab.c por clave banco/final).
    El modelo del GAE1 (rc/gae1.c, con el tiempo del 68000) manda sucesos: empieza el trozo t (KON con su direccion y,
    un cuadro despues, repeticion = silencio), el juego encola el otro trozo (repeticion = ese trozo, pero solo cuando
    la voz ya toca el anterior: calendario por voz con un cuadro de guarda), pasa al otro trozo (la SPU lo hizo sola
@@ -25,8 +25,8 @@ int snd_pide, snd_modo_tit;
 static u16 tono = 0x2DF, t_key;
 /* ficheros de la SPU (el numero es snd_val >> 24, tools/sndwr2.py) y lo que ocupan en la RAM de la SPU */
 #define NF 11
-static const char *const nom[NF] = {"SPUFIJO.BIN", "SPUTIT.BIN", "SPUDEMO0.BIN", "SPUDEMO1.BIN", "SPUDEMO2.BIN", "SPUDEMO3.BIN",
-                                    "SPUMENU.BIN", "SPUS7E.BIN", "SPUCAR0.BIN", "SPUCAR1.BIN", "SPUCAR2.BIN"};
+/* 0 SPUFIJO, 1 SPUTIT, 2-5 SPUDEMO0-3, 6 SPUMENU (S7C), 7 SPUS7E, 8-10 SPUCAR0-2: seguidos en SPU.BIN (snd_fsec) */
+static int lba_spu = -1;
 static u32 lo[NF], hi[NF];
 static u16 cargado;                             /* bit f: el fichero f esta en la SPU */
 static int ult_coche, no_pide;
@@ -117,12 +117,12 @@ static void sector_spu(int i, const unsigned char *d)
     u32 r = carga_n - (u32)i * 2048; if (r > 2048) r = 2048;
     spu_dma_write(carga_dir + i * 2048, d, (int)((r + 63) & ~63u));
 }
-int snd_cargar(const char *nombre, unsigned addr)
-{
-    int lba, n;
-    if (cd_find(nombre, &lba, &n)) return 0;
-    carga_dir = addr; carga_n = (u32)n;
-    return !cd_stream(lba, (n + 2047) / 2048, sector_spu, 1);
+static int carga_fich(int f, unsigned addr)
+{   /* el fichero f de SPU.BIN a la RAM de la SPU, bloqueando */
+    int sz;
+    if (lba_spu < 0 && cd_find("SPU.BIN", &lba_spu, &sz)) { lba_spu = -1; return 0; }
+    carga_dir = addr; carga_n = snd_flen[f];
+    return !cd_stream(lba_spu + (int)snd_fsec[f], (int)(snd_flen[f] + 2047) / 2048, sector_spu, 1);
 }
 /* el fichero pedido por trozo_dir, bloqueando (el juego congelado; las voces a tono 0 lo pone quien llama). Como mucho
    una carga asi cada 60 cuadros (dos ficheros que se pisan pedidos a la vez no se turnan sin fin); snd_precarga (main.c,
@@ -144,7 +144,7 @@ static void carga_f(int f)
     for (g = 1; g < NF; g++) if (g != f && lo[g] < hi[f] && lo[f] < hi[g]) cargado &= (u16)~(1u << g);
     for (ch = 0; ch < 7; ch++) if (voz[ch].act && voz[ch].dir >= lo[f] && voz[ch].dir < hi[f]) { VOICE(ch, 0) = 0; VOICE(ch, 2) = 0; }
     t0 = t1_get();
-    if (!snd_cargar(nom[f], lo[f])) return;
+    if (!carga_fich(f, lo[f])) return;
     snd_carga_lin += (u16)(t1_get() - t0); snd_cargas++;
     cargado |= (u16)(1u << f); ult_carga = cuadro;
     if (f >= 8) ult_coche = f;
@@ -186,6 +186,6 @@ void snd_init(void)
         if (e > hi[f]) hi[f] = e;
     }
     lo[0] = SIL;                                         /* SPUFIJO lleva el silencio delante */
-    cargado = snd_cargar(nom[0], SIL) ? 1 : 0;
-    if (snd_cargar(nom[1], lo[1])) cargado |= 2;         /* el titulo: lo primero que suena */
+    cargado = carga_fich(0, SIL) ? 1 : 0;
+    if (carga_fich(1, lo[1])) cargado |= 2;         /* el titulo: lo primero que suena */
 }

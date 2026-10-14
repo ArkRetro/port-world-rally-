@@ -136,14 +136,14 @@ static void pantalla(u32 modo)
     if (ped) modo_ped = ped;
     if (modo == 0 && modo_ant != 0) {
         snd_pausa(1);                           /* las cargas bloqueantes con las voces quietas (diseno 5.2) */
-        if (modo_ped == 9 || modo_ped == 5) carga_demo_negro(modo_ped, fb ^ 1);
+        if (modo_ped == 0xB) ;                  /* mapa del tramo: la clave cambia al entrar en el (carga_demo_modo) */
+        else if (modo_ped == 9 || modo_ped == 5 || modo_ped == 1) carga_demo_negro(modo_ped, fb ^ 1);
         else { carga_demo_fin(); carga_pantalla(modo_ped << 16 | f146, fb ^ 1); }
         precarga_spu(modo_ped);
-#ifdef R1
-        if (modo_ped == 1) carga_rom_tramo(RW(0xFEC3C6), RW(0xFEC3C8));   /* el banco de ROM del tramo */
-#endif
         snd_pausa(0);
-    } else if (modo == 9 || modo == 5) carga_demo_modo(modo);
+    } else if (modo == 9 || modo == 5 || modo == 0xB || modo == 1) {
+        snd_pausa(1); carga_demo_modo(modo, fb ^ 1); snd_pausa(0);   /* recarga si no hubo negro (bloquea) */
+    }
     else if (modo != 0 && modo != 1 && (modo != modo_ant || f146 != f146_ant)) {
         int tit = modo == 3 && f146 == 0x16;
         snd_pausa(1);
@@ -175,15 +175,14 @@ void rc_vblank(void)
     pantalla(modo);
 #ifdef R1
     if (rc_suma_hecha) carga_rom_suma();
-    if (modo == 1) { snd_pausa(1); carga_rom_tramo(RW(0xFEC3C6), RW(0xFEC3C8)); snd_pausa(0); }   /* si no se pudo en el negro */
 #endif
     b = vid_lay() == 2;                         /* mapa de la demo y demo (y sus negros): formato B */
     if (draw) {
-        if (menu) vid_paletas();
+        if (menu || b) vid_paletas();
         l_begin();
         vid_marco(fb);
-        if (menu) { if (b) vid_b(); else vid_menu(); lvid_acc += vid_lineas; carga_poll(); }
-        else { plano(); sprites(); }
+        if (b || menu) { if (b) vid_b(); else vid_menu(); lvid_acc += vid_lineas; carga_poll(); }
+        else { plano(); sprites(); }            /* carrera sin su paquete: mosaico */
         if (show) {
             digits(4, 4, modo, 2); digits(28, 4, nframe, 6); digits(84, 4, l68, 3); digits(116, 4, ldraw, 3);
             digits(148, 4, skips, 4); digits(188, 4, fps_mil, 5); digits(236, 4, (0x801FFFF0u - 16384u - (u32)__bss_end) >> 10, 4);
