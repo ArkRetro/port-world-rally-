@@ -1,6 +1,7 @@
 #!/bin/sh
-# EXE de la PS1 del World Rally 2 (hito H3: ROM dentro del EXE, menus con tiles A del CD, carrera y demo en mosaico, sin
-# sonido) y la imagen de CD con TILESA.BIN y MENUS.PAK (work/cd/, o MENUS=otro fichero; si no estan, sin ellos).
+# EXE de la PS1 del World Rally 2 (hito H3: ROM dentro del EXE, menus con tiles A y demo con tiles B del CD, carrera en
+# mosaico, sin sonido) y la imagen de CD con MENUS.PAK, DEMO0-3.PAK, TILES.BIN y TILESA.BIN (work/cd/, o MENUS=otro
+# fichero; si no estan, sin ellos).
 # Requiere banco.sh hecho (work/prog.bin, work/mcu.bin, rc/wr2_rc.c, rc/mcu_rc.c), mipsel-linux-gnu-gcc, NUGGET (ruta
 # de pcsx-redux/src/mips/nugget, por sus .ld) y MKPSXISO. Lo generico se usa del port del WR1 por ruta (crt0.s, cd.c;
 # CDOPT=-DCD_DMA para la copia del FIFO por DMA).
@@ -14,9 +15,9 @@ python3 -c "d = open('../work/mcu.bin', 'rb').read(); open('mcu_tab.bin', 'wb').
 # la ROM del 68000 hasta 0xDD7FF (lo de detras no lo lee nadie) con las palabras en el orden de la PS1
 python3 -c "import sys; d = open('../work/prog.bin', 'rb').read()[:0xDD800]; o = bytearray(len(d)); o[0::2] = d[1::2]; o[1::2] = d[0::2]; open('rom_sw.bin', 'wb').write(o)"
 mkdir -p cd && cp SYSTEM.CNF cd/
-# ficheros del CD (enlaces: no se copian 5 MB): MENUS.PAK antes que TILESA.BIN (orden de uso)
+# ficheros del CD (enlaces: no se copian 5 MB), en orden de uso
 MAS=""
-for f in MENUS.PAK TILESA.BIN; do
+for f in MENUS.PAK DEMO0.PAK DEMO1.PAK DEMO2.PAK DEMO3.PAK TILES.BIN TILESA.BIN; do
   src=../work/cd/$f; [ "$f" = MENUS.PAK ] && [ -n "$MENUS" ] && src=$MENUS
   rm -f cd/$f
   if [ -f "$src" ]; then ln -f "$src" cd/$f 2>/dev/null || cp "$src" cd/$f; MAS="$MAS $f"; else echo "sin $src: la imagen va sin $f"; fi

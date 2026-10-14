@@ -1,11 +1,12 @@
-/* World Rally 2 -> PlayStation. Hito H3 (primera parte): el programa del 68000 recompilado (rc68.py) y la MCU
-   (trabajo traducido y el resto en C) corriendo en la PS1 con la ROM entera dentro del EXE (configuracion R0), sin
-   sonido. Imagen: en los menus (todo lo que no es carrera ni demo: FEC298 distinto de 1 y 5) la de verdad con tiles A
-   de 8 bpp (video.c) traidos del CD (carga.c: MENUS.PAK por pantalla y emergencias de TILESA.BIN); en carrera y demo
-   sigue el mosaico de H2 (cada tile un cuadrado del color de su paleta). Cifras arriba: modo del juego (FEC298),
-   cuadro, lineas de video del 68000 y del dibujo por cuadro (263 = un cuadro entero), cuadros saltados, cuadros por
-   segundo x1000, KB libres de RAM, faltas de tiles en el cuadro, sectores leidos del CD y lineas del dibujo de los
-   menus (video.c). Uso personal. */
+/* World Rally 2 -> PlayStation. Hito H3: el programa del 68000 recompilado (rc68.py) y la MCU (trabajo traducido y
+   el resto en C) corriendo en la PS1 con la ROM entera dentro del EXE (configuracion R0), sin sonido. Imagen: en los
+   menus la de verdad con tiles A de 8 bpp (video.c) traidos del CD (carga.c: MENUS.PAK por pantalla y emergencias de
+   TILESA.BIN); en el mapa de la demo y la demo (FEC298 9 y 5) con tiles B de 4 bpp y CLUT por hueco (DEMOr.PAK,
+   prelectura en el titulo, emergencias de TILES.BIN); en carrera (1) sigue el mosaico de H2 (cada tile un cuadrado
+   del color de su paleta). Cifras arriba: modo del juego (FEC298), cuadro, lineas de video del 68000 y del dibujo por
+   cuadro (263 = un cuadro entero), cuadros saltados, cuadros por segundo x1000, KB libres de RAM, faltas de tiles en
+   el cuadro, sectores leidos del CD y lineas del dibujo de video.c; en B, otra fila: huecos fijos y rotativos
+   ocupados, subidas de la L2, emergencias, lineas del ultimo negro antes del mapa y de la demo. Uso personal. */
 #include "../rc/rc_rt.h"
 #include "../rc/mcs51.h"
 #include "video.h"
@@ -111,17 +112,27 @@ static u16 RW(u32 a) { return *(const u16 *)(rc_ram + (a & 0xFFFE)); }
    (FEC29C, el ultimo valor no nulo) con el FEC146 de ahora; si la clave no esta (FEC146 cambia al entrar), en el
    primer cuadro del modo nuevo (la pantalla aun no se ha visto: sale un poco mas tarde). Tambien al cambiar FEC146
    dentro de un modo (logo -> fotos -> titulo) si su seccion no esta ya. El juego esta congelado mientras tanto */
+/* Demo: en el titulo (3/16) empieza la prelectura de la demo siguiente (FEC3C6 + 1: FEC3C6 cambia al entrar en el
+   mapa); los negros antes del mapa y de la demo pasan al reparto B y cargan lo que falte; al volver a un menu, A */
 static void pantalla(u32 modo)
 {
     u32 f146 = RW(0xFEC146), ped = RW(0xFEC29C);
     if (ped) modo_ped = ped;
-    if (modo == 0 && modo_ant != 0) carga_pantalla(modo_ped << 16 | f146, fb ^ 1);
-    else if (modo != 0 && modo != 1 && modo != 5 && (modo != modo_ant || f146 != f146_ant)) carga_pantalla(modo << 16 | f146, fb ^ 1);
+    if (modo == 0 && modo_ant != 0) {
+        if (modo_ped == 9 || modo_ped == 5) carga_demo_negro(modo_ped, fb ^ 1);
+        else { carga_demo_fin(); carga_pantalla(modo_ped << 16 | f146, fb ^ 1); }
+    } else if (modo == 9 || modo == 5) carga_demo_modo(modo);
+    else if (modo != 0 && modo != 1 && (modo != modo_ant || f146 != f146_ant)) {
+        int tit = modo == 3 && f146 == 0x16;
+        if (!tit) carga_demo_fin();
+        carga_pantalla(modo << 16 | f146, fb ^ 1);
+        if (tit) carga_demo_titulo((RW(0xFEC3C6) + 1) & 3);
+    }
     modo_ant = modo; f146_ant = f146;
 }
 void rc_vblank(void)
 {
-    u16 pad, t0; int draw = 1, menu; u32 modo;
+    u16 pad, t0; int draw = 1, menu, b; u32 modo;
     l68_acc += (u16)(T1 - lastv);
     while (D2_CHCR & (1 << 24)) carga_poll();   /* la lista anterior aun en la GPU: sondear mientras (hasta 10 ms) */
     carga_atiende();
@@ -133,18 +144,23 @@ void rc_vblank(void)
     t0 = T1;
     rc_snd_vblank();
     mcu_cuadro(rc_ram, &rc_mcu);
-    modo = RW(0xFEC298); menu = modo != 1 && modo != 5;
+    modo = RW(0xFEC298); menu = modo != 1;
     pantalla(modo);
+    b = vid_lay() == 2;                         /* mapa de la demo y demo (y sus negros): formato B */
     if (draw) {
         if (menu) vid_paletas();
         l_begin();
         vid_marco(fb);
-        if (menu) { vid_menu(); lvid_acc += vid_lineas; carga_poll(); }
+        if (menu) { if (b) vid_b(); else vid_menu(); lvid_acc += vid_lineas; carga_poll(); }
         else { plano(); sprites(); }
         if (show) {
             digits(4, 4, modo, 2); digits(28, 4, nframe, 6); digits(84, 4, l68, 3); digits(116, 4, ldraw, 3);
             digits(148, 4, skips, 4); digits(188, 4, fps_mil, 5); digits(236, 4, (0x801FFFF0u - 16384u - (u32)__bss_end) >> 10, 4);
             digits(272, 4, vid_faltas_cuadro, 3); digits(300, 4, carga_sectores, 5); digits(344, 4, lvid, 3);
+            if (b) {
+                digits(4, 20, vid_b_fijos, 4); digits(44, 20, vid_b_rot, 4); digits(84, 20, vid_b_l2, 5); digits(132, 20, carga_emerg, 5);
+                digits(180, 20, carga_dm_neg[0], 4); digits(220, 20, carga_dm_neg[1], 4);
+            }
         }
         carga_atiende();
         l_send();
