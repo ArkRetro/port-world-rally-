@@ -171,7 +171,11 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
    comprueban que caben enteros). La VRAM deja fuera 0x202880-0x2028FF (registros del GAE1 desde 0x202890): esas
    escrituras van por el acceso general */
 #define RG_ram(a) (((a) >> 16) == 0xFE)
-#define RG_rom(a) 0                      /* la ROM va siempre por rc_romtab (rc_romp) */
+/* ROM con region prevista: el bloque cargado (rc_romtab) queda en rc_romb como base sesgada (RB_rom + a = el byte);
+   la comprobacion deja la base puesta antes del acceso (el ?: lo ordena). Un bloque de movem/bucle rapido pide ademas
+   que el ultimo byte este en el mismo tramo (misma base sesgada: contiguo) */
+static u8 *rc_romb;
+#define RG_rom(a) (((a) >> 20) == 0 && (rc_romb = rc_romtab[((a) >> 8) & 0xFFF]) != 0)
 #define RG_pal(a) (((a) >> 13) == 0x108)
 #define RG_vram(a) (((a) >> 16) == 0x20 && ((a) & 0xFF80) != 0x2880)
 #define RG_vregs(a) (((a) >> 12) == 0x218)
@@ -181,12 +185,12 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
 #define RO_vram(a) ((a) & 0xFFFF)
 #define RO_vregs(a) ((a) & 0xFFF)
 #define RB_ram RAMB
-#define RB_rom ROMB
+#define RB_rom rc_romb
 #define RB_pal rc_pal
 #define RB_vram rc_vram
 #define RB_vregs rc_vregs
 #define RBO_ram RAMB
-#define RBO_rom ROMB
+#define RBO_rom rc_romb
 #define RBO_pal RC_OPQ(rc_pal)
 #define RBO_vram RC_OPQ(rc_vram)
 #define RBO_vregs RC_OPQ(rc_vregs)
@@ -211,8 +215,13 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
 #define WRP8(r, a, v, pc) do { if (RG_##r(a)) MB(RB_##r, RO_##r(a)) = (u8)(v); else rc_wrg8(a, v, pc); } while (0)
 #define WRP16(r, a, v, pc) do { if (RG_##r(a)) MW(RB_##r, RO_##r(a)) = (u16)(v); else rc_wrg16(a, v, pc); } while (0)
 #define WRP32(r, a, v, pc) do { if (RG_##r(a)) SETL(RBO_##r + RO_##r(a), 0, v); else rc_wrg32(a, v, pc); } while (0)
-/* el final del bloque tambien en la region (la VRAM tiene el hueco del GAE1 dentro) */
-#define RBLK(r, a, n) (RG_##r(a) && RO_##r(a) <= RS_##r - (n) && RG_##r((a) + (n) - 1))
+/* el final del bloque tambien en la region (la VRAM tiene el hueco del GAE1 dentro; la ROM, en el mismo tramo) */
+#define RGE_ram(a, n) RG_ram((a) + (n) - 1)
+#define RGE_pal(a, n) RG_pal((a) + (n) - 1)
+#define RGE_vram(a, n) RG_vram((a) + (n) - 1)
+#define RGE_vregs(a, n) RG_vregs((a) + (n) - 1)
+#define RGE_rom(a, n) (rc_romb == rc_romtab[(((a) + (n) - 1) >> 8) & 0xFFF])
+#define RBLK(r, a, n) (RG_##r(a) && RO_##r(a) <= RS_##r - (n) && RGE_##r(a, n))
 /* long con lecturas siempre alineadas a 4 en el perfil: una sola lectura de 32 bits (si no, el acceso general) */
 #define RDA32(r, a) ((RG_##r(a) && !((a) & 2)) ? MLA(RBO_##r + RO_##r(a), 0) : rc_rdg32(a))
 #endif
