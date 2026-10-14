@@ -61,7 +61,8 @@ void rc_set_io(u16 in0, u16 in1, u16 in2, u16 in3)
 /* ---- GAE1: sus registros viven en la VRAM, en 0x2890 (lo que el juego lee). Las muestras pasan con el reloj del
    68000: en cada escritura se avanza hasta el momento de la instruccion (rc_r.cyrel, ciclos hasta el proximo vblank) y
    al acabar el cuadro hasta el final. 7 812,5 muestras por segundo a 59,1 cuadros: 132 o 133 por cuadro */
-static u32 snd_acu, snd_nfr, snd_hecho;
+static u32 snd_acu, snd_nfr, snd_hecho, snd_dadas;
+static void snd_avanza(u32 n) { gae1_avanza(n); snd_dadas += n; }
 static void snd_cuadro_nuevo(void) { snd_acu += 7812500; snd_nfr = snd_acu / 59100; snd_acu %= 59100; snd_hecho = 0; }
 static void snd_al_dia(void)
 {
@@ -70,15 +71,22 @@ static void snd_al_dia(void)
     if (pos < 0) pos = 0;
     if (pos > CYC_FRAME) pos = CYC_FRAME;
     obj = snd_nfr * (u32)pos / CYC_FRAME;          /* <= 133 x 219 966: cabe en 32 bits (sin division de 64 en la PS1) */
-    if (obj > snd_hecho) { gae1_avanza(obj - snd_hecho); snd_hecho = obj; }
+    if (obj > snd_hecho) { snd_avanza(obj - snd_hecho); snd_hecho = obj; }
 }
-/* la plataforma: paso un cuadro mas de tiempo real sin cuadro del juego (cuadro lento; la SPU no espera) */
-static u32 snd_acu2;
-void rc_snd_cuadro_extra(void) { u32 n; snd_acu2 += 7812500; n = snd_acu2 / 59100; snd_acu2 %= 59100; gae1_avanza(n); }
+/* la plataforma (PS1): muestras de 7 812,5 Hz de tiempo real hasta este vblank. Con rc_snd_real_on el modelo va a
+   tiempo real como el chip de la placa (la SPU toca a 7 812,5 Hz y no espera): en cada vblank se pone al dia con el
+   reloj y dentro del cuadro avanza con el ritmo de un vblank (130 o 131); si no (banco), 59,1 cuadros por segundo */
+u32 rc_snd_real; int rc_snd_real_on;
 /* al tomar la IRQ del vblank (antes de que el juego lea los registros) */
 void rc_snd_vblank(void)
 {
-    if (snd_nfr > snd_hecho) gae1_avanza(snd_nfr - snd_hecho);
+    if (rc_snd_real_on) {
+        s32 f = (s32)(rc_snd_real - snd_dadas);
+        if (f > 0) snd_avanza((u32)f);
+        snd_acu += 7812500; snd_nfr = snd_acu / 59826; snd_acu %= 59826; snd_hecho = 0;
+        return;
+    }
+    if (snd_nfr > snd_hecho) snd_avanza(snd_nfr - snd_hecho);
     snd_cuadro_nuevo();
 }
 

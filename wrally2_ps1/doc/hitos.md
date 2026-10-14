@@ -134,11 +134,13 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [x] Puerta G-SNDLOG en la PS1 (`tools/sndps1.py`: `psxprof2` contra `rc_host SNDLOG`): attract 12 000 cuadros, 46 comienzos y 17 cambios
   de trozo; partida de Portugal 10 700 cuadros, 170 comienzos y 37 cambios: mismo canal y trozo, comienzos en el mismo
   cuadro y cambios a +0-2 cuadros, ningun cambio pasando por el silencio; G-ESTADO igual con sonido
-- [x] Modelo del GAE1 a tiempo real: en los cuadros lentos (mas de un vblank) avanza tambien los vblank de mas (sin las
-  pausas de las cargas), como el chip de la placa; si no, la SPU (que no espera) llegaba al final de los trozos antes de
-  que el juego encolara el siguiente (audio entrecortado a ~52 cuadros/s). La huella se separa del banco en los cuadros
-  lentos: G-ESTADO y G-SNDLOG se pasan con `MAINOPT=-DSND_JUEGO` (attract y Portugal iguales). Muestras: se leian de los
-  graficos (faltaba 0x100000); ahora SNR 24-25 dB frente a la ROM
+- [x] Modelo del GAE1 y SPU con el mismo reloj (tiempo real): el modelo avanza las muestras de 7 812,5 Hz que tocan por
+  las lineas del temporizador 1 (sin las pausas de las cargas) y la SPU toca a 0x2D6. Con el modelo por cuadros y la SPU
+  escalada a 59,83 cuadros/s se separaban en cuanto el juego iba mas lento (o el emulador contaba otro ritmo): audio
+  entrecortado y, en el titulo, la repeticion se ponia al silencio antes de que la SPU acabara el primer trozo (se perdia
+  S71). psxprof2: todos los cambios de trozo saltan al siguiente, ninguno por el silencio. G-ESTADO y G-SNDLOG se pasan
+  con `MAINOPT=-DSND_JUEGO` (por cuadros, como el banco): attract y Portugal iguales. Muestras: se leian de los graficos
+  (faltaba 0x100000); ahora SNR 24-25 dB frente a la ROM
 - [ ] Puerta G-SON: 0 huecos/saltos; deriva <= 1 cuadro en 60 s; `cortes.py` sin cortes nuevos
 - Usuario (prueba 3): el juego completo con sonido
 

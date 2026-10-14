@@ -23,7 +23,7 @@ void rc_romf(u32 a);
 void rc_rom_mapa(u32 a0, u32 a1, u8 *p);   /* rc_mem.c: bloques [a0, a1) -> p + (a - a0); p = 0 los quita */
 void rc_rom_residente(const u8 *rom);        /* rc_mem.c: los tramos residentes de una ROM contigua a rc_romres y a la tabla */
 void rc_rom_res_mapa(void);                  /* rc_mem.c: los tramos de rc_romres otra vez a la tabla */
-void rc_snd_cuadro_extra(void);              /* rc_mem.c: el GAE1 avanza un cuadro de tiempo real mas */
+extern u32 rc_snd_real; extern int rc_snd_real_on;   /* rc_mem.c: muestras del GAE1 de tiempo real (lo pone la plataforma) */
 extern int rc_suma_hecha;                    /* rc_mem.c: la suma de la ROM del arranque acabo (PC 0x2616) */
 extern void (*rc_romf_gancho)(u32 a);
 /* alineadas tambien en la declaracion: si no, gcc hace los accesos de 16 bits a direccion fija byte a byte */

@@ -166,21 +166,19 @@ void rc_vblank(void)
     else I_STAT = ~1u;
     GP1 = 0x03000000;
     t0 = T1;
-    rc_snd_vblank();
 #ifndef SND_JUEGO
-    {   /* el modelo del GAE1 a tiempo real, como el chip de la placa: la SPU toca 132 muestras por vblank y el modelo
-           por cuadro del juego; en los cuadros lentos (mas de un vblank) avanza tambien los vblank de mas, sin las
-           pausas de las cargas. -DSND_JUEGO: solo por cuadros (huella igual al banco aunque haya cuadros lentos) */
-        static u16 tv; static s32 acu; static int ini;
-        u16 t = T1; s32 d = (s32)(u16)(t - tv) - (s32)snd_lin_pausa;
-        snd_lin_pausa = 0; tv = t;
-        if (!ini) { ini = 1; d = 263; }
-        acu += d - 263;
-        if (acu < 0) acu = 0;
-        if (acu > 263 * 8) acu = 263 * 8;
-        while (acu >= 263) { acu -= 263; rc_snd_cuadro_extra(); }
+    {   /* el modelo del GAE1 a tiempo real, como el chip de la placa: muestras de 7 812,5 Hz por lineas del temporizador 1
+           (15 734,27 por segundo: 5 000 / 10 070) sin las pausas de las cargas; la SPU toca a 0x2D6, el mismo reloj.
+           -DSND_JUEGO: por cuadros del juego y tono escalado por fps (huella igual al banco para G-ESTADO/G-SNDLOG) */
+        static u16 tv; static u32 acu; static int ini;
+        u16 t = T1; u32 d = (u16)(t - tv); tv = t;
+        d = d > snd_lin_pausa ? d - snd_lin_pausa : 0; snd_lin_pausa = 0;
+        if (!ini) { ini = 1; d = 263; rc_snd_real_on = 1; }
+        if (d > 263 * 30) d = 263;              /* algo raro (no deberia pasar): un cuadro */
+        acu += d * 5000u; rc_snd_real += acu / 10070u; acu %= 10070u;
     }
 #endif
+    rc_snd_vblank();
     snd_modo_tit = RW(0xFEC298) == 3;
     if (snd_pide) { carga_para(); snd_pausa(1); snd_atiende(); snd_pausa(0); }
     snd_vblank();
@@ -287,6 +285,9 @@ int main(void)
     }
     vid_init();                                   /* paletas y CLUT de efecto en S0, huecos vacios */
     carga_init();                                 /* la unidad, el directorio y el indice de MENUS.PAK */
+#ifdef SND_JUEGO
+    snd_juego = 1;
+#endif
     snd_init(); gae1_suceso = snd_suceso;         /* SPUFIJO.BIN; la zona variable la piden los trozos */
 #ifdef R1
     if (carga_rom_arranque()) rc_bad(0xB00000);   /* ROM.BIN entera al area (la suma del arranque la lee toda) */

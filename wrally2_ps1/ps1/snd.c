@@ -21,7 +21,7 @@
 #define VAR0 0x5D5E0
 extern int fps_mil;
 unsigned snd_kon, snd_encolados, snd_sin_trozo, snd_tarde, snd_cargas, snd_carga_lin;
-int snd_pide, snd_modo_tit;
+int snd_pide, snd_modo_tit, snd_juego;
 static u16 tono = 0x2DF, t_key;
 /* ficheros de la SPU (el numero es snd_val >> 24, tools/sndwr2.py) y lo que ocupan en la RAM de la SPU */
 #define NF 11
@@ -183,7 +183,7 @@ void snd_init(void)
     SPUCNT = 0xC000;                                     /* SPU, sin silencio, sin IRQ */
     for (v = 0; v < 24; v++) { VOICE(v, 0) = 0; VOICE(v, 2) = 0; VOICE(v, 14) = SIL >> 3; }
     lineas(4);
-    tono = (u16)((u32)fps_mil * 12278u / 1000000u);      /* 725,62 x fps / 59,1 */
+    tono = snd_juego ? (u16)((u32)fps_mil * 12278u / 1000000u) : 0x2D6;   /* juego: 725,62 x fps / 59,1; si no, 7 812,5 Hz */
     t_key = t1_get();
     for (v = 0; v < NF; v++) { lo[v] = 0xFFFFF; hi[v] = 0; }
     for (v = 0; v < SND_N; v++) {
