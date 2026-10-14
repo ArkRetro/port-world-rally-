@@ -7,6 +7,8 @@
    - INPUTS: la letra G (marcha, un nivel en el banco) pulsa el cuadrado un cuadro cada vez que cambia de nivel (en
      la PS1 la marcha es un conmutador por flanco del cuadrado, ps1/main.c); Q sigue siendo el cuadrado sin mas.
    - Sin la moneda y el START por defecto del WR1 (cuadros 600, 800...): solo con COIN1=1; el guion va en INPUTS.
+   - SPU: direccion de repeticion, banderas de bloque, ENDX (ENDX_BORRA=1: se borra al escribirlo, como Mednafen; si no,
+     como MiSTer) e IRQ de la SPU: para probar el encadenado de trozos (sucesos SPU_SALTO / SPU_FIN).
    - cpu.csv: por llamada a rc_vblank, ciclos de la CPU fuera de rc_vblank desde la llamada anterior (68000 + MCU
      por acceso + sucesos), ciclos de la llamada anterior a rc_vblank entera y de mcu_cuadro dentro, y el modo del
      juego (FEC298): puerta G-CPU con perf/cpu.py.
@@ -189,17 +191,35 @@ static void eventf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
    vea se pierde (SPU_PERDIDA). El fin de cada voz se calcula con la bandera de fin de bloque del ADPCM y el tono */
 static u32 spu_kon, spu_koff; static u64 spu_t; static u64 voz_fin[24]; static int voz_on[24];
 static long spu_perdidas;
-static u64 voz_dur(int v)
+/* psxprof2: cada voz recorre sus bloques ADPCM con el tono (28 muestras por bloque a 44,1 kHz x tono / 4096): bandera 4
+   (inicio de bucle) copia la direccion del bloque al registro de repeticion al empezarlo; bandera 1 (fin) pone ENDX
+   y, con la 2, salta a la direccion de repeticion (si no, la voz se para); el registro de repeticion lo escribe el juego
+   cuando quiere (encadenado, diseno 5.2). ENDX se borra con KON (y al escribir el registro solo con ENDX_BORRA=1:
+   Mednafen; en MiSTer no). IRQ de la SPU (SPUCNT bit 6) cuando una voz empieza el bloque de la direccion del IRQ.
+   Sucesos SPU_SALTO / SPU_FIN; cifra de saltos */
+static u32 voz_cur[24]; static u64 voz_tblk[24]; static u32 spu_endx_bits; static long spu_saltos; static int endx_borra = -1, spu_irq;
+static u64 blk_dur(int v) { u32 pitch = spu[v * 8 + 2] ? spu[v * 8 + 2] : 1; return (u64)28 * 4096 / pitch * 768; }
+static void voz_avanza(int v, u64 hasta)
 {
-    u32 a = (spu[v * 8 + 3] * 8) & 0x7FFFF, n = 0, pitch = spu[v * 8 + 2] ? spu[v * 8 + 2] : 1;
-    while (n < 65536) { u8 f = spuram[(a + 1) & 0x7FFFF]; n++; a += 16; if (f & 1) break; }
-    return (u64)n * 28 * 4096 / pitch * 768;
+    while (voz_on[v]) {
+        u64 d = blk_dur(v); u8 f;
+        if (voz_tblk[v] + d > hasta) break;
+        voz_tblk[v] += d; f = spuram[(voz_cur[v] + 1) & 0x7FFFF];
+        if (f & 1) {
+            spu_endx_bits |= 1u << v;
+            if (f & 2) { u32 a = (spu[v * 8 + 7] * 8) & 0x7FFFF; spu_saltos++; eventf("SPU_SALTO voz %d %u -> %u", v, voz_cur[v], a); voz_cur[v] = a; }
+            else { voz_on[v] = 0; voz_fin[v] = voz_tblk[v]; eventf("SPU_FIN voz %d %u", v, voz_cur[v]); break; }
+        } else voz_cur[v] = (voz_cur[v] + 16) & 0x7FFFF;
+        if (spuram[(voz_cur[v] + 1) & 0x7FFFF] & 4) spu[v * 8 + 7] = (u16)(voz_cur[v] >> 3);   /* inicio de bucle */
+        if ((spu[(0xDAA - 0xC00) / 2] & 0x40) && voz_cur[v] == (u32)(spu[(0xDA4 - 0xC00) / 2] * 8)) { I_STAT |= 0x200; spu_irq = 1; }   /* IRQ de la SPU */
+    }
 }
 static void spu_avanza(void)
 {
+    int v;
     /* procesar las voces con bits pendientes hasta el ciclo actual */
     while (spu_kon | spu_koff) {
-        u64 base = spu_t - spu_t % 768; int v, hecho = 0;
+        u64 base = spu_t - spu_t % 768; int hecho = 0;
         for (v = 0; v < 24; v++) {
             u64 t = base + v * 32;
             if (t < spu_t) continue;
@@ -209,24 +229,25 @@ static void spu_avanza(void)
             if (spu_kon & (1u << v)) {
                 char ant[48] = "";
                 spu_kon &= ~(1u << v);
-                /* la voz sonaba: silencio desde que acabo (hueco) o lo que le faltaba (corte) */
-                if (voz_on[v]) snprintf(ant, sizeof ant, voz_fin[v] <= t ? " hueco_ms %.1f" : " corte_ms %.1f",
-                    (voz_fin[v] <= t ? t - voz_fin[v] : voz_fin[v] - t) * 1000.0 / CLK);
-                voz_on[v] = 1; voz_fin[v] = t + voz_dur(v);
-                eventf("SPU_ON voz %d addr %u fin_ms %.1f%s", v, spu[v * 8 + 3] * 8, (voz_fin[v] - t) * 1000.0 / CLK, ant);
+                voz_avanza(v, t);
+                /* la voz sonaba: corte; si no, silencio desde que acabo (hueco) */
+                if (voz_on[v]) snprintf(ant, sizeof ant, " corte");
+                else if (voz_fin[v]) snprintf(ant, sizeof ant, " hueco_ms %.1f", (t - voz_fin[v]) * 1000.0 / CLK);
+                voz_on[v] = 1; voz_cur[v] = (spu[v * 8 + 3] * 8) & 0x7FFFF; voz_tblk[v] = t; spu_endx_bits &= ~(1u << v);
+                if (spuram[(voz_cur[v] + 1) & 0x7FFFF] & 4) spu[v * 8 + 7] = (u16)(voz_cur[v] >> 3);
+                eventf("SPU_ON voz %d addr %u%s", v, voz_cur[v], ant);
             }
         }
         if (hecho) break;
         if (v == 24) spu_t = base + 768;
     }
     if (!(spu_kon | spu_koff)) spu_t = cyc;
+    for (v = 0; v < 24; v++) voz_avanza(v, cyc);
 }
 static u32 spu_endx(void)
 {
-    u32 m = 0; int v;
     spu_avanza();
-    for (v = 0; v < 24; v++) if (!voz_on[v] || cyc >= voz_fin[v]) m |= 1u << v;
-    return m;
+    return spu_endx_bits;
 }
 /* ---- mando */
 static int joy_state, joy_byte_pending; static u64 joy_rx_at, joy_ack_at; static u8 joy_rx; static int joy_rx_valid;
@@ -1080,7 +1101,8 @@ static u32 io_read(u32 a, int sz, int *cost)
     if (o >= 0xC00 && o < 0xE00) {
         u32 r = (o - 0xC00) / 2;
         *cost = IO_SPU;
-        if (o == 0xDAE) return spu[(0xDAA - 0xC00) / 2] & 0x3F;
+        if (o == 0xDAE) { spu_avanza(); return (spu[(0xDAA - 0xC00) / 2] & 0x3F) | (spu_irq ? 0x40 : 0); }   /* SPUSTAT: modo y bandera del IRQ */
+        if (o < 0xD80 && (o & 0xE) == 0xC) { spu_avanza(); return voz_on[(o - 0xC00) / 16] ? 0x7FFF : 0; }   /* volumen ADSR: suena o no */
         if (o == 0xD9C) return spu_endx() & 0xFFFF;
         if (o == 0xD9E) return spu_endx() >> 16;
         if (o == 0xD88) return spu_kon & 0xFFFF;
@@ -1129,8 +1151,11 @@ static void io_write(u32 a, u32 v, int sz, int *cost)
     if (o >= 0xC00 && o < 0xE00) {
         u32 r = (o - 0xC00) / 2;
         *cost = IO_SPU;
+        if (r < 0xC0 && (r & 7) == 7) spu_avanza();         /* direccion de repeticion: la voz ya avanzo hasta ahora */
         spu[r] = (u16)v;
         if (o == 0xDA6) spu_addr = (v & 0xFFFF) * 8;
+        if (o == 0xDAA && !(v & 0x40)) spu_irq = 0;          /* SPUCNT sin el bit 6: se reconoce el IRQ */
+        if (o == 0xD9C || o == 0xD9E) { if (endx_borra < 0) endx_borra = getenv("ENDX_BORRA") != 0; if (endx_borra) spu_endx_bits &= o == 0xD9C ? ~0xFFFFu : 0xFFFFu; }
         if (o >= 0xD88 && o <= 0xD8E) {   /* KON / KOFF: se sustituye la mitad del registro */
             u32 *rg = o < 0xD8C ? &spu_kon : &spu_koff, sh = (o & 2) ? 16 : 0, perd;
             int k;
@@ -1540,7 +1565,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "\npila: sp minimo 0x%06x en el cuadro %ld\n", minsp, minsp_fr); }
     if (misslog) fclose(misslog);
     fprintf(stderr, "perfil desde ciclo %llu (%.2f s)\n", (unsigned long long)prof_from_cyc, (cyc - prof_from_cyc) / CLK);
-    fprintf(stderr, "SPU: %ld teclas pisadas antes de que su voz las viera\n", spu_perdidas);
+    fprintf(stderr, "SPU: %ld teclas pisadas antes de que su voz las viera, %ld saltos por repeticion\n", spu_perdidas, spu_saltos);
     if (o_glitch || o_glitch5) fprintf(stderr, "CD_GLITCH: %ld INT3 y %ld INT5 (leidos sondeando al cambiar: %ld y %ld), %ld lecturas de HINTSTS a medias\n", cd_gl_n3, cd_gl_n5, cd_gl_e3, cd_gl_e5, cd_gl_hechos);
     if (o_cola) fprintf(stderr, "CD_COLA: %ld lecturas de 1F801801-3 en el banco anterior\n", cola_n);
     if (o_t1g) fprintf(stderr, "T1_GLITCH: %ld lecturas del temporizador 1 al cambiar con acarreo, %ld rotas\n", t1_lect, t1_rotas);
