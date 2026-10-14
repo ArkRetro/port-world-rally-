@@ -20,15 +20,15 @@ void gae1_w(unsigned off, unsigned dato, unsigned mascara)
     unsigned short *r = &gae1_reg[off];
     if (gae1_traza) gae1_traza(off, dato, mascara);
     *r = (*r & ~mascara) | (dato & mascara);
-    if ((off & 7) == 3) {                /* primer trozo: empieza, o se encola si ya suena */
+    if ((off & 7) == 3) {                /* primer trozo: empieza, o se encola si ya suena (suceso 2 + trozo) */
         if (r[-1] && *r) {
             c->bucle = 1;
-            if (!c->activo) { c->trozo = 0; c->activo = 1; suceso(off >> 3, 0); }
+            if (!c->activo) { c->trozo = 0; c->activo = 1; suceso(off >> 3, 0); } else suceso(off >> 3, 2);
         } else if (c->activo) { c->activo = 0; suceso(off >> 3, -1); }
     } else if ((off & 7) == 7) {         /* segundo trozo */
         if (r[-1] && *r) {
             c->bucle = 1;
-            if (!c->activo) { c->trozo = 1; c->activo = 1; suceso(off >> 3, 1); }
+            if (!c->activo) { c->trozo = 1; c->activo = 1; suceso(off >> 3, 1); } else suceso(off >> 3, 3);
         } else c->bucle = 0;
     }
 }

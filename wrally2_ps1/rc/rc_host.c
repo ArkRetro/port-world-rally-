@@ -187,6 +187,7 @@ static void snd_suceso(int ch, int t)
 {
     if (!sndlog) return;
     if (t < 0) fprintf(sndlog, "%ld %d para\n", frame, ch);
+    else if (t >= 2) return;                       /* encolado: la SPU lo sigue sola; el registro lleva los cambios de trozo */
     else { const u16 *r = gae1_reg + ch * 8 + t * 4; fprintf(sndlog, "%ld %d trozo %d %04x %04x %04x\n", frame, ch, t, r[1], r[2], r[3]); }
 }
 

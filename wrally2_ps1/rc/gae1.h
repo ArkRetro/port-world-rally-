@@ -6,7 +6,8 @@
 typedef struct { unsigned char activo, bucle, trozo; } gae1_canal;
 extern gae1_canal gae1_c[GAE1_CANALES];
 extern unsigned short *gae1_reg;     /* 56 palabras (en el 68000, 0x202890-0x2028FF) */
-/* sucesos para la plataforma: el canal ch empieza a sonar el trozo t (0/1) o se calla (t = -1) */
+/* sucesos para la plataforma: el canal ch empieza a sonar el trozo t (0/1), pasa a el al acabar el otro (t = 0/1 con el
+   canal ya activo), el juego encola el trozo t - 2 mientras suena (t = 2/3), o se calla (t = -1) */
 extern void (*gae1_suceso)(int ch, int t);
 extern void (*gae1_traza)(unsigned off, unsigned dato, unsigned mascara);   /* cada escritura (banco: SNDW) */
 void gae1_init(unsigned short *regs);
