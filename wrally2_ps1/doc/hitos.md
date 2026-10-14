@@ -115,6 +115,14 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   97 KB con las corridas nuevas (rc68.py otra vez), 3 entradas de trampa. psxprof2 (6 000 cuadros, Portugal): 0
   trampas; faltas por cuadro de carrera N 4,1, L 10,1, R 9,7 (lineas fuera de los paquetes); G-ESTADO igual;
   G-SNDLOG: un cambio de trozo del motor distinto en el 2.o tramo (pendiente)
+- [x] Tiles de la L2 que se perdian: un codigo que estaba en la VRAM al apuntar la L2 (del mapa del tramo, de una
+  emergencia) no se apuntaba, y al quitarse ese hueco se quedaba sin nada aunque estaba en la RAM. Ahora se vuelve a
+  apuntar toda la L2 en el negro antes de la carrera y se repasa 64 registros por cuadro. psxprof2, Portugal (2 tramos,
+  6 885 cuadros de carrera) con el coche N: faltas por cuadro 4,1 -> 0,06-0,11 (eran casi todas de la L2: el problema
+  era de entrega, no de datos). Coches L/R: 10,3 (poses que no caben en su GAMEc; las emergencias suben ahora tambien
+  los vecinos del sector de TILES.BIN). Prelectura por avance (CON_PRE): menos bloques por el tope de subidas, pero
+  mas cuadros lentos; apagada. Pantalla de carga al estilo del juego (la del WR1: cuadros de bandera, CARGANDO con el
+  degradado del marcador, barra START-FINISH con el progreso) en las cargas bloqueantes de mas de 0,5 s
 - [~] Carga de fondo del mapa a 2x con puntos de sondeo; `CARGA_1X`; CARGANDO solo si falta
 - [ ] Politica de carrera: prelectura por avance, muerte por avance, victimas con copia en L2 primero
 - [ ] Proxies y lecturas de emergencia; pantalla de cifras L2

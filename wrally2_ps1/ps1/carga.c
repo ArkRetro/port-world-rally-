@@ -66,7 +66,7 @@ static u8 pedido[32768 / 8];                    /* codigo pedido y aun no subido
 static int em_on, em_sec, em_b, em_n; static u16 em_t0;
 static int bg_on, bg_k, bg_a, bg_cnt, bg_got, bg_lista[NSEC], bg_n, bg_i;   /* fondo: seccion bg_k, sectores bg_a.. (bg_cnt), bg_got subidos */
 static int bg_tipo, bg_para, *bg_cuenta; static u8 *bg_dir;   /* 0 MENUS, 1 demo a la VRAM (anillo), 2 demo al area (directo) */
-static int bloq_vis, bloq_fb, bloq_sec, bloq_a; static u16 bloq_t0;
+static int bloq_vis, bloq_fb, bloq_sec, bloq_a, bloq_hecho, bloq_total; static u16 bloq_t0;
 u32 carga_sectores, carga_emerg, carga_emerg_lin, carga_emerg_max, carga_bloq, carga_bloq_lin, carga_bloq_max, carga_fondo, carga_err;
 
 /* un sector de paquete de registros A (formatos.md 3) a la VRAM; borra los codigos de la cola y el sector del mapa */
@@ -89,12 +89,15 @@ static u32 le32(const u8 *p) { return p[0] | (u32)p[1] << 8 | (u32)p[2] << 16 | 
 static int cab(const u8 *b, int t) { return b[0] == 'W' && b[1] == 'R' && b[2] == '2' && b[3] == 'T' && b[4] == t && b[5] <= 14; }
 /* emergencia en B: de los 14 registros del sector de TILES.BIN, solo los pedidos (los huecos rotativos son pocos) */
 static void procesa_b(const u8 *b)
-{
-    int r;
+{   /* en la carrera tambien los vecinos del sector (14 codigos seguidos: las poses de un coche que no caben en su
+       GAMEc van seguidas en TILES.BIN), a huecos rotativos que se desalojan por edad */
+    int r, vec = RW(0xFEC298) == 1;
     if (!cab(b, 1)) { carga_err++; return; }
     for (r = 0; r < b[5]; r++) {
         const u8 *reg = b + 32 + r * 144; u32 c = reg[128] | (u32)reg[129] << 8;
-        if (c < 32768 && (pedido[c >> 3] & (1 << (c & 7)))) { vid_sube_b(reg, 0, 1); pedido[c >> 3] &= (u8)~(1 << (c & 7)); }
+        if (c >= 32768) continue;
+        if (pedido[c >> 3] & (1 << (c & 7))) { vid_sube_b(reg, 0, 1); pedido[c >> 3] &= (u8)~(1 << (c & 7)); }
+        else if (vec && vid_hueco(c) < 0) vid_sube_b(reg, 0, 1);   /* vecino: la siguiente pose del coche */
     }
     dma_wait();                               /* los texels salen del sector por DMA: que acabe antes de reusarlo */
 }
@@ -370,14 +373,14 @@ void carga_atiende(void)
    lo residente y el area queda libre. Bancos: la seccion ROM (clave 4) de DEMOr.PAK (de fondo, con el resto de la
    demo) o de STkk.PAK (bloqueando, al entrar en la carrera): sectores de tipo 2 que se compactan en su sitio (fuera las
    cabeceras), se cambian de orden (la ROM viene como en la placa) y se apuntan por tramos. Trampa: un bloque que no
-   esta se lee de ROM.BIN (su sector y el principio del siguiente, por la cola) a una de 3 entradas por turno */
+   esta se lee de ROM.BIN (su sector y el principio del siguiente, por la cola) a una de 2 entradas por turno */
 #define ROMFIN 0xDD800
 static int lba_rom = -1;
 u32 carga_rom_trampas, carga_rom_lin, carga_rom_max, carga_rom_kb;
 static u8 rtmp[2 * SEC] __attribute__((aligned(4)));
-#define NREMB 3                                 /* entradas de la trampa (3: la puerta G-RAM R1 con el residente de 97 KB) */
+#define NREMB 2                                 /* entradas de la trampa (2: la puerta G-RAM R1 con el residente de 97 KB; en psxprof2 no salta ninguna) */
 static u8 remb[NREMB][SEC + 256] __attribute__((aligned(4)));
-static int remb_s[NREMB] = {-1, -1, -1}, remb_t;
+static int remb_s[NREMB] = {-1, -1}, remb_t;
 #define NTR 192
 static struct { u32 a0, a1; u8 *p; } btr[NTR]; static int btr_n;   /* tramos del banco apuntados desde el area */
 static void rom_swap(u8 *p, u32 n)
@@ -449,7 +452,9 @@ void carga_para(void) { bg_corta(); em_corta(); }
 static void bloq_cb(int i, const unsigned char *d)
 {
     procesa(d, bloq_sec, bloq_a + i);
+    bloq_hecho++;
     if (!bloq_vis && (u16)(T1 - bloq_t0) > LIN_05) { vid_cargando(bloq_fb); bloq_vis = 1; }
+    if (bloq_vis && !(bloq_hecho & 3)) vid_cargando_barra(bloq_fb, bloq_hecho, bloq_total);
 }
 int carga_pantalla(u32 clave, int fb)
 {
@@ -466,7 +471,7 @@ int carga_pantalla(u32 clave, int fb)
     if (rango(k, &a, &b)) {
         u32 l; int n = 0;
         if (em_on) em_on = 0;                 /* cd_stream la cancela; el codigo sigue pedido */
-        bloq_t0 = T1; bloq_vis = 0; bloq_fb = fb; bloq_sec = k;
+        bloq_t0 = T1; bloq_vis = 0; bloq_fb = fb; bloq_sec = k; bloq_hecho = 0; bloq_total = (int)idx[k].n;
         vid_carga_ini(k, k == k_tit);
         do {                                  /* tramo a tramo (como mucho uno por sector: no se repite ninguno) */
             bloq_a = a;
@@ -510,13 +515,16 @@ void carga_demo_fin(void)
 static void dm_bloq_cb(int i, const unsigned char *d)
 {
     (void)i; dm_sector(d, 0);
+    bloq_hecho++;
     if (!bloq_vis && (u16)(T1 - bloq_t0) > LIN_05) { vid_cargando(bloq_fb); bloq_vis = 1; }
+    if (bloq_vis && !(bloq_hecho & 3)) vid_cargando_barra(bloq_fb, bloq_hecho, bloq_total);
 }
 /* registros [hechos, hasta) de la seccion x del fichero lba, bloqueando */
 static void dm_bloq_de(int lba, const u32 *x, int hechos, int hasta)
 {
     int a = hechos / 14, b = (hasta + 13) / 14;
     if (hechos >= hasta || lba < 0) return;
+    bloq_hecho = 0; bloq_total = b - a;
     if (cd_stream(lba + (int)x[0] + a, b - a, dm_bloq_cb, 1)) carga_err++;
 }
 static void dm_bloq(const u32 *x, int hechos, int hasta) { if (dm_r >= 0) dm_bloq_de(lba_dm[dm_r], x, hechos, hasta); }

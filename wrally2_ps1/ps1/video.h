@@ -22,7 +22,8 @@ int vid_sube_a(const u8 *reg, int sec, int sub);  /* registro A (162 B) a un hue
 void vid_carga_ini(int sec, int titulo); void vid_carga_fin(void);   /* mientras dura la carga de la seccion sec, lo que sube (y lo suyo) no se desaloja; titulo: no a las paginas 6 y 7 */
 void vid_sec_prot(u32 lo, u32 hi);  /* mascara de secciones del modo actual: se desalojan las ultimas */
 int vid_hueco(u32 codigo);          /* hueco del codigo o -1 */
-void vid_cargando(int fb);          /* CARGANDO en el bufer que se ve */
+void vid_cargando(int fb);          /* pantalla de carga al estilo del juego en el bufer que se ve */
+void vid_cargando_barra(int fb, int hecho, int total);   /* su barra START-FINISH */
 /* demo y mapa de la demo (formato B) */
 int vid_lay(void);                  /* reparto: 0 A, 1 A con b12-b15 en B (titulo), 2 B */
 void vid_lay_a(void);               /* a los menus: todo vacio */

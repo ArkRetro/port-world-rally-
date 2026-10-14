@@ -568,10 +568,13 @@ int vid_sube_b(const u8 *reg, u32 extra, int rot)
     return h;
 }
 /* la L2 en la RAM: el codigo apunta al registro (se sube al dibujarlo) */
+static u32 l2_reg, l2_pre;                  /* registros de la L2 apuntados; siguiente para la prelectura */
+u32 vid_b_pre, vid_b_tope;                    /* subidas por prelectura; tiles de la L2 sin subir por el tope (cifras) */
 void vid_pon_l2(const u8 *reg, int j)
 {
     u32 c = reg[128] | (u32)reg[129] << 8;
     if (lay == 2 && c < 32768 && ts_get(c) == 0xFFFF) ts_set(c, (u16)(0x8000 | j));
+    if ((u32)j + 1 > l2_reg) l2_reg = (u32)j + 1;
 }
 static int b_l2(u32 j)
 {
@@ -585,6 +588,46 @@ static int b_l2(u32 j)
     return h;
 }
 
+/* repaso de la L2: un codigo que estaba en la VRAM al apuntar la L2 (del mapa, de una emergencia) no se apunto; al
+   quitarse ese hueco (no es de la L2) el codigo se quedaba sin nada aunque esta en la RAM. n registros por llamada */
+static u32 l2_rep;
+static void b_reapunta(u32 n)
+{
+    while (n-- && l2_reg) {
+        const u8 *reg; u32 c;
+        if (l2_rep >= l2_reg) l2_rep = 0;
+        reg = l2reg(l2_rep); c = reg[128] | (u32)reg[129] << 8;
+        if (c < 32768 && ts_get(c) == 0xFFFF) ts_set(c, (u16)(0x8000 | l2_rep));
+        l2_rep++;
+    }
+}
+/* prelectura por avance (diseno 9: la L2 esta ordenada por primer avance FEFD08, por sectores con el primero en la
+   cabecera, bytes 12-15): cada cuadro de la demo o la carrera se suben los registros cuyo sector empieza antes de
+   avance + PRE_AV, como mucho PRE_N, a huecos libres o victimas, marcados como nuevos (no se desalojan antes de
+   dibujarse). Asi lo que va a salir esta en la VRAM unos cuadros antes y las curvas (scroll en los dos ejes, muchos
+   tiles nuevos a la vez) no topan con las MAXL2 subidas por cuadro ni con las emergencias */
+#define PRE_AV 8                              /* ~30 cuadros: el avance sube 0,28 por cuadro */
+#define PRE_N 4
+#ifdef CON_PRE
+static void b_prelee(u32 av)
+{
+    int n = 0;
+    while (n < PRE_N && l2_pre < l2_reg) {
+        const u8 *s = l2base + (l2_pre / 14) * 2048, *reg;
+        u32 a0 = s[12] | (u32)s[13] << 8, c; u16 v; int h;
+        if (a0 > av + PRE_AV) break;
+        reg = l2reg(l2_pre); c = reg[128] | (u32)reg[129] << 8;
+        if (c < 32768 && ((v = ts_get(c)) & 0x8000) && v != 0xFFFF && (v & 0x7FFF) == l2_pre) {   /* aun solo en la L2 */
+            int pr = PROPIA(reg[141]);
+            h = b_libre(pr);
+            if (h < 0) h = b_victima(pr);
+            if (h < 0) break;
+            b_pon(h, reg, F_NUEVO, (int)l2_pre); vid_b_pre++; n++;
+        }
+        l2_pre++;
+    }
+}
+#endif
 /* ---- repartos */
 void vid_lay_a(void)
 {   /* vuelta a los menus: la VRAM de los bloques ya no vale para nada; desde el titulo (reparto 1) solo se vacian los
@@ -624,13 +667,14 @@ void vid_lay_b(int guarda)
         }
         hcode[h] = 0xFFFF; hstamp[h] = 0xFFFF; hfl[h] = 0; hpal[h] = 0;
     }
-    lay = 2; ba_lo = 0; ba_hi = NB - 1; bhand = 0;
+    lay = 2; ba_lo = 0; ba_hi = NB - 1; bhand = 0; l2_reg = l2_pre = l2_rep = 0;
 }
 void vid_quita_mapa(void)
 {   /* negro antes de la demo: los huecos del mapa quedan libres para el resto del VO */
     int h;
     for (h = 0; h < NB; h++) if (hfl[h] & F_MAPA) b_quita(h);
     ba_lo = 0; ba_hi = NB - 1;
+    l2_rep = 0; b_reapunta(l2_reg);           /* lo del mapa que tambien esta en la L2 */
 }
 
 /* ---- el cuadro de la demo o del mapa (reparto B) */
@@ -666,6 +710,15 @@ void vid_b(void)
     int ox = sx & 15, oy = sy & 15;
     u16 t0 = T1;
     now++; vid_faltas_cuadro = 0; nl2 = 0; negro = *(const u16 *)(rc_ram + 0xC298) == 0;
+    {   /* prelectura en la demo y la carrera */
+        u16 md = *(const u16 *)(rc_ram + 0xC298);
+        if ((md == 5 || md == 1) && l2base) {
+            b_reapunta(64);
+#ifdef CON_PRE                                  /* medido: menos tiles de un cuadro por el tope, pero mas cuadros lentos */
+            b_prelee(*(const u16 *)(rc_ram + 0xFD08));
+#endif
+        }
+    }
     /* plano 0 en orden (cada tile con su CLUT: no hay nada que agrupar) */
     for (j = 0; j < 16; j++)
         for (i = 0; i < 24; i++) {
@@ -673,7 +726,7 @@ void vid_b(void)
             u32 w0 = m[e], c = m[e + 1], col = (w0 >> 9) & 0x3F, cl;
             if (!c) continue;
             if ((h = b_busca(c)) < 0) {
-                if (h == -2) rect16(i * 16 - ox, j * 16 - oy, rgb24(col * 32 + 1 + (c % 15)));
+                if (h == -2) vid_b_tope++, rect16(i * 16 - ox, j * 16 - oy, rgb24(col * 32 + 1 + (c % 15)));
                 else falta(i * 16 - ox, j * 16 - oy, col, c);
                 continue;
             }
@@ -702,7 +755,7 @@ void vid_b(void)
                     continue;
                 }
                 if (h < 0) {
-                    if (h == -2) rect16(px, py, rgb24(col * 32 + 1 + ((c & 0xFFF) % 15)));
+                    if (h == -2) vid_b_tope++, rect16(px, py, rgb24(col * 32 + 1 + ((c & 0xFFF) % 15)));
                     else falta(px, py, col, code);
                     continue;
                 }
@@ -719,27 +772,58 @@ void vid_b(void)
     vid_lineas = (u16)(T1 - t0);
 }
 
-/* ---- CARGANDO (letra de 5 x 7 en rectangulos, dos veces mas grande) en el bufer que se ve */
-static const u8 glifo[7][7] = {
-    {0x0E, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0E},   /* C */
-    {0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11},   /* A */
-    {0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11},   /* R */
-    {0x0E, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0F},   /* G */
-    {0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11},   /* N */
-    {0x1E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1E},   /* D */
-    {0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E}};  /* O */
-static const u8 texto[8] = {0, 1, 2, 3, 1, 4, 5, 6};
+/* ---- pantalla de carga al estilo del juego (la del port del WR1): bandas de cuadros de bandera arriba y abajo,
+   CARGANDO en cursiva con el degradado amarillo-rojo y el borde negro de las cifras del marcador, y la barra
+   START-FINISH del marcador, que se va llenando (vid_cargando_barra). Directo por GP0 en el bufer que se ve */
+static void gp_rect(int x, int y, int w, int h, u32 c)
+{
+    dma_wait(); gpu_wait(); GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
+    GP0 = 0x60000000 | c; GP0 = ((u32)y << 16) | (u32)x; GP0 = ((u32)h << 16) | (u32)w;
+}
+static const char lchars[] = "CARGNDOSTFIH";
+static const u8 lglyph[12][7] = {                   /* 5x7, bit 4 a la izquierda */
+    {14, 17, 16, 16, 16, 17, 14}, {14, 17, 17, 31, 17, 17, 17}, {30, 17, 17, 30, 20, 18, 17}, {14, 17, 16, 23, 17, 17, 15},
+    {17, 25, 21, 19, 17, 17, 17}, {30, 17, 17, 17, 17, 17, 30}, {14, 17, 17, 17, 17, 17, 14}, {15, 16, 16, 14, 1, 1, 30},
+    {31, 4, 4, 4, 4, 4, 4}, {31, 16, 16, 30, 16, 16, 16}, {14, 4, 4, 4, 4, 4, 14}, {17, 17, 17, 31, 17, 17, 17}};
+static const u32 lgrad[7] = {0x60F0FF, 0x40D8FF, 0x20B8FF, 0x1098FF, 0x0070FF, 0x0048F0, 0x0020D0};   /* 0xBBGGRR */
+static const u32 lwhite[7] = {0xF8F8F8, 0xF8F8F8, 0xF0F0F0, 0xE8E8E8, 0xE0E0E0, 0xD0D0D0, 0xC0C0C0};
+static const u32 lgreen[6] = {0x90FF90, 0x40F040, 0x20D820, 0x10B810, 0x089808, 0x047804};
+static void gp_text(int y0, int x, int y, const char *t, int sc, const u32 *col)
+{
+    int pass, k, r, c, n;
+    for (pass = 0; pass < 2; pass++)
+        for (k = 0; t[k]; k++) {
+            for (n = 0; lchars[n] && lchars[n] != t[k]; n++);
+            if (!lchars[n]) continue;
+            for (r = 0; r < 7; r++) for (c = 0; c < 5; c++) if (lglyph[n][r] & (16 >> c)) {
+                int px = x + k * (6 * sc) + c * sc + (6 - r) * sc / 3, py = y0 + y + r * sc;
+                if (!pass) gp_rect(px - 1, py - 1, sc + 3, sc + 2, 0);     /* borde negro */
+                else gp_rect(px, py, sc + 1, sc, col[r]);
+            }
+        }
+}
+#define BAR_W 240
+#define BAR_X ((W - BAR_W) / 2)
+#define BAR_Y 134
 void vid_cargando(int fb)
 {
-    int i, r, k, x0 = (W - 8 * 14) / 2, y0 = 112;
-    u32 y = fb ? 256u : 0u;
-    dma_wait();
-    l_begin(); l_room(3);
-    lp[0] = 0xE3000000 | (y << 10); lp[1] = 0xE4000000 | ((y + H - 1) << 10) | (W - 1); lp[2] = 0xE5000000 | (y << 11); lp += 3;
-    rect(x0 - 8, y0 - 8, 8 * 14 + 12, 30, 0x000000);
-    for (i = 0; i < 8; i++)
-        for (r = 0; r < 7; r++)
-            for (k = 0; k < 5; k++)
-                if (glifo[texto[i]][r] & (0x10 >> k)) rect(x0 + i * 14 + k * 2, y0 + r * 2, 2, 2, 0xFFFFFF);
-    l_send(); dma_wait();
+    int k, sc = 4, tw = 8 * 6 * sc - sc, y0 = fb ? 256 : 0;
+    dma_wait(); gpu_wait();
+    GP0 = 0x02000000; GP0 = (u32)y0 << 16; GP0 = ((u32)H << 16) | W;
+    for (k = 0; k < 46 * 4; k++) {                 /* cuadros de bandera: 2 filas arriba y 2 abajo */
+        int row = k / 46, col = k % 46, y = row < 2 ? row * 8 : 224 + (row - 2) * 8;
+        if ((row + col) & 1) gp_rect(col * 8, y0 + y, 8, 8, 0xE0E0E0);
+    }
+    gp_text(y0, (W - tw) / 2, 88, "CARGANDO", sc, lgrad);
+    gp_rect(BAR_X - 3, y0 + BAR_Y - 1, BAR_W + 6, 8, 0xB0B0B0);   /* marco gris redondeado y el interior oscuro */
+    gp_rect(BAR_X - 1, y0 + BAR_Y - 3, BAR_W + 2, 12, 0xB0B0B0);
+    gp_rect(BAR_X - 1, y0 + BAR_Y - 1, BAR_W + 2, 8, 0x181818);
+    gp_text(y0, BAR_X - 6, BAR_Y + 12, "START", 1, lwhite);
+    gp_text(y0, BAR_X + BAR_W - 6 * 6 + 4, BAR_Y + 12, "FINISH", 1, lwhite);
+}
+void vid_cargando_barra(int fb, int hecho, int total)
+{
+    int r, w = total > 0 ? hecho * BAR_W / total : 0, y0 = fb ? 256 : 0;
+    if (w > BAR_W) w = BAR_W;
+    if (w > 0) for (r = 0; r < 6; r++) gp_rect(BAR_X, y0 + BAR_Y + r, w, 1, lgreen[r]);
 }
