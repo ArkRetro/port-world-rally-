@@ -60,10 +60,12 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [ ] R1: residente y bancos desde `ROMSTAT`, `romres.txt`, trampa con CD (hecho en `rc/`: paginas de ROM a NULL,
   `rc_romtab`, `rc_romp`/`rc_romf`, `rc_rom_mapa`, `rc_rom_residente`; falta la PS1: `ROM.BIN` al arrancar y la trampa)
 - [ ] `ROM.BIN` entera en el arranque; suceso en 0x2616 libera lo no residente
-- [ ] Renderizador A (menus) y B (demos, mapas): regla de sprites, efectos, paletas, CLUT por hueco, variantes
-- [ ] Gestor de bloques de VRAM
-- [ ] `tiles4.py`, `tilesa.py`; `MENUS.PAK`, `DEMOr.PAK` (8 ciclos del banco)
-- [ ] Cargador bloqueante (CARGANDO > 0,5 s) y de fondo (titulo)
+- [~] Renderizador A (menus) y B (demos, mapas): regla de sprites, efectos, paletas, CLUT por hueco, variantes (A hecho:
+  `ps1/video.c`, 8 bpp exacto, 10 paginas, CLUT = paletas en S0, efectos RESTA/SUMA; comparado a ojo con MAME; B pendiente)
+- [x] Gestor de bloques de VRAM (huecos A con reloj, tabla codigo -> hueco de dos niveles, 34 KB)
+- [x] `tiles4.py`, `tilesbin.py`; `MENUS.PAK`, `DEMOr.PAK` (8,5 ciclos del banco + partida; `tools/construir_cd.sh`, `verpak.py`)
+- [x] Cargador bloqueante (CARGANDO > 0,5 s) y de fondo (`ps1/carga.c`: `MENUS.PAK` por pantalla, `TILESA.BIN` de
+  emergencia, sondeo del CD cada 16 384 ciclos del 68000: 9 sectores perdidos por ciclo de attract, antes 21-24)
 - [x] Perfiles de regiones (P1): `rc_host_reg` + `rc/regiones.py` + `rc68.py`: banco igual, rc_run 422 848 -> 376 656 B
   en MIPS (-46 KB). Bucles rapidos apagados (`BUCLES=1`): la copia rapida apila un SR distinto al tomar la IRQ
 - [ ] `DUMPAT`, `arcade2.py`, `difref2.py`

@@ -1,20 +1,22 @@
-/* World Rally 2 -> PlayStation. Hito H2: el programa del 68000 recompilado (rc68.py) y la MCU (trabajo traducido y
-   el resto en C) corriendo en la PS1, con la ROM entera dentro del EXE (configuracion R0) y la imagen en mosaico: cada
-   tile del plano y de los sprites es un cuadrado del color de su paleta. Sirve para medir la CPU y la RAM en el
-   hardware y ver que el juego avanza (attract, partida); sin sonido. Cifras arriba: modo del juego (FEC298), cuadro,
-   lineas de video del 68000 y del dibujo por cuadro (263 = un cuadro entero), cuadros saltados, cuadros por segundo
-   x1000 y KB libres de RAM. Uso personal. */
+/* World Rally 2 -> PlayStation. Hito H3 (primera parte): el programa del 68000 recompilado (rc68.py) y la MCU
+   (trabajo traducido y el resto en C) corriendo en la PS1 con la ROM entera dentro del EXE (configuracion R0), sin
+   sonido. Imagen: en los menus (todo lo que no es carrera ni demo: FEC298 distinto de 1 y 5) la de verdad con tiles A
+   de 8 bpp (video.c) traidos del CD (carga.c: MENUS.PAK por pantalla y emergencias de TILESA.BIN); en carrera y demo
+   sigue el mosaico de H2 (cada tile un cuadrado del color de su paleta). Cifras arriba: modo del juego (FEC298),
+   cuadro, lineas de video del 68000 y del dibujo por cuadro (263 = un cuadro entero), cuadros saltados, cuadros por
+   segundo x1000, KB libres de RAM, faltas de tiles en el cuadro, sectores leidos del CD y lineas del dibujo de los
+   menus (video.c). Uso personal. */
 #include "../rc/rc_rt.h"
 #include "../rc/mcs51.h"
+#include "video.h"
+#include "carga.h"
 #define REG(a) (*(volatile u32 *)(a))
 #define GP0 REG(0x1F801810)
 #define GP1 REG(0x1F801814)
 #define I_STAT REG(0x1F801070)
 #define I_MASK REG(0x1F801074)
-#define D2_MADR REG(0x1F8010A0)
-#define D2_BCR REG(0x1F8010A4)
-#define D2_CHCR REG(0x1F8010A8)
 #define DPCR REG(0x1F8010F0)
+#define D2_CHCR REG(0x1F8010A8)
 #define JOY_DATA (*(volatile u8 *)0x1F801040)
 #define JOY_STAT (*(volatile u16 *)0x1F801044)
 #define JOY_MODE (*(volatile u16 *)0x1F801048)
@@ -34,52 +36,6 @@ static inline u16 t1_get(void)
     return a;
 }
 #define T1 t1_get()
-
-/* ------------------------------------------------------------ GPU */
-#define W 368
-#define H 240
-static void gpu_wait(void) { while (!(GP1 & (1 << 26))); }
-static void dma_wait(void) { while (D2_CHCR & (1 << 24)); }
-/* lista de la GPU: nodos de hasta 16 palabras (el FIFO de la GPU; con nodos mas largos Mednafen pierde palabras y la
-   GPU se queda a medio comando) seguidos en un bufer (lst), enlazados en orden y con primitivas enteras */
-#define LSTN 12288                                /* 48 KB (diseno 2.1; el peor cuadro de la placa, 42 KB) */
-static u32 lst[LSTN];
-static u32 *lp, *node;
-static void l_begin(void) { node = lst; lp = lst + 1; }
-static void l_close(u32 *next)
-{
-    u32 n = (u32)(lp - node - 1);
-    node[0] = (n << 24) | ((u32)next & 0xFFFFFF);
-}
-static void l_room(int n)
-{
-    if (lp + n - node - 1 > 16 || lp + n + 2 >= lst + LSTN) {
-        if (lp + n + 2 >= lst + LSTN) return;             /* lleno: se pierde el resto */
-        l_close(lp); node = lp; lp = node + 1;
-    }
-}
-static int l_full(int n) { return lp + n + 2 >= lst + LSTN; }
-static void l_send(void)
-{
-    l_close((u32 *)0xFFFFFF);
-    dma_wait(); gpu_wait(); D2_MADR = (u32)lst; D2_BCR = 0; D2_CHCR = 0x01000401;
-}
-static void rect16(int x, int y, u32 rgb)
-{
-    if (l_full(2)) return;
-    l_room(2); lp[0] = 0x78000000 | rgb; lp[1] = ((u32)(y & 0xFFFF) << 16) | (x & 0xFFFF); lp += 2;
-}
-static void rect(int x, int y, int w, int h, u32 rgb)
-{
-    if (l_full(3)) return;
-    l_room(3); lp[0] = 0x60000000 | rgb; lp[1] = ((u32)(y & 0xFFFF) << 16) | (x & 0xFFFF); lp[2] = ((u32)h << 16) | w; lp += 3;
-}
-/* color de la paleta del juego (xRRRRRGGGGGBBBBB) en 24 bits para la GPU (0xBBGGRR) */
-static u32 rgb24(u32 i)
-{
-    u32 v = *(const u16 *)(rc_pal + ((i & 0xFFF) << 1));
-    return ((v >> 10) & 31) << 3 | (((v >> 5) & 31) << 11) | ((v & 31) << 19);
-}
 
 /* ------------------------------------------------------------ mando (SIO0 directo) */
 static void joy_init(void) { JOY_CTRL = 0x40; JOY_BAUD = 0x88; JOY_MODE = 0x0D; JOY_CTRL = 0; }
@@ -107,18 +63,6 @@ static u16 joy_read(void)
     return r;
 }
 
-/* ------------------------------------------------------------ cifras */
-static const u16 font[10] = {0x7B6F, 0x2C97, 0x73E7, 0x73CF, 0x5BC9, 0x79CF, 0x79EF, 0x7249, 0x7BEF, 0x7BCF};
-static void digits(int x, int y, u32 v, int n)
-{
-    int i, k, d[8];
-    for (i = 0; i < n; i++) { d[i] = v % 10; v /= 10; }
-    rect(x - 2, y - 2, n * 8 + 2, 14, 0x000000);
-    for (i = 0; i < n; i++)
-        for (k = 0; k < 15; k++)
-            if (font[d[n - 1 - i]] & (1 << (14 - k))) rect(x + i * 8 + (k % 3) * 2, y + (k / 3) * 2, 2, 2, 0xFFFFFF);
-}
-
 /* ------------------------------------------------------------ mosaico */
 /* plano 0 (VRAM 0xC000 con vregs[0] = 0x0C90): 64 x 32 tiles de 16 x 16, dos palabras por tile (palabra 0: color en los
    bits 9-15, giros 6-7, bits altos del codigo 0-2; palabra 1: codigo). Se ven las columnas 8-375 de la placa */
@@ -126,7 +70,7 @@ static void plano(void)
 {
     const u16 *vr = (const u16 *)rc_vregs, *v = (const u16 *)rc_vram;
     const u16 *m = v + ((((vr[2] >> 9) & 7) * 0x2000) >> 1);
-    int sx = (v[0x2802 >> 1] + 0x14 + 8) & 0x3FF, sy = (v[0x2800 >> 1] + 1) & 0x1FF, i, j;
+    int sx = (v[0x2802 >> 1] + 0x14 + 8) & 0x3FF, sy = (v[0x2800 >> 1] + 1 + 16) & 0x1FF, i, j;   /* +16: lineas 16-255 de MAME (video.c) */
     int ox = sx & 15, oy = sy & 15;
     for (j = 0; j <= H / 16; j++)
         for (i = 0; i <= W / 16; i++) {
@@ -157,15 +101,30 @@ static void sprites(void)
 
 /* ------------------------------------------------------------ cuadro */
 static int fb, gear, sq_last, show = 1, skipped;
-static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc;
+static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc, lvid, lvid_acc;
+static u32 modo_ant, f146_ant, modo_ped;
 int fps_mil = 60000;
-static void vsync(void) { I_STAT = ~1u; while (!(I_STAT & 1)); I_STAT = ~1u; }
+/* espera del vsync sondeando el CD (la GPU esta parada: lo que llega se sube) */
+static void vsync(void) { I_STAT = ~1u; while (!(I_STAT & 1)) carga_atiende(); I_STAT = ~1u; }
 static u16 RW(u32 a) { return *(const u16 *)(rc_ram + (a & 0xFFFE)); }
+/* pantallas: en el primer cuadro negro de una transicion (FEC298 = 0) se carga la seccion de la pantalla pedida
+   (FEC29C, el ultimo valor no nulo) con el FEC146 de ahora; si la clave no esta (FEC146 cambia al entrar), en el
+   primer cuadro del modo nuevo (la pantalla aun no se ha visto: sale un poco mas tarde). Tambien al cambiar FEC146
+   dentro de un modo (logo -> fotos -> titulo) si su seccion no esta ya. El juego esta congelado mientras tanto */
+static void pantalla(u32 modo)
+{
+    u32 f146 = RW(0xFEC146), ped = RW(0xFEC29C);
+    if (ped) modo_ped = ped;
+    if (modo == 0 && modo_ant != 0) carga_pantalla(modo_ped << 16 | f146, fb ^ 1);
+    else if (modo != 0 && modo != 1 && modo != 5 && (modo != modo_ant || f146 != f146_ant)) carga_pantalla(modo << 16 | f146, fb ^ 1);
+    modo_ant = modo; f146_ant = f146;
+}
 void rc_vblank(void)
 {
-    u16 pad, t0; int draw = 1;
+    u16 pad, t0; int draw = 1, menu; u32 modo;
     l68_acc += (u16)(T1 - lastv);
-    dma_wait();
+    while (D2_CHCR & (1 << 24)) carga_poll();   /* la lista anterior aun en la GPU: sondear mientras (hasta 10 ms) */
+    carga_atiende();
     if ((I_STAT & 1) && !skipped) draw = 0;     /* el vblank ya paso: este cuadro no se dibuja (nunca dos seguidos) */
     skipped = !draw; skips += !draw;
     if (draw) { vsync(); GP1 = 0x05000000 | ((fb ? 256 : 0) << 10); fb ^= 1; }
@@ -174,20 +133,23 @@ void rc_vblank(void)
     t0 = T1;
     rc_snd_vblank();
     mcu_cuadro(rc_ram, &rc_mcu);
+    modo = RW(0xFEC298); menu = modo != 1 && modo != 5;
+    pantalla(modo);
     if (draw) {
+        if (menu) vid_paletas();
         l_begin();
-        l_room(6);
-        lp[0] = 0xE3000000 | ((fb ? 256u : 0u) << 10); lp[1] = 0xE4000000 | ((((fb ? 256u : 0u) + H - 1) << 10)) | (W - 1);
-        lp[2] = 0xE5000000 | ((fb ? 256u : 0u) << 11); lp[3] = 0x02000000 | rgb24(0); lp[4] = (fb ? 256u : 0u) << 16; lp[5] = (H << 16) | W;
-        lp += 6;
-        plano();
-        sprites();
+        vid_marco(fb);
+        if (menu) { vid_menu(); lvid_acc += vid_lineas; carga_poll(); }
+        else { plano(); sprites(); }
         if (show) {
-            digits(4, 4, RW(0xFEC298), 2); digits(28, 4, nframe, 6); digits(84, 4, l68, 3); digits(116, 4, ldraw, 3);
+            digits(4, 4, modo, 2); digits(28, 4, nframe, 6); digits(84, 4, l68, 3); digits(116, 4, ldraw, 3);
             digits(148, 4, skips, 4); digits(188, 4, fps_mil, 5); digits(236, 4, (0x801FFFF0u - 16384u - (u32)__bss_end) >> 10, 4);
+            digits(272, 4, vid_faltas_cuadro, 3); digits(300, 4, carga_sectores, 5); digits(344, 4, lvid, 3);
         }
+        carga_atiende();
         l_send();
     }
+    vid_spr_copia();                            /* S(N): los sprites que se dibujan en el cuadro siguiente */
     pad = joy_read();
     {   /* IN0: arriba 01, abajo 02, derecha 04, izquierda 08, acelerar 10, marcha 20 (activa a 1), START 80; IN2: moneda bit 8 */
         u16 in0 = 0xDDDF, in2 = 0xFFDF;
@@ -204,8 +166,9 @@ void rc_vblank(void)
         if (!(pad & 0x0100) && !(pad & 0x0200)) show = 1;   /* L2 + R2: cifras */
         rc_set_io(in0, 0xFFFF, in2, 0xFFFF);
     }
+    carga_poll();
     ldraw_acc += (u16)(T1 - t0);
-    if ((++nframe & 31) == 0) { l68 = l68_acc >> 5; ldraw = ldraw_acc >> 5; l68_acc = ldraw_acc = 0; }
+    if ((++nframe & 31) == 0) { l68 = l68_acc >> 5; ldraw = ldraw_acc >> 5; lvid = lvid_acc >> 5; l68_acc = ldraw_acc = lvid_acc = 0; }
     lastv = T1;
 }
 static volatile u32 bad_pc;
@@ -216,7 +179,7 @@ void rc_bad(u32 pc)
         dma_wait(); l_begin(); l_room(6);
         lp[0] = 0xE3000000; lp[1] = 0xE4000000 | ((H - 1) << 10) | (W - 1); lp[2] = 0xE5000000;
         lp[3] = 0x020000C0; lp[4] = 0; lp[5] = (H << 16) | W; lp += 6;
-        digits(100, 100, pc, 8); l_send(); vsync(); GP1 = 0x05000000; GP1 = 0x03000000;
+        digits(100, 100, pc, 8); l_send(); I_STAT = ~1u; while (!(I_STAT & 1)); GP1 = 0x05000000; GP1 = 0x03000000;
     }
 }
 void rc_divzero(u32 pc) { rc_bad(pc); }
@@ -259,6 +222,11 @@ int main(void)
         }
         gpu_wait(); GP1 = 0x05000000; GP1 = 0x03000000;
     }
+    vid_init();                                   /* paletas y CLUT de efecto en S0, huecos vacios */
+    carga_init();                                 /* la unidad, el directorio y el indice de MENUS.PAK */
+#ifndef SIN_GANCHO
+    rc_sondeo_gancho = carga_poll; rc_sondeo_per = 16384; rc_sondeo_t = 0;   /* el CD se sondea tambien mientras corre el 68000 */
+#endif
     lastv = T1;
     rc_run(((u32)*(u16 *)(rc_rom + 4) << 16) | *(u16 *)(rc_rom + 6));
     for (;;);
