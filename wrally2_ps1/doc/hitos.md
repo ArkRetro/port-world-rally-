@@ -110,7 +110,10 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [~] Carga de fondo del mapa a 2x con puntos de sondeo; `CARGA_1X`; CARGANDO solo si falta
 - [ ] Politica de carrera: prelectura por avance, muerte por avance, victimas con copia en L2 primero
 - [ ] Proxies y lecturas de emergencia; pantalla de cifras L2
-- [ ] Cargas de §7.2 en todos los menus; pausa con START
+- [~] Cargas de §7.2 en todos los menus; pausa con START. Elegir coche: corridas `menus0-2` en `construir_cd.sh` (los
+  tres coches y los cuatro rallies; la seccion 8000C pasa de ~825 a 2 140 tiles) y al empezar una carga bloqueante lo
+  pintado en el negro anterior ya no cuenta como visible (76 tiles se quedaban sin hueco y la pantalla salia sin fondo
+  30 cuadros): 0 faltas al elegir coche, carga de 1,2 s en el negro
 - [ ] Puerta G-CD: 0 sectores en carrera
 - [ ] Puerta G-TILES con `count_missing` en lineas fuera del paquete
 - [ ] Puerta G-CARGA: negro antes del mapa <= 0,5 s; mapa -> carrera 0 s a 2x, <= 3,5 s en 1x; START <= 1,2 s
@@ -131,6 +134,11 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [x] Puerta G-SNDLOG en la PS1 (`tools/sndps1.py`: `psxprof2` contra `rc_host SNDLOG`): attract 12 000 cuadros, 46 comienzos y 17 cambios
   de trozo; partida de Portugal 10 700 cuadros, 170 comienzos y 37 cambios: mismo canal y trozo, comienzos en el mismo
   cuadro y cambios a +0-2 cuadros, ningun cambio pasando por el silencio; G-ESTADO igual con sonido
+- [x] Modelo del GAE1 a tiempo real: en los cuadros lentos (mas de un vblank) avanza tambien los vblank de mas (sin las
+  pausas de las cargas), como el chip de la placa; si no, la SPU (que no espera) llegaba al final de los trozos antes de
+  que el juego encolara el siguiente (audio entrecortado a ~52 cuadros/s). La huella se separa del banco en los cuadros
+  lentos: G-ESTADO y G-SNDLOG se pasan con `MAINOPT=-DSND_JUEGO` (attract y Portugal iguales). Muestras: se leian de los
+  graficos (faltaba 0x100000); ahora SNR 24-25 dB frente a la ROM
 - [ ] Puerta G-SON: 0 huecos/saltos; deriva <= 1 cuadro en 60 s; `cortes.py` sin cortes nuevos
 - Usuario (prueba 3): el juego completo con sonido
 
