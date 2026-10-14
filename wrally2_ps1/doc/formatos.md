@@ -103,3 +103,30 @@ DEMO/ST: 1 = mapa, 2 = VO, 3 = L2, 4 = ROM.
    `(color & 0x3F) == 0x3F` (pens 1-7 RESTA p, 8 SUMA 8, 9-15 SUMA 16 - p).
 4. Paletas: se convierten las entradas que cambiaron y se suben (A: la CLUT de 32; B: se rehacen las CLUT de los
    huecos visibles con esa paleta).
+
+## 7. Decisiones de los constructores (`tools/paquetes.py`, `tiles4.py`, `rombank.py`, `tilesbin.py`)
+
+1. Bit 3 del registro B (media paleta alta) solo si el tile no tiene pen 0 ni pen 16 y todos sus pens estan en 17-31:
+   indice = pen - 16, receta k -> k + 16 (se puede dibujar con las entradas 16-31 de la CLUT del juego). Bit 2: todos los
+   pens en 0-15 (las celdas de efecto llevan bits 1 y 2; ninguna usa pens > 15). Bit 0 (sprite): el codigo nunca se vio
+   en el plano. Bit 1 (efecto): solo si se vio unicamente como efecto.
+2. Fusion: cada indice es un pen real de la paleta mas vista; el grupo con menos pixeles toma el color del otro (pens
+   del mismo color se funden gratis). Medido en el attract: 34 % exactos, 11 % exactos en color, el resto con perdida
+   (PSNR mediano 38,1 dB: plano 37,7, sprites 39,2). Un tile con paletas distintas en pantallas distintas lleva un
+   registro en cada paquete; no hay variantes dentro de un paquete.
+3. Avance (bytes 142-143): ultimo FEFD08 en que se ve el tile en cualquier instancia de la demo + `--margen` (16),
+   saturado a 0xFFFF; mapa 0; TILES.BIN 0xFFFF. Cabecera bytes 12-15 de VO/L2: el menor primer avance del sector.
+4. VO/L2: orden por primer cuadro relativo al principio de la instancia de la demo (minimo entre instancias); VO = los
+   primeros `--vo` (4 352), L2 = el resto y, al final, los codigos escritos en el plano nunca visibles (clase 3).
+5. Sectores de ROM (tipo 2): cada tramo lleva su cola de 4 bytes (bytes de ROM = largo + 4); un tramo son sectores
+   seguidos con direccion contigua, cada cabecera con la direccion de su primer byte; byte 5 a 0; en el indice,
+   registros de la seccion ROM = tramos.
+6. Indice (tipo 5): byte 5 = entradas del sector (sin el terminador); paquete = base (0x0100 MENUS, 0x0200 + r DEMO);
+   indice del sector = 0. Sectores absolutos del fichero. ROMRES.BIN y TILES*.BIN no llevan indice. En MENUS el campo
+   paquete de cada seccion es 0x0100 + ordinal de la pantalla (orden de clave).
+7. MENUS: pantallas vistas en el attract y en la partida de Portugal (modos 2, 3, 6, 8, A, B, D, E, F); fuera los modos
+   0, 1, 5 y 9. La mayor, 3/0A (fotos), 2 465 tiles.
+8. Paleta de un tile: la mas vista en el BLKLOG (ningun sprite usa color >= 64); los colores, del volcado mas vivo
+   (suma RGB maxima) dentro de las instancias de la pantalla, para esquivar fundidos.
+9. TILESA.BIN: 2 731 sectores, el ultimo con 8 registros. ROMRES.BIN: los tramos residentes de `work/romres.txt`
+   (`R inicio fin`; las lineas `B fec3c6 fec3c8 inicio fin` son los bancos por tramo, para `rc_host ROMCHK`).
