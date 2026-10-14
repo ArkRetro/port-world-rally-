@@ -2,10 +2,13 @@
 (claves, sectores, registros), secciones y sectores (cabecera WR2T, tipo, paquete, indice seguido, cuentas, 2 048 B);
 registros A descodificados y comparados con el tile de gfx1.bin; registros B: receta, banderas y, si son exactos
 (bit 2, bit 3 o <= 15 pens), comparados con el tile; tramos de ROM comparados con prog.bin. Con -v, los sectores uno a
-uno; con -r, cada registro. Sale con 1 si algo falla."""
+uno; con -r, cada registro. Carrera: en un paquete ningun codigo repetido entre VO y L2; GAMEc.PAK (0x04xx) con
+avance 0xFFFF y <= 1 024 registros; si se dan GAMEc y STkk juntos, ningun codigo de los GAME en el VO/L2 de los ST y
+fijos + VO <= 4 352 huecos. Sale con 1 si algo falla."""
 import sys, os, struct
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
+from collections import Counter
 import tilesbin, tiles4, rombank
 
 TIPO = {0: 'A', 1: 'L2 (B)', 2: 'ROM', 3: 'mapa (B)', 4: 'VO (B)', 5: 'indice'}
@@ -36,9 +39,9 @@ def comprueba_b(r, verboso):
     return t
 
 def main():
-    a = sys.argv[1:]; verboso = '-v' in a; regs = '-r' in a
+    a = sys.argv[1:]; verboso = '-v' in a; regs = '-r' in a; games = []; sts = []
     for fn in [x for x in a if not x.startswith('-')]:
-        d = open(fn, 'rb').read(); n = len(d) // 2048
+        d = open(fn, 'rb').read(); n = len(d) // 2048; cods = []; nvo = 0
         print('%s: %d B, %d sectores' % (fn, len(d), n))
         if len(d) % 2048: falla('tamano no multiplo de 2048')
         secs = {}; ult = {}; nsec = 0
@@ -80,6 +83,8 @@ def main():
                         if pq == 0x0500 and t != idx * 12 + j: falla('TILESA: sector %d registro %d es %04X' % (idx, j, t))
                     else:
                         t = comprueba_b(r, regs)
+                        if tipo in (1, 4) and pq != 0x0501: cods.append(t); nvo += tipo == 4
+                        if pq >> 8 == 4 and struct.unpack_from('<H', r, 142)[0] != 0xFFFF: falla('GAME: registro %04X sin avance 0xFFFF' % t)
                         if pq == 0x0501 and t != idx * 14 + j: falla('TILES: sector %d registro %d es %04X' % (idx, j, t))
                         if tipo == 3 and av: falla('sector %d (mapa) con avance %d' % (i, av))
             elif tipo == 2:
@@ -91,6 +96,19 @@ def main():
             else: falla('sector %d: tipo %d' % (i, tipo))
         for (tipo, pq), l in sorted(secs.items()):
             print('  tipo %d (%s) paquete %04X: %d sectores' % (tipo, TIPO.get(tipo, '?'), pq, len(l)))
+        rep = [c for c, k in Counter(cods).items() if k > 1]
+        if rep: falla('%s: %d codigos repetidos entre VO y L2 (%s)' % (fn, len(rep), ' '.join('%04X' % c for c in rep[:8])))
+        pqs = {pq >> 8 for _, pq in secs}
+        if 4 in pqs:
+            games.append(set(cods))
+            if len(cods) > 1024: falla('%s: %d fijos, mas de 1 024 huecos' % (fn, len(cods)))
+        if 3 in pqs: sts.append((fn, set(cods), nvo))
+    if games and sts:                   # los fijos de todos los coches no van en los tramos
+        fj = set.intersection(*games)
+        for fn, c, nvo in sts:
+            if c & fj: falla('%s: %d codigos fijos en VO/L2' % (fn, len(c & fj)))
+            if nvo + max(len(g) for g in games) > 4352: falla('%s: fijos + VO = %d > 4 352' % (fn, nvo + max(len(g) for g in games)))
+        print('carrera: %d GAME, %d ST; fijos comunes %d; VO de %d a %d' % (len(games), len(sts), len(fj), min(x[2] for x in sts), max(x[2] for x in sts)))
     print('fallos: %d' % fallos)
     sys.exit(1 if fallos else 0)
 

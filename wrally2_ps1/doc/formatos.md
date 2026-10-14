@@ -130,3 +130,17 @@ DEMO/ST: 1 = mapa, 2 = VO, 3 = L2, 4 = ROM.
    (suma RGB maxima) dentro de las instancias de la pantalla, para esquivar fundidos.
 9. TILESA.BIN: 2 731 sectores, el ultimo con 8 registros. ROMRES.BIN: los tramos residentes de `work/romres.txt`
    (`R inicio fin`; las lineas `B fec3c6 fec3c8 inicio fin` son los bancos por tramo, para `rc_host ROMCHK`).
+
+## 8. Paquetes de carrera (`tools/paquetes.py --tramos`, `tools/sim.py`)
+
+1. `STkk.PAK` (paquete 0x0300 + FEFD0A): secciones como las demos. Mapa = los cuadros en modo B con la clave
+   (FEC3C6, FEC3C8) del tramo (en el mapa FEFD0A aun es el del tramo anterior), con los codigos nunca visibles. VO = los
+   primeros 4 352 - fijos - ROT (2 912 con 1 024 fijos y ROT 416), asi la L2 en RAM es (N - 3 936) x 144. Orden por
+   primer avance (minimo entre lineas) y primer cuadro relativo; al final de la L2 el cierre (codigos nunca visibles).
+   Bytes 142-143: ultimo avance + margen. Sin los codigos de `GAMEc`. Cuentan todos los cuadros de modo 1 con ese FEFD0A
+   (cuenta atras, meta, "Continue?"). ROM: lineas B de `romres.txt` con la cola de 4 B.
+2. `GAMEc.PAK` (paquete 0x0400 + 'NLR'.index): una seccion, clave 2, sectores tipo 4 (solo VRAM); los 1 024 codigos
+   vistos en carrera en >= 10 tramos, por tramos y cuadros; avance 0xFFFF. Coche = FE8124 mas frecuente en carrera
+   (0x0000 N, 0x04B0 L, 0x0320 R): hoy solo hay lineas del coche N.
+3. Claves de tramo (FEC3C6/FEC3C8 -> FEFD0A): 0/0 4, 0/1 8, 0/2 5, 1/0 2, 1/1 9, 1/2 7, 2/0 10, 2/1 6, 2/2 0, 3/0 11,
+   3/1 1, 3/2 3.

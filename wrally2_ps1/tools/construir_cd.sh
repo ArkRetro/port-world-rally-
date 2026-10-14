@@ -1,6 +1,6 @@
 #!/bin/sh
-# construir_cd.sh: los datos de video y de ROM del CD para el attract (hito H3) en work/cd/: ROM.BIN, ROMRES.BIN,
-# MENUS.PAK, DEMO0-3.PAK, TILES.BIN y TILESA.BIN (doc/formatos.md), y work/romres.txt. Hace falta el banco compilado
+# construir_cd.sh: los datos de video y de ROM del CD en work/cd/: ROM.BIN, ROMRES.BIN, MENUS.PAK, DEMO0-3.PAK,
+# GAMEN.PAK, ST00-11.PAK, TILES.BIN y TILESA.BIN (doc/formatos.md), y work/romres.txt. Hace falta el banco compilado
 # (banco.sh con PERFILES=1: rc/rc_host y rc/rc_host_rom) y work/gfx1.bin y work/prog.bin (tools/prep.py, gfx.py).
 # 1. Corridas del banco (una a la vez; se saltan con SIN_CORRIDAS=1 si ya estan en work/attract y work/pt): el banco es
 #    determinista desde el encendido, asi que una corrida larga del attract (80 000 cuadros = 8,5 ciclos de 9 389; los
@@ -8,7 +8,10 @@
 #    mas (fin de partida, records y otros ciclos del attract con otra semilla). BLKLOG + LOG + DUMP (paletas) con
 #    rc_host y ROMSTAT con rc_host_rom.
 # 2. tilesbin.py --a (TILESA.BIN), rombank.py (ROM.BIN, ROMRES.BIN, romres.txt), paquetes.py (MENUS.PAK, DEMO0-3.PAK),
-#    tilesbin.py --b (TILES.BIN) y verpak.py sobre todo.
+#    tilesbin.py --b (TILES.BIN) y verpak.py sobre todo. Los ROMSTAT van todos (attract, pt y work/tramos, de
+#    tools/corridas_tramos.sh) para que ROMRES.BIN y los bancos salgan iguales a los de romstat.py -o.
+# 3. Carrera (H4-H5) si hay work/tramos/*/blk.bin: paquetes.py --tramos (GAMEN.PAK y ST00-11.PAK; GAMEL/GAMER solo si
+#    hay corridas con ese coche) con las partidas de work/tramos y la de work/pt.
 set -e
 cd "$(dirname "$0")/.."
 W=$PWD/work; CD=$W/cd; T=$PWD/tools; mkdir -p "$CD"
@@ -24,12 +27,15 @@ if [ -z "$SIN_CORRIDAS" ]; then
   INPUTS=$(cat "$T/inputs_pt.txt") corrida pt 36000 60
 fi
 T1=$(date +%s); echo "corridas: $((T1 - T0)) s"
-BLK="$W/attract/blk.bin $W/pt/blk.bin"; DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin"; RS="$W/attract/romstat.txt $W/pt/romstat.txt"
+BLK="$W/attract/blk.bin $W/pt/blk.bin"; DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin"; RS="$W/attract/romstat.txt $W/pt/romstat.txt $(ls $W/tramos/*/romstat.txt 2>/dev/null)"
+TR="$(ls -d $W/tramos/*/ 2>/dev/null | while read d; do [ -s $d/blk.bin ] && echo $d; done) $W/pt"
 python3 "$T/tilesbin.py" --a "$CD/TILESA.BIN"
 python3 "$T/rombank.py" $RS -o "$CD" --romres "$W/romres.txt"
 python3 "$T/paquetes.py" --blk $BLK --dumps $DUMPS --romstat $RS -o "$CD"
 python3 "$T/tilesbin.py" --b "$CD/TILES.BIN" --blk $BLK --dumps $DUMPS
+[ -n "$(ls $W/tramos/*/blk.bin 2>/dev/null)" ] && python3 "$T/paquetes.py" --tramos $TR -o "$CD"
 T2=$(date +%s); echo "construccion: $((T2 - T1)) s"
-python3 "$T/verpak.py" "$CD/MENUS.PAK" "$CD/DEMO0.PAK" "$CD/DEMO1.PAK" "$CD/DEMO2.PAK" "$CD/DEMO3.PAK" "$CD/ROMRES.BIN" "$CD/TILES.BIN" "$CD/TILESA.BIN"
+python3 "$T/verpak.py" "$CD/MENUS.PAK" "$CD/DEMO0.PAK" "$CD/DEMO1.PAK" "$CD/DEMO2.PAK" "$CD/DEMO3.PAK" "$CD/ROMRES.BIN" "$CD/TILES.BIN" "$CD/TILESA.BIN" \
+  $(ls "$CD"/GAME?.PAK "$CD"/ST??.PAK 2>/dev/null)
 ls -l "$CD"
 echo "total: $(($(date +%s) - T0)) s"

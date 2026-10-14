@@ -79,10 +79,13 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   guion, los 3 tramos; no hace falta congelar el reloj)
 - [ ] >= 6 lineas completas por tramo x estilos, + una por coche (dia y noche); guiones en `escenarios/`
 - [ ] Busqueda de la posicion maestra del coche (decide el barrido)
-- [ ] `paquetes.py` con cierre (plano entero, familias de 64, poses del coche)
-- [ ] `sim.py` con la politica protectora; N y bancos de los 12 tramos
+- [x] `paquetes.py` con cierre (plano entero, familias de 64, poses del coche): ST00-11.PAK y GAMEN.PAK, verpak sin fallos
+- [x] `sim.py` con la politica protectora; N y bancos de los 12 tramos (PT1 N = 9 151, necesita 909 KB: G-RAM +10,6 %)
 - [ ] Presupuesto de RAM recalculado con codigo real (perfiles); palancas P1-P3 si hace falta
-- [ ] Puerta G-TILES en simulacion (12 tramos, una fuera)
+- [ ] Puerta G-TILES en simulacion (12 tramos, una fuera): NO PASA con 24 lineas del piloto: 0,8-12 % de cuadros con
+  faltas en la linea fuera (99,9 % codigos vistos en otros tramos: cuenta atras como 2.o-4.o tramo, choques y vueltas);
+  dentro, rafagas de > 40 subidas por cuadro (choques). Faltan lineas: cada tramo como 2.o-4.o, choques, mas en ST03/05/07,
+  coches L y R; margen 64 en los ST (FEFD08 retrocede)
 - [x] Puerta G-ROM: corrida nueva sin bloques fuera de residente + banco (conjuntos de las 24 partidas de los 12
   tramos + attract + Portugal: residente 87,0 KB, bancos 87-154 KB; `ROMCHK` 0 trampas en partidas enteras)
 - [ ] Puerta G-RAM con los N finales

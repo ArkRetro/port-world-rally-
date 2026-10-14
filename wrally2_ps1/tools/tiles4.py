@@ -90,9 +90,9 @@ def reg_b(t, c, pal, fl=0, avance=0):
     return empaqueta(t, idx, rec, c, f | (fl & SPRITE), avance), psnr
 
 class Paletas:
-    """las 64 paletas (2048 colores) de cada volcado WR2D del banco, por cuadro"""
+    """las 64 paletas (2048 colores) de cada volcado WR2D del banco, por cuadro; y la palabra FE8124 (coche elegido)"""
     def __init__(self, fns):
-        self.p = {}
+        self.p = {}; self.coche = {}
         for fn in fns:
             d = open(fn, 'rb').read(); o = 0
             while o < len(d):
@@ -101,6 +101,7 @@ class Paletas:
                 for _ in range(nb):
                     base, n = struct.unpack('>II', d[o:o + 8]); o += 8
                     if base == 0x210000: self.p[fr] = np.frombuffer(d[o:o + 0x1000], dtype='>u2').astype(np.int32)
+                    if base == 0xFE0000: self.coche[fr] = struct.unpack_from('>H', d, o + 0x8124)[0]
                     o += n
         self.cuadros = np.array(sorted(self.p))
         v = np.stack([self.p[fr] for fr in self.cuadros.tolist()]).reshape(-1, 64, 32)

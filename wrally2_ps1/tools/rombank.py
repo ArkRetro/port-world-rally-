@@ -1,9 +1,9 @@
 """rombank.py romstat.txt [...] [-o work/cd] [--romres work/romres.txt]: la ROM del 68000 para el CD (formatos.md 3 y
 5, diseno 3): ROM.BIN (prog.bin 0x000000-0x0DD7FF tal cual, para el arranque y las trampas), ROMRES.BIN (los tramos
 residentes de tools/romstat.py en sectores de tipo 2, paquete 0x0600) y work/romres.txt (lineas 'R inicio fin' y
-'B fec3c6 fec3c8 inicio fin', para rc68.py). Cada tramo lleva 4 bytes de cola (los del vecino, diseno 3.1) y va en
-sectores seguidos; la cabecera de cada sector dice la direccion de su primer byte y cuantos bytes lleva.
-Exporta sectores_rom() para la seccion ROM de los paquetes (paquetes.py)."""
+'B fec3c6 fec3c8 inicio fin', para rc68.py; las lineas B de claves que estas corridas no tienen se conservan). Cada
+tramo lleva 4 bytes de cola (los del vecino, diseno 3.1) y va en sectores seguidos; la cabecera de cada sector dice la
+direccion de su primer byte y cuantos bytes lleva. Exporta sectores_rom() y lee_romres() para los paquetes."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import romstat, tilesbin
@@ -33,6 +33,15 @@ def sectores_rom(trs, paquete, idx0=0):
 
 def tramos_bytes(bl): return [(x << 8, (y << 8) + 256) for x, y in romstat.tramos(bl)]
 
+def lee_romres(fn):
+    """romres.txt -> (tramos residentes [(inicio, fin)], {(fec3c6, fec3c8): [(inicio, fin)]}), en bytes, fin excluido"""
+    res = []; bancos = {}
+    for l in open(fn):
+        p = l.split()
+        if p and p[0] == 'R': res.append((int(p[1], 16), int(p[2], 16)))
+        elif p and p[0] == 'B': bancos.setdefault((int(p[1], 16), int(p[2], 16)), []).append((int(p[3], 16), int(p[4], 16)))
+    return res, bancos
+
 def main():
     a = sys.argv[1:]
     if not a: print(__doc__); return
@@ -44,6 +53,9 @@ def main():
     open(os.path.join(out, 'ROM.BIN'), 'wb').write(prog()[:FIN])
     secs = sectores_rom(tramos_bytes(res), 0x0600)
     open(os.path.join(out, 'ROMRES.BIN'), 'wb').write(b''.join(secs))
+    if os.path.exists(rr):          # se conservan los bancos que estas corridas no ven (los de los tramos, de romstat.py -o)
+        for k, trs in lee_romres(rr)[1].items():
+            if k not in bancos: bancos[k] = (set(), {b for x, y in trs for b in range(x >> 8, y >> 8)})
     romstat.escribe(rr, res, bancos)
     print('ROM.BIN %d B; ROMRES.BIN %d tramos, %d bloques (%s), %d sectores (%d B); %s' % (FIN, len(romstat.tramos(res)), len(res), romstat.kb(len(res)), len(secs), len(secs) * 2048, rr))
     for (c6, c8), (s, con) in sorted(bancos.items()):
