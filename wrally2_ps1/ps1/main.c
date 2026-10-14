@@ -103,7 +103,7 @@ static void sprites(void)
 }
 
 /* ------------------------------------------------------------ cuadro */
-static int fb, gear, sq_last, show = 1, skipped;
+static int fb, gear, sq_last, show, lr_last, skipped;   /* show: cifras de depuracion (L2 + R2) */
 static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc, lvid, lvid_acc;
 static u32 modo_ant, f146_ant, modo_ped;
 int fps_mil = 60000;
@@ -223,7 +223,11 @@ void rc_vblank(void)
         if (gear) in0 |= 0x20;
         if (!(pad & 0x0008)) in0 &= ~0x80;             /* START */
         if (!(pad & 0x0001)) in2 &= ~0x100;            /* SELECT: moneda */
-        if (!(pad & 0x0100) && !(pad & 0x0200)) show = 1;   /* L2 + R2: cifras */
+        {   /* L2 + R2: cifras de depuracion si/no */
+            int lr = !(pad & 0x0100) && !(pad & 0x0200);
+            if (lr && !lr_last) show ^= 1;
+            lr_last = lr;
+        }
         rc_set_io(in0, 0xFFFF, in2, 0xFFFF);
     }
     carga_poll();
