@@ -103,7 +103,8 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 
 ## H6 Sonido (M-L)
 - [x] `sndwr2.py`: banco fijo, conjuntos por fase, bancos de coche (`work/cd/SPU*.BIN`, `work/snd_tab.c`; tamanos = diseno 5.1)
-- [ ] GAE1 -> SPU con encadenado; tono escalado por fps (0x2DF en NTSC); `RITMO=591`
+- [~] GAE1 -> SPU con encadenado; tono escalado por fps (0x2DF en NTSC); `RITMO=591` (`ps1/snd.c` escrito, sin
+  integrar en main.c; `psxprof2` modela ya la repeticion, ENDX e IRQ de la SPU: la sonda spucad da OK en el)
 - [ ] Cambio del hueco M en el negro del attract; voces congeladas en cargas y pausa
 - [ ] Puerta G-SNDLOG en la PS1
 - [ ] Puerta G-SON: 0 huecos/saltos; deriva <= 1 cuadro en 60 s; `cortes.py` sin cortes nuevos
