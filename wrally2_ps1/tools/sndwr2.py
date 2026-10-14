@@ -38,7 +38,9 @@ def tabla(prog):
     return r
 
 def codifica(gfx, banco, fin, ln):
-    a = 0x100000 + banco * 0x200000 + (fin << 8) - 0x100000
+    # gaelco.cpp: byte = banco (0 / 0x200000) + (registro 2 << 8) - 1 + cuenta (de ln a 1), con registro 2 = final +
+    # 0x1000 (el juego lo suma): el trozo esta en [0x100000 + banco + (final << 8), + ln) y suena del final al principio
+    a = 0x100000 + banco * 0x200000 + (fin << 8)
     raw = gfx[a:a + ln][::-1]
     x = [(b - 128) * 256 for b in raw]
     x += [x[-1]] * (-len(x) % 28)
