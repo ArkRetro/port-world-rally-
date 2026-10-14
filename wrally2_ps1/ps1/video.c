@@ -543,7 +543,8 @@ static void b_pon(int h, const u8 *reg, u32 extra, int l2)
 {
     u32 c = reg[128] | (u32)reg[129] << 8; u8 *q = hrec + h * 10; int k;
     k = reg[142] | reg[143] << 8;
-    hcode[h] = (u16)c; hstamp[h] = (u16)(now - 1); hmu[h] = (u8)(k > 1015 ? 0xFF : (k + 3) >> 2); hpal[h] = reg[140] & 63;
+    hcode[h] = (u16)c; hstamp[h] = (u16)(now - 1); hpal[h] = reg[140] & 63;
+    hmu[h] = (u8)((k > 1015 || (!extra && l2 < 0)) ? 0xFF : (k + 3) >> 2);   /* emergencia (TILES.BIN, avance 0): no muere por avance */
     hfl[h] = (u8)((reg[141] & 14) | extra | F_SUCIA);
     if (l2 >= 0) { q[0] = (u8)l2; q[1] = (u8)(l2 >> 8); hfl[h] |= F_L2; }
     else for (k = 0; k < 10; k++) q[k] = reg[130 + k];

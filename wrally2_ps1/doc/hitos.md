@@ -107,6 +107,14 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   G-ESTADO y G-SNDLOG iguales, ~15 000 faltas (casi todas en la 2.a mitad del tramo 1: lineas fuera de los paquetes,
   puerta G-TILES de H4). Arreglado de paso: al salir del titulo (reparto 1) se vaciaban todos los huecos A (32 000
   faltas en la pantalla de START)
+- [x] Otros coches: `GAMEL.PAK`/`GAMER.PAK` (corridas `ptL`/`ptR`: la partida de Portugal con cada coche; fijos = los de
+  N menos sus poses + las del coche, ordenados por cuadros vistos con ese coche; los ST solo con lineas del coche N),
+  elegidos por FE8126 (0 L, 1 N, 2 R; FE8124 solo cambia al empezar la carrera). Tiles de emergencia (TILES.BIN, avance
+  0) que ya no mueren por avance (el coche elegido salia como un bloque toda la carrera). ROM del tramo siempre entera:
+  si no cabe con la L2 se recorta la cola de la L2 (antes la ROM se quedaba fuera y todo iban trampas). Residente
+  97 KB con las corridas nuevas (rc68.py otra vez), 3 entradas de trampa. psxprof2 (6 000 cuadros, Portugal): 0
+  trampas; faltas por cuadro de carrera N 4,1, L 10,1, R 9,7 (lineas fuera de los paquetes); G-ESTADO igual;
+  G-SNDLOG: un cambio de trozo del motor distinto en el 2.o tramo (pendiente)
 - [~] Carga de fondo del mapa a 2x con puntos de sondeo; `CARGA_1X`; CARGANDO solo si falta
 - [ ] Politica de carrera: prelectura por avance, muerte por avance, victimas con copia en L2 primero
 - [ ] Proxies y lecturas de emergencia; pantalla de cifras L2

@@ -30,6 +30,12 @@ if [ -z "$SIN_CORRIDAS" ]; then
   INPUTS= corrida attract 80000 125
   INPUTS=$(cat "$T/inputs_pt.txt") corrida pt 36000 60
 fi
+# la partida de Portugal con los otros dos coches (GAMEL.PAK y GAMER.PAK): el cursor de elegir coche a la izquierda (L,
+# FE8124 = 04B0) o a la derecha (R, 0320) antes de elegir
+if [ -z "$SIN_CORRIDAS" ] || [ ! -s "$W/ptR/blk.bin" ]; then
+  INPUTS="1380-1386:L,$(cat "$T/inputs_pt.txt")" corrida ptL 12000 60
+  INPUTS="1380-1386:R,$(cat "$T/inputs_pt.txt")" corrida ptR 12000 60
+fi
 if [ -z "$SIN_CORRIDAS" ] || [ ! -s "$W/menus2/blk.bin" ]; then
   INPUTS="$MENU_C,1840-1846:X,$MENU_R,2240-2246:X" corrida menus0 2800 30
   INPUTS="$MENU_C,1800-1806:L,1840-1846:X,$MENU_R,2240-2246:X" corrida menus1 2800 30
@@ -37,10 +43,10 @@ if [ -z "$SIN_CORRIDAS" ] || [ ! -s "$W/menus2/blk.bin" ]; then
 fi
 T1=$(date +%s); echo "corridas: $((T1 - T0)) s"
 MEN="$W/menus0 $W/menus1 $W/menus2"
-BLK="$W/attract/blk.bin $W/pt/blk.bin $(for d in $MEN; do echo $d/blk.bin; done)"
-DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin $(for d in $MEN; do echo $d/dumps.bin; done)"
-RS="$W/attract/romstat.txt $W/pt/romstat.txt $(for d in $MEN; do echo $d/romstat.txt; done) $(ls $W/tramos/*/romstat.txt 2>/dev/null)"
-TR="$(ls -d $W/tramos/*/ 2>/dev/null | while read d; do [ -s $d/blk.bin ] && echo $d; done) $W/pt"
+BLK="$W/attract/blk.bin $W/pt/blk.bin $W/ptL/blk.bin $W/ptR/blk.bin $(for d in $MEN; do echo $d/blk.bin; done)"
+DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin $W/ptL/dumps.bin $W/ptR/dumps.bin $(for d in $MEN; do echo $d/dumps.bin; done)"
+RS="$W/attract/romstat.txt $W/pt/romstat.txt $W/ptL/romstat.txt $W/ptR/romstat.txt $(for d in $MEN; do echo $d/romstat.txt; done) $(ls $W/tramos/*/romstat.txt 2>/dev/null)"
+TR="$(ls -d $W/tramos/*/ 2>/dev/null | while read d; do [ -s $d/blk.bin ] && echo $d; done) $W/pt $W/ptL $W/ptR"
 python3 "$T/tilesbin.py" --a "$CD/TILESA.BIN"
 python3 "$T/rombank.py" $RS -o "$CD" --romres "$W/romres.txt"
 python3 "$T/paquetes.py" --blk $BLK --dumps $DUMPS --romstat $RS -o "$CD"

@@ -187,11 +187,39 @@ def fijos(cors, n=1024, minimo=10):
     cand = sorted((t for t in nt if nt[t] >= min(minimo, len(ks))), key=lambda t: (-nt[t], -fq[t], t))
     return cand[:n], len(cand)
 
+def vistos_carrera(cors, ks, clases=(0, 1, 2)):
+    """codigo -> cuadros vistos en carrera en los tramos ks de esas corridas (clases: 0 plano, 1 sprite, 2 efecto)"""
+    v = Counter()
+    for co in cors:
+        for k in ks:
+            if k in co.tramos:
+                for (t, col, cl), (c, _, _, _) in co.tramos[k]['res'].items():
+                    if cl in clases: v[t] += c
+    return v
+
 def fijos_por_coche(cors, n=1024):
-    """{coche: ([codigos fijos], candidatos)} de los coches con corridas; y los que no van en los ST: los fijos de todos
-    ellos (las poses de un coche solo se ven con ese coche y van en su GAMEc)"""
-    fc = {c: fijos([co for co in cors if co.coche == c], n) for c in sorted({co.coche for co in cors})}
-    return fc, set.intersection(*[set(x[0]) for x in fc.values()]) if fc else set()
+    """{coche: ([codigos fijos], candidatos)} y los que no van en los ST (los fijos de N). N: de sus corridas (todos los
+    tramos). Los otros coches solo tienen corridas de algunos tramos: sus fijos son los de N menos los sprites que solo
+    se ven con N en esos tramos (sus poses) mas los sprites que solo se ven con ese coche (las suyas), por cuadros; asi
+    los ST no cambian"""
+    porc = {c: [co for co in cors if co.coche == c] for c in sorted({co.coche for co in cors})}
+    if 'N' not in porc: fc = {c: fijos(v, n) for c, v in porc.items()}; return fc, set.intersection(*[set(x[0]) for x in fc.values()])
+    fc = {'N': fijos(porc['N'], n)}; fn = fc['N'][0]
+    for c, cc in porc.items():
+        if c == 'N': continue
+        ks = sorted({k for co in cc for k in co.tramos})
+        # solo sprites: las poses del coche (el plano que solo se ve con este coche es de su linea, no del coche)
+        vc = vistos_carrera(cc, ks, (1,)); vn = vistos_carrera(porc['N'], ks); vns = vistos_carrera(porc['N'], ks, (1,))
+        va = vistos_carrera(cc, ks)
+        suyo = [t for t in vc if t not in vn]
+        de_n = {t for t in vns if t not in va}
+        base = [t for t in fn if t not in de_n]
+        # todos por cuadros vistos con este coche (sus poses y lo comun: marcador, efectos); lo de N no visto en estos
+        # tramos, al final en el orden de GAMEN
+        pos = {t: i for i, t in enumerate(fn)}
+        cand = sorted(set(suyo) | set(base), key=lambda t: (-va[t], pos.get(t, 1 << 20), t))
+        fc[c] = (cand[:n], len(cand))
+    return fc, set(fn)
 
 def reparto(lineas, fj):
     """lineas [(corrida, tramo)] -> (por codigo, orden de VO + L2 sin los fijos, cierre): por primer avance FEFD08
@@ -201,7 +229,11 @@ def reparto(lineas, fj):
     cierre = sorted(t for t, o in pc.items() if o[5] and t not in fj)
     return pc, [t for _, _, t in vistos] + cierre, cierre
 
-def lineas_tramo(cors, k): return [(co, k) for co in cors if k in co.tramos]
+def lineas_tramo(cors, k):
+    """lineas del tramo k para los ST: solo las corridas con el coche N si las hay (las poses de los otros coches van en
+    su GAMEc y no deben crecer la L2)"""
+    n = [(co, k) for co in cors if k in co.tramos and co.coche == 'N']
+    return n or [(co, k) for co in cors if k in co.tramos]
 
 def carrera(cors, out, margen, rot, nfij, romres, area):
     """GAMEc.PAK y ST00-11.PAK; cifras por tramo y G-RAM"""
@@ -218,7 +250,7 @@ def carrera(cors, out, margen, rot, nfij, romres, area):
         ivs = [(co, [iv for t in co.tramos.values() for iv in t['iv']]) for co in cc]; pq = 0x0400 + 'NLR'.index(c)
         regs = [reg(t, pc[t], ivs, 'G' + c, 0xFFFF) for t in fc[c][0]]
         fn = os.path.join(out, 'GAME%s.PAK' % c); escribe_pak(fn, pq, [(2, sectores_b(regs, 4, pq, 0, None), len(regs))])
-        print('GAME%s.PAK: %d B; %d fijos de %d candidatos (vistos en >= 10 tramos), de %d corridas' % (c, os.path.getsize(fn), len(regs), fc[c][1], len(cc)))
+        print('GAME%s.PAK: %d B; %d fijos de %d candidatos, de %d corridas' % (c, os.path.getsize(fn), len(regs), fc[c][1], len(cc)))
     nfj = len(fj); nvo = HUECOS - nfj - rot; bancos = rombank.lee_romres(romres)[1]; filas = []
     for k in sorted({k for co in cors for k in co.tramos}):
         lin = lineas_tramo(cors, k); pq = 0x0300 + k
