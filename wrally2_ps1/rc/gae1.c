@@ -5,6 +5,7 @@
 gae1_canal gae1_c[GAE1_CANALES];
 unsigned short *gae1_reg;
 void (*gae1_suceso)(int ch, int t);
+void (*gae1_traza)(unsigned off, unsigned dato, unsigned mascara);
 static void suceso(int ch, int t) { if (gae1_suceso) gae1_suceso(ch, t); }
 void gae1_init(unsigned short *regs)
 {
@@ -17,6 +18,7 @@ void gae1_w(unsigned off, unsigned dato, unsigned mascara)
 {
     gae1_canal *c = &gae1_c[off >> 3];
     unsigned short *r = &gae1_reg[off];
+    if (gae1_traza) gae1_traza(off, dato, mascara);
     *r = (*r & ~mascara) | (dato & mascara);
     if ((off & 7) == 3) {                /* primer trozo: empieza, o se encola si ya suena */
         if (r[-1] && *r) {

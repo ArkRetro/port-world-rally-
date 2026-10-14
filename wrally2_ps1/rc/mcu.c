@@ -22,7 +22,7 @@ mcs51_t rc_mcu;
      anteriores del mismo byte. */
 int mcu_modelo = 1;
 void (*mcu_traza)(int k, s32 t);    /* depuracion (rc_host MCUV): 0 peticion, 1 recogida, 3 fin, 4 repeticion */
-unsigned long mcu_repes;            /* repeticiones (cifra) */
+unsigned long mcu_repes, mcu_trabajos;   /* repeticiones y trabajos recogidos (cifras; puerta G-MCU) */
 unsigned mcu_vigila;                /* depuracion: escrituras del trabajo a esta direccion (MCUVA) */
 #define MCU_INF 0x3FFFFFFF
 #define RECOGIDA 1006
@@ -121,7 +121,7 @@ void mcu_sucesos(s32 ahora)
             /* recogida: FC15 = 0 y FC13 = 0 al momento; el trabajo corre sobre la copia */
             SH(rc_ram, 0xFC15) = 0; SH(rc_ram, 0xFC13) = 0;
             cp512(sh0, rc_ram + 0xFC00);
-            tbase = e; t1 = MCU_INF;
+            tbase = e; t1 = MCU_INF; mcu_trabajos++;
             corre(q); nq = nqw; iq = 0;
             ranura = q[nq - 1].t + DESFASE;
             if (mcu_traza) { mcu_traza(1, e); mcu_traza(3, q[nq - 1].t); }

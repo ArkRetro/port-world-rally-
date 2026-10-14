@@ -29,7 +29,10 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [x] Puerta G-MUS: 0 diferencias en >= 30 000 cuadros de attract + >= 12 000 de partida (343 M instrucciones comparadas)
 - [ ] Puerta G-MAME: attract 1-9 389 igual (salvo FC10/FC11); carreras <= 10 B/cuadro (FC37), meta en el mismo cuadro
 - [ ] Puerta G-MCU: <= 10 conflictos / 3 500 trabajos en carrera y demo; 0 escrituras sin gancho
-- [ ] Puerta G-SNDLOG: registro del GAE1 = MAME en los 19 escenarios
+- [~] Puerta G-SNDLOG: registro del GAE1 = MAME en los 19 escenarios (`SNDW` + `tools/sndcmp.py`; reproducibles los 13
+  con guion: attract de 32 000 cuadros igual (2 302 escrituras); matriz de 12 partidas: 1 igual, las otras iguales
+  hasta la carrera y desde ahi solo cambia el trozo del motor del canal 6 (la dinamica del coche: la divergencia de la
+  MCU que acepta G-MAME); los 6 escenarios sin guion guardado no se pueden repetir)
 - Usuario: nada (hojas PNG opcionales)
 
 ## H2 Esqueleto en la PS1, CPU y sondas (M)

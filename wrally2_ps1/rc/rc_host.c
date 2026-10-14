@@ -9,6 +9,7 @@
                              <carpeta>/dumps.bin (como WR2_DUMPCAT=1); se comparan con cmpdump.py
      LOG=1                   <carpeta>/log.txt, una linea por cuadro con las columnas del log.txt de MAME
      SNDLOG=fichero          sucesos del GAE1 (canal, trozo, registros)
+     SNDW=fichero            escrituras al GAE1 como el snd.lua de MAME (W cuadro palabra dato mascara; tools/sndcmp.py)
      HUELLA=fichero          huella del estado al entrar en rc_vblank, una linea por llamada (= psxprof2; tools/huella.py)
      BLKLOG=fichero          codigos de tile visibles y nuevos por cuadro (rc/blklog.c; tools/blklog.py)
      ROMCHK=romres.txt       ROM por bancos como en la PS1 (tools/romstat.py -o): tras la suma del arranque solo el residente
@@ -178,6 +179,10 @@ static void mcu_tr(int k, s32 t)
     if (k == 0) t0 = us;
     fprintf(stderr, "MCU cuadro %ld %-8s %.1f us (+%.1f)\n", frame, nom[k], us, us - t0);
 }
+/* SNDW=fichero: cada escritura al GAE1 como el snd.lua de MAME ("W cuadro palabra dato mascara", sin tiempo ni PC):
+   puerta G-SNDLOG con tools/sndcmp.py */
+static FILE *sndw;
+static void snd_w(unsigned off, unsigned dato, unsigned mascara) { fprintf(sndw, "W %ld %02x %04x %04x\n", frame, off, dato, mascara); }
 static void snd_suceso(int ch, int t)
 {
     if (!sndlog) return;
@@ -368,7 +373,7 @@ void rc_vblank(void)
     if (frame >= nframes) {
         if (dumpf) fclose(dumpf);
         if (logf) fclose(logf);
-        fprintf(stderr, "fin: %ld cuadros\n", frame);
+        { extern unsigned long mcu_repes, mcu_trabajos; fprintf(stderr, "fin: %ld cuadros; MCU: %lu trabajos, %lu repetidos\n", frame, mcu_trabajos, mcu_repes); }
         { extern unsigned mcu_movc_fuera; if (mcu_movc_fuera) fprintf(stderr, "MOVC fuera de las tablas: %u\n", mcu_movc_fuera); }
 #ifdef HPROF
         hprof_fin();
@@ -397,6 +402,7 @@ int main(int argc, char **argv)
         if (strchr(q, '/')) dump_p = atol(strchr(q, '/') + 1);
     }
     if (getenv("SNDLOG")) { sndlog = fopen(getenv("SNDLOG"), "w"); gae1_suceso = snd_suceso; }
+    if (getenv("SNDW")) { sndw = fopen(getenv("SNDW"), "w"); gae1_traza = snd_w; }
     load(WORKF("prog.bin"), rombe, 0x100000);
     for (i = 0; i < 0x100000; i++) rc_rom[i] = rombe[i ^ 1];
     load(WORKF("mcu.bin"), mcurom, 0x8000);
