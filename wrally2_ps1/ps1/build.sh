@@ -17,7 +17,8 @@ python3 -c "import sys; d = open('../work/prog.bin', 'rb').read()[:0xDD800]; o =
 mkdir -p cd && cp SYSTEM.CNF cd/
 # ficheros del CD (enlaces: no se copian 5 MB), en orden de uso
 MAS=""
-for f in MENUS.PAK DEMO0.PAK DEMO1.PAK DEMO2.PAK DEMO3.PAK TILES.BIN TILESA.BIN; do
+for f in SPUFIJO.BIN SPUTIT.BIN MENUS.PAK DEMO0.PAK SPUDEMO0.BIN DEMO1.PAK SPUDEMO1.BIN DEMO2.PAK SPUDEMO2.BIN DEMO3.PAK SPUDEMO3.BIN \
+         SPUMENU.BIN SPUS7E.BIN SPUCAR0.BIN SPUCAR1.BIN SPUCAR2.BIN TILES.BIN TILESA.BIN; do
   src=../work/cd/$f; [ "$f" = MENUS.PAK ] && [ -n "$MENUS" ] && src=$MENUS
   rm -f cd/$f
   if [ -f "$src" ]; then ln -f "$src" cd/$f 2>/dev/null || cp "$src" cd/$f; MAS="$MAS $f"; else echo "sin $src: la imagen va sin $f"; fi
@@ -31,13 +32,14 @@ $P-gcc $CF $CARGAOPT -c carga.c -o carga.o
 $P-gcc $CF $CDOPT -c $WR1/ps1/cd.c -o cd.o
 $P-gcc $CF -DRC_ROM_EXTERN -c ../rc/rc_mem.c -o rc_mem.o
 $P-gcc $CF -c ../rc/gae1.c -o gae1.o
+$P-gcc $CF -c snd.c -o snd.o
 $P-gcc $CF -DMCS51_XOR=1 -DMCU_TABLAS -c ../rc/mcu.c -o mcu.o
 $P-gcc $CF -c reservas.c -o reservas.o
 $P-gcc $CF -DMCS51_XOR=1 -c ../rc/mcu_rc.c -o mcu_rc.o
 $P-gcc $ARCH -c data.s -o data.o
 $P-gcc $ARCH -c $WR1/ps1/crt0.s -o crt0.o
 LD="$P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,--oformat=elf32-tradlittlemips"
-O="crt0.o main.o video.o carga.o cd.o wr2_rc.o rc_mem.o gae1.o mcu.o mcu_rc.o"
+O="crt0.o main.o video.o carga.o cd.o snd.o wr2_rc.o rc_mem.o gae1.o mcu.o mcu_rc.o"
 $LD -Wl,-Map=w2ps1.map -o w2ps1.elf $O reservas.o data.o -lgcc
 # puerta G-RAM: R0 (este EXE) y el EXE de tamanos R1, que solo se enlaza para medir el area de tramo
 python3 ../tools/gram.py w2ps1.map

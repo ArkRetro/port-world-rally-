@@ -318,6 +318,9 @@ void carga_atiende(void)
     }
 }
 
+/* ---- el CD para otro (la SPU): se corta el fondo y la emergencia (se reanudan solos en carga_atiende) */
+void carga_para(void) { bg_corta(); em_corta(); }
+
 /* ---- la seccion de una pantalla, bloqueando (el juego esta congelado dentro de rc_vblank) */
 static void bloq_cb(int i, const unsigned char *d)
 {

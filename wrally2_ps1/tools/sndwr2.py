@@ -4,7 +4,8 @@ sonido de gfx1 (banco 0 = 0x100000-0x1FFFFF, 1 = 0x300000-0x3FFFFF; los bytes es
 (snd/psxadpcm: filtro 0 en el primer bloque, banderas 3 en el ultimo, relleno a 28 con la ultima muestra) y va a uno de
 los ficheros de la SPU de work/cd/:
   SPUFIJO.BIN  bloque de silencio (0x1000) + los 33 efectos, el motor comun y la musica corta: se sube a 0x1000
-  SPUTIT.BIN, SPUDEMO0-3.BIN, SPUMENU.BIN, SPUS7E.BIN, SPUCAR0-2.BIN: la zona variable, se suben a 0x5D5E0
+  SPUTIT.BIN, SPUDEMO0-3.BIN, SPUMENU.BIN, SPUCAR0-2.BIN: la zona variable, se suben a 0x5D5E0; SPUS7E.BIN al
+  final de la RAM (alineado a 64), junto a SPUMENU (S7C) o al coche
 Y work/snd_tab.c: por trozo, clave (banco << 16 | final) -> direccion en la SPU | fichero << 24, y bloques; ordenado por
 clave (busqueda binaria). Las demos: 0 Portugal (0xA2), 1 Safari (0xA3), 2 Corcega (0xA4), 3 RAC (0xA5)."""
 import os, sys, struct, subprocess, tempfile
@@ -68,7 +69,10 @@ def main():
     print('SPUFIJO.BIN %d B (fijo %d, diseno 378 320; acaba en 0x%05X)' % (len(d), n, FIJO0 + n))
     assert FIJO0 + n <= VAR0, 'el banco fijo no cabe'
     for nf, (nom, ids) in enumerate(VARIABLES, 1):
-        n = fichero(nom, ids, VAR0, nf)
+        base = VAR0
+        if nom == 'SPUS7E':                   # al final de la RAM: convive con S7C (elegir coche) y con el coche
+            base = (0x80000 - sum(len(tr(i, k)) for i in ids for k in range(len(T[i])))) & ~0x3F
+        n = fichero(nom, ids, base, nf)
         print('%s.BIN %d B%s' % (nom, n, '' if n <= VARN else ' NO CABE (%d)' % VARN))
         assert n <= VARN
     ent.sort()

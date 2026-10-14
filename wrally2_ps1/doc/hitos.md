@@ -109,10 +109,17 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 
 ## H6 Sonido (M-L)
 - [x] `sndwr2.py`: banco fijo, conjuntos por fase, bancos de coche (`work/cd/SPU*.BIN`, `work/snd_tab.c`; tamanos = diseno 5.1)
-- [~] GAE1 -> SPU con encadenado; tono escalado por fps (0x2DF en NTSC); `RITMO=591` (`ps1/snd.c` escrito, sin
-  integrar en main.c; `psxprof2` modela ya la repeticion, ENDX e IRQ de la SPU: la sonda spucad da OK en el)
-- [ ] Cambio del hueco M en el negro del attract; voces congeladas en cargas y pausa
-- [ ] Puerta G-SNDLOG en la PS1
+- [x] GAE1 -> SPU con encadenado; tono escalado por fps (0x2DF en NTSC) (`ps1/snd.c` en main.c; clave del trozo = banco
+  << 16 | (registro 2 - 0x1000); al cambiar de trozo, la repeticion nueva un cuadro entero despues: la SPU puede ir un
+  cuadro detras). `RITMO=591` sin hacer
+- [x] Zona variable por ficheros (mascara de cargados; S7E al final de la RAM, junto a S7C o al coche): se sube en el
+  negro de antes de la pantalla (mapa de demo, logo, elegir coche, elegir rally: S7E + banco del coche segun FE8126
+  0/1/2 -> SPUCAR1/0/2, carrera) con las voces a tono 0; si un trozo no esta, lo pide y se sube con el juego parado
+  (como mucho una vez cada 60 cuadros). psxprof2: 0 cargas fuera de los negros; negros 0,44-0,79 s mas largos
+  (pendiente: de fondo, como pide el diseno 7.2)
+- [x] Puerta G-SNDLOG en la PS1 (`tools/sndps1.py`: `psxprof2` contra `rc_host SNDLOG`): attract 12 000 cuadros, 46 comienzos y 17 cambios
+  de trozo; partida de Portugal 10 700 cuadros, 170 comienzos y 37 cambios: mismo canal y trozo, comienzos en el mismo
+  cuadro y cambios a +0-2 cuadros, ningun cambio pasando por el silencio; G-ESTADO igual con sonido
 - [ ] Puerta G-SON: 0 huecos/saltos; deriva <= 1 cuadro en 60 s; `cortes.py` sin cortes nuevos
 - Usuario (prueba 3): el juego completo con sonido
 

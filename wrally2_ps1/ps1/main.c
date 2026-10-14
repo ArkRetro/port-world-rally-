@@ -11,6 +11,8 @@
 #include "../rc/mcs51.h"
 #include "video.h"
 #include "carga.h"
+#include "snd.h"
+#include "../rc/gae1.h"
 #define REG(a) (*(volatile u32 *)(a))
 #define GP0 REG(0x1F801810)
 #define GP1 REG(0x1F801814)
@@ -114,19 +116,38 @@ static u16 RW(u32 a) { return *(const u16 *)(rc_ram + (a & 0xFFFE)); }
    dentro de un modo (logo -> fotos -> titulo) si su seccion no esta ya. El juego esta congelado mientras tanto */
 /* Demo: en el titulo (3/16) empieza la prelectura de la demo siguiente (FEC3C6 + 1: FEC3C6 cambia al entrar en el
    mapa); los negros antes del mapa y de la demo pasan al reparto B y cargan lo que falte; al volver a un menu, A */
+/* lo que va a sonar en la pantalla que viene, a la SPU en el negro de antes (no se ve; si no, lo pide el trozo y se
+   carga con el juego parado): mapa de la demo, logo, elegir coche (S7C), elegir rally (S7E y el banco del coche,
+   FE8126: 0 -> SPUCAR1, 1 -> SPUCAR0, 2 -> SPUCAR2) y la carrera */
+static void precarga_spu(u32 ped)
+{
+    static const u8 coche[3] = {9, 8, 10};
+    u16 c = RW(0xFE8126);
+    if (ped != 9 && ped != 3 && ped != 8 && ped != 0xA && ped != 1) return;
+    carga_para();
+    if (ped == 9) snd_precarga(2 + ((RW(0xFEC3C6) + 1) & 3));
+    else if (ped == 3) snd_precarga(1);
+    else if (ped == 8) snd_precarga(6);
+    else { if (ped == 0xA) snd_precarga(7); if (c < 3) snd_precarga(coche[c]); }
+}
 static void pantalla(u32 modo)
 {
     u32 f146 = RW(0xFEC146), ped = RW(0xFEC29C);
     if (ped) modo_ped = ped;
     if (modo == 0 && modo_ant != 0) {
+        snd_pausa(1);                           /* las cargas bloqueantes con las voces quietas (diseno 5.2) */
         if (modo_ped == 9 || modo_ped == 5) carga_demo_negro(modo_ped, fb ^ 1);
         else { carga_demo_fin(); carga_pantalla(modo_ped << 16 | f146, fb ^ 1); }
+        precarga_spu(modo_ped);
+        snd_pausa(0);
     } else if (modo == 9 || modo == 5) carga_demo_modo(modo);
     else if (modo != 0 && modo != 1 && (modo != modo_ant || f146 != f146_ant)) {
         int tit = modo == 3 && f146 == 0x16;
+        snd_pausa(1);
         if (!tit) carga_demo_fin();
         carga_pantalla(modo << 16 | f146, fb ^ 1);
         if (tit) carga_demo_titulo((RW(0xFEC3C6) + 1) & 3);
+        snd_pausa(0);
     }
     modo_ant = modo; f146_ant = f146;
 }
@@ -143,6 +164,9 @@ void rc_vblank(void)
     GP1 = 0x03000000;
     t0 = T1;
     rc_snd_vblank();
+    snd_modo_tit = RW(0xFEC298) == 3;
+    if (snd_pide) { carga_para(); snd_pausa(1); snd_atiende(); snd_pausa(0); }
+    snd_vblank();
     mcu_cuadro(rc_ram, &rc_mcu);
     modo = RW(0xFEC298); menu = modo != 1;
     pantalla(modo);
@@ -240,6 +264,7 @@ int main(void)
     }
     vid_init();                                   /* paletas y CLUT de efecto en S0, huecos vacios */
     carga_init();                                 /* la unidad, el directorio y el indice de MENUS.PAK */
+    snd_init(); gae1_suceso = snd_suceso;         /* SPUFIJO.BIN; la zona variable la piden los trozos */
 #ifndef SIN_GANCHO
     rc_sondeo_gancho = carga_poll; rc_sondeo_per = 16384; rc_sondeo_t = 0;   /* el CD se sondea tambien mientras corre el 68000 */
 #endif
