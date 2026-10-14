@@ -64,6 +64,8 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [ ] Gestor de bloques de VRAM
 - [ ] `tiles4.py`, `tilesa.py`; `MENUS.PAK`, `DEMOr.PAK` (8 ciclos del banco)
 - [ ] Cargador bloqueante (CARGANDO > 0,5 s) y de fondo (titulo)
+- [x] Perfiles de regiones (P1): `rc_host_reg` + `rc/regiones.py` + `rc68.py`: banco igual, rc_run 422 848 -> 376 656 B
+  en MIPS (-46 KB). Bucles rapidos apagados (`BUCLES=1`): la copia rapida apila un SR distinto al tomar la IRQ
 - [ ] `DUMPAT`, `arcade2.py`, `difref2.py`
 - [ ] Puerta G-PIXEL: A 0 px; B solo COLOR, PSNR >= 38 dB; efectos <= 0,02 %
 - [ ] Puertas G-ROM, G-ESTADO, G-SONDEO (hueco <= 4 ms, 0 sectores perdidos)

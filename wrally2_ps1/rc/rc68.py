@@ -40,8 +40,10 @@ if os.path.exists(_rf):
 # veces que se ejecuta cada instruccion en el banco de pruebas, en total y como mucho en un cuadro (work/vueltas.txt,
 # de rc/regiones.py): con ellas se eligen los bucles rapidos (sin el fichero no hay)
 VUELTAS, NCUADROS = {}, 0
+# BUCLES=1 los activa: pendiente de arreglar las banderas aplazadas al tomar la IRQ dentro de la copia rapida (la
+# suma de la ROM del arranque apila un SR distinto)
 _vf = work('vueltas.txt')
-if os.path.exists(_vf):
+if os.path.exists(_vf) and os.environ.get('BUCLES') == '1':
     for l in open(_vf):
         p = l.split()
         if l.startswith('# cuadros'): NCUADROS = int(p[2])

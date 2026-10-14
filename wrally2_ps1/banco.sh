@@ -4,6 +4,8 @@
 # https://github.com/kstenerud/Musashi) compila tambien rc_host_dbg, que compara instruccion a instruccion.
 # Uso: ./banco.sh            (despues: cd rc && ./rc_host 12000 ../work/run, ver la cabecera de rc/rc_host.c)
 # PERFILES=1: ademas rc/rc_host_rom (ROMSTAT: bloques de la ROM leidos por fase, tools/romstat.py)
+# y rc/rc_host_reg (RCREG=fichero: perfil de regiones por instruccion; rc/regiones.py junta los perfiles de varias corridas
+# en work/regiones.txt y rc68.py genera con el las comprobaciones de region en linea: -46 KB de codigo en la PS1)
 set -e
 cd "$(dirname "$0")"
 tools/guardia_wr1.sh
@@ -33,5 +35,7 @@ fi
 if [ -n "$PERFILES" ]; then   # perfiles del banco: bloques de la ROM leidos por fase (ROMSTAT)
   gcc $CF -DROMSTAT -c wr2_rc.c -o ../work/wr2_rc_rom.o
   gcc $CF -DROMSTAT -o rc_host_rom rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c blklog.c romstat.c ../work/wr2_rc_rom.o
+  gcc $CF -DRCREG -c wr2_rc.c -o ../work/wr2_rc_reg.o
+  gcc $CF -DRCREG -o rc_host_reg rc_host.c rc_mem.c gae1.c mcu.c mcu_rc.c blklog.c ../work/wr2_rc_reg.o
 fi
-echo "banco listo: rc/rc_host$( [ -n "$MUSASHI" ] && echo ' y rc/rc_host_dbg')$( [ -n "$PERFILES" ] && echo ' y rc/rc_host_rom')"
+echo "banco listo: rc/rc_host$( [ -n "$MUSASHI" ] && echo ' y rc/rc_host_dbg')$( [ -n "$PERFILES" ] && echo ' y rc/rc_host_rom y rc/rc_host_reg')"
