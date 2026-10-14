@@ -19,7 +19,9 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [x] `-DMCUCHK` y lista de PC que escriben entradas del trabajo
 - [x] GAE1 contado en ciclos del 68000
 - [x] Compilacion del conjunto de modos 1-15; `rc_bad` con el PC
-- [ ] `rc_romtab` + trampa en el banco con `-DROMCHK`
+- [x] `rc_romtab` + trampa en el banco con `-DROMCHK` (`ROMCHK=romres.txt` en `rc_host`: tras la suma solo el residente
+  y el banco del tramo; attract de 60 000 cuadros y Portugal: 0 trampas; RAC sin perfilar: 15 bloques, los conjuntos de
+  todos los tramos son de H4. Las lecturas a direccion fija residentes van directas a `rc_romres`)
 - [x] `BLKLOG`, `ROMSTAT`, `RCREG`; volcados en el `frame_done`
   (`ROMSTAT` con `rc_host_rom` y `tools/romstat.py`, suceso en PC 0x2616; attract 30 000 + Portugal: residente
   67,0 KB, banco PT1 157,5 KB con bordes, bancos de las demos 76-93 KB. `BLKLOG` en `rc/blklog.c` + `tools/blklog.py`:
@@ -47,7 +49,8 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - Usuario (prueba 0): EXE mosaico en MiSTer, PSIO y XStation; las dos sondas con sus cifras
 
 ## H3 Attract sin sonido; ROM por bancos (L)
-- [ ] R1: residente y bancos desde `ROMSTAT`, `romres.txt`, trampa con CD
+- [ ] R1: residente y bancos desde `ROMSTAT`, `romres.txt`, trampa con CD (hecho en `rc/`: paginas de ROM a NULL,
+  `rc_romtab`, `rc_romp`/`rc_romf`, `rc_rom_mapa`, `rc_rom_residente`; falta la PS1: `ROM.BIN` al arrancar y la trampa)
 - [ ] `ROM.BIN` entera en el arranque; suceso en 0x2616 libera lo no residente
 - [ ] Renderizador A (menus) y B (demos, mapas): regla de sprites, efectos, paletas, CLUT por hueco, variantes
 - [ ] Gestor de bloques de VRAM

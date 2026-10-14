@@ -190,13 +190,36 @@ def region(a, w=False):
     if 0x218000 <= a < 0x219000: return 'vregs', a - 0x218000
     return None, a
 
+# ROM residente (diseno 3; work/romres.txt de tools/romstat.py, lineas 'R inicio fin'): las lecturas a direccion fija
+# residentes van directas a rc_romres (los tramos seguidos, 4 bytes de cola cada uno); las demas, por rc_romtab
+RESID = []
+try:
+    for _l in open(work('romres.txt')):
+        _p = _l.split()
+        if _p and _p[0] == 'R': RESID.append((int(_p[1], 16), int(_p[2], 16)))
+except OSError: pass
+RESID.sort()
+def resid_off(a, sz):
+    """desplazamiento en rc_romres de la direccion a (con sz bytes dentro del tramo o su cola), o None"""
+    o = 0
+    for a0, a1 in RESID:
+        if a0 <= a and a + sz <= a1 + 4: return o + a - a0
+        o += a1 - a0 + 4
+    return None
+
 def rd_const(a, sz):
     reg, o = region(a)
+    if reg == 'rom':
+        ro = resid_off(o, sz)
+        if ro is None: return '(ROMREC(0x%x, %d), RD%d(0x%06xu))' % (o, sz, sz * 8, a)   # por la tabla de bloques
+        reg, o = 'rc_romres', ro
+        pre = '(ROMREC(0x%x, %d), ' % (a & 0xFFFFF, sz)
+    else: pre = ''
     if reg:
         if sz == 1: e = 'MB(%s, 0x%x)' % (reg, o)
         elif sz == 2: e = 'MW(%s, 0x%x)' % (reg, o)
         else: e = '%s(%s, 0x%x)' % ('ML' if o & 3 else 'MLA', reg, o)
-        return '(ROMREC(0x%x, %d), %s)' % (o, sz, e) if reg == 'rom' else e   # ROMSTAT apunta las de la ROM
+        return pre + e + ')' if pre else e
     return 'RD%d(0x%06xu)' % (sz * 8, a)
 
 # peticiones de trabajo a la MCU (move.w #1 en 0x3684 y 0x37C8): se hace al momento (determinista, como el WR1)
@@ -1003,6 +1026,8 @@ def main(out):
     w = f.write
     w('/* generado por rc68.py: World Rally 2 68000 -> C (uso personal) */\n#define RC_GEN 1\n#define RC_HN %d\n#define RC_HS %d\n' % (HN, HS))
     w('#include "rc_rt.h"\n#define RC_IRQ6 0x%xu\n' % IRQ6)
+    w('const u32 rc_romres_tab[][2] = {%s};\nconst u32 rc_romres_n = %d;\nu8 rc_romres[%d] RC_AL;\n'
+      % (', '.join('{0x%x, 0x%x}' % t for t in RESID) or '{0, 0}', len(RESID), max(4, sum(a1 - a0 + 4 for a0, a1 in RESID))))
     w('const u32 rc_ntaken = %d;\n' % len(taken))
     w('RC_RUN_ATTR void rc_run(u32 start_pc)\n{\n    RC_LOCALS\n')
     # despacho (rts, rte, jmp indirecto): tabla hash por el pc con las palabras cambiadas (como queda en la RAM,

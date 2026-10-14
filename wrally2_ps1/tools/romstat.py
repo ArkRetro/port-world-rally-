@@ -5,7 +5,8 @@ bloques de 256 B (diseno 3.3):
   y lo leido de la zona de codigo 0-1B7FF en cualquier modo;
 - banco de cada tramo (clave FEC3C6/FEC3C8) = lo leido en carrera y demo con esa clave fuera del residente, con un
   bloque mas a cada lado de cada tramo contiguo.
-Con -v, los bloques de cada modo. Con -o romres.txt escribe el residente (lineas 'inicio fin' en hexadecimal)."""
+Con -v, los bloques de cada modo. Con -o romres.txt escribe el residente ('R inicio fin' por tramo, en hexadecimal) y los
+bancos ('B fec3c6 fec3c8 inicio fin'): lo leen rc68.py (lecturas a direccion fija) y rc_host ROMCHK."""
 import sys
 from collections import defaultdict
 
@@ -51,12 +52,12 @@ def main():
     print('residente: %d bloques (%s), de ellos %s en la zona de codigo 0-1B7FF; %d tramos contiguos'
           % (len(res), kb(len(res)), kb(len(zona)), len(tramos(res))))
     claves = sorted({(a, b) for (m, a, b) in fases if m in CARRERA})
-    total = set()
+    total = set(); bancos = []
     for a, b in claves:
         s = set().union(*[fases[(m, a, b)] for m in CARRERA if (m, a, b) in fases]) - res
         con = set()
         for x, y in tramos(s): con |= set(range(max(0, x - 1), min(0xDD7, y + 1) + 1))
-        con -= res; total |= con
+        con -= res; total |= con; bancos.append(((a, b), con))
         ms = '/'.join('%X' % m for m in CARRERA if (m, a, b) in fases)
         print('banco FEC3C6=%04X FEC3C8=%04X (modos %s): %d bloques leidos fuera del residente, %s con los bordes'
               % (a, b, ms, len(s), kb(len(con))))
@@ -65,7 +66,9 @@ def main():
     print('cuadros: %d' % cuadros)
     if out:
         with open(out, 'w') as f:
-            for x, y in tramos(res): f.write('%05x %05x\n' % (x << 8, (y << 8) + 256))
+            for x, y in tramos(res): f.write('R %05x %05x\n' % (x << 8, (y << 8) + 256))
+            for (a, b), con in bancos: 
+                for x, y in tramos(con): f.write('B %x %x %05x %05x\n' % (a, b, x << 8, (y << 8) + 256))
         print('escrito', out)
 
 main()

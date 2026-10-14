@@ -12,6 +12,16 @@ typedef unsigned long long u64; typedef long long s64;
 typedef struct { u32 pc; void *l; } rc_lab;
 
 extern u8 *rc_rpg[4096], *rc_wpg[4096];
+/* ROM por bancos (diseno 3): rc_romtab[a >> 8] = puntero sesgado (+ a = el byte) de cada bloque de 256 B, o NULL si no
+   esta cargado: entonces rc_romf (la plataforma: trampa que lo carga; en el banco, ROMCHK) y se repite. Las paginas de
+   la ROM en rc_rpg estan a NULL: el acceso general pasa por aqui. rc_romres: los tramos residentes seguidos (rc68.py
+   lee ahi las direcciones fijas residentes; rc_romres_tab: inicio, fin de cada tramo), con 4 bytes de cola cada uno */
+extern u8 *rc_romtab[4096];
+extern u8 rc_romres[];
+extern const u32 rc_romres_tab[][2], rc_romres_n;
+void rc_romf(u32 a);
+void rc_rom_mapa(u32 a0, u32 a1, u8 *p);   /* rc_mem.c: bloques [a0, a1) -> p + (a - a0); p = 0 los quita */
+void rc_rom_residente(const u8 *rom);        /* rc_mem.c: los tramos residentes de una ROM contigua a rc_romres y a la tabla */
 /* alineadas tambien en la declaracion: si no, gcc hace los accesos de 16 bits a direccion fija byte a byte */
 #define RC_AL __attribute__((aligned(4)))
 extern u8 rc_rom[0x100000 + 4] RC_AL, rc_ram[0x10000 + 4] RC_AL, rc_pal[0x2000 + 4] RC_AL, rc_xram[0x2000 + 4] RC_AL;
@@ -116,11 +126,22 @@ void rc_romrec(u32 a, u32 n);
 #else
 #define ROMREC(a, n) ((void)0)
 #endif
-/* lectura: todas las paginas apuntan a algo (E/S en una pagina que se rellena cada cuadro, sin mapear =
-   pagina de 0xFF); las regiones tienen 4 bytes de margen al final para leer un long sin mirar el cruce */
-static inline __attribute__((always_inline)) u32 RD8(u32 a) { REGREC(a, 0); ROMREC(a, 1); return rc_rpg[(a >> 12) & 0xFFF][(a & 0xFFF) ^ 1]; }
-static inline __attribute__((always_inline)) u32 RD16(u32 a) { REGREC(a, 0); ROMREC(a, 2); return *(u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); }
-static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; REGREC32(a, 0); ROMREC(a, 4); q = (u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); return ((u32)q[0] << 16) | q[1]; }
+/* lectura: todas las paginas apuntan a algo (E/S en una pagina que se rellena cada cuadro, sin mapear = pagina de
+   0xFF) menos las de la ROM (NULL: por bloques con rc_romtab, fuera de linea); las regiones tienen 4 bytes de margen
+   al final para leer un long sin mirar el cruce (los bloques de ROM, la cola de 4 bytes de cada tramo) */
+#ifdef RC_GEN
+static __attribute__((noinline, cold)) u8 *rc_romp(u32 a)
+{
+    u8 *p = rc_romtab[(a >> 8) & 0xFFF];
+    if (!p) { RC_CALL(rc_romf(a & 0xFFFFF)); p = rc_romtab[(a >> 8) & 0xFFF]; }
+    return p + (a & 0xFFFFF);
+}
+#else
+u8 *rc_romp(u32 a);
+#endif
+static inline __attribute__((always_inline)) u32 RD8(u32 a) { u8 *p = rc_rpg[(a >> 12) & 0xFFF]; REGREC(a, 0); ROMREC(a, 1); if (!p) return rc_romp(a ^ 1)[0]; return p[(a & 0xFFF) ^ 1]; }
+static inline __attribute__((always_inline)) u32 RD16(u32 a) { u8 *p = rc_rpg[(a >> 12) & 0xFFF]; REGREC(a, 0); ROMREC(a, 2); if (!p) return *(u16 *)rc_romp(a); return *(u16 *)(p + (a & 0xFFF)); }
+static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; u8 *p = rc_rpg[(a >> 12) & 0xFFF]; REGREC32(a, 0); ROMREC(a, 4); q = (u16 *)(p ? p + (a & 0xFFF) : rc_romp(a)); return ((u32)q[0] << 16) | q[1]; }
 /* caminos lentos fuera de linea: escrituras a paginas sin puntero (la de la VRAM con los registros del GAE1, latch,
    lo que no esta mapeado), en rc_mem.c (guardan los registros del 68000 que viven en temporales) */
 #ifdef RC_GEN
@@ -150,7 +171,7 @@ static __attribute__((noinline, cold)) void rc_wrg32(u32 a, u32 v, u32 pc) { WR3
    comprueban que caben enteros). La VRAM deja fuera 0x202880-0x2028FF (registros del GAE1 desde 0x202890): esas
    escrituras van por el acceso general */
 #define RG_ram(a) (((a) >> 16) == 0xFE)
-#define RG_rom(a) (((a) >> 20) == 0)
+#define RG_rom(a) 0                      /* la ROM va siempre por rc_romtab (rc_romp) */
 #define RG_pal(a) (((a) >> 13) == 0x108)
 #define RG_vram(a) (((a) >> 16) == 0x20 && ((a) & 0xFF80) != 0x2880)
 #define RG_vregs(a) (((a) >> 12) == 0x218)

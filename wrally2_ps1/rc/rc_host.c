@@ -11,6 +11,9 @@
      SNDLOG=fichero          sucesos del GAE1 (canal, trozo, registros)
      HUELLA=fichero          huella del estado al entrar en rc_vblank, una linea por llamada (= psxprof2; tools/huella.py)
      BLKLOG=fichero          codigos de tile visibles y nuevos por cuadro (rc/blklog.c; tools/blklog.py)
+     ROMCHK=romres.txt       ROM por bancos como en la PS1 (tools/romstat.py -o): tras la suma del arranque solo el residente
+                             y el banco del tramo (FEC3C6/FEC3C8 en carrera y demo); cada lectura fuera es una trampa (se
+                             cuenta y se carga el bloque): puerta G-ROM = 0 trampas
      V=1                     cuadros y ciclos por stderr cada 100 cuadros
      FASE=n                  momento del primer vblank en % de cuadro (98, como MAME)
      MCU=0                   trabajo de la MCU al momento (por defecto 1: con su tiempo, como la placa)
@@ -115,6 +118,48 @@ static void dump_state(void)
     blk(dumpf, 0x300000, io, 8, 0);
 }
 static u16 W(u32 a) { return *(u16 *)(rc_ram + (a & 0xFFFE)); }
+extern void (*rc_romf_gancho)(u32 a); extern int rc_suma_hecha;
+/* ROMCHK: residente y bancos de romres.txt; la trampa cuenta y carga el bloque de la ROM entera (rombe en rc_rom) */
+static struct { u16 t6, t8; u32 a0, a1; } rchk_b[2048]; static int rchk_n, rchk_on, rchk_suma; static u16 rchk_t6 = 0xFFFF, rchk_t8;
+static long rchk_trampas, rchk_bloques; static u8 rchk_visto[4096]; static u16 rchk_prim[4096]; static long rchk_fr[4096];
+static void rchk_trampa(u32 a)
+{
+    u32 b = a >> 8;
+    rchk_trampas++;
+    if (!rchk_visto[b]) { rchk_visto[b] = 1; rchk_bloques++; rchk_fr[b] = frame; rchk_prim[b] = W(0xC298); }
+    rc_rom_mapa(b << 8, (b + 1) << 8, rc_rom + (b << 8));
+}
+static void rchk_init(const char *fn)
+{
+    FILE *f = fopen(fn, "r"); char l[200];
+    if (!f) { perror(fn); exit(1); }
+    while (fgets(l, sizeof l, f)) {
+        unsigned t6, t8, a0, a1;
+        if (l[0] == 'R' && sscanf(l + 1, "%x %x", &a0, &a1) == 2) { rchk_b[rchk_n].t6 = 0xFFFF; rchk_b[rchk_n].a0 = a0; rchk_b[rchk_n].a1 = a1; rchk_n++; }
+        else if (l[0] == 'B' && sscanf(l + 1, "%x %x %x %x", &t6, &t8, &a0, &a1) == 4) { rchk_b[rchk_n].t6 = t6; rchk_b[rchk_n].t8 = t8; rchk_b[rchk_n].a0 = a0; rchk_b[rchk_n].a1 = a1; rchk_n++; }
+    }
+    fclose(f); rchk_on = 1; rc_romf_gancho = rchk_trampa;
+}
+/* cada cuadro: tras la suma solo queda el residente (en rc_romres) y, en carrera y demo, el banco del tramo */
+static void rchk_cuadro(void)
+{
+    int i; u16 modo = W(0xC298), t6 = W(0xC3C6), t8 = W(0xC3C8);
+    if (!rchk_on || !rc_suma_hecha) return;
+    if (!rchk_suma) { rchk_suma = 1; rc_rom_mapa(0, 0x100000, 0); rc_rom_residente(rc_rom); rchk_t6 = 0xFFFF; }
+    if ((modo == 1 || modo == 5) && (t6 != rchk_t6 || t8 != rchk_t8)) {
+        for (i = 0; i < rchk_n; i++) if (rchk_b[i].t6 == rchk_t6 && rchk_b[i].t8 == rchk_t8) rc_rom_mapa(rchk_b[i].a0, rchk_b[i].a1, 0);
+        rchk_t6 = t6; rchk_t8 = t8;
+        for (i = 0; i < rchk_n; i++) if (rchk_b[i].t6 == t6 && rchk_b[i].t8 == t8) rc_rom_mapa(rchk_b[i].a0, rchk_b[i].a1, rc_rom + rchk_b[i].a0);
+        rc_rom_residente(rc_rom);   /* el residente no se quita */
+    }
+}
+static void rchk_fin(void)
+{
+    int b;
+    if (!rchk_on) return;
+    fprintf(stderr, "ROMCHK: %ld trampas en %ld bloques%s\n", rchk_trampas, rchk_bloques, rchk_trampas ? ":" : " (G-ROM pasa)");
+    for (b = 0; b < 4096; b++) if (rchk_visto[b]) fprintf(stderr, "  bloque %05x cuadro %ld modo %x\n", b << 8, rchk_fr[b], rchk_prim[b]);
+}
 static void log_line(void)
 {
     if (!logf) { char fn[600]; sprintf(fn, "%s/log.txt", outdir); logf = fopen(fn, "w");
@@ -313,6 +358,7 @@ void rc_vblank(void)
     if (dump_a >= 0 && frame >= dump_a && frame <= dump_b && (frame - dump_a) % dump_p == 0 && rc_r.cyrel < 2000) dump_state();
     if (logf || getenv("LOG")) log_line();
     if (getenv("BLKLOG")) rc_blklog(frame, vram_vb);
+    rchk_cuadro();
     memcpy(vram_vb, rc_vram, 0x10000);
     /* las del guion de este cuadro: MAME las fija justo tras el frame_done y la IRQ6 ya las ve (el volcado y el
        registro de este cuadro llevan las de antes, como los suyos) */
@@ -330,6 +376,7 @@ void rc_vblank(void)
 #ifdef ROMSTAT
         rc_romstat_fin();
 #endif
+        rchk_fin();
 #ifdef RCDBG
         fprintf(stderr, "instrucciones comparadas: %lu\n", nck);
         mcu_chk_fin();
@@ -354,6 +401,7 @@ int main(int argc, char **argv)
     for (i = 0; i < 0x100000; i++) rc_rom[i] = rombe[i ^ 1];
     load(WORKF("mcu.bin"), mcurom, 0x8000);
     rc_mem_init();
+    if (getenv("ROMCHK")) rchk_init(getenv("ROMCHK"));
     if (getenv("SNDLOG")) gae1_suceso = snd_suceso;
     mcu_boot(rc_ram, mcurom, &rc_mcu);
     memset(&rc_r, 0, sizeof(rc_r));

@@ -1,7 +1,28 @@
 /* Mapa de memoria del World Rally 2 para el codigo recompilado (comun al PC y a la PS1) */
 #include "rc_rt.h"
 #include "gae1.h"
-u8 *rc_rpg[4096], *rc_wpg[4096];
+u8 *rc_rpg[4096], *rc_wpg[4096], *rc_romtab[4096];
+void (*rc_romf_gancho)(u32 a);      /* la plataforma: carga el bloque (PS1: del CD; banco: ROMCHK) */
+void rc_romf(u32 a) { if (rc_romf_gancho) rc_romf_gancho(a); else rc_bad(0xA00000 | a); }
+#ifndef RC_GEN
+u8 *rc_romp(u32 a) { u8 *p = rc_romtab[(a >> 8) & 0xFFF]; if (!p) { rc_romf(a & 0xFFFFF); p = rc_romtab[(a >> 8) & 0xFFF]; } return p + (a & 0xFFFFF); }
+#endif
+void rc_rom_mapa(u32 a0, u32 a1, u8 *p)
+{
+    u32 b;
+    for (b = a0 >> 8; b < ((a1 + 255) >> 8) && b < 4096; b++) rc_romtab[b] = p ? p - a0 : 0;
+}
+/* los tramos residentes a rc_romres (desde una ROM contigua: el banco y R0) y a la tabla */
+void rc_rom_residente(const u8 *rom)
+{
+    u32 k, o = 0, i;
+    for (k = 0; k < rc_romres_n; k++) {
+        u32 a0 = rc_romres_tab[k][0], n = rc_romres_tab[k][1] - a0 + 4;
+        for (i = 0; i < n; i++) rc_romres[o + i] = rom[a0 + i];
+        rc_rom_mapa(a0, rc_romres_tab[k][1], rc_romres + o);
+        o += n;
+    }
+}
 #ifndef RC_ROM_EXTERN
 u8 rc_rom[0x100000 + 4] RC_AL;
 #endif
@@ -78,7 +99,8 @@ void rc_mem_init(void)
     int i;
     for (i = 0; i < 0x1004; i++) rc_ffpg[i] = rc_iopg[i] = 0xFF;
     for (i = 0; i < 4096; i++) { rc_rpg[i] = rc_ffpg; rc_wpg[i] = 0; }
-    for (i = 0; i < 256; i++) rc_rpg[i] = rc_rom + i * 0x1000;
+    for (i = 0; i < 256; i++) rc_rpg[i] = 0;                 /* ROM: por bloques (rc_romtab) */
+    rc_rom_mapa(0, 0x100000, rc_rom); rc_rom_residente(rc_rom);   /* banco y R0 (ROM en el EXE): toda la ROM debajo */
     for (i = 0; i < 16; i++) {
         rc_rpg[0x200 + i] = rc_wpg[0x200 + i] = rc_vram + i * 0x1000;
         rc_rpg[0xFE0 + i] = rc_wpg[0xFE0 + i] = rc_ram + i * 0x1000;
