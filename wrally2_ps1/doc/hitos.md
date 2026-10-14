@@ -42,8 +42,10 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [x] Video mosaico + cifras (FEC298, cuadro, CPU, RAM libre); mando, moneda, START
 - [x] `mkiso` de una pista
 - [x] EXE de tamanos R1 enlazado para medir el area (`build.sh`, `tools/gram.py`)
-- [ ] Sonda `prueba/cdfondo` (2x de fondo, CPU ocupada, con y sin `CD_DMA`)
-- [ ] Sonda `prueba/spucad` (encadenado por direccion de repeticion)
+- [x] Sonda `prueba/cdfondo` (2x de fondo, CPU ocupada, con y sin `CD_DMA`): psxprof, PSIO, XStation y Mednafen 0
+  perdidos, hueco max 3,5 ms; `CD_DMA` 6 K ciclos/sector en Mednafen (26 K por CPU)
+- [x] Sonda `prueba/spucad` (encadenado por direccion de repeticion): Mednafen 1 398 trozos, 0 saltados/repetidos;
+  detecta los fallos con `ROMPE`; en MiSTer ENDX no se borra (va por el IRQ de la SPU)
 - [x] Puerta G-RAM: R0 pool >= 160 KB; R1 area >= 960 KB (198,4 KB y 964,4 KB: el area queda 19 KB por debajo de la
   tabla 2.1 por la MCU traducida, 22 KB y no 14, y `rc_xram`, 8 KB; P1 sigue en el plan)
 - [x] Puerta G-CPU: 68000 + MCU en carrera mediana <= 30 %, p99 <= 45 % (`perf/psxprof2` + `perf/cpu.py`, partida de
@@ -51,7 +53,8 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [x] Puerta G-ESTADO: huella PS1 = banco en 20 000 cuadros (`HUELLA` en `rc_host` y `psxprof2`, `tools/huella.py`:
   attract 19 980 llamadas y partida de Portugal 10 710 iguales)
 - [x] Arranca en `psxprof2` (ODE psio, xstation: 3 000 cuadros iguales al banco) y en Mednafen con BIOS
-- Usuario (prueba 0): EXE mosaico en MiSTer, PSIO y XStation; las dos sondas con sus cifras
+- Usuario (prueba 0): EXE mosaico en MiSTer, PSIO y XStation; las dos sondas con sus cifras (entregado; faltan las
+  cifras del hardware)
 
 ## H3 Attract sin sonido; ROM por bancos (L)
 - [ ] R1: residente y bancos desde `ROMSTAT`, `romres.txt`, trampa con CD (hecho en `rc/`: paginas de ROM a NULL,

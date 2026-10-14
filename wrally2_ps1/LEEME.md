@@ -14,7 +14,10 @@ Diseno y plan: `doc/diseno.md` y `doc/hitos.md`.
   una partida de Portugal de 10 730 cuadros con las mismas pantallas en los mismos cuadros y las mismas puntuaciones).
 - H2 (primer EXE para la PS1): el juego entero corre en la PS1 con la ROM dentro del EXE y la imagen en mosaico (cada
   tile y cada sprite es un cuadrado de su color), con cifras de CPU y RAM. Arranca en Mednafen con BIOS desde la imagen de
-  CD. Falta: las sondas de CD y de la SPU, medir la CPU en carrera y la prueba en MiSTer, PSIO y XStation (prueba 0).
+  CD. Puertas: CPU del 68000 + MCU en carrera 26 % (mediana) / 34 % (p99); huella de estado igual al banco en 20 000
+  cuadros de attract y una partida; sondas `prueba/cdfondo` (CD a 2x de fondo) y `prueba/spucad` (SPU) hechas.
+  Falta la prueba en MiSTer, PSIO y XStation (prueba 0, entregada).
+- H3 (en curso): attract con los graficos de verdad; ROM por bancos hecha en el banco.
 
 ## Banco de pruebas
 
