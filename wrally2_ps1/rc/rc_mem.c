@@ -73,16 +73,22 @@ void rc_snd_vblank(void)
 #define RC_INF 0x3FFFFFFF
 s32 rc_dl;
 s32 mcu_proximo(void); void mcu_sucesos(s32 ahora); void mcu_desplaza(s32 d);
+/* sondeo periodico de la plataforma mientras corre el 68000 (diseno 6.2: el CD cada 16 384 ciclos): un suceso mas del
+   contador; rc_sondeo_per = 0 lo apaga (el banco). El momento se lleva en ciclos desde el proximo vblank, como la MCU */
+void (*rc_sondeo_gancho)(void);
+s32 rc_sondeo_per, rc_sondeo_t = RC_INF;
 void rc_plazo(void)
 {
     s32 rel = RC_REL, dl = rc_r.imask < 6 ? 0 : RC_INF, e = mcu_proximo();
     if (e < dl) dl = e;
+    if (rc_sondeo_t < dl) dl = rc_sondeo_t;
     rc_dl = dl; rc_r.cyrel = rel - dl;
 }
 int rc_sucesos(void)
 {
     s32 rel = RC_REL;
     mcu_sucesos(rel);
+    if (rc_sondeo_per && rel >= rc_sondeo_t) { rc_sondeo_t = rel + rc_sondeo_per; rc_sondeo_gancho(); }
     rc_plazo();
     return rel >= 0 && rc_r.imask < 6;
 }
@@ -91,6 +97,7 @@ void rc_vb_cuadro(void)
 {
     s32 rel = RC_REL, k = 1 + rel / CYC_FRAME;
     rel -= k * CYC_FRAME; mcu_desplaza(k * CYC_FRAME);
+    if (rc_sondeo_t != RC_INF) rc_sondeo_t -= k * CYC_FRAME;
     rc_dl = 0; rc_r.cyrel = rel;
 }
 

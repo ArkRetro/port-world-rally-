@@ -40,6 +40,7 @@ def cuentas(mapa):
     for sal, nom, a, n, f in s:
         clase = GENERADO.get(f, 'C' if f != 'relleno' else 'relleno')
         if clase == 'rc_run' and sal == '.rodata': clase = 'ht'
+        if clase == 'rc_run' and sal in ('.sbss', '.bss'): clase = 'ROM residente (rc_romres)'   # real desde H3; en R0 esta repetida
         if clase == 'C' and sal in ('.sbss', '.bss'): clase = 'BSS ' + f
         if clase == 'reservas' and sal in ('.sbss', '.bss'): clase = 'reservas (buferes por escribir)'
         g[clase] = g.get(clase, 0) + n
@@ -67,7 +68,7 @@ if __name__ == '__main__':
         puerta(area >= 960 * 1024, 'R1 area >= 960 KB')
     else:
         print('EXE R0 (%s):' % sys.argv[-1]); tabla(g, fin)
-        f = falta(g, 'R0'); pool = FIN - PILA - fin - f
+        f = falta(g, 'R0'); pool = FIN - PILA - fin - f + g.get('ROM residente (rc_romres)', 0)   # en R0 la ROM entera ya esta en el EXE
         print('  codigo que falta hasta los presupuestos: %d B (rc_run %d, C %d)' % (f, PRESU['rc_run R0'], PRESU['C']))
         print('  pool: %d B (%.1f KB)' % (pool, pool / 1024))
         puerta(pool >= 160 * 1024, 'R0 pool >= 160 KB')

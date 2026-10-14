@@ -46,6 +46,9 @@ extern s32 rc_dl;
 void rc_plazo(void);        /* rc_mem.c: recalcula el plazo (con rc_r.imask) */
 int rc_sucesos(void);       /* rc_mem.c: hace los sucesos vencidos; 1 = toca la IRQ del vblank */
 void rc_vb_cuadro(void);    /* rc_mem.c: tomada la IRQ, el contador pasa al vblank siguiente */
+/* sondeo periodico de la plataforma mientras corre el 68000 (rc_mem.c): rc_sondeo_per ciclos (0 = nunca); al activarlo
+   poner rc_sondeo_t = 0 antes de rc_run (el primero, al primer plazo) */
+extern void (*rc_sondeo_gancho)(void); extern s32 rc_sondeo_per, rc_sondeo_t;
 
 #if defined(__mips__) && defined(RC_GEN) && !defined(RCDBG)
 #define RC_GREGS 1
