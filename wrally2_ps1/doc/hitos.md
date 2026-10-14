@@ -100,7 +100,7 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - Usuario (prueba 2): partidas enteras de los 4 rallies sin sonido
 
 ## H6 Sonido (M-L)
-- [ ] `sndwr2.py`: banco fijo, conjuntos por fase, bancos de coche
+- [x] `sndwr2.py`: banco fijo, conjuntos por fase, bancos de coche (`work/cd/SPU*.BIN`, `work/snd_tab.c`; tamanos = diseno 5.1)
 - [ ] GAE1 -> SPU con encadenado; tono escalado por fps (0x2DF en NTSC); `RITMO=591`
 - [ ] Cambio del hueco M en el negro del attract; voces congeladas en cargas y pausa
 - [ ] Puerta G-SNDLOG en la PS1
