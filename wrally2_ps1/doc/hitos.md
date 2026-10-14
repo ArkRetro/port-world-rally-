@@ -83,7 +83,8 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
 - [ ] `sim.py` con la politica protectora; N y bancos de los 12 tramos
 - [ ] Presupuesto de RAM recalculado con codigo real (perfiles); palancas P1-P3 si hace falta
 - [ ] Puerta G-TILES en simulacion (12 tramos, una fuera)
-- [ ] Puerta G-ROM: corrida nueva sin bloques fuera de residente + banco
+- [x] Puerta G-ROM: corrida nueva sin bloques fuera de residente + banco (conjuntos de las 24 partidas de los 12
+  tramos + attract + Portugal: residente 87,0 KB, bancos 87-154 KB; `ROMCHK` 0 trampas en partidas enteras)
 - [ ] Puerta G-RAM con los N finales
 - Usuario: nada
 
