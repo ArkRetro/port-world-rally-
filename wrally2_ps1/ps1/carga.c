@@ -41,6 +41,7 @@ static int lba_dm[5] = {-1, -1, -1, -1, -1};   /* DEMO0-3.PAK y (4) el STkk.PAK 
 static u32 dmi[5][4][3];                        /* paquete, clave - 1 (mapa, VO, L2, ROM): sector, sectores, registros */
 static int st_k = -1;                           /* tramo cuyo indice esta en dmi[4] */
 static int lba_g[3] = {-1, -1, -1}; static u32 gi[3][3];   /* GAMEN/L/R.PAK: los 1 024 fijos de carrera de cada coche (VO, clave 2) */
+static u32 ge[3][3], *gl = ge[0];             /* y la L2 del coche (clave 3: L y R, sus poses que no caben en los fijos) */
 static int lba_gn = -1; static u32 *gn = gi[0];  /* el del coche de la partida (FE8124; si falta su paquete, N) */
 static int k_tit = -1;                          /* seccion del titulo (3/16) en MENUS.PAK */
 static u8 *area, *area_l2; static int l2_cap;   /* area de tramo; sectores que caben detras de las recetas */
@@ -65,7 +66,7 @@ static u16 cola[NQ]; static int nq, qh;         /* emergencias pendientes (FIFO 
 static u8 pedido[32768 / 8];                    /* codigo pedido y aun no subido */
 static int em_on, em_sec, em_b, em_n; static u16 em_t0;
 static int bg_on, bg_k, bg_a, bg_cnt, bg_got, bg_lista[NSEC], bg_n, bg_i;   /* fondo: seccion bg_k, sectores bg_a.. (bg_cnt), bg_got subidos */
-static int bg_tipo, bg_para, *bg_cuenta; static u8 *bg_dir;   /* 0 MENUS, 1 demo a la VRAM (anillo), 2 demo al area (directo) */
+static int bg_tipo, bg_para, *bg_cuenta, bg_off; static u8 *bg_dir;   /* 0 MENUS, 1 demo a la VRAM (anillo), 2 demo al area (directo) */
 static int bloq_vis, bloq_fb, bloq_sec, bloq_a, bloq_hecho, bloq_total; static u16 bloq_t0;
 u32 carga_sectores, carga_emerg, carga_emerg_lin, carga_emerg_max, carga_bloq, carga_bloq_lin, carga_bloq_max, carga_fondo, carga_err;
 
@@ -187,6 +188,7 @@ static void demo_init(void)
             for (k = 0; k < ebuf[5] && k < 8; k++) {
                 const u8 *e = ebuf + 32 + k * 16;
                 if (le32(e) == 2) { gi[r][0] = le32(e + 4); gi[r][1] = le32(e + 8); gi[r][2] = le32(e + 12); }
+                if (le32(e) == 3) { ge[r][0] = le32(e + 4); ge[r][1] = le32(e + 8); ge[r][2] = le32(e + 12); }
             }
         } else lba_g[r] = -1;
     }
@@ -268,7 +270,7 @@ static u8 *bg_dst(int i)
 static void bg_drain(void)
 {
     int pos = cd_read_pos();
-    if (bg_tipo == 2) { bg_got = pos; *bg_cuenta = bg_a + pos; return; }
+    if (bg_tipo == 2) { bg_got = pos; *bg_cuenta = bg_off + bg_a + pos; return; }
     while (bg_got < pos && !bg_para) {
         const u8 *b = ring[bg_got % RING];
         if (!bg_tipo) procesa(b, bg_k, bg_a + bg_got);
@@ -292,7 +294,7 @@ static void bg_start(void)
 }
 static void dm_stream_de(int lba, const u32 *x, int a, int n)
 {
-    bg_got = 0; bg_a = a;
+    bg_got = 0; bg_a = a; bg_off = 0;
     if (n > 0 && !cd_stream_async(lba + (int)x[0] + a, n, bg_dst)) bg_on = 1;
 }
 static void dm_stream(const u32 *x, int a, int n) { dm_stream_de(lba_dm[dm_r], x, a, n); }
@@ -305,11 +307,26 @@ static int dm_rom_trae(int n, const u32 *o)
     bg_cuenta = &dm_rom; bg_dir = area_l2 + (n + dm_rom) * SEC; dm_stream(o, dm_rom, (int)o[1] - dm_rom);
     return 1;
 }
-/* sectores de la L2 del paquete r que van al area: lo que quepa; en R1 detras de ella va la ROM entera, que manda
-   (la cola de la L2 son los codigos menos necesarios: los nunca visibles; lo que falte sale por emergencia) */
+/* sectores de L2 del paquete r que van al area: lo que quepa; en carrera, primero la L2 del coche (GAMEc, clave 3) y
+   detras la del tramo. En R1 detras va la ROM entera, que manda; luego la L2 del tramo (su cola son los codigos menos
+   necesarios: los nunca visibles y el final del tramo); la del coche solo con lo que sobre (va por frecuencia: lo que
+   no quepa sale por emergencia). l2_ext: sectores de la del coche */
+#ifndef EXT_PRIO
+#define EXT_PRIO 54                             /* sectores de la L2 del coche que van aunque recorten la del tramo */
+#endif
+static int l2_ext(int r)
+{
+    int e = r == 4 && lba_gn >= 0 ? (int)gl[1] : 0, p = e < EXT_PRIO ? e : EXT_PRIO, libre = l2_cap - (int)dmi[r][2][1];
+#ifdef R1
+    libre -= (int)dmi[r][3][1];
+#endif
+    if (libre < 0) libre = 0;
+    return p + (e - p < libre ? e - p : libre);
+}
 static int l2_n(int r)
 {
-    int n = (int)dmi[r][2][1] < l2_cap ? (int)dmi[r][2][1] : l2_cap;
+    int n = (int)dmi[r][2][1] + l2_ext(r);
+    if (n > l2_cap) n = l2_cap;
 #ifdef R1
     if (dmi[r][3][1] && n + (int)dmi[r][3][1] > l2_cap) n = l2_cap - (int)dmi[r][3][1];
     if (n < 0) n = 0;
@@ -333,7 +350,13 @@ static void dm_start(void)
     if (dm_rom >= 0 && !dm_rom_ok && (u32)dm_rom >= o[1] && o[1]) { bk_quita(); rom_pon(area_l2 + n * SEC, (int)o[1]); dm_rom_ok = 1; }
     if (!dm_rom_ok && dm_rom >= 0 && dm_rom_trae(n, o)) return;   /* en R1 la ROM antes que la L2: la demo la lee desde el principio */
 #endif
-    if (dm_l2 < n) { bg_cuenta = &dm_l2; bg_dir = area_l2 + dm_l2 * SEC; dm_stream(l, dm_l2, n - dm_l2); return; }
+    if (dm_l2 < n) {
+        int e = l2_ext(dm_r);
+        bg_cuenta = &dm_l2; bg_dir = area_l2 + dm_l2 * SEC;
+        if (dm_l2 < e) dm_stream_de(lba_gn, gl, dm_l2, (e < n ? e : n) - dm_l2);   /* la L2 del coche */
+        else { dm_stream(l, dm_l2 - e, n - dm_l2); bg_a = dm_l2 - e; bg_off = e; }   /* la del tramo, detras */
+        return;
+    }
 #ifndef R1
     if (dm_rom >= 0 && (u32)dm_rom < o[1]) dm_rom_trae(n, o);
 #endif
@@ -550,7 +573,7 @@ static int st_pack(void)
            del coche al empezar la carrera y en el mapa aun es el de antes) */
         u16 co = RW(0xFE8126); int g = co == 0 ? 1 : co == 2 ? 2 : 0;
         if (lba_g[g] < 0) g = 0;
-        if (lba_g[g] != lba_gn) { lba_gn = lba_g[g]; gn = gi[g]; st_k = -1; }   /* otro coche: todo de nuevo */
+        if (lba_g[g] != lba_gn) { lba_gn = lba_g[g]; gn = gi[g]; gl = ge[g]; st_k = -1; }   /* otro coche: todo de nuevo */
     }
     if (k != st_k) {
         st_k = k; stn[2] = (char)('0' + k / 10); stn[3] = (char)('0' + k % 10);

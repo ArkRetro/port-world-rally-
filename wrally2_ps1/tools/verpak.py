@@ -41,7 +41,7 @@ def comprueba_b(r, verboso):
 def main():
     a = sys.argv[1:]; verboso = '-v' in a; regs = '-r' in a; games = []; sts = []
     for fn in [x for x in a if not x.startswith('-')]:
-        d = open(fn, 'rb').read(); n = len(d) // 2048; cods = []; nvo = 0
+        d = open(fn, 'rb').read(); n = len(d) // 2048; cods = []; nvo = 0; vos = []
         print('%s: %d B, %d sectores' % (fn, len(d), n))
         if len(d) % 2048: falla('tamano no multiplo de 2048')
         secs = {}; ult = {}; nsec = 0
@@ -83,7 +83,9 @@ def main():
                         if pq == 0x0500 and t != idx * 12 + j: falla('TILESA: sector %d registro %d es %04X' % (idx, j, t))
                     else:
                         t = comprueba_b(r, regs)
-                        if tipo in (1, 4) and pq != 0x0501: cods.append(t); nvo += tipo == 4
+                        if tipo in (1, 4) and pq != 0x0501:
+                            cods.append(t); nvo += tipo == 4
+                            if tipo == 4: vos.append(t)
                         if pq >> 8 == 4 and struct.unpack_from('<H', r, 142)[0] != 0xFFFF: falla('GAME: registro %04X sin avance 0xFFFF' % t)
                         if pq == 0x0501 and t != idx * 14 + j: falla('TILES: sector %d registro %d es %04X' % (idx, j, t))
                         if tipo == 3 and av: falla('sector %d (mapa) con avance %d' % (i, av))
@@ -100,8 +102,8 @@ def main():
         if rep: falla('%s: %d codigos repetidos entre VO y L2 (%s)' % (fn, len(rep), ' '.join('%04X' % c for c in rep[:8])))
         pqs = {pq >> 8 for _, pq in secs}
         if 4 in pqs:
-            games.append(set(cods))
-            if len(cods) > 1024: falla('%s: %d fijos, mas de 1 024 huecos' % (fn, len(cods)))
+            games.append(set(vos))           # los fijos (VO); la L2 del coche (L, R) va al area
+            if len(vos) > 1024: falla('%s: %d fijos, mas de 1 024 huecos' % (fn, len(vos)))
         if 3 in pqs: sts.append((fn, set(cods), nvo))
     if games and sts:                   # los fijos de todos los coches no van en los tramos
         fj = set.intersection(*games)

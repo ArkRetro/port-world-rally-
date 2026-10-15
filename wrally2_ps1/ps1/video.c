@@ -30,7 +30,9 @@ void gpu_wait(void) { while (!(GP1 & (1 << 26))); }
 void dma_wait(void) { while (D2_CHCR & (1 << 24)); }
 /* nodos de hasta 16 palabras (el FIFO de la GPU; con nodos mas largos Mednafen pierde palabras y la GPU se queda a
    medio comando) seguidos en un bufer (lst), enlazados en orden y con primitivas enteras */
-#define LSTN 12288                                /* 48 KB (diseno 2.1; el peor cuadro de la placa, 42 KB) */
+#define LSTN 9216                                 /* 36 KB (el diseno 2.1 daba 48 por el peor cuadro de la placa, 42 KB;
+                                                     medido en el port: 27 KB en 12 000 cuadros de attract y Portugal con
+                                                     los tres coches; lo que no quepa se pierde ese cuadro) */
 static u32 lst[LSTN];
 u32 *lp; static u32 *node;
 static void l_close(u32 *next)
@@ -47,8 +49,10 @@ void l_room(int n)
     }
 }
 int l_full(int n) { return lp + n + 2 >= lst + LSTN; }
+u32 vid_lst_max;                              /* palabras de la lista del peor cuadro (cifras) */
 void l_send(void)
 {
+    if ((u32)(lp - lst) > vid_lst_max) vid_lst_max = (u32)(lp - lst);
     l_close((u32 *)0xFFFFFF);
     dma_wait(); gpu_wait(); D2_MADR = (u32)lst; D2_BCR = 0; D2_CHCR = 0x01000401;
 }
@@ -131,17 +135,18 @@ static void upload(int x, int y, int w, int h, const void *d)
 #define BLK_Y(b) (256 * ((b) / 10))
 #define E1_B(b) (0xE1000400u | (u32)(BLK_X(b) >> 6) | (u32)((BLK_Y(b) >> 8) << 4))
 
-/* codigo -> hueco (0xFFFF: no esta) en dos niveles (diseno 2.1): raiz de 512 grupos de 64 codigos y 184 hojas que se
+/* codigo -> hueco (0xFFFF: no esta) en dos niveles (diseno 2.1): raiz de 512 grupos de 64 codigos y 272 hojas que se
    dan al vuelo y se devuelven cuando se vacian; si no quedan, el tile no se registra (vid_sin_hoja). Hojas de 64 y no
    de 256 como dice el diseno: los codigos de una demo estan dispersos (DEMO3: 70 grupos de 256 pero 175 de 64) y asi
-   ocupan 23 KB en vez de 36 */
+   ocupan 23 KB en vez de 36. En carrera hacen falta mas: GAMEc + STkk llegan a 244 grupos, mas las emergencias (con
+   184 se acababan en todas las carreras: tiles subidos sin registrar, que faltaban y se volvian a pedir sin parar) */
 #define TSB 6
 #define TSM ((1 << TSB) - 1)
-#define NHOJA 184
-static u8 ts_raiz[32768 >> TSB];          /* hoja + 1 del grupo (0: ninguna) */
+#define NHOJA 272
+static u16 ts_raiz[32768 >> TSB];          /* hoja + 1 del grupo (0: ninguna) */
 static u16 ts_hoja[NHOJA][1 << TSB]; static u8 ts_n[NHOJA];   /* huecos del grupo y cuantos codigos tiene */
 static int ts_libres;
-u32 vid_sin_hoja;
+u32 vid_sin_hoja, vid_hojas_max;                 /* tiles sin registrar por falta de hoja; hojas usadas como mucho */
 static inline u16 ts_get(u32 c) { u32 r = ts_raiz[c >> TSB]; return r ? ts_hoja[r - 1][c & TSM] : 0xFFFF; }
 static void ts_quita(u32 c)
 {
@@ -164,7 +169,8 @@ static int ts_pon(u32 c, u16 h)
         if (!ts_libres) { vid_sin_hoja++; return -1; }
         for (r = 0; r < NHOJA && ts_n[r]; r++);
         for (k = 0; k <= TSM; k++) ts_hoja[r][k] = 0xFFFF;
-        ts_libres--; ts_raiz[c >> TSB] = (u8)(r + 1); r++;
+        ts_libres--; ts_raiz[c >> TSB] = (u16)(r + 1); r++;
+        if ((u32)(NHOJA - ts_libres) > vid_hojas_max) vid_hojas_max = (u32)(NHOJA - ts_libres);
     }
     ts_hoja[r - 1][c & TSM] = h; ts_n[r - 1]++;
     return 0;
@@ -187,7 +193,7 @@ static u8 tbuf[2][256] __attribute__((aligned(4)));      /* tile de 8 bpp expand
 static int tb;
 static u32 te1[NPAG], te1b[17], clid[64], fuv[4][4];
 static int lay;                           /* reparto: 0 A, 1 A con b12-b15 en B (titulo), 2 B */
-u32 vid_falta_ult, vid_a_en_b, vid_faltas, vid_faltas_cuadro, vid_desalojos, vid_lineas, vid_vict_it, vid_sin_sitio;
+u32 vid_faltas_spr, vid_falta_spr_ult, vid_falta_ult, vid_a_en_b, vid_faltas, vid_faltas_cuadro, vid_desalojos, vid_lineas, vid_vict_it, vid_sin_sitio;
 
 /* ---- paletas: entrada 0 siempre 0 (transparente), negro -> 0x8000 (opaco) */
 static u16 c15(u32 v)
@@ -331,7 +337,7 @@ void vid_marco(int fb)
    modo); con espejo (fl: bit 0 X, bit 1 Y), cuadrilatero 0x2D con la ventana de textura (E2) ajustada al tile, para
    que U/V puedan ir de 31 a 15 sin salirse (las GPU antiguas no hacen espejo en los rectangulos). semi: modo de
    semitransparencia (0 opaco, 1 B+F, 2 B-F). e1: pagina (A de 8 bpp o B de 4 bpp) */
-static void emit_t(int x, int y, u32 e1, u32 h, u32 cl, u32 fl, u32 semi)
+static inline __attribute__((always_inline)) void emit_t(int x, int y, u32 e1, u32 h, u32 cl, u32 fl, u32 semi)
 {
     u32 uv = ((h >> 4) & 15) << 12 | (h & 15) << 4;
     u32 x0 = (u32)x & 0xFFFF, y0 = ((u32)y & 0xFFFF) << 16;
@@ -472,7 +478,7 @@ static const u8 *receta(int h) { return (hfl[h] & F_L2) ? l2reg(l2idx(h)) + 130 
 /* CLUT del hueco h (< 4 095): b17-b19 (4 por fila), C0, filas 247-255 de S0 y S1 desde x 64 */
 static inline __attribute__((always_inline)) void cl_pos(int h, int *x, int *y)
 {
-    if (h < 3072) { int b = 17 + (h >> 10); *x = BLK_X(b) + 16 * (h & 3); *y = BLK_Y(b) + ((h >> 2) & 255); }
+    if (h < 3072) { *x = BLK_X(17) + 64 * (h >> 10) + 16 * (h & 3); *y = BLK_Y(17) + ((h >> 2) & 255); }   /* b17-b19 en la misma fila: sin dividir */
     else if (h < 3584) { *x = 368; *y = h - 3072; }
     else if (h < 3791) { int i = h - 3584; *x = 16 * (i % 23); *y = 247 + i / 23; }
     else { int i = h - 3791; *x = 64 + 16 * (i % 19); *y = 496 + i / 19; }
@@ -515,11 +521,34 @@ static int b_libre(int propia)
 }
 /* victima (solo en el reparto B): libre; muerto (en la demo y la carrera, FEFD08 ya paso su muerte, tambien los fijos); rotativo
    no visto en 60 cuadros; si no, el VO aun sin dibujar que mas tarde muere (el que hara falta mas tarde: luego vuelve
-   por emergencia); si no, el rotativo mas viejo. Nunca uno dibujado en este cuadro */
+   por emergencia); si no, el rotativo mas viejo. Nunca uno dibujado en este cuadro.
+   Un recorrido entero sin salida rapida (las curvas: todo visto hace poco) guarda las NCAND mejores de una vez por
+   clase (con o sin CLUT propia); las llamadas siguientes del mismo cuadro las toman de ahi sin recorrer los 4 352
+   huecos otra vez (eran cientos de recorridos por cuadro: hasta 17 vblanks parado); agotadas, otro recorrido, como
+   mucho NREC por cuadro y clase */
+#define NCAND 96
+#define NREC 2
+static u16 cand[2][NCAND], cand_now[2]; static u8 cand_n[2], cand_i[2], cand_ok[2], cand_rec[2];
+static u16 cand_hist[60 + 256];
 static int b_victima(int propia)
 {
-    int k, h, best = -1, nbest = -1, nmu = -1, lim = propia ? NBCL : NB, dem = *(const u16 *)(rc_ram + 0xC298) == 5 || *(const u16 *)(rc_ram + 0xC298) == 1;
-    u16 av = *(const u16 *)(rc_ram + 0xFD08), bage = 0, age;
+    int k, h, n = 0, lim = propia ? NBCL : NB, dem = *(const u16 *)(rc_ram + 0xC298) == 5 || *(const u16 *)(rc_ram + 0xC298) == 1;
+    u16 av = *(const u16 *)(rc_ram + 0xFD08), age; u32 key, umbral, acu;
+    propia = propia != 0;
+    if (cand_now[propia] != now) { cand_now[propia] = now; cand_rec[propia] = 0; cand_ok[propia] = 0; }
+    if (cand_ok[propia]) {
+        while (cand_i[propia] < cand_n[propia]) {
+            h = cand[propia][cand_i[propia]++];
+            if (hcode[h] == 0xFFFF) return h;
+            if (hstamp[h] == now || (hfl[h] & F_FIJO)) continue;
+            b_quita(h);
+            return h;
+        }
+        cand_ok[propia] = 0;
+        if (cand_rec[propia] >= NREC) { vid_b_sinsitio++; return -1; }   /* hasta el cuadro siguiente sin sitio */
+    }
+    /* primera vuelta: salidas rapidas como siempre y el histograma de claves (edad 0-59; VO nuevo 60 + muerte) */
+    for (k = 0; k < 60 + 256; k++) cand_hist[k] = 0;
     for (k = 0; k < NB; k++) {
         h = bhand; bhand = bhand + 1 < NB ? bhand + 1 : 0;
         if (h >= lim) continue;
@@ -527,15 +556,34 @@ static int b_victima(int propia)
         if (hstamp[h] == now) continue;
         if (dem && hmu[h] != 0xFF && (av >> 2) > hmu[h]) { vid_b_muertos++; b_quita(h); return h; }
         if (hfl[h] & F_FIJO) continue;
-        if (hfl[h] & F_NUEVO) { if (hmu[h] > nmu) { nmu = hmu[h]; nbest = h; } continue; }
-        age = (u16)(now - hstamp[h]);
-        if (age >= 60) { b_quita(h); return h; }
-        if (age > bage) { bage = age; best = h; }
+        if (hfl[h] & F_NUEVO) key = 60u + hmu[h];
+        else {
+            age = (u16)(now - hstamp[h]);
+            if (age >= 60) { b_quita(h); return h; }
+            key = age;
+        }
+        cand_hist[key]++;
     }
-    if (nbest >= 0) best = nbest;
-    if (best < 0) { vid_b_sinsitio++; return -1; }
-    b_quita(best);
-    return best;
+    cand_rec[propia]++;
+    /* umbral: las NCAND de clave mas alta (VO nuevo que mas tarde muere; si no, el rotativo mas viejo) */
+    for (umbral = 60 + 256, acu = 0; umbral > 0 && acu < NCAND; ) acu += cand_hist[--umbral];
+    if (!acu) { cand_ok[propia] = 1; cand_n[propia] = 0; cand_i[propia] = 0; vid_b_sinsitio++; return -1; }
+    /* segunda vuelta: las de clave por encima del umbral y las del umbral hasta llenar; luego por clave, de mayor a menor */
+    {
+        static u16 ck[NCAND]; int pas, j;
+        for (pas = 0; pas < 2 && n < NCAND; pas++)
+            for (k = 0; k < lim && n < NCAND; k++) {
+                if (hcode[k] == 0xFFFF || hstamp[k] == now || (hfl[k] & F_FIJO)) continue;
+                key = (hfl[k] & F_NUEVO) ? 60u + hmu[k] : (u16)(now - hstamp[k]);
+                if (pas ? key != umbral : key <= umbral) continue;
+                for (j = n++; j > 0 && ck[j - 1] < key; j--) { ck[j] = ck[j - 1]; cand[propia][j] = cand[propia][j - 1]; }
+                ck[j] = (u16)key; cand[propia][j] = (u16)k;
+            }
+    }
+    cand_ok[propia] = 1; cand_n[propia] = (u8)n; cand_i[propia] = 1;
+    h = cand[propia][0];
+    b_quita(h);
+    return h;
 }
 /* registro B en el hueco h: texels directos del registro (128 B = 4 x 16 halfwords, alineado a 4) por DMA; la CLUT
    se hace al dibujarlo (F_SUCIA). l2 >= 0: indice de la L2 (el registro se queda en la RAM) */
@@ -695,8 +743,8 @@ static inline __attribute__((always_inline)) int b_busca(u32 code)
 static inline __attribute__((always_inline)) u32 b_cl(int h, u32 col)
 {
     u32 f = hfl[h];
-    if (f & F_IDX) return CLUT_ID(PAL_X(col), PAL_Y(col));
-    if (f & F_ALTA) return CLUT_ID(PAL_X(col) + 16, PAL_Y(col));
+    if (f & F_IDX) return clid[col];
+    if (f & F_ALTA) return clid[col] + 1;     /* x + 16: la CLUT siguiente */
     if (hpal[h] != col) { if (hstamp[h] != now) { hpal[h] = (u8)col; f |= F_SUCIA; } else vid_b_otrapal++; }
     if ((s16)(pal_t[hpal[h]] - hstamp[h]) > 0) f |= F_SUCIA;
     if (f & F_SUCIA) { b_clut(h); hfl[h] = (u8)(f & ~F_SUCIA); }
@@ -756,7 +804,7 @@ void vid_b(void)
                 }
                 if (h < 0) {
                     if (h == -2) vid_b_tope++, rect16(px, py, rgb24(col * 32 + 1 + ((c & 0xFFF) % 15)));
-                    else falta(px, py, col, code);
+                    else { falta(px, py, col, code); vid_faltas_spr++; vid_falta_spr_ult = code; }
                     continue;
                 }
                 { u32 cl = b_cl(h, col & 0x3F); hstamp[h] = now; hfl[h] &= (u8)~F_NUEVO; emit_b(px, py, (u32)h, cl, fl, 0); }

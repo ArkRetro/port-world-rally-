@@ -130,6 +130,8 @@ def escribe_pak(fn, paquete, secciones):
 
 COCHES = {0x0000: 'N', 0x04B0: 'L', 0x0320: 'R'}   # FE8124 -> coche; GAMEc.PAK es el paquete 0x0400 + 'NLR'.index(c)
 HUECOS = 4352                                       # huecos B en carrera (b0-b16)
+EXT_MAX = 54 * 14                                   # L2 de un coche L/R: como mucho 54 sectores (108 KB del area)
+L2_CAP = 493                                        # sectores del area de tramo para L2 y ROM en la PS1 (carga_l2_cap 495 - 2)
 
 def rangos(st, ln):
     """indices de las entradas de varios cuadros (inicio, largo) en un solo array"""
@@ -193,7 +195,7 @@ def fijos(cors, n=1024, minimo=10):
             if cl < 3: vis[t] += c
         for t, c in vis.items(): nt[t] += 1; fq[t] += c
     cand = sorted((t for t in nt if nt[t] >= min(minimo, len(ks))), key=lambda t: (-nt[t], -fq[t], t))
-    return cand[:n], len(cand)
+    return cand[:n], len(cand), cand[n:]
 
 def vistos_carrera(cors, ks, clases=(0, 1, 2)):
     """codigo -> cuadros vistos en carrera en los tramos ks de esas corridas (clases: 0 plano, 1 sprite, 2 efecto)"""
@@ -226,7 +228,7 @@ def fijos_por_coche(cors, n=1024):
         # tramos, al final en el orden de GAMEN
         pos = {t: i for i, t in enumerate(fn)}
         cand = sorted(set(suyo) | set(base), key=lambda t: (-va[t], pos.get(t, 1 << 20), t))
-        fc[c] = (cand[:n], len(cand))
+        fc[c] = (cand[:n], len(cand), cand[n:])
     return fc, set(fn)
 
 def reparto(lineas, fj):
@@ -256,9 +258,14 @@ def carrera(cors, out, margen, rot, nfij, romres, area):
         if c not in fc: print('GAME%s.PAK: sin corridas con ese coche (FE8124 = %04X): no se hace' % (c, [x for x, y in COCHES.items() if y == c][0])); continue
         cc = [co for co in cors if co.coche == c]; pc = por_codigo(junta([t['res'] for co in cc for t in co.tramos.values()]))
         ivs = [(co, [iv for t in co.tramos.values() for iv in t['iv']]) for co in cc]; pq = 0x0400 + 'NLR'.index(c)
-        regs = [reg(t, pc[t], ivs, 'G' + c, 0xFFFF) for t in fc[c][0]]
-        fn = os.path.join(out, 'GAME%s.PAK' % c); escribe_pak(fn, pq, [(2, sectores_b(regs, 4, pq, 0, None), len(regs))])
-        print('GAME%s.PAK: %d B; %d fijos de %d candidatos, de %d corridas' % (c, os.path.getsize(fn), len(regs), fc[c][1], len(cc)))
+        regs = [reg(t, pc[t], ivs, 'G' + c, 0xFFFF) for t in fc[c][0]]; sec = [(2, sectores_b(regs, 4, pq, 0, None), len(regs))]
+        # L y R: los candidatos que no caben en los fijos (sus poses) en una L2 del coche (clave 3) que va al area delante
+        # de la del tramo (los ST se hacen con las lineas de N y no las llevan: sin esto salian por emergencia)
+        ext = [t for t in fc[c][2] if t in pc][:EXT_MAX] if c != 'N' else []   # (los de N no vistos con este coche, fuera)
+        if ext: sec.append((3, sectores_b([reg(t, pc[t], ivs, 'G' + c, 0xFFFF) for t in ext], 1, pq, 0, None), len(ext)))
+        fn = os.path.join(out, 'GAME%s.PAK' % c); escribe_pak(fn, pq, sec)
+        print('GAME%s.PAK: %d B; %d fijos de %d candidatos, de %d corridas; L2 del coche %d (%d B en el area)'
+              % (c, os.path.getsize(fn), len(regs), fc[c][1], len(cc), len(ext), (len(ext) + 13) // 14 * 2048))
     nfj = len(fj); nvo = HUECOS - nfj - rot; bancos = rombank.lee_romres(romres)[1]; filas = []
     for k in sorted({k for co in cors for k in co.tramos}):
         lin = lineas_tramo(cors, k); pq = 0x0300 + k
@@ -268,6 +275,18 @@ def carrera(cors, out, margen, rot, nfij, romres, area):
         cm = [co for co, _ in lin if clave in co.mapas]
         mapa = por_codigo(junta([co.mapas[clave]['res'] for co in cm])); ivm = [(co, co.mapas[clave]['iv']) for co in cm]
         sec = [(1, sectores_b([reg(t, mapa[t], ivm, ('M', k), 0) for t in sorted(mapa)], 3, pq, 0, None), len(mapa))]
+        # la L2 del tramo, la ROM del banco y la L2 de un coche L/R deben caber en el area (en la PS1 lo que no cabe se
+        # recorta por la cola: el final del tramo). Si no caben, fuera de la L2 los codigos menos vistos (los nunca
+        # visibles primero), que saldran por emergencia; el orden de los demas no cambia
+        trs = bancos.get(clave, []); nrom = len(rombank.sectores_rom(trs, pq)); l2t = orden[nvo:]
+        cabe = (L2_CAP - nrom - EXT_MAX // 14) * 14
+        if len(l2t) > cabe:
+            vc = Counter()
+            for (t, _, _), (c, _, _, _) in junta([co.tramos[kk]['res'] for co, kk in lin]).items(): vc[t] += c
+            fuera = set(sorted(l2t, key=lambda t: (not pc[t][5], vc[t], t))[:len(l2t) - cabe])
+            print('ST%02d: L2 %d registros > %d (area %d sectores - ROM %d - L2 del coche %d): fuera %d (vistos como mucho %d cuadros)'
+                  % (k, len(l2t), cabe, L2_CAP, nrom, EXT_MAX // 14, len(fuera), max(vc[t] for t in fuera)))
+            orden = orden[:nvo] + [t for t in l2t if t not in fuera]
         for cl, tipo, ts in ((2, 4, orden[:nvo]), (3, 1, orden[nvo:])):
             sec.append((cl, sectores_b([reg(t, pc[t], ivs, ('T', k), pc[t][4] + margen) for t in ts], tipo, pq, 0, [pc[t][3] for t in ts]), len(ts)))
         trs = bancos.get(clave, []); sr = rombank.sectores_rom(trs, pq); sec.append((4, sr, len(trs)))

@@ -129,6 +129,20 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   a la vista (la animacion del titulo con la musica) bloquea solo los primeros 40 sectores y deja el resto de fondo,
   lo primero de la lista (`carga_pantalla(..., parcial)`); en el negro, entera. Attract: el bloqueo de 385 ms del
   cuadro 651 desaparece; 0 faltas en el titulo; las voces ya no se paran en las cargas de menu
+- [x] Curvas sin paradas ni cuadrados (psxprof2, Portugal con los tres coches):
+  - `b_victima` recorria los 4 352 huecos en cada llamada sin salida rapida: en las curvas, cientos por cuadro (hasta
+    17 vblanks parado). Ahora un recorrido guarda las 96 mejores victimas por clase (histograma de claves y una
+    segunda vuelta), como mucho 2 por cuadro
+  - Tabla de codigos sin hojas en todas las carreras (184 para hasta 244 grupos): tiles subidos sin registrar que
+    faltaban y se pedian sin parar. 272 hojas (raiz de 16 bits), maximo medido 229; la lista de la GPU baja a 36 KB
+    (maximo medido 27 KB) para que la puerta R1 siga pasando (960,1 KB)
+  - Coches L y R: las poses que no caben en sus 1 024 fijos van en una L2 del coche (GAMEL/GAMER, clave 3, 54
+    sectores) al area delante de la del tramo; si no cabe todo, `paquetes.py` quita de la L2 del tramo los codigos
+    menos vistos (ST04: 889, vistos como mucho 37 cuadros), que salen por emergencia
+  - Sin divisiones en la posicion de la CLUT (b17-b19) y `emit_t` en linea
+  - Resultado en carrera: faltas por cuadro N 0,07, L 7,3 -> 0,04, R 4,7 -> 0,05; cuadros de 2 vblanks N 6 % -> 1,8 %,
+    L/R 11 % -> 1,9 %; ninguna parada de mas de 3 vblanks (antes 17). G-ESTADO, G-SNDLOG (attract y Portugal, que
+    ahora tambien casa) y G-CPU pasan
 - [x] Pausa en carrera (START, como el WR1): el 68000 y la MCU parados, el cuadro que se ve oscurecido con PAUSA, voces a
   tono 0, el CD sigue leyendo lo pedido; el tiempo de la pausa no cuenta para el reloj del sonido. START no llega al
   juego en carrera (modo 1)
