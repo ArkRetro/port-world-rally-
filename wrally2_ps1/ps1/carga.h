@@ -9,7 +9,8 @@ void carga_poll(void);                   /* solo sondea el CD (en cualquier siti
 void carga_atiende(void);                /* sondea y sube a la VRAM lo que llego (solo con la GPU parada) */
 void carga_falta(u32 codigo);            /* pide un codigo que no esta en la VRAM (emergencia) */
 int carga_pantalla(u32 clave, int fb, int parcial);   /* seccion de MENUS.PAK de la pantalla, bloqueante (CARGANDO si > 0,5 s);
-                                                       parcial: solo el principio, lo demas de fondo; -1 si no hay */
+                                                       parcial: bit 0 solo el principio, lo demas de fondo;
+                                                       bit 1 si no esta, la mayor del modo; -1 si no hay */
 void carga_baja(int sec, int sub);       /* video.c: desalojado un tile del sector sub de la seccion sec */
 void carga_demo_titulo(int r);           /* titulo (3/16): prelectura de la demo r de fondo */
 void carga_demo_negro(int ped, int fb);  /* negro antes del mapa (ped 9 / 0xB) o de la demo (ped 5) o la carrera (1): lo que falte, bloqueando */

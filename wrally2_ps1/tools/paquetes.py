@@ -48,12 +48,14 @@ class Vistos:
     avance; con numpy porque son decenas de millones de entradas"""
     def __init__(self):
         self.inst = defaultdict(list); self.datos = defaultdict(list)
-    def suma(self, fn, corrida=0):
-        """corrida: indice del fichero (sus cuadros van desplazados como en tiles4.Paletas)"""
+    def suma(self, fn, corrida=0, modos=None):
+        """corrida: indice del fichero (sus cuadros van desplazados como en tiles4.Paletas); modos: solo las pantallas de
+        esos modos (las demas no cuentan)"""
         cab, ent = lee_blk(fn); prev = None; base = corrida * tiles4.CORRIDA
         for (fr, modo, f146, c6, fd08, n), e in zip(cab, ent):
             fr += base
             k = ('demo', c6) if modo == 5 else clave_pantalla(modo, f146)
+            if modos is not None and modo not in modos: k = None
             if k != prev:
                 if prev is not None: self.inst[prev][-1][1] = ultimo
                 if k is not None: self.inst[k].append([fr, fr])
@@ -312,7 +314,9 @@ def carrera(cors, out, margen, rot, nfij, romres, area):
 def attract(blks, dumps, rss, out, margen, nvo):
     """MENUS.PAK y DEMO0-3.PAK"""
     t0 = time.time(); v = Vistos()
-    for i, fn in enumerate(blks): v.suma(fn, i)
+    # de las partidas de work/tramos (los otros rallies) solo las pantallas de despues de correr: elegir rally,
+    # resultados, continuar y fin (el titulo, el attract y elegir coche son los de siempre y no deben crecer)
+    for i, fn in enumerate(blks): v.suma(fn, i, {0xA, 0xD, 0xE, 0xF} if '/tramos/' in fn else None)
     pal = tiles4.Paletas(dumps)
     fases, _, _ = romstat.lee(rss); _, bancos, _ = romstat.conjuntos(fases)
     print('lectura: %.1f s; pantallas: %s' % (time.time() - t0, ' '.join('%s/%X' % k if k[0] == 'menu' else '%s%d' % k for k in sorted(v.inst))))

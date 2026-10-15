@@ -143,6 +143,21 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   - Resultado en carrera: faltas por cuadro N 0,07, L 7,3 -> 0,04, R 4,7 -> 0,05; cuadros de 2 vblanks N 6 % -> 1,8 %,
     L/R 11 % -> 1,9 %; ninguna parada de mas de 3 vblanks (antes 17). G-ESTADO, G-SNDLOG (attract y Portugal, que
     ahora tambien casa) y G-CPU pasan
+- [x] Curvas, segunda ronda (partidas nuevas del piloto automatico con un estilo que no se uso al hacer los paquetes,
+  AP 7/110, los cuatro rallies, 18 000 cuadros):
+  - En carrera la victima sale de una reserva que se llena con un barrido incremental (NB/8 huecos por cuadro, umbral
+    de edad adaptable): los cuadros con tiles nuevos ya no recorren los 4 352 huecos dos veces (de 95 a 173 lineas de
+    `vid_b` en los cuadros saltados). En la demo del attract sigue la seleccion exacta (con la reserva tenia mas faltas)
+  - Un fijo de GAMEc que ya estaba como tile del mapa heredaba su muerte (0) y se desalojaba en plena carrera (0x178A
+    faltaba cada cuadro desde la mitad del tramo): ahora no muere. El VO fijo de las demos sigue con su muerte
+  - Resultados del tramo con un FEC146 no visto (D/9 tras un choque): la foto salia en mosaico 1,3 s; ahora, con la
+    pantalla a la vista, la seccion mayor del mismo modo. MENUS lleva ademas las pantallas de despues de correr
+    (elegir rally, resultados, continuar, fin) de una partida de cada rally (work/tramos/r_10_150, solo modos A, D, E y F)
+  - El recuento de huecos para las cifras (un cuadro lento de cada 32) solo con las cifras a la vista
+  - Resultado: cuadros de 2 vblanks en carrera Portugal 1,1 % -> 0,4 %, Safari 1,4 -> 0,5, Corcega 1,4 -> 0,4, RAC
+    2,3 -> 0,5; ninguna parada de 3 o mas vblanks (antes 3-6 por partida); faltas en carrera 0,00-0,17 por cuadro;
+    Portugal con los coches N, L y R: 0,7 % y 0,01-0,03 faltas por cuadro. Attract igual que antes (1 132 faltas en
+    12 000 cuadros). G-ESTADO, G-SNDLOG y G-CPU pasan
 - [x] Pausa en carrera (START, como el WR1): el 68000 y la MCU parados, el cuadro que se ve oscurecido con PAUSA, voces a
   tono 0, el CD sigue leyendo lo pedido; el tiempo de la pausa no cuenta para el reloj del sonido. START no llega al
   juego en carrera (modo 1)

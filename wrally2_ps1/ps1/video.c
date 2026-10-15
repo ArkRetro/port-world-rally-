@@ -145,7 +145,7 @@ static void upload(int x, int y, int w, int h, const void *d)
 #define NHOJA 272
 static u16 ts_raiz[32768 >> TSB];          /* hoja + 1 del grupo (0: ninguna) */
 static u16 ts_hoja[NHOJA][1 << TSB]; static u8 ts_n[NHOJA];   /* huecos del grupo y cuantos codigos tiene */
-static int ts_libres;
+static int ts_libres, vp_n;                     /* vp_n: victimas en la reserva (b_barre) */
 u32 vid_sin_hoja, vid_hojas_max;                 /* tiles sin registrar por falta de hoja; hojas usadas como mucho */
 static inline u16 ts_get(u32 c) { u32 r = ts_raiz[c >> TSB]; return r ? ts_hoja[r - 1][c & TSM] : 0xFFFF; }
 static void ts_quita(u32 c)
@@ -160,7 +160,7 @@ static void ts_vacia(void)
     int k;
     for (k = 0; k < (32768 >> TSB); k++) ts_raiz[k] = 0;
     for (k = 0; k < NHOJA; k++) ts_n[k] = 0;
-    ts_libres = NHOJA;
+    ts_libres = NHOJA; vp_n = 0;               /* la reserva de victimas (b_barre) tampoco vale */
 }
 static int ts_pon(u32 c, u16 h)
 {
@@ -193,6 +193,7 @@ static u8 tbuf[2][256] __attribute__((aligned(4)));      /* tile de 8 bpp expand
 static int tb;
 static u32 te1[NPAG], te1b[17], clid[64], fuv[4][4];
 static int lay;                           /* reparto: 0 A, 1 A con b12-b15 en B (titulo), 2 B */
+int vid_cifras;
 u32 vid_faltas_spr, vid_falta_spr_ult, vid_falta_ult, vid_a_en_b, vid_faltas, vid_faltas_cuadro, vid_desalojos, vid_lineas, vid_vict_it, vid_sin_sitio;
 
 /* ---- paletas: entrada 0 siempre 0 (transparente), negro -> 0x8000 (opaco) */
@@ -519,18 +520,62 @@ static int b_libre(int propia)
     for (; ba_hi >= lo; ba_hi--) if (hcode[ba_hi] == 0xFFFF) return ba_hi;
     return -1;
 }
-/* victima (solo en el reparto B): libre; muerto (en la demo y la carrera, FEFD08 ya paso su muerte, tambien los fijos); rotativo
-   no visto en 60 cuadros; si no, el VO aun sin dibujar que mas tarde muere (el que hara falta mas tarde: luego vuelve
-   por emergencia); si no, el rotativo mas viejo. Nunca uno dibujado en este cuadro.
-   Un recorrido entero sin salida rapida (las curvas: todo visto hace poco) guarda las NCAND mejores de una vez por
-   clase (con o sin CLUT propia); las llamadas siguientes del mismo cuadro las toman de ahi sin recorrer los 4 352
-   huecos otra vez (eran cientos de recorridos por cuadro: hasta 17 vblanks parado); agotadas, otro recorrido, como
-   mucho NREC por cuadro y clase */
+/* victima (solo en el reparto B): libre; muerto (en la demo y la carrera, FEFD08 ya paso su muerte, tambien los fijos);
+   VO aun sin dibujar; rotativo no visto en vthr cuadros. Nunca uno dibujado en este cuadro ni un fijo.
+   Barrido incremental (reloj): cada cuadro se miran NB/8 huecos y los que valen van a una reserva de VP; la victima
+   sale de la reserva (si su sello cambio desde que entro, se vio otra vez y no vale). El umbral de edad se adapta: si
+   una vuelta entera llena poco la reserva, baja; si se llena enseguida, sube. Antes cada cuadro con tiles nuevos
+   recorria los 4 352 huecos (dos veces): en las curvas, 80 lineas de mas y el cuadro saltado */
+#define VP 128
+static u16 vpool[VP], vpst[VP]; static int vcur, vthr = 40, v_vuelta;
+static void b_barre(int n)
+{
+    int dem = *(const u16 *)(rc_ram + 0xC298) == 5 || *(const u16 *)(rc_ram + 0xC298) == 1;
+    u16 av4 = (u16)(*(const u16 *)(rc_ram + 0xFD08) >> 2);
+    while (n-- > 0 && vp_n < VP) {
+        int h = vcur; u32 f;
+        if (++vcur >= NB) {                    /* una vuelta: el umbral segun lo que dio */
+            vcur = 0;
+            if (v_vuelta < VP / 2) { if (vthr > 2) vthr >>= 1; } else if (vthr < 56) vthr += 4;
+            v_vuelta = 0;
+        }
+        if (hcode[h] == 0xFFFF) continue;     /* los libres los da b_libre */
+        if (hstamp[h] == now) continue;
+        f = hfl[h];
+        if (!(dem && hmu[h] != 0xFF && av4 > hmu[h])) {      /* muerto: vale aunque sea fijo */
+            if (f & F_FIJO) continue;
+            if (!(f & F_NUEVO) && (u16)(now - hstamp[h]) < (u16)vthr) continue;
+        }
+        vpool[vp_n] = (u16)h; vpst[vp_n] = hstamp[h]; vp_n++; v_vuelta++;
+    }
+}
+static int b_victima_exacta(int propia);
+static int b_victima(int propia)
+{
+    int k;
+    if (*(const u16 *)(rc_ram + 0xC298) != 1) return b_victima_exacta(propia);
+    for (k = 0; k < 9; k++) {                 /* reserva; vacia: otro octavo (como mucho una vuelta y algo) */
+        while (vp_n) {
+            int h = vpool[--vp_n];
+            if (propia && h >= NBCL) continue;
+            if (hcode[h] == 0xFFFF) return h;
+            if (hstamp[h] != vpst[vp_n] || hstamp[h] == now) continue;   /* se vio otra vez */
+            if (hfl[h] & F_FIJO) { u16 av4 = (u16)(*(const u16 *)(rc_ram + 0xFD08) >> 2); if (hmu[h] == 0xFF || av4 <= hmu[h]) continue; vid_b_muertos++; }
+            b_quita(h);
+            return h;
+        }
+        b_barre(NB / 8);
+    }
+    vid_b_sinsitio++;
+    return -1;
+}
+/* fuera de la carrera (la demo del attract): la de siempre, exacta (un recorrido entero guarda las 96 mejores por clase,
+   como mucho 2 por cuadro); en la demo la reserva incremental dejaba mas faltas al empezar */
 #define NCAND 96
 #define NREC 2
 static u16 cand[2][NCAND], cand_now[2]; static u8 cand_n[2], cand_i[2], cand_ok[2], cand_rec[2];
 static u16 cand_hist[60 + 256];
-static int b_victima(int propia)
+static int b_victima_exacta(int propia)
 {
     int k, h, n = 0, lim = propia ? NBCL : NB, dem = *(const u16 *)(rc_ram + 0xC298) == 5 || *(const u16 *)(rc_ram + 0xC298) == 1;
     u16 av = *(const u16 *)(rc_ram + 0xFD08), age; u32 key, umbral, acu;
@@ -607,7 +652,11 @@ int vid_sube_b(const u8 *reg, u32 extra, int rot)
     if (c >= 32768 || !hrec || !lay) return -1;
     if (lay == 2) {
         u16 v = ts_get(c);
-        if (v < NB) { if (extra & F_FIJO) hfl[v] = (u8)((hfl[v] | F_FIJO) & ~F_MAPA); return -2; }
+        if (v < NB) {                         /* ya estaba (p. ej. del mapa): si es fijo, pasa a fijo; si es de GAMEc (sin
+                                                 muerte), no muere (la del mapa es 0: se daba por muerto en la carrera) */
+            if (extra & F_FIJO) { hfl[v] = (u8)((hfl[v] | F_FIJO) & ~F_MAPA); if ((reg[142] | (u32)reg[143] << 8) > 1015) hmu[v] = 0xFF; }
+            return -2;
+        }
     }
     h = b_libre(pr);
     if (h < 0 && rot && lay == 2) h = b_victima(pr);
@@ -760,6 +809,7 @@ void vid_b(void)
     now++; vid_faltas_cuadro = 0; nl2 = 0; negro = *(const u16 *)(rc_ram + 0xC298) == 0;
     {   /* prelectura en la demo y la carrera */
         u16 md = *(const u16 *)(rc_ram + 0xC298);
+        if (md == 1) b_barre(NB / 8);                    /* la reserva de victimas de la carrera, al dia poco a poco */
         if ((md == 5 || md == 1) && l2base) {
             b_reapunta(64);
 #ifdef CON_PRE                                  /* medido: menos tiles de un cuadro por el tope, pero mas cuadros lentos */
@@ -795,7 +845,7 @@ void vid_b(void)
                 if (!code || px <= -16 || px >= W || py <= -16 || py >= H) continue;
                 h = b_busca(code);
                 if ((col & 0x3F) == 0x3F) {               /* celda de efecto: indice = pen con RESTA y SUMA de 16 */
-                    if (h == -1 && !negro) { vid_faltas++; vid_faltas_cuadro++; carga_falta(code); }
+                    if (h == -1 && !negro) { vid_faltas++; vid_faltas_cuadro++; vid_falta_ult = code; carga_falta(code); }
                     if (h < 0) continue;
                     if (!(hfl[h] & F_IDX)) vid_b_efemal++;
                     hstamp[h] = now; hfl[h] &= (u8)~F_NUEVO;
@@ -812,7 +862,8 @@ void vid_b(void)
     }
     if (win) { l_room(1); *lp++ = 0xE2000000; win = 0; }
     if (nl2 > (int)vid_b_maxl2) vid_b_maxl2 = (u32)nl2;
-    if ((now & 31) == 0) {                                /* cifras: huecos fijos y rotativos ocupados */
+    if (vid_cifras && (now & 31) == 0) {                  /* cifras: huecos fijos y rotativos ocupados (recorre todos: solo
+                                                             con las cifras a la vista, era un cuadro lento de cada 32) */
         u32 f = 0, r = 0;
         for (h = 0; h < NB; h++) if (hcode[h] != 0xFFFF) { if (hfl[h] & F_FIJO) f++; else r++; }
         vid_b_fijos = f; vid_b_rot = r;

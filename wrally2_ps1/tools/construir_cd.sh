@@ -43,6 +43,8 @@ if [ -z "$SIN_CORRIDAS" ] || [ ! -s "$W/menus2/blk.bin" ]; then
 fi
 T1=$(date +%s); echo "corridas: $((T1 - T0)) s"
 MEN="$W/menus0 $W/menus1 $W/menus2"
+# las pantallas de menu de los otros rallies (elegir rally, resultados, continuar, fin): una partida de cada rally
+MEN="$MEN $(for r in 0 1 2 3; do [ -s $W/tramos/${r}_10_150/blk.bin ] && echo $W/tramos/${r}_10_150; done)"
 BLK="$W/attract/blk.bin $W/pt/blk.bin $W/ptL/blk.bin $W/ptR/blk.bin $(for d in $MEN; do echo $d/blk.bin; done)"
 DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin $W/ptL/dumps.bin $W/ptR/dumps.bin $(for d in $MEN; do echo $d/dumps.bin; done)"
 RS="$W/attract/romstat.txt $W/pt/romstat.txt $W/ptL/romstat.txt $W/ptR/romstat.txt $(for d in $MEN; do echo $d/romstat.txt; done) $(ls $W/tramos/*/romstat.txt 2>/dev/null)"

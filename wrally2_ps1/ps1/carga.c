@@ -488,7 +488,17 @@ int carga_pantalla(u32 clave, int fb, int parcial)
     int k, j, a, b;
     if (lba_me < 0) return -1;
     for (k = 0; k < carga_menus && idx[k].clave != clave; k++);
-    if (k == carga_menus) return -1;
+    if (k == carga_menus) {                   /* sub-estado (FEC146) no visto al hacer MENUS (p. ej. los resultados del
+                                                 tramo con D/9 tras un choque): la seccion mayor del mismo modo. Solo
+                                                 con la pantalla ya a la vista (parcial & 2) y fuera del titulo: en el
+                                                 negro FEC146 aun es el de antes */
+        int best = -1;
+        if (!(parcial & 2) || (clave >> 16) == 3) return -1;
+        for (j = 0; j < carga_menus; j++)
+            if ((idx[j].clave >> 16) == (clave >> 16) && (best < 0 || idx[j].n > idx[best].n)) best = j;
+        if (best < 0) return -1;
+        k = best;
+    }
     bg_corta();                               /* la lista de fondo se rehace para este modo */
     {   /* las secciones de este modo se desalojan las ultimas */
         u32 m[2] = {0, 0};
@@ -501,8 +511,8 @@ int carga_pantalla(u32 clave, int fb, int parcial)
         bloq_t0 = T1; bloq_vis = 0; bloq_fb = fb; bloq_sec = k; bloq_hecho = 0; bloq_total = (int)idx[k].n;
         vid_carga_ini(k, k == k_tit);
         do {                                  /* tramo a tramo (como mucho uno por sector: no se repite ninguno) */
-            if (parcial && a < BLOQ_MAX && b >= BLOQ_MAX) b = BLOQ_MAX - 1;
-            if (parcial && a >= BLOQ_MAX) break;   /* lo que sale despues (la seccion va por primer cuadro): de fondo */
+            if ((parcial & 1) && a < BLOQ_MAX && b >= BLOQ_MAX) b = BLOQ_MAX - 1;
+            if ((parcial & 1) && a >= BLOQ_MAX) break;   /* lo que sale despues (la seccion va por primer cuadro): de fondo */
             bloq_a = a;
             if (cd_stream(lba_me + (int)idx[k].sec + a, b - a + 1, bloq_cb, 1)) { carga_err++; break; }
             hechos += b - a + 1;

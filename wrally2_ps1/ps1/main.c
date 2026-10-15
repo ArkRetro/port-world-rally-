@@ -147,7 +147,7 @@ static void pantalla(u32 modo)
     else if (modo != 0 && modo != 1 && (modo != modo_ant || f146 != f146_ant)) {
         int tit = modo == 3 && f146 == 0x16;
         if (!tit) carga_demo_fin();
-        carga_pantalla(modo << 16 | f146, fb ^ 1, modo == modo_ant);   /* a la vista: parcial */
+        carga_pantalla(modo << 16 | f146, fb ^ 1, (modo == modo_ant) | 2);   /* a la vista: parcial si es el mismo modo */
         if (tit) carga_demo_titulo((RW(0xFEC3C6) + 1) & 3);
     }
     modo_ant = modo; f146_ant = f146;
@@ -242,7 +242,7 @@ void rc_vblank(void)
         if (!(pad & 0x0001)) in2 &= ~0x100;            /* SELECT: moneda */
         {   /* L2 + R2: cifras de depuracion si/no */
             int lr = !(pad & 0x0100) && !(pad & 0x0200);
-            if (lr && !lr_last) show ^= 1;
+            if (lr && !lr_last) show ^= 1, vid_cifras = show;
             lr_last = lr;
         }
         rc_set_io(in0, 0xFFFF, in2, 0xFFFF);
