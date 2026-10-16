@@ -37,7 +37,7 @@ z80/samples.inc:
 # ---- graphics (C ROMs) and fix (S ROM) ----
 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2: tools/gfx2crom.py
 	mkdir -p $(BUILD)
-	python3 -I tools/gfx2crom.py $(ARCADE)/worldr21.i13 $(ARCADE)/worldr20.i11 $(ARCADE)/worldr19.i09 $(ARCADE)/worldr18.i07 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2
+	python3 -I tools/gfx2crom.py $(ARCADE)/worldr21.i13 $(ARCADE)/worldr20.i11 $(ARCADE)/worldr19.i09 $(ARCADE)/worldr18.i07 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 --shadow
 
 $(BUILD)/wrng-s1.s1: tools/mkfont.py
 	mkdir -p $(BUILD)

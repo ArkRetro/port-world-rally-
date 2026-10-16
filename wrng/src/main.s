@@ -18,6 +18,15 @@ USER:
         lea     BIOS_RAM,sp
         moveq   #0,d0
         move.b  BIOS_USER_REQUEST,d0
+        /* MVS: a coin during the demo makes the BIOS re-enter USER (request 3 "title") from inside
+           SYSTEM_IO.  The arcade logic is still intact: resume our VBlank handler where it was. */
+        tst.b   rt_arcade_on
+        beq     1f
+        cmpi.b  #2,d0
+        bcs     1f
+        move.l  rt_io_sp,sp
+        bra     irq_after_io
+1:
         cmpi.b  #3,d0
         bhi.s   user_init
         add.w   d0,d0
@@ -76,7 +85,9 @@ irq_vblank:
         move.b  d0,REG_WATCHDOG
         addq.l  #1,rt_frame
         st      rt_vbl_flag
-        jsr     SYSTEM_IO               /* inputs, coins, credits; may branch to the BIOS menus */
+        move.l  sp,rt_io_sp
+        jsr     SYSTEM_IO               /* inputs, coins, credits; may re-enter USER (see above) */
+irq_after_io:
         bsr     video_vblank            /* palette flush (must be in VBlank) */
         jsr     frame_hook              /* game: arcade IRQ + uploads; viewer: rts */
         movem.l (sp)+,d0-d7/a0-a6

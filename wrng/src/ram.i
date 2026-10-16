@@ -38,6 +38,14 @@
         .equ    rt_saved_sp,    RT_VARS+0x160   /* .l SP of the arcade stack while its IRQ handler runs on ours */
         .equ    rt_prev_b,      RT_VARS+0x164   /* .b previous B button (gear toggle edge) */
         .equ    rt_in_game,     RT_VARS+0x165   /* .b */
+        .equ    rt_io_sp,       RT_VARS+0x170   /* .l SP when SYSTEM_IO was called (resume point after a BIOS re-entry) */
+        .equ    rt_arcade_on,   RT_VARS+0x174   /* .b arcade program running */
+        .equ    rt_bios_cred,   RT_VARS+0x178   /* .b last BIOS credit byte seen (MVS backup RAM 0xD00034, BCD) */
+        .equ    rt_coins_due,   RT_VARS+0x179   /* .b coins still to inject into the arcade */
+        .equ    rt_coin_seq,    RT_VARS+0x17A   /* .b coin pulse state (0 idle) */
+        .equ    rt_start_wait,  RT_VARS+0x17B   /* .b frames to wait before holding START */
+        .equ    rt_start_hold,  RT_VARS+0x17C   /* .w frames left holding START (until the arcade consumes a credit) */
+        .equ    rt_cred_start,  RT_VARS+0x17E   /* .w arcade credits when the START hold began */
         .equ    rt_c0,          RT_VARS+0x168   /* 2 words: unwrapped first map column of the window (layer 0, layer 1) */
         .equ    rt_trap_stub,   RT_VARS+0x16C   /* .l */
         .equ    rt_test_out,    RT_VARS+0x180   /* 32 longs: self-test results (decrypt check) */

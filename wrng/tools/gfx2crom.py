@@ -10,7 +10,10 @@ Neo Geo layout (per MAME optimize_helper): tile = 128 bytes of the interleaved c
   row y: pixels 0-7 from bytes 0x40+4y (bit x = pixel x), pixels 8-15 from bytes 0x00+4y;
   byte +0 = plane0 (c1), +1 = plane2 (c2), +2 = plane1 (c1), +3 = plane3 (c2).
 
-Usage: gfx2crom.py <i13> <i11> <i9> <i7> <out_c1> <out_c2> [--png tiles.png]
+Usage: gfx2crom.py <i13> <i11> <i9> <i7> <out_c1> <out_c2> [--png tiles.png] [--shadow]
+--shadow appends a second set of 16384 tiles (numbers 0x4000+) for the arcade's "shadow" sprites: pens 0-7
+become transparent and pens 8-15 are kept on a checkerboard only (50 % dither), so a dark palette gives a
+translucent-looking shadow on hardware without alpha blending.
 """
 import sys
 
@@ -70,6 +73,16 @@ def main():
     region[0x100000:0x200000:2] = open(i9, 'rb').read()
     region[0x100001:0x200000:2] = open(i7, 'rb').read()
     tiles = decode_arcade(region)
+    if '--shadow' in a:
+        shadow = []
+        for t in tiles:
+            m = bytearray(256)
+            for i in range(256):
+                p = t[i]
+                if p >= 8 and ((i & 1) ^ ((i >> 4) & 1)):
+                    m[i] = p
+            shadow.append(bytes(m))
+        tiles = tiles + shadow
     c1, c2 = encode_neogeo(tiles)
     open(oc1, 'wb').write(c1)
     open(oc2, 'wb').write(c2)

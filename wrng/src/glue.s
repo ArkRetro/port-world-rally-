@@ -40,6 +40,7 @@ game_main:
         clr.b   rt_start_pulse
         clr.b   rt_start_req
         bsr     selftest_decrypt
+        st      rt_arcade_on
         jmp     ARC_RESET
 
 * I/O shadow defaults: DSW = 0xFFDF (MAME defaults: joystick, 2 sticks, normal, demo sounds on, 1C/1C),
@@ -54,7 +55,7 @@ io_init:
 * Build the arcade input word from the Neo Geo controls (BIOS_P1CURRENT: bit0 up,1 down,2 left,3 right,
 * 4 A,5 B,6 C,7 D, active high after SYSTEM_IO).  A = accelerate, B = gear toggle, C = accelerate too.
 io_update:
-        move.w  #0xFFFF,d0
+        move.w  #0xFFEF,d0              /* idle: gear bit (4) low like the arcade's toggle switch */
         move.b  BIOS_P1CURRENT,d1
         btst    #0,d1
         beq.s   1f
@@ -84,27 +85,65 @@ io_update:
         eori.b  #1,rt_gear
 6:      tst.b   rt_gear
         beq.s   7f
-        bclr    #ARC_P1_GEAR,d0
-7:      /* start: raw button or synthetic pulse */
+        bset    #ARC_P1_GEAR,d0
+7:      /* ---- credits: on MVS the BIOS owns them (backup RAM 0xD00034, BCD); mirror every increment
+           into the arcade as a coin pulse so its own counter stays in sync ---- */
+        tst.b   BIOS_MVS_FLAG
+        beq     8f
+        move.b  0xD00034,d1
+        cmp.b   rt_bios_cred,d1
+        beq     8f
+        move.b  d1,d2
+        sub.b   rt_bios_cred,d2         /* BCD difference is fine for small steps */
+        move.b  d1,rt_bios_cred
+        tst.b   d2
+        ble     8f
+        add.b   d2,rt_coins_due
+8:      /* PLAYER_START seen: on AES inject a coin first, then hold START until the arcade takes a credit */
+        tst.b   rt_start_req
+        beq     9f
+        clr.b   rt_start_req
+        moveq   #1,d1                   /* MVS: coin already mirrored, start right away */
+        tst.b   BIOS_MVS_FLAG
+        bne     81f
+        addq.b  #1,rt_coins_due
+        moveq   #90,d1                  /* AES: let the arcade credit the coin and fade to its prompt */
+81:     move.b  d1,rt_start_wait
+        move.w  #240,rt_start_hold
+        move.w  ARC_WRAM+0x1EE,rt_cred_start
+9:      /* coin pulse: 3 frames pressed, 12 released */
+        move.b  rt_coin_seq,d1
+        bne     91f
+        tst.b   rt_coins_due
+        beq     92f
+        subq.b  #1,rt_coins_due
+        moveq   #1,d1
+91:     cmpi.b  #3,d1
+        bhi     93f
+        bclr    #ARC_COIN1,d0
+93:     addq.b  #1,d1
+        cmpi.b  #15,d1
+        bcs     94f
+        moveq   #0,d1
+94:     move.b  d1,rt_coin_seq
+92:     /* START: raw button, or the hold after PLAYER_START */
         move.b  BIOS_STATCURNT,d1
         btst    #0,d1
-        beq.s   8f
+        beq     10f
         bclr    #ARC_START1,d0
-8:      tst.b   rt_start_pulse
-        beq.s   9f
-        subq.b  #1,rt_start_pulse
+10:     tst.w   rt_start_hold
+        beq     11f
+        tst.b   rt_start_wait
+        beq     101f
+        subq.b  #1,rt_start_wait
+        bra     11f
+101:    move.w  ARC_WRAM+0x1EE,d1
+        cmp.w   rt_cred_start,d1
+        bcs     102f                    /* the arcade took the credit: done */
+        subq.w  #1,rt_start_hold
         bclr    #ARC_START1,d0
-9:      /* synthetic coin after PLAYER_START (BIOS validated the credit) */
-        tst.b   rt_start_req
-        beq.s   10f
-        clr.b   rt_start_req
-        move.b  #2,rt_coin_pulse
-        move.b  #20,rt_start_pulse
-10:     tst.b   rt_coin_pulse
-        beq.s   11f
-        subq.b  #1,rt_coin_pulse
-        bclr    #ARC_COIN1,d0
-        bset    #ARC_START1,d0          /* coin first, start a few frames later */
+        bra     11f
+102:    clr.w   rt_start_hold
 11:     move.w  d0,IO_P1P2
         rts
 
@@ -225,6 +264,7 @@ blk_copy_l1:
         lsl.b   #2,d4
         addi.b  #0x14,d4
         addi.l  #0x102000,d4
+        lea     0x1030C0,a3
         moveq   #1,d7                   /* clip at the end of VRAM like the original */
         bra     blk_common
 blk_copy_l0:
@@ -233,10 +273,12 @@ blk_copy_l0:
         movea.l ARC_WRAM+0x2C48,a2
         lsl.b   #2,d4
         addi.l  #0x100014,d4
+        lea     0x1010A0,a3
         moveq   #0,d7
 blk_common:
         lsl.w   #2,d0
         move.l  (a1,d0.w),d0
+        move.l  d0,(a3)                 /* the original parks the header in a VRAM cell and reads it back */
         moveq   #0,d3
         move.b  d0,d3                   /* height */
         lsr.w   #8,d0

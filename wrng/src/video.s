@@ -58,10 +58,9 @@ video_init_min:
 * ------------------------------------------------------------------------------------------
 video_init:
         bsr     video_init_min
-        /* shadow palette: pens 1..7 unused (black), 8..15 darker and darker (first version: solid dark) */
+        /* shadow palette: every pen black (the dithered tile set leaves half the pixels transparent) */
         lea     PALETTES+PAL_SHADOW*32,a0
-        move.w  #0x8000,(a0)+
-        moveq   #14,d0
+        moveq   #15,d0
 1:      move.w  #0x8000,(a0)+
         dbra    d0,1b
         /* column sprites of both layers: height 32 tiles, x off-screen for now */
@@ -340,7 +339,6 @@ su_loop:
         move.w  d1,REG_VRAMADDR
         move.w  #1,REG_VRAMMOD
         and.w   #0x3FFF,d3
-        move.w  d3,REG_VRAMRW
         move.w  d2,d1
         lsr.w   #8,d1
         and.w   #0x7C,d1                /* colour<<2 */
@@ -348,9 +346,11 @@ su_loop:
         btst    #4,d1
         beq.s   1f
         moveq   #PAL_SHADOW,d1
+        or.w    #0x4000,d3              /* dithered tile set (gfx2crom --shadow) */
         bra.s   2f
 1:      add.w   #PAL_SPRITES,d1
 2:      lsl.w   #8,d1
+        move.w  d3,REG_VRAMRW           /* tile */
         rol.w   #2,d0                   /* bits 15,14 -> 1,0 (vflip, hflip) */
         and.w   #3,d0
         or.w    d0,d1
