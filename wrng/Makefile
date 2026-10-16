@@ -21,7 +21,7 @@ WRPROG_HI ?= $(ARCADE)/wrallyd/worldr17.c23
 WRPROG_LO ?= $(ARCADE)/wrallyd/worldr16.c22
 WRDALLAS ?= $(ARCADE)/wrdallas.bin
 
-.PHONY: all viewer game clean z80 gfx
+.PHONY: all viewer game neo clean z80 gfx
 
 all: viewer
 
@@ -80,6 +80,11 @@ $(BUILD)/wrng-p1.p1.game: $(BUILD)/game.bin $(BUILD)/game.sym $(BUILD)/wr_cpu.bi
 game: $(BUILD)/wrng-p1.p1.game $(BUILD)/wrng-s1.s1 $(BUILD)/wrng-m1.m1 $(BUILD)/wrng-v1.v1 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2
 	cp $(BUILD)/wrng-p1.p1.game $(BUILD)/wrng-p1.p1
 	python3 -I tools/mksoftlist.py $(BUILD) wrng "World Rally NG" $(BUILD)/hash/neogeo.xml
+
+# ---- release files: NeoSD .neo + zip of the MAME set (build/roms/wrng) ----
+neo: game
+	mkdir -p $(BUILD)/release
+	python3 -I tools/mkneo.py $(BUILD)/roms/wrng wrng $(BUILD)/release/wrng.neo --zip $(BUILD)/release/wrng.zip
 
 clean:
 	rm -rf $(BUILD)
