@@ -46,8 +46,7 @@ user_title:
         bsr     rt_clear_ram
         bsr     video_init
         bsr     sound_init
-        move    #0x2000,sr              /* VBlank on */
-        jmp     game_main               /* never returns (the game calls SYSTEM_RETURN itself if needed) */
+        jmp     game_main               /* never returns; game_main enables interrupts when ready */
 
 * PLAYER_START: BIOS saw START with credits during USER_MODE 1 (MVS) or on AES.
 * BIOS_PLAYER_MOD1/2 already say who starts. We only raise a flag for the game loop.
@@ -79,6 +78,7 @@ irq_vblank:
         st      rt_vbl_flag
         jsr     SYSTEM_IO               /* inputs, coins, credits; may branch to the BIOS menus */
         bsr     video_vblank            /* palette flush (must be in VBlank) */
+        jsr     frame_hook              /* game: arcade IRQ + uploads; viewer: rts */
         movem.l (sp)+,d0-d7/a0-a6
         rte
 

@@ -5,12 +5,14 @@
         .include "ram.i"
 
         .text
-        .global game_main, sound_init
+        .global game_main, sound_init, frame_hook
 
 sound_init:
+frame_hook:
         rts
 
 game_main:
+        move    #0x2000,sr              /* VBlank on */
         moveq   #0,d6                   /* current frame index */
         bsr     load_frame
 main_loop:

@@ -14,8 +14,12 @@ DUMPS  ?= src/dumps
 BUILD  ?= build
 
 RT_SRCS = src/header.s src/main.s src/video.s src/fix.s
+GAME_SRCS = src/glue.s src/mcu.s src/decrypt.s
+WRPROG_HI ?= $(ARCADE)/wrallyd/worldr17.c23
+WRPROG_LO ?= $(ARCADE)/wrallyd/worldr16.c22
+WRDALLAS ?= $(ARCADE)/wrdallas.bin
 
-.PHONY: all viewer clean z80 gfx
+.PHONY: all viewer game clean z80 gfx
 
 all: viewer
 
@@ -54,6 +58,29 @@ $(BUILD)/wrng-p1.p1: $(BUILD)/viewer.elf
 
 viewer: $(BUILD)/wrng-p1.p1 $(BUILD)/wrng-s1.s1 $(BUILD)/wrng-m1.m1 $(BUILD)/wrng-v1.v1 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2
 	python3 -I tools/mksoftlist.py $(BUILD) wrng "World Rally NG test" $(BUILD)/hash/neogeo.xml
+
+# ---- game build: arcade program + runtime -> 2 MB P ROM ----
+$(BUILD)/wr_cpu.bin: $(WRPROG_HI) $(WRPROG_LO)
+	mkdir -p $(BUILD)
+	python3 -I -c "import sys; hi=open(sys.argv[1],'rb').read(); lo=open(sys.argv[2],'rb').read(); b=bytearray(len(hi)*2); b[0::2]=hi; b[1::2]=lo; open(sys.argv[3],'wb').write(b)" $(WRPROG_HI) $(WRPROG_LO) $@
+
+$(BUILD)/stubs.s: tools/mkrom.py analysis/absrefs.csv $(BUILD)/wr_cpu.bin
+	python3 -I tools/mkrom.py stubs $(BUILD)/wr_cpu.bin analysis/absrefs.csv $@
+
+$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s src/neogeo.i src/ram.i src/seccode.bin game.ld
+	for f in $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(dir $(WRDALLAS)) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
+	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_stubs.o
+
+$(BUILD)/game.bin $(BUILD)/game.sym: $(BUILD)/game.elf
+	$(OBJCOPY) -O binary --gap-fill=0 $< $(BUILD)/game.bin
+	m68k-linux-gnu-nm $< > $(BUILD)/game.sym
+
+$(BUILD)/wrng-p1.p1.game: $(BUILD)/game.bin $(BUILD)/game.sym $(BUILD)/wr_cpu.bin tools/mkrom.py
+	python3 -I tools/mkrom.py build $(BUILD)/wr_cpu.bin analysis/absrefs.csv $(BUILD)/game.bin $(BUILD)/game.sym $@
+
+game: $(BUILD)/wrng-p1.p1.game $(BUILD)/wrng-s1.s1 $(BUILD)/wrng-m1.m1 $(BUILD)/wrng-v1.v1 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2
+	cp $(BUILD)/wrng-p1.p1.game $(BUILD)/wrng-p1.p1
+	python3 -I tools/mksoftlist.py $(BUILD) wrng "World Rally NG" $(BUILD)/hash/neogeo.xml
 
 clean:
 	rm -rf $(BUILD)

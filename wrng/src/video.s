@@ -13,7 +13,7 @@
 
         .text
         .global video_init, video_init_min, video_vblank, video_frame
-        .global pal_write, vram_mark_dirty, video_mark_all_dirty
+        .global pal_write, vram_mark_dirty, video_mark_all_dirty, pal_table, vram_store
 
 * ------------------------------------------------------------------------------------------
 * Minimal video init (used by the error screen too): LSPC mode, all sprites off, fix cleared.
@@ -149,16 +149,13 @@ video_vblank:
 9:      rts
 
 * ------------------------------------------------------------------------------------------
-* video_frame: called once per frame by the game loop after the arcade logic ran:
-*   - updates the two tile layers (scroll + dirty columns)
-*   - converts the arcade sprite list
-* ------------------------------------------------------------------------------------------
+* video_frame: called once per frame by the game loop after the arcade logic ran
 video_frame:
         /* layer 1 (back) first */
         move.w  ARC_VREGS+6,d0          /* scrollx layer 1 */
         move.w  ARC_VREGS+4,d1          /* scrolly layer 1 */
         lea     ARC_VRAM+0x2000,a3
-        lea     rt_col_dirty+64,a4
+        lea     rt_c0+2,a4
         lea     rt_col_loaded+24,a5
         move.w  #SPR_LAYER1,d7
         bsr     layer_update
@@ -166,14 +163,16 @@ video_frame:
         addq.w  #4,d0
         move.w  ARC_VREGS+0,d1
         lea     ARC_VRAM,a3
-        lea     rt_col_dirty,a4
+        lea     rt_c0,a4
         lea     rt_col_loaded,a5
         move.w  #SPR_LAYER0,d7
         bsr     layer_update
         bra     sprites_update
 
-* layer_update: d0 = scrollx, d1 = scrolly, a3 = map base, a4 = dirty flags, a5 = loaded table,
-*               d7 = first Neo Geo sprite of the layer
+* layer_update: d0 = scrollx, d1 = scrolly, a3 = map base (shadow VRAM), a4 = rt_c0 slot of the layer,
+*               a5 = loaded-column table, d7 = first Neo Geo sprite of the layer.
+* Each column sprite s shows map column c = loaded[s]; its SCB1 tiles are re-uploaded fully when the
+* column changes, otherwise only the tiles whose pair differs from the cached copy.
 layer_update:
         add.w   #CROP_X,d0
         and.w   #0x3FF,d0
@@ -188,51 +187,47 @@ layer_update:
         neg.w   d2                      /* x of window column 0 */
         move.w  d0,d3
         lsr.w   #4,d3                   /* c0 = first map column (unwrapped, 0..66) */
-        /* sprite index of window column 0: s0 = c0 mod NCOLSPR */
+        move.w  d3,(a4)                 /* rt_c0 of this layer, for vram_store */
         move.w  d3,d4
         ext.l   d4
         divu    #NCOLSPR,d4
-        swap    d4                      /* d4.w = c0 mod NCOLSPR */
+        swap    d4                      /* d4.w = c0 mod NCOLSPR = sprite of window column 0 */
+        lea     tile_attr_table,a1
         moveq   #0,d5                   /* j = window column */
 lu_loop:
-        /* s = (s0 + j) mod NCOLSPR ; col = (c0 + j) & 63 */
         move.w  d4,d0
         add.w   d5,d0
         cmpi.w  #NCOLSPR,d0
-        bcs.s   1f
-        sub.w   #NCOLSPR,d0
+        bcs     1f
+        sub.w   #NCOLSPR,d0             /* d0 = s */
 1:      move.w  d3,d1
         add.w   d5,d1
-        and.w   #63,d1
-        /* need reload? */
+        and.w   #63,d1                  /* d1 = map column */
         cmp.b   (a5,d0.w),d1
-        bne.s   2f
-        tst.b   (a4,d1.w)
-        beq.s   3f
-2:      move.b  d1,(a5,d0.w)
-        clr.b   (a4,d1.w)
+        beq     lu_pos                  /* already loaded (kept up to date by vram_store) */
         movem.l d0-d5,-(sp)
-        /* column reload: sprite d7+d0, map column d1 */
+        move.b  d1,(a5,d0.w)            /* loaded[s] = column */
+        move.w  d1,d2
+        lsl.w   #2,d2
+        lea     (a3,d2.w),a0            /* a0 = map column (row 0) */
         add.w   d7,d0
-        lsl.w   #6,d0
+        lsl.w   #6,d0                   /* d0 = SCB1 address of the sprite */
         move.w  d0,REG_VRAMADDR
         move.w  #1,REG_VRAMMOD
-        lea     tile_attr_table,a1
-        move.w  d1,d0
-        lsl.w   #2,d0
-        lea     (a3,d0.w),a0
         moveq   #31,d2
-4:      move.w  (a0),d0
-        and.w   #0x3FFF,d0
-        move.w  d0,REG_VRAMRW
-        moveq   #0,d0
-        move.b  3(a0),d0
-        add.w   d0,d0
-        move.w  (a1,d0.w),REG_VRAMRW
+4:      move.l  (a0),d4
+        swap    d4
+        and.w   #0x3FFF,d4
+        move.w  d4,REG_VRAMRW
+        moveq   #0,d4
+        move.b  3(a0),d4
+        add.w   d4,d4
+        move.w  (a1,d4.w),REG_VRAMRW
         lea     256(a0),a0
         dbra    d2,4b
         movem.l (sp)+,d0-d5
-3:      /* position: SCB4 x, SCB3 y */
+lu_pos:
+        /* position: SCB4 x, SCB3 y (d0 = s, d2 = x) */
         add.w   d7,d0
         move.w  d0,d1
         add.w   #VRAM_SCB4,d1
@@ -241,14 +236,65 @@ lu_loop:
         and.w   #0x1FF,d1
         lsl.w   #7,d1
         move.w  d1,REG_VRAMRW
-        sub.w   #VRAM_SCB4-VRAM_SCB3,d0
-        add.w   #0,d0
+        add.w   #VRAM_SCB3,d0
         move.w  d0,REG_VRAMADDR
         move.w  d6,REG_VRAMRW
         add.w   #16,d2
         addq.w  #1,d5
         cmpi.w  #NCOLSPR,d5
         bcs     lu_loop
+        rts
+
+* ------------------------------------------------------------------------------------------
+* vram_store: d0.l = tile pair (code, attr), a0 = shadow VRAM address (0x100000-0x103FFF).
+* Stores the pair and, if the map column is shown by a column sprite, writes the tile to its SCB1.
+* Trashes d0-d2/a0-a2.
+* ------------------------------------------------------------------------------------------
+vram_store:
+        move.l  d0,(a0)
+        move.l  a0,d1
+        lea     rt_col_loaded,a1
+        move.w  rt_c0,d2
+        move.w  #SPR_LAYER0,a2          /* a2.w = sprite base of the layer */
+        btst    #13,d1
+        beq     1f
+        lea     24(a1),a1
+        move.w  rt_c0+2,d2
+        move.w  #SPR_LAYER1,a2
+1:      and.w   #0x1FFF,d1
+        lsr.w   #2,d1                   /* tile index */
+        move.w  d1,-(sp)                /* keep: col = low 6 bits, row = bits 6-10 */
+        and.w   #63,d1                  /* col */
+        move.w  d1,-(sp)
+        sub.w   d2,d1
+        and.w   #63,d1                  /* j = (col - c0) & 63 */
+        cmpi.w  #NCOLSPR,d1
+        bcc     9f                      /* not in the window */
+        add.w   d1,d2                   /* c0 + j */
+        ext.l   d2
+        divu    #NCOLSPR,d2
+        swap    d2                      /* s */
+        move.w  (sp),d1                 /* col */
+        cmp.b   (a1,d2.w),d1
+        bne     9f                      /* column not loaded yet (will be loaded whole) */
+        move.w  a2,d1
+        add.w   d2,d1
+        lsl.w   #6,d1                   /* SCB1 base of sprite s */
+        move.w  2(sp),d2
+        lsr.w   #6,d2                   /* row */
+        add.w   d2,d2
+        add.w   d2,d1
+        move.w  d1,REG_VRAMADDR
+        move.w  #1,REG_VRAMMOD
+        move.l  d0,d1
+        swap    d1
+        and.w   #0x3FFF,d1
+        move.w  d1,REG_VRAMRW
+        and.w   #0xFF,d0
+        add.w   d0,d0
+        lea     tile_attr_table,a1
+        move.w  (a1,d0.w),REG_VRAMRW
+9:      addq.l  #4,sp
         rts
 
 * ------------------------------------------------------------------------------------------

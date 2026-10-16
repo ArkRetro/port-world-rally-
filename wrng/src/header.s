@@ -30,8 +30,10 @@ _start:
         .long   irq_timer               /* 26 level 2: LSPC timer                                     */
         .long   0x00C00426              /* 27 level 3                                                 */
         .long   0x00C00426, 0x00C00426, 0x00C00426, 0x00C00426          /* 28-31 */
-        .rept   16
-        .long   trap_error              /* 32-47 TRAP #0..#15 */
+        .long   trap_error              /* 32 TRAP #0 */
+        .long   trap1_handler           /* 33 TRAP #1: arcade VRAM write hook (see tools/mkrom.py) */
+        .rept   14
+        .long   trap_error              /* 34-47 TRAP #2..#15 */
         .endr
         .rept   16
         .long   0x00C00426              /* 48-63 */
