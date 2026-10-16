@@ -14,7 +14,9 @@ DUMPS  ?= src/dumps
 BUILD  ?= build
 
 RT_SRCS = src/header.s src/main.s src/video.s src/fix.s
-GAME_SRCS = src/glue.s src/mcu.s src/decrypt.s
+GAME_SRCS = src/glue.s src/mcu.s src/decrypt.s src/sound.s
+OKI_HI ?= $(ARCADE)/worldr14.c01
+OKI_LO ?= $(ARCADE)/worldr15.c03
 WRPROG_HI ?= $(ARCADE)/wrallyd/worldr17.c23
 WRPROG_LO ?= $(ARCADE)/wrallyd/worldr16.c22
 WRDALLAS ?= $(ARCADE)/wrdallas.bin
@@ -24,15 +26,16 @@ WRDALLAS ?= $(ARCADE)/wrdallas.bin
 all: viewer
 
 # ---- Z80 driver (M1 ROM) ----
-$(BUILD)/wrng-m1.m1: z80/driver.s z80/samples.inc
+$(BUILD)/wrng-m1.m1: z80/driver.s $(BUILD)/samples.inc
 	mkdir -p $(BUILD)
-	sdasz80 -o $(BUILD)/driver.rel z80/driver.s
+	sdasz80 -I$(BUILD) -o $(BUILD)/driver.rel z80/driver.s
 	sdldz80 -i -b CODE=0 $(BUILD)/driver $(BUILD)/driver.rel
 	makebin -p -s 65536 $(BUILD)/driver.ihx $@
 	python3 -I -c "import sys; d=open('$@','rb').read(); open('$@','wb').write(d+bytes(0x10000-len(d)))"
 
-z80/samples.inc:
-	echo "        .db 0,0,0,0" > $@
+$(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/okimap.csv: tools/oki2adpcma.py $(BUILD)/wr_cpu.bin
+	mkdir -p $(BUILD)
+	python3 -I tools/oki2adpcma.py $(OKI_HI) $(OKI_LO) $(BUILD)/wr_cpu.bin $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/okimap.csv
 
 # ---- graphics (C ROMs) and fix (S ROM) ----
 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2: tools/gfx2crom.py
@@ -42,10 +45,6 @@ $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2: tools/gfx2crom.py
 $(BUILD)/wrng-s1.s1: tools/mkfont.py
 	mkdir -p $(BUILD)
 	python3 -I tools/mkfont.py $@
-
-$(BUILD)/wrng-v1.v1:
-	mkdir -p $(BUILD)
-	python3 -I -c "open('$@','wb').write(bytes(0x100000))"
 
 # ---- viewer program (P1) ----
 $(BUILD)/viewer.elf: $(RT_SRCS) src/viewer.s src/neogeo.i src/ram.i src/seccode.bin viewer.ld
@@ -69,7 +68,7 @@ $(BUILD)/stubs.s: tools/mkrom.py analysis/absrefs.csv $(BUILD)/wr_cpu.bin
 
 $(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s src/neogeo.i src/ram.i src/seccode.bin game.ld
 	for f in $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(dir $(WRDALLAS)) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
-	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_stubs.o
+	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_sound.o $(BUILD)/g_stubs.o
 
 $(BUILD)/game.bin $(BUILD)/game.sym: $(BUILD)/game.elf
 	$(OBJCOPY) -O binary --gap-fill=0 $< $(BUILD)/game.bin

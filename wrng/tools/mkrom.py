@@ -281,6 +281,14 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
     for pc, name in DETOURS.items():
         rom[pc:pc + 6] = bytes.fromhex('4EF9') + struct.pack('>I', syms[name])
 
+    # 4b. sound: OKI register writes -> Z80 command hooks (src/sound.s)
+    for pc, name, expect in ((0x1402C, 'snd_hook_stopall', '13FC00780070000F'), (0x1437A, 'snd_hook_stop0', '13C00070000F'),
+                             (0x142A2, 'snd_hook_stop1', '13C10070000F'), (0x14386, 'snd_hook_bank', '13C40070000D'),
+                             (0x14394, 'snd_hook_phrase', '13C10070000F'), (0x143A8, 'snd_hook_play', '13C10070000F')):
+        n = len(expect) // 2
+        assert orig[pc:pc + n] == bytes.fromhex(expect), hex(pc)
+        rom[pc:pc + n] = bytes.fromhex('4EB9') + struct.pack('>I', syms[name]) + b'\x4E\x71' * ((n - 6) // 2)
+
     # 5. code patches
     for pc in (0x249C, 0x2812):                      # move.w #1,$FEF500 -> move.w #$A53E,...  (MCU signature)
         assert rom[pc:pc + 4] == bytes.fromhex('33FC0001'), hex(pc)

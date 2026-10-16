@@ -33,6 +33,7 @@
         .equ    rt_coin_pulse,  RT_VARS+0x156   /* .b frames left of a synthetic coin press */
         .equ    rt_start_pulse, RT_VARS+0x157   /* .b frames left of a synthetic start press */
         .equ    rt_okibank,     RT_VARS+0x158   /* .b last OKI bank written */
+        .equ    rt_okiphrase,   RT_VARS+0x159   /* .b last OKI phrase byte written (0x80|phrase) */
         .equ    rt_sprites_used,RT_VARS+0x15A   /* .w Neo Geo sprites used by the previous frame's list */
         .equ    rt_gear,        RT_VARS+0x15C   /* .b gear toggle state */
         .equ    rt_saved_sp,    RT_VARS+0x160   /* .l SP of the arcade stack while its IRQ handler runs on ours */

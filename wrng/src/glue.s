@@ -30,7 +30,7 @@
         .equ    ARC_START2,     15
 
 sound_init:
-        rts
+        jmp     snd_init
 
 game_main:
         bsr     io_init
@@ -141,6 +141,9 @@ io_update:
         cmp.w   rt_cred_start,d1
         bcs     102f                    /* the arcade took the credit: done */
         subq.w  #1,rt_start_hold
+        move.w  rt_start_hold,d1
+        btst    #3,d1                   /* 8 frames pressed, 8 released: the arcade wants a fresh edge */
+        bne     11f
         bclr    #ARC_START1,d0
         bra     11f
 102:    clr.w   rt_start_hold

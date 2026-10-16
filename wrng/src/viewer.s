@@ -7,8 +7,10 @@
         .text
         .global game_main, sound_init, frame_hook
 
+        .global snd_vblank
 sound_init:
 frame_hook:
+snd_vblank:
         rts
 
 game_main:
