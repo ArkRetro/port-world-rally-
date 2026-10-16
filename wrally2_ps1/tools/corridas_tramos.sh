@@ -3,12 +3,12 @@
 # una partida entera con el piloto automatico (AUTOP) en varios estilos (AP_STEP/AP_LOOK distintos dan lineas
 # distintas), con BLKLOG + LOG + DUMP; y despues la misma partida (el guion INPUTS que escribio el piloto) con ROMSTAT.
 # Salida: work/tramos/<rally>_<estilo>/ (blk.bin, log.txt, dumps.bin, inputs.txt, romstat.txt).
-# Uso: tools/corridas_tramos.sh [cuadros (18000)] [estilos ("10_150 10_90 15_150 8_200 12_120 10_60")]
+# Uso: tools/corridas_tramos.sh [cuadros (18000)] [estilos ("10_150 10_90 15_150 8_200 12_120 10_60 25_30 20_15")]
 set -e
 W=$(cd "$(dirname "$0")/.." && pwd)/work
 RC=$(cd "$(dirname "$0")/../rc" && pwd)
 H=${RC_HOST:-$W/rc_host_p2}; HR=${RC_HOST_ROM:-$W/rc_host_rom2}
-N=${1:-18000}; ESTILOS=${2:-"10_150 10_90 15_150 8_200 12_120 10_60"}
+N=${1:-18000}; ESTILOS=${2:-"10_150 10_90 15_150 8_200 12_120 10_60 25_30 20_15"}   # los dos ultimos: con salidas y choques
 MENU_0="1200-1208:C,1300-1308:S,1450-1458:X,1800-1808:X"
 MENU_1="1200-1208:C,1300-1308:S,1450-1458:X,1720-1728:R,1950-1958:X"
 MENU_2="1200-1208:C,1300-1308:S,1450-1458:X,1720-1728:R,1790-1798:R,1950-1958:X"

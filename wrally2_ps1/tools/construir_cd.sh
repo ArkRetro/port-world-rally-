@@ -50,7 +50,14 @@ DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin $W/ptL/dumps.bin $W/ptR/dumps.bin $(
 RS="$W/attract/romstat.txt $W/pt/romstat.txt $W/ptL/romstat.txt $W/ptR/romstat.txt $(for d in $MEN; do echo $d/romstat.txt; done) $(ls $W/tramos/*/romstat.txt 2>/dev/null)"
 TR="$(ls -d $W/tramos/*/ 2>/dev/null | while read d; do [ -s $d/blk.bin ] && echo $d; done) $W/pt $W/ptL $W/ptR"
 python3 "$T/tilesbin.py" --a "$CD/TILESA.BIN"
+cp "$W/romres.txt" "$W/romres_antes.txt" 2>/dev/null || true
 python3 "$T/rombank.py" $RS -o "$CD" --romres "$W/romres.txt"
+# el residente cambio (partidas nuevas): el codigo recompilado lee a direccion fija de rc_romres y tiene que ir con el
+# mismo romres.txt que los bancos de los paquetes (si no, esos bloques no estan en ningun sitio: trampas en carrera)
+if ! cmp -s "$W/romres.txt" "$W/romres_antes.txt"; then
+  echo "romres.txt cambio: rc/rc68.py otra vez (y recompilar rc/rc_host con banco.sh para el banco)"
+  python3 rc/rc68.py rc/wr2_rc.c
+fi
 python3 "$T/paquetes.py" --blk $BLK --dumps $DUMPS --romstat $RS -o "$CD"
 python3 "$T/tilesbin.py" --b "$CD/TILES.BIN" --blk $BLK --dumps $DUMPS
 [ -n "$(ls $W/tramos/*/blk.bin 2>/dev/null)" ] && python3 "$T/paquetes.py" --tramos $TR -o "$CD"

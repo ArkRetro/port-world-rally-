@@ -30,7 +30,7 @@ void gpu_wait(void) { while (!(GP1 & (1 << 26))); }
 void dma_wait(void) { while (D2_CHCR & (1 << 24)); }
 /* nodos de hasta 16 palabras (el FIFO de la GPU; con nodos mas largos Mednafen pierde palabras y la GPU se queda a
    medio comando) seguidos en un bufer (lst), enlazados en orden y con primitivas enteras */
-#define LSTN 9216                                 /* 36 KB (el diseno 2.1 daba 48 por el peor cuadro de la placa, 42 KB;
+#define LSTN 8448                                 /* 33 KB (el diseno 2.1 daba 48 por el peor cuadro de la placa, 42 KB;
                                                      medido en el port: 27 KB en 12 000 cuadros de attract y Portugal con
                                                      los tres coches; lo que no quepa se pierde ese cuadro) */
 static u32 lst[LSTN];

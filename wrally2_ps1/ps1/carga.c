@@ -469,8 +469,10 @@ static void rom_pon(u8 *b, int n)
     for (i = 0; i < btr_n; i++) rc_rom_mapa(btr[i].a0, btr[i].a1, btr[i].p);
     carga_rom_kb = (u32)(w - b) >> 10;
 }
+u32 carga_rom_ult;                              /* ultima direccion que salto la trampa (cifras) */
 static void rom_trampa(u32 a)
 {
+    carga_rom_ult = a;
     u32 s = a >> 11, b; int k = remb_t; u8 *e = remb[k]; u16 t0 = T1, l;
     if (lba_rom < 0 || a >= ROMFIN) rc_bad(0xA00000 | a);
     remb_t = k + 1 < NREMB ? k + 1 : 0;

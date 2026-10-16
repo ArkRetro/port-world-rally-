@@ -1543,6 +1543,35 @@ int main(int argc, char **argv)
             game_frame++;
             dump_entry();
             if (huellaf) fprintf(huellaf, "%ld %08x\n", game_frame, state_hash());
+            if (getenv("ROMCHECK") && atol(getenv("ROMCHECK")) == game_frame) {   /* rc_romtab contra work/prog.bin (bytes cambiados de dos en dos) */
+                static u8 *pr; u32 tab = sym_lookup(nmfile, "rc_romtab"), b, k, malos = 0;
+                if (!pr) { FILE *f = fopen("../work/prog.bin", "rb"); pr = malloc(0x100000); if (f) { fread(pr, 1, 0x100000, f); fclose(f); } }
+                for (b = 0; b < 4096 && tab; b++) {
+                    u32 p = rd32ram(tab + b * 4);
+                    if (!p) continue;
+                    for (k = 0; k < 260; k++) {               /* y los 4 de la cola (lecturas que cruzan el bloque) */
+                        u32 a = b * 256 + k; u8 v = ram[(p + a) & 0x1FFFFF];
+                        if (v != pr[a ^ 1]) { if (malos++ < 20) fprintf(stderr, "ROMCHECK bloque %05X: %05X da %02X y es %02X\n", b << 8, a, v, pr[a ^ 1]); break; }
+                    }
+                }
+                fprintf(stderr, "ROMCHECK cuadro %ld: %u bloques mal\n", game_frame, malos);
+                {   /* rc_romres entero contra la ROM (lo que leen directo las lecturas a direccion fija) */
+                    u32 tt = sym_lookup(nmfile, "rc_romres_tab"), tn = sym_lookup(nmfile, "rc_romres_n"), rr = sym_lookup(nmfile, "rc_romres"), n, o = 0, mal = 0;
+                    if (tt && tn && rr) {
+                        n = rd32ram(tn);
+                        for (k = 0; k < n; k++) {
+                            u32 a0 = rd32ram(tt + k * 8), a1 = rd32ram(tt + k * 8 + 4), i;
+                            for (i = 0; i < a1 - a0 + 4; i++) if (ram[(rr + o + i) & 0x1FFFFF] != pr[(a0 + i) ^ 1]) { if (mal++ < 10) fprintf(stderr, "ROMRES tramo %05X-%05X: %05X mal\n", a0, a1, a0 + i); }
+                            o += a1 - a0 + 4;
+                        }
+                        fprintf(stderr, "ROMRES: %u tramos, %u B, %u mal\n", n, o, mal);
+                    }
+                }
+            }
+            if (getenv("ESTADOAT") && atol(getenv("ESTADOAT")) == game_frame && sym_ram) {   /* rc_ram, rc_vram, rc_pal y rc_xram de esa llamada */
+                char fn[600]; FILE *f; snprintf(fn, sizeof fn, "%s/estado.bin", outdir);
+                if ((f = fopen(fn, "wb"))) { fwrite(ram + (sym_ram & 0x1FFFFF), 1, 0x10000, f); fwrite(ram + (sym_vram & 0x1FFFFF), 1, 0x10000, f); fwrite(ram + (sym_pal & 0x1FFFFF), 1, 0x2000, f); fwrite(ram + (sym_xram & 0x1FFFFF), 1, 0x2000, f); fclose(f); }
+            }
             if (cpuf) fprintf(cpuf, "%ld,%llu,%llu,%llu,%u\n", game_frame, (unsigned long long)(cyc - t_vbout), (unsigned long long)vb_cyc, (unsigned long long)mcu_cyc, sym_ram ? rd16ram(sym_ram + 0xC298) : 0);
             t_vbin = cyc; ra_vb = R[31]; vb_cyc = mcu_cyc = 0;
             if (game_frame == prof_from_frame) { memset(prof, 0, 0x80000 * 8); memset(prof_n, 0, 0x80000 * 8); prof_from_cyc = cyc; }

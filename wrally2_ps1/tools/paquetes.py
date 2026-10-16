@@ -285,10 +285,12 @@ def carrera(cors, out, margen, rot, nfij, romres, area):
         if len(l2t) > cabe:
             vc = Counter()
             for (t, _, _), (c, _, _, _) in junta([co.tramos[kk]['res'] for co, kk in lin]).items(): vc[t] += c
-            fuera = set(sorted(l2t, key=lambda t: (not pc[t][5], vc[t], t))[:len(l2t) - cabe])
-            print('ST%02d: L2 %d registros > %d (area %d sectores - ROM %d - L2 del coche %d): fuera %d (vistos como mucho %d cuadros)'
+            fuera = sorted(l2t, key=lambda t: (not pc[t][5], vc[t], t))[:len(l2t) - cabe]
+            print('ST%02d: L2 %d registros > %d (area %d sectores - ROM %d - L2 del coche %d): %d a la cola (vistos como mucho %d cuadros)'
                   % (k, len(l2t), cabe, L2_CAP, nrom, EXT_MAX // 14, len(fuera), max(vc[t] for t in fuera)))
-            orden = orden[:nvo] + [t for t in l2t if t not in fuera]
+            # a la cola, los mas vistos primero: con el coche N (sin L2 del coche) cabe parte; lo que no, por emergencia
+            fs = set(fuera)
+            orden = orden[:nvo] + [t for t in l2t if t not in fs] + sorted(fuera, key=lambda t: (-vc[t], t))
         for cl, tipo, ts in ((2, 4, orden[:nvo]), (3, 1, orden[nvo:])):
             sec.append((cl, sectores_b([reg(t, pc[t], ivs, ('T', k), pc[t][4] + margen) for t in ts], tipo, pq, 0, [pc[t][3] for t in ts]), len(ts)))
         trs = bancos.get(clave, []); sr = rombank.sectores_rom(trs, pq); sec.append((4, sr, len(trs)))

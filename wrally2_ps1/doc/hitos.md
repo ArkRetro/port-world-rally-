@@ -175,6 +175,14 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   tiempo mientras el CD trae lo siguiente (secciones de MENUS, mapa/VO/L2/ROM, emergencias). Carrera de Portugal: 17
   emergencias en vez de ~60. psxprof2: la SPU avanza con el tono de cada momento (con tono 0 no avanza; antes, al
   volver de una pausa larga, la voz saltaba lo de la pausa)
+- [x] Volcados y salidas de pista: el piloto automatico casi nunca se salia, y lo que se ve fuera de la pista (publico,
+  vallas, objetos) y algunas poses no estaba en los paquetes. Partidas nuevas con salidas y choques (AP 25/30 y 20/15,
+  los cuatro rallies) en work/tramos. ST04 no cabe entero: lo que no cabe ya no se quita, va a la cola de la L2 por
+  frecuencia (con el coche N, sin L2 del coche, caben 54 sectores mas). El residente crece (101 060 B): rc68 otra vez
+  (construir_cd.sh lo hace solo si cambia romres.txt; sin eso los bloques nuevos del residente no estaban en ningun
+  sitio y saltaban trampas de 0,35 s en carrera) y la lista de la GPU a 33 KB para la puerta R1. Partidas de prueba que
+  no entran en los paquetes (AP 30/20, 35/60 y zigzag): faltas por cuadro 0,36 -> 0,09, 0,20 -> 0,07, 0,78 -> 0,22;
+  0 trampas, ninguna parada. psxprof2: ROMCHECK=cuadro (rc_romtab y rc_romres contra prog.bin) y ESTADOAT=cuadro
 - [x] Pausa en carrera (START, como el WR1): el 68000 y la MCU parados, el cuadro que se ve oscurecido con PAUSA, voces a
   tono 0, el CD sigue leyendo lo pedido; el tiempo de la pausa no cuenta para el reloj del sonido. START no llega al
   juego en carrera (modo 1)
