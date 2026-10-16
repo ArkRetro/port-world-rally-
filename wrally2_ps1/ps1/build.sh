@@ -36,7 +36,7 @@ for v in r0 r1; do
   $P-gcc $CF $D -DRC_ROM_EXTERN -c ../rc/rc_mem.c -o rc_mem_$v.o
 done
 $P-gcc $CF $MAINOPT -c video.c -o video.o
-$P-gcc $CF $CDOPT -c $WR1/ps1/cd.c -o cd.o
+$P-gcc $CF $CDOPT -I$WR1/ps1 -c cd.c -o cd.o   # copia de la del WR1 con el EDC
 $P-gcc $CF -c ../rc/gae1.c -o gae1.o
 $P-gcc $CF -c snd.c -o snd.o
 $P-gcc $CF -DMCS51_XOR=1 -DMCU_TABLAS -c ../rc/mcu.c -o mcu.o

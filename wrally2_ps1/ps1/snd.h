@@ -12,4 +12,5 @@ extern int snd_juego;                          /* 1: modelo por cuadros del jueg
 extern int snd_pide;                            /* fichero de la SPU que hace falta (lo pide un trozo que no esta) */
 extern int snd_modo_tit;                        /* 1 en las pantallas del titulo: los trozos repetidos, de SPUTIT */
 extern unsigned snd_kon, snd_encolados, snd_sin_trozo, snd_tarde, snd_cargas, snd_carga_lin;   /* cifras */
+extern unsigned snd_ck_mal, snd_ck_perdidos, snd_spu_mal;   /* sectores de SPU.BIN mal leidos, perdidos; escrituras a la SPU mal */
 #endif

@@ -158,6 +158,14 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
     2,3 -> 0,5; ninguna parada de 3 o mas vblanks (antes 3-6 por partida); faltas en carrera 0,00-0,17 por cuadro;
     Portugal con los coches N, L y R: 0,7 % y 0,01-0,03 faltas por cuadro. Attract igual que antes (1 132 faltas en
     12 000 cuadros). G-ESTADO, G-SNDLOG y G-CPU pasan
+- [x] Hardware real con CD grabado (en MiSTer bien; en una PS1 con CD-R el sonido salia mal): `ps1/cd.c` es ahora una
+  copia del lector del WR1 que comprueba el EDC de cada sector Mode 2 Form 1 al copiarlo (tabla de 4 bits; el que llega
+  mal se da por perdido y se vuelve a buscar, cd_dbg[7]); `SPU.BIN` ademas con una suma por sector (`snd_ck`, de
+  `tools/sndwr2.py`) con relectura a 1x desde el segundo intento, y lo escrito por DMA en la SPU se lee de vuelta (al
+  tercer fallo, escritura a mano por el puerto de datos). psxprof2: `CD_CORRUPTO=n` (un byte cambiado en uno de cada n
+  sectores) y lectura de la SPU por DMA. Con `CD_CORRUPTO=50` (110 sectores malos en el attract): G-ESTADO igual en el
+  attract y en Portugal, 0 sectores perdidos. Coste: cuadros lentos en carrera 0,4 % -> 0,6 %. Cifras en la tercera
+  fila (L2 + R2)
 - [x] Pausa en carrera (START, como el WR1): el 68000 y la MCU parados, el cuadro que se ve oscurecido con PAUSA, voces a
   tono 0, el CD sigue leyendo lo pedido; el tiempo de la pausa no cuenta para el reloj del sonido. START no llega al
   juego en carrera (modo 1)

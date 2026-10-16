@@ -99,6 +99,20 @@ def main():
         f.write('#define SND_NF %d\n' % len(noms))
         f.write('const unsigned snd_fsec[SND_NF] = {%s};\n' % ', '.join(map(str, fsec)))
         f.write('const unsigned snd_flen[SND_NF] = {%s};\n' % ', '.join(map(str, flen)))
-    print('snd_tab.c: %d trozos' % len(ent))
+        ck = sumas(todo)
+        f.write('#define SND_NSEC %d\n' % len(ck))
+        f.write('const unsigned snd_ck[SND_NSEC] = {%s};\n' % ', '.join('0x%x' % c for c in ck))
+    print('snd_tab.c: %d trozos, %d sumas de sector' % (len(ent), len(ck)))
+
+def sumas(d):
+    """suma de cada sector de 2 048 bytes (palabras de 32 bits, girando 1 a la izquierda antes de sumar cada una), la
+    misma que hace ps1/snd.c para ver si el sector llego bien del CD"""
+    out = []
+    for i in range(0, len(d), 2048):
+        c = 0
+        for (w,) in struct.iter_unpack('<I', bytes(d[i:i + 2048]).ljust(2048, b'\0')):
+            c = (((c << 1) | (c >> 31)) + w) & 0xFFFFFFFF
+        out.append(c)
+    return out
 
 if __name__ == '__main__': main()

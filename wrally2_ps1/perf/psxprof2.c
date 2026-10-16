@@ -52,6 +52,7 @@
      ms, ven ya los bits quietos, como el manejador de una IRQ); CD_GLITCH_VENT=0: cualquier primera lectura.
      psx-spx (0,1 % de los INT3 y 1 % de los INT5) lo midio sondeando en un bucle corto: con el de cd_poll, mas
      lento, N=1000 y N5=100 ya son pesimistas.
+   CD_CORRUPTO=n: uno de cada n sectores leidos llega con un byte de datos cambiado (sin error).
    CD_ERR=n: uno de cada n sectores de ReadN se cambia por INT5 {stat|5, 04h} (fallo de busqueda) y la unidad deja de
      leer (CD_ERR_LECTURA). CD_ERR80=ms: durante los primeros ms tras Init (o tras el primer ReadN si no hubo Init)
      ReadN y Play responden INT5 {stat|1, 80h} (aun no lista: CD_NO_LISTA). Es una prueba de aguante: el HC05 y
@@ -737,7 +738,12 @@ static void dma_start(int ch)
     } else if (ch == 4) {
         u32 bs = dma_bcr[ch] & 0xFFFF, nb = dma_bcr[ch] >> 16, i;
         words = bs * nb;
-        for (i = 0; i < words; i++) { u32 v = rd32ram(madr + i * 4); u32 p = spu_addr & 0x7FFFF; spuram[p] = v; spuram[(p + 1) & 0x7FFFF] = v >> 8; spuram[(p + 2) & 0x7FFFF] = v >> 16; spuram[(p + 3) & 0x7FFFF] = v >> 24; spu_addr += 4; }
+        if (chcr & 1) for (i = 0; i < words; i++) { u32 v = rd32ram(madr + i * 4); u32 p = spu_addr & 0x7FFFF; spuram[p] = v; spuram[(p + 1) & 0x7FFFF] = v >> 8; spuram[(p + 2) & 0x7FFFF] = v >> 16; spuram[(p + 3) & 0x7FFFF] = v >> 24; spu_addr += 4; }
+        else for (i = 0; i < words; i++) {   /* SPU -> RAM (lectura de vuelta de ps1/snd.c) */
+            u32 p = spu_addr & 0x7FFFF;
+            wr32ram(madr + i * 4, spuram[p] | spuram[(p + 1) & 0x7FFFF] << 8 | spuram[(p + 2) & 0x7FFFF] << 16 | (u32)spuram[(p + 3) & 0x7FFFF] << 24);
+            spu_addr += 4;
+        }
         stall_cyc += words * 4;
         dma_done[4] = cyc + words * 4;
     } else if (ch == 6) {   /* OTC */
@@ -794,6 +800,11 @@ static void cd_read_sector(u32 lba)
     if ((long)lba >= cd_sectors) { memset(cd_sector_buf, 0, sizeof cd_sector_buf); return; }
     fseek(cdf, (long)lba * 2352, SEEK_SET);
     if (fread(cd_sector_buf, 1, 2352, cdf) != 2352) memset(cd_sector_buf, 0, 2352);
+    {   /* CD_CORRUPTO=n: uno de cada n sectores llega con un byte de datos cambiado (CD-R mal leido, sin INT5) */
+        static long n_cor; static int o_cor = -1;
+        if (o_cor < 0) o_cor = getenv("CD_CORRUPTO") ? atoi(getenv("CD_CORRUPTO")) : 0;
+        if (o_cor > 0 && ++n_cor % o_cor == 0) { cd_sector_buf[24 + (n_cor * 37) % 2048] ^= 0x5A; eventf("CD_CORRUPTO lba %u", lba); }
+    }
 }
 static int track_of(u32 lba) { int t, k = 1; for (t = 1; t <= ntracks; t++) if (trk_lba[t] <= lba || (trk_idx0[t] && trk_idx0[t] <= lba)) k = t; return k; }
 /* posicion actual del audio (avanza a 75 sectores/s desde que acaba la busqueda) */

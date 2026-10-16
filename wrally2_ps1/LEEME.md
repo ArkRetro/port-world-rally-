@@ -19,6 +19,18 @@ Diseno y plan: `doc/diseno.md` y `doc/hitos.md`.
   Falta la prueba en MiSTer, PSIO y XStation (prueba 0, entregada).
 - H3 (en curso): attract con los graficos de verdad; ROM por bancos hecha en el banco.
 
+## Grabar el CD para una PS1 de verdad
+
+- Graba la imagen con el `.cue` (no el `.bin` suelto), en modo **DAO / disc-at-once** y a **poca velocidad** (4x-8x),
+  en CD-R de buena calidad (los plateados/azules de antes leen mejor que los muy oscuros). La consola necesita el chip
+  de modificacion o un metodo de arranque para discos grabados.
+- La imagen del World Rally 2 solo tiene una pista de datos (el sonido son samples de la SPU que se leen de
+  `SPU.BIN`, no pistas de audio). Cada sector se comprueba (EDC de Mode 2 Form 1) y el que llega mal se vuelve a leer;
+  los de `SPU.BIN` ademas con su suma, y lo escrito en la RAM de la SPU se lee de vuelta para ver que llego.
+- Con L2 + R2 salen las cifras; la tercera fila: sectores de `SPU.BIN` que llegaron mal, perdidos (sin leer bien en 4
+  intentos), escrituras a la SPU que no salieron, errores del controlador del CD y errores de los paquetes. Si en la
+  consola algo suena o se ve mal, esas cifras dicen si es el disco.
+
 ## Banco de pruebas
 
 Requisitos: Python 3, gcc; opcional Musashi (https://github.com/kstenerud/Musashi) para la comparacion paso a paso.

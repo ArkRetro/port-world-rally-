@@ -106,6 +106,7 @@ static void sprites(void)
 static int fb, gear, sq_last, show, lr_last, skipped, start_up;
 static u16 snd_tv;                              /* ultima lectura del temporizador 1 del reloj del sonido */   /* show: cifras de depuracion (L2 + R2) */
 static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc, lvid, lvid_acc;
+extern int cd_dbg[8];                           /* cd.c del WR1: [2] errores del controlador */
 static u32 modo_ant, f146_ant, modo_ped;
 int fps_mil = 60000;
 /* espera del vsync sondeando el CD (la GPU esta parada: lo que llega se sube) */
@@ -218,6 +219,8 @@ void rc_vblank(void)
             digits(4, 4, modo, 2); digits(28, 4, nframe, 6); digits(84, 4, l68, 3); digits(116, 4, ldraw, 3);
             digits(148, 4, skips, 4); digits(188, 4, fps_mil, 5); digits(236, 4, (0x801FFFF0u - 16384u - (u32)__bss_end) >> 10, 4);
             digits(272, 4, vid_faltas_cuadro, 3); digits(300, 4, carga_sectores, 5); digits(344, 4, lvid, 3);
+            digits(4, 36, snd_ck_mal, 4); digits(44, 36, snd_ck_perdidos, 4); digits(84, 36, snd_spu_mal, 4);   /* SPU.BIN: mal leidos, perdidos; SPU mal */
+            digits(124, 36, (u32)cd_dbg[2], 4); digits(164, 36, carga_err, 4);                                 /* errores del CD y de los paquetes */
             if (b) {
                 digits(4, 20, vid_b_fijos, 4); digits(44, 20, vid_b_rot, 4); digits(84, 20, vid_b_l2, 5); digits(132, 20, carga_emerg, 5);
                 digits(180, 20, carga_dm_neg[0], 4); digits(220, 20, carga_dm_neg[1], 4);
