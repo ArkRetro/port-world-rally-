@@ -86,7 +86,9 @@ tabla line-A de 61 entradas) y anula la escritura a 0x2FFFF0. Las referencias re
 bloque se mueve entero. Las tablas de datos (0x20B4DE en adelante) siguen en P2 y se leen como datos, igual que Kizuna.
 
 Verificación (MAME 0.264, `neogeo` BIOS por defecto): con la copia antigua de P2 sustituida por opcodes ILLEGAL,
-0 instrucciones ejecutadas desde P2, 0 excepciones, y los hashes de pantalla cada 50 fotogramas idénticos a HANDOVER
-durante la intro, la demo y 5 partidas jugadas. La build final conserva la copia de P2 sin usar.
+0 instrucciones ejecutadas desde P2 en 59 000 fotogramas de atracción y 41 000 con 5 partidas jugadas, 0 excepciones,
+y los hashes de pantalla cada 50 fotogramas idénticos a HANDOVER en toda la ejecución (con la escritura a 0x2FFFF0
+conservada: `--keep-bank-write`). Al anularla, el juego va una instrucción adelantado y la carrera, que satura la CPU,
+se desfasa unas décimas; es el único efecto. La build final conserva la copia de P2 sin usar y anula la escritura.
 `tools/builds/pack_formats.py` genera los formatos Darksoft (prom/srom/m1rom/vroma0/crom0 con entrelazado de 2 bytes,
 fpga "10") y Backbit (p1/s1/m1/v1/c1/c2 + neogeo.xml con CRC/SHA1), verificados byte a byte contra el RoboCop.
