@@ -80,6 +80,10 @@ video_init:
         bsr     video_mark_all_dirty
         clr.w   rt_sprites_used
         clr.w   rt_sprites_used1
+        lea     SPR_CACHE,a0
+        move.w  #(SPR_CACHE_END-SPR_CACHE)/4-1,d0
+4:      move.l  #-1,(a0)+
+        dbra    d0,4b
         rts
 
 video_mark_all_dirty:
@@ -134,27 +138,38 @@ vram_mark_dirty:
 * video_vblank: called from the VBlank handler - flush dirty palettes to palette RAM.
 * ------------------------------------------------------------------------------------------
 video_vblank:
+        move.w  rt_backdrop,PALETTES+255*32+30
         tst.b   rt_pal_any
         beq.s   9f
         clr.b   rt_pal_any
         lea     rt_pal_dirty,a0
         lea     ARC_PAL,a1
         lea     PALETTES+PAL_ARC_BASE*32,a2
+        lea     PALETTES+PAL_BG*32+30,a4
         moveq   #63,d0
 1:      tst.b   (a0)+
         beq.s   2f
         clr.b   -1(a0)
         movem.l (a1),d1-d7/a3           /* 16 words = 8 longs */
         movem.l d1-d7/a3,(a2)
+        cmpi.w  #32,d0                  /* tile palette (index 0..31 = 63 - d0)? */
+        bcs.s   2f
+        move.w  (a1),(a4)               /* backdrop palette: colour 15 = colour 0 */
+        st      rt_bg_recount
 2:      lea     32(a1),a1
         lea     32(a2),a2
+        lea     32(a4),a4
         dbra    d0,1b
 9:      rts
 
 * ------------------------------------------------------------------------------------------
 * video_frame: called once per frame by the game loop after the arcade logic ran
 video_frame:
-        /* layer 1 (back) first */
+        tst.b   rt_bg_recount
+        beq.s   1f
+        clr.b   rt_bg_recount
+        bsr     bg_recount
+1:      /* layer 1 (back) first */
         move.w  ARC_VREGS+6,d0          /* scrollx layer 1 */
         move.w  ARC_VREGS+4,d1          /* scrolly layer 1 */
         lea     ARC_VRAM+0x2000,a3
@@ -162,6 +177,24 @@ video_frame:
         lea     rt_col_loaded+24,a5
         move.w  #SPR_LAYER1,d7
         bsr     layer_update
+        /* backdrop colour = colour 0 of the layer-1 cell at the screen centre: it shows through the
+           pen-0 pixels of layer 1 that have no backdrop column (sparse ones, screen flashes) */
+        move.w  rt_c0+2,d0
+        add.w   #NCOLSPR/2,d0
+        and.w   #63,d0
+        move.w  ARC_VREGS+4,d1
+        add.w   #CROP_Y+112,d1
+        lsr.w   #4,d1
+        and.w   #31,d1
+        lsl.w   #6,d1
+        add.w   d1,d0
+        lsl.w   #2,d0
+        lea     ARC_VRAM+0x2000,a0
+        move.b  3(a0,d0.w),d1
+        and.w   #0x1F,d1
+        lsl.w   #5,d1
+        lea     ARC_PAL,a0
+        move.w  (a0,d1.w),rt_backdrop
         move.w  ARC_VREGS+2,d0          /* scrollx layer 0 (+4 as in MAME) */
         addq.w  #4,d0
         move.w  ARC_VREGS+0,d1
@@ -230,7 +263,7 @@ lu_loop:
         lea     256(a0),a0
         dbra    d2,4b
         cmpi.w  #SPR_LAYER0,d7
-        bne     5f
+        bne     10f
         /* layer 0: the HI column of sprite SPR_HI+s shows the category-1 cells only */
         move.w  d1,d2
         lsl.w   #2,d2
@@ -258,6 +291,31 @@ lu_loop:
         dbra    d2,6b
         lea     rt_hi_cnt,a0
         move.b  d3,(a0,d5.w)
+        bra     5f
+10:     /* layer 1: the backdrop column of sprite SPR_BG+s (solid tile, palette PAL_BG+colour = colour 0) */
+        move.w  d1,d2
+        lsl.w   #2,d2
+        lea     (a3,d2.w),a0
+        move.w  d5,d0
+        add.w   #SPR_BG,d0
+        lsl.w   #6,d0
+        move.w  d0,REG_VRAMADDR
+        moveq   #0,d3                   /* cells that need it */
+        moveq   #31,d2
+11:     move.w  #SOLID_TILE,REG_VRAMRW
+        moveq   #0,d4
+        move.b  3(a0),d4
+        and.w   #0x1F,d4
+        add.w   #PAL_BG,d4
+        lsl.w   #8,d4
+        move.w  d4,REG_VRAMRW
+        move.l  (a0),d0
+        bsr     bg_sig
+        add.w   d0,d3
+        lea     256(a0),a0
+        dbra    d2,11b
+        lea     rt_bg_cnt,a0
+        move.b  d3,(a0,d5.w)
 5:      movem.l (sp)+,d0-d5
 lu_pos:
         /* position: SCB4 x, SCB3 y (d0 = s, d2 = x) */
@@ -274,7 +332,7 @@ lu_pos:
         move.w  d0,REG_VRAMADDR
         move.w  d6,REG_VRAMRW
         cmpi.w  #SPR_LAYER0,d7
-        bne     3f
+        bne     16f
         /* HI column of layer 0: same x, same y, height 0 when it has no category-1 cell */
         move.w  a2,d0
         lea     rt_hi_cnt,a0
@@ -283,7 +341,16 @@ lu_pos:
         bne     2f
         and.w   #0xFF80,d1
 2:      add.w   #SPR_HI+VRAM_SCB3,d0
-        move.w  d0,REG_VRAMADDR
+        bra     18f
+16:     /* backdrop column of layer 1: same x, same y, height 0 when no cell needs it */
+        move.w  a2,d0
+        lea     rt_bg_cnt,a0
+        move.w  d6,d1
+        tst.b   (a0,d0.w)
+        bne     17f
+        and.w   #0xFF80,d1
+17:     add.w   #SPR_BG+VRAM_SCB3,d0
+18:     move.w  d0,REG_VRAMADDR
         move.w  d1,REG_VRAMRW
         add.w   #VRAM_SCB4-VRAM_SCB3,d0
         move.w  d0,REG_VRAMADDR
@@ -303,8 +370,8 @@ lu_pos:
 * Trashes d0-d2/a0-a2.
 * ------------------------------------------------------------------------------------------
 vram_store:
-        move.l  d0,-(sp)                /* 6(sp): new pair */
-        move.w  2(a0),-(sp)             /* 4(sp): old attribute word */
+        move.l  d0,-(sp)                /* 8(sp): new pair (10(sp): its attribute word) */
+        move.l  (a0),-(sp)              /* 4(sp): old pair (6(sp): its attribute word) */
         move.l  d0,(a0)
         move.l  a0,d1
         lea     rt_col_loaded,a1
@@ -350,14 +417,14 @@ vram_store:
         lea     tile_attr_table,a1
         move.w  (a1,d0.w),REG_VRAMRW
         cmp.w   #SPR_LAYER0,a2
-        bne     9f
+        bne     vs_layer1
         /* layer 0: the HI column cell (tile if category 1, else blank) and its cell count */
         move.w  a0,d1
         add.w   #SPR_HI,d1
         lsl.w   #6,d1
         add.w   d2,d1
         move.w  d1,REG_VRAMADDR
-        move.l  6(sp),d2
+        move.l  8(sp),d2
         btst    #5,d2
         beq     2f
         swap    d2
@@ -366,8 +433,8 @@ vram_store:
 2:      move.w  #HI_BLANK,d2
 3:      move.w  d2,REG_VRAMRW
         move.w  (a1,d0.w),REG_VRAMRW
-        move.w  8(sp),d2                /* new attribute word */
-        move.w  4(sp),d0                /* old attribute word */
+        move.w  10(sp),d2               /* new attribute word */
+        move.w  6(sp),d0                /* old attribute word */
         eor.w   d2,d0
         btst    #5,d0
         beq     9f                      /* category unchanged */
@@ -378,7 +445,77 @@ vram_store:
         addq.b  #1,(a1,d0.w)
         bra     9f
 4:      subq.b  #1,(a1,d0.w)
-9:      lea     10(sp),sp
+        bra     9f
+vs_layer1:
+        /* layer 1: the backdrop cell (solid tile, palette PAL_BG+colour) and its cell count */
+        move.w  a0,d1
+        add.w   #SPR_BG,d1
+        lsl.w   #6,d1
+        add.w   d2,d1
+        move.w  d1,REG_VRAMADDR
+        move.w  #SOLID_TILE,REG_VRAMRW
+        lsr.w   #1,d0                   /* attribute byte */
+        and.w   #0x1F,d0
+        add.w   #PAL_BG,d0
+        lsl.w   #8,d0
+        move.w  d0,REG_VRAMRW
+        move.l  8(sp),d0
+        bsr     bg_sig
+        move.w  d0,d2                   /* new cell needs the backdrop (0/1) */
+        move.l  4(sp),d0
+        bsr     bg_sig
+        sub.w   d0,d2                   /* - old */
+        beq     9f
+        lea     rt_bg_cnt,a1
+        move.w  a0,d0
+        add.b   d2,(a1,d0.w)
+9:      lea     12(sp),sp
+        rts
+
+* bg_sig: d0.l = tile pair -> d0.w = 1 if the cell needs an opaque backdrop (tile with pen-0 pixels and
+* palette colour 0 not black), else 0.  Trashes d1; a1 preserved.
+bg_sig:
+        move.l  a1,-(sp)
+        move.w  d0,d1
+        and.w   #0x1F,d1
+        lsl.w   #5,d1
+        lea     ARC_PAL,a1
+        cmpi.w  #0x8000,(a1,d1.w)
+        beq     1f
+        swap    d0
+        and.w   #0x3FFF,d0
+        lea     pen0_table,a1
+        move.b  (a1,d0.w),d0
+        and.w   #1,d0
+        movea.l (sp)+,a1
+        rts
+1:      moveq   #0,d0
+        movea.l (sp)+,a1
+        rts
+
+* bg_recount: rt_bg_cnt for every loaded layer-1 column (after a tile palette changed).  Trashes d0-d7/a1/a3-a5.
+bg_recount:
+        lea     rt_col_loaded+24,a5
+        lea     rt_bg_cnt,a4
+        moveq   #0,d7                   /* s */
+1:      moveq   #0,d6
+        move.b  (a5,d7.w),d5
+        cmpi.b  #0xFF,d5
+        beq     3f
+        and.w   #0x3F,d5
+        lsl.w   #2,d5
+        lea     ARC_VRAM+0x2000,a3
+        adda.w  d5,a3
+        moveq   #31,d4
+2:      move.l  (a3),d0
+        bsr     bg_sig
+        add.w   d0,d6
+        lea     256(a3),a3
+        dbra    d4,2b
+3:      move.b  d6,(a4,d7.w)
+        addq.w  #1,d7
+        cmpi.w  #NCOLSPR,d7
+        bcs     1b
         rts
 
 * ------------------------------------------------------------------------------------------
@@ -396,7 +533,8 @@ sprites_update:
         cmpi.w  #(0x1000-6)/8,d6
         bls     1f
         move.w  #(0x1000-6)/8,d6
-1:      subq.w  #1,d6
+1:      move.w  #1,REG_VRAMMOD
+        subq.w  #1,d6
         bmi     su_done
 su_loop:
         move.w  (a0)+,d0                /* w0: y, flips */
@@ -419,22 +557,40 @@ su_loop:
         and.w   #0x3FF,d5
         cmpi.w  #319+16,d5
         bhi.w   su_next
-        /* pool by code: a3 = Neo Geo sprite number */
+        /* pool by code: a3 = Neo Geo sprite number (a full pool borrows from the other one) */
         and.w   #0x3FFF,d3
-        movea.w d7,a3
         cmpi.w  #0x3700,d3
         bcs.s   3f
         movea.w a2,a3
         cmpa.w  #SPR_PRI1+SPR_PRI1_MAX,a3
-        bcc.w   su_next                 /* pool full */
+        bcs.s   4f
+        movea.w d7,a3
+        cmpa.w  #SPR_HI,a3
+        bcc.w   su_next                 /* both full */
         bra.s   4f
-3:      cmpa.w  #SPR_HI,a3
+3:      movea.w d7,a3
+        cmpa.w  #SPR_HI,a3
+        bcs.s   4f
+        movea.w a2,a3
+        cmpa.w  #SPR_PRI1+SPR_PRI1_MAX,a3
         bcc.w   su_next
-4:      /* SCB1: tile, attr */
+4:      /* unchanged since the last time this Neo Geo sprite was written? (static scenes: HUD, logo) */
+        move.w  a3,d1
+        lsl.w   #3,d1
+        lea     SPR_CACHE,a1
+        adda.w  d1,a1
+        move.l  -8(a0),d1               /* (a0 is past the entry) */
+        cmp.l   (a1),d1
+        bne.s   6f
+        move.l  -4(a0),d1
+        cmp.l   4(a1),d1
+        beq     7f                      /* identical: the VRAM already holds it, just take the slot */
+6:      move.l  -8(a0),(a1)
+        move.l  -4(a0),4(a1)
+        /* SCB1: tile, attr */
         move.w  a3,d1
         lsl.w   #6,d1
         move.w  d1,REG_VRAMADDR
-        move.w  #1,REG_VRAMMOD
         move.w  d2,d1
         lsr.w   #8,d1
         and.w   #0x7C,d1                /* colour<<2 */
@@ -470,7 +626,7 @@ su_loop:
         and.w   #0x1FF,d5
         lsl.w   #7,d5
         move.w  d5,REG_VRAMRW
-        cmpa.w  d7,a3
+7:      cmpa.w  d7,a3
         bne.s   5f
         addq.w  #1,d7
         bra.s   su_next
@@ -486,15 +642,22 @@ su_done:
         move.w  rt_sprites_used1,d0
         move.w  a2,rt_sprites_used1
         move.w  a2,d1
-* su_hide: d0 = end of the pool last frame, d1 = end now: height 0 for sprites d1..d0-1
+* su_hide: d0 = end of the pool last frame, d1 = end now: height 0 for sprites d1..d0-1 (and forget
+* their cached entries)
 su_hide:
         sub.w   d1,d0
         ble.s   9f
         subq.w  #1,d0
+        move.w  d1,d2
+        lsl.w   #3,d2
+        lea     SPR_CACHE,a1
+        adda.w  d2,a1
         add.w   #VRAM_SCB3,d1
         move.w  d1,REG_VRAMADDR
         move.w  #1,REG_VRAMMOD
 1:      move.w  #0,REG_VRAMRW
+        move.l  #-1,(a1)+
+        move.l  #-1,(a1)+
         dbra    d0,1b
 9:      rts
 
@@ -510,6 +673,10 @@ tile_attr_table:
         .word   (((i & 0x1F) + PAL_TILES) << 8) + ((i >> 6) & 3)
         .set    i,i+1
         .endr
+
+* pen0_table: one byte per arcade tile, 1 if it has at least 64 pen-0 pixels (gfx2crom.py --pen0)
+pen0_table:
+        .incbin "pen0.bin"
 
 * mod_ncol: i mod NCOLSPR for i < 128
 mod_ncol:

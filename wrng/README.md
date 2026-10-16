@@ -13,7 +13,7 @@ AES y en flashcarts.
 |------|--------|
 | Self-test, intro, título, atracción | Completo, a velocidad real |
 | Partida (MVS: moneda + start; AES: start) | Funciona; volante/acelerador/marcha en el joystick |
-| Gráficos | Tilemaps emulados con sprites-columna, sprites, sombras (dither), paleta convertida |
+| Gráficos | Tilemaps emulados con sprites-columna, sprites, sombras (dither), paleta convertida, prioridad de tiles de categoría 1 y de HUD/textos, fondo opaco de la capa 1 (columnas de color 0) |
 | Sonido | Driver Z80 propio sobre ADPCM-A (4 canales = 4 canales del OKI M6295), mismo secuenciador que el arcade |
 | MCU DS5002FP | Reimplementado en 68000 (`src/mcu.s`: intérprete de scripts y autopiloto) |
 | Pendiente | Prioridad de tiles de categoría 1 sobre sprites, pequeñas diferencias en la lista de sprites, columnas de borde en la pantalla Gaelco |

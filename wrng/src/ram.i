@@ -54,14 +54,17 @@
 
         .equ    backup_area,    RT_VARS+0x200   /* 256 bytes saved to MVS backup RAM (unused for now) */
         .equ    rt_hi_cnt,      RT_VARS+0x300   /* NCOLSPR bytes: category-1 cells in the layer-0 column of sprite s */
+        .equ    rt_bg_cnt,      RT_VARS+0x318   /* NCOLSPR bytes: layer-1 cells needing an opaque backdrop, per column sprite s */
+        .equ    rt_bg_recount,  RT_VARS+0x330   /* .b a tile palette changed: recount rt_bg_cnt next frame */
+        .equ    rt_backdrop,    RT_VARS+0x332   /* .w Neo Geo backdrop colour for the next VBlank (colour 0 of the central layer-1 cell) */
 
         .equ    ARC_PALRAW,     0x10A000        /* 4 KB: arcade palette RAM 200000-200FFF as written by the game (xBRG444) */
         .equ    ARC_PALRAW_END, 0x10B000
         .equ    ARC_PALLAST,    0x10B000        /* 2 KB: copy of entries 0-1023 last converted */
         .equ    ARC_IO,         0x10B800        /* 256 bytes: arcade I/O 700000-7000FF (inputs filled by us, latches ignored) */
         .equ    ARC_IO_END,     0x10B900
-        .equ    COL_CACHE,      0x10B900        /* 2 x NCOLSPR x 128 bytes: tiles last uploaded per column sprite */
-        .equ    COL_CACHE_END,  0x10CF00
+        .equ    SPR_CACHE,      0x10B900        /* 381 x 8 bytes: arcade sprite entry last written to each Neo Geo sprite (0xFF.. none) */
+        .equ    SPR_CACHE_END,  0x10C500
 
         .equ    RT_CLEAR_END,   0x10F000        /* RAM cleared at start; 0x10F000-0x10F2FF = runtime stack */
         .equ    RT_STACK,       BIOS_RAM        /* runtime stack top */
@@ -75,9 +78,12 @@
         .equ    IO_OKI,         ARC_IO+0x0F     /* .b */
 
 * ---- column engine constants ----
-        .equ    NCOLSPR,        22              /* column sprites per layer (320 px + 15 px offset -> 21 needed) */
-        .equ    SPR_LAYER1,     1               /* first Neo Geo sprite of layer 1 (back) */
+        .equ    NCOLSPR,        21              /* column sprites per layer (320 px + 15 px fine scroll = 335 px -> 21 x 16) */
+        .equ    SPR_BG,         1               /* backdrop columns: palette colour 0 behind the layer-1 cells (the arcade's back layer is opaque) */
+        .equ    SPR_LAYER1,     SPR_BG+NCOLSPR  /* first Neo Geo sprite of layer 1 (back) */
         .equ    SPR_LAYER0,     SPR_LAYER1+NCOLSPR
+        .equ    SOLID_TILE,     1594            /* a tile with every pixel = pen 15 (backdrop cells) */
+        .equ    PAL_BG,         112             /* 32 palettes: colour 15 = colour 0 of tile palette 0..31 */
         .equ    SPR_OBJ,        SPR_LAYER0+NCOLSPR      /* first sprite for the arcade sprite list */
         .equ    SPR_PRI1_MAX,   96              /* arcade sprites with code >= 0x3700 (HUD, text): above the HI columns */
         .equ    SPR_PRI1,       381-SPR_PRI1_MAX

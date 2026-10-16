@@ -38,18 +38,18 @@ $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/okimap.csv: tools/oki2adpcma.p
 	python3 -I tools/oki2adpcma.py $(OKI_HI) $(OKI_LO) $(BUILD)/wr_cpu.bin $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/okimap.csv
 
 # ---- graphics (C ROMs) and fix (S ROM) ----
-$(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2: tools/gfx2crom.py
+$(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 $(BUILD)/pen0.bin: tools/gfx2crom.py
 	mkdir -p $(BUILD)
-	python3 -I tools/gfx2crom.py $(ARCADE)/worldr21.i13 $(ARCADE)/worldr20.i11 $(ARCADE)/worldr19.i09 $(ARCADE)/worldr18.i07 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 --shadow
+	python3 -I tools/gfx2crom.py $(ARCADE)/worldr21.i13 $(ARCADE)/worldr20.i11 $(ARCADE)/worldr19.i09 $(ARCADE)/worldr18.i07 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 --shadow --pen0 $(BUILD)/pen0.bin
 
 $(BUILD)/wrng-s1.s1: tools/mkfont.py
 	mkdir -p $(BUILD)
 	python3 -I tools/mkfont.py $@
 
 # ---- viewer program (P1) ----
-$(BUILD)/viewer.elf: $(RT_SRCS) src/viewer.s src/neogeo.i src/ram.i src/seccode.bin viewer.ld
+$(BUILD)/viewer.elf: $(RT_SRCS) src/viewer.s $(BUILD)/pen0.bin src/neogeo.i src/ram.i src/seccode.bin viewer.ld
 	mkdir -p $(BUILD)
-	for f in $(RT_SRCS) src/viewer.s; do $(AS) $(ASFLAGS) -I $(DUMPS)/.. -o $(BUILD)/$$(basename $$f .s).o $$f || exit 1; done
+	for f in $(RT_SRCS) src/viewer.s; do $(AS) $(ASFLAGS) -I $(DUMPS)/.. -I $(BUILD) -o $(BUILD)/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD) -T viewer.ld -o $@ $(BUILD)/header.o $(BUILD)/main.o $(BUILD)/video.o $(BUILD)/fix.o $(BUILD)/viewer.o
 
 $(BUILD)/wrng-p1.p1: $(BUILD)/viewer.elf
@@ -66,8 +66,8 @@ $(BUILD)/wr_cpu.bin: $(WRPROG_HI) $(WRPROG_LO)
 $(BUILD)/stubs.s: tools/mkrom.py analysis/absrefs.csv $(BUILD)/wr_cpu.bin
 	python3 -I tools/mkrom.py stubs $(BUILD)/wr_cpu.bin analysis/absrefs.csv $@
 
-$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s src/neogeo.i src/ram.i src/seccode.bin game.ld
-	for f in $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(dir $(WRDALLAS)) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
+$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin src/neogeo.i src/ram.i src/seccode.bin game.ld
+	for f in $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(dir $(WRDALLAS)) -I $(BUILD) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
 	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_sound.o $(BUILD)/g_stubs.o
 
 $(BUILD)/game.bin $(BUILD)/game.sym: $(BUILD)/game.elf

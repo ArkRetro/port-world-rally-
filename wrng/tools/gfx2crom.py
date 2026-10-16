@@ -87,6 +87,13 @@ def main():
     open(oc1, 'wb').write(c1)
     open(oc2, 'wb').write(c2)
     print('tiles:', len(tiles), 'c1/c2 bytes:', len(c1))
+    if '--pen0' in a:
+        # one byte per arcade tile: 1 if it has at least 64 pen-0 pixels (the runtime draws an opaque
+        # backdrop behind such layer-1 cells, since the arcade's back layer shows palette colour 0 there;
+        # tiles with fewer pen-0 pixels are left transparent to save sprites per scanline)
+        flags = bytes(1 if sum(1 for p in t if p == 0) >= 64 else 0 for t in tiles[:16384])
+        open(a[a.index('--pen0') + 1], 'wb').write(flags)
+        print('pen0 flags:', sum(flags))
     if '--png' in a:
         from PIL import Image
         cols = 128
