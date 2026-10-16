@@ -143,7 +143,9 @@ static void pantalla(u32 modo)
         else if (modo_ped == 9 || modo_ped == 5 || modo_ped == 1) carga_demo_negro(modo_ped, fb ^ 1);
         else { carga_demo_fin(); carga_pantalla(modo_ped << 16 | f146, fb ^ 1, 0); }
         precarga_spu(modo_ped);
-        carga_relleno(fb ^ 1, (u16)(T1 - t0));  /* CARGANDO al menos 3 s: lo que venga, de fondo mientras tanto */
+        if (modo_ped == 1) carga_relleno(fb ^ 1, (u16)(T1 - t0));   /* antes de cada tramo: CARGANDO al menos 3 s
+                                                   (la L2, la ROM del tramo y lo pendiente, de fondo mientras tanto); en
+                                                   los demas negros solo si una carga pasa de 0,5 s, como antes */
     } else if (modo == 9 || modo == 5 || modo == 0xB || modo == 1) {
         carga_demo_modo(modo, fb ^ 1);          /* recarga si no hubo negro (bloquea, con las voces quietas) */
     }

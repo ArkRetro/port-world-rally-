@@ -171,7 +171,7 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   unidad. Huecos medidos de hasta 36 ms (compactar el banco ROM de la demo, apuntar cientos de sectores de L2, el
   dibujo de los menus, el vblank entre la MCU y las paletas): sondeos en esos bucles; queda <= 107 lineas (6,8 ms) en
   las cargas bloqueantes de menus. `cd.c`: sin reentrar desde la funcion de una lectura (el sector siguiente pisaria
-  sbuf). Pantallas de carga de al menos 3 s en cada negro entre pantallas (`carga_relleno`): CARGANDO con barra por
+  sbuf). Pantalla de carga de al menos 3 s antes de cada tramo (`carga_relleno`; en los demas negros, como antes, solo si una carga pasa de 0,5 s): CARGANDO con barra por
   tiempo mientras el CD trae lo siguiente (secciones de MENUS, mapa/VO/L2/ROM, emergencias). Carrera de Portugal: 17
   emergencias en vez de ~60. psxprof2: la SPU avanza con el tono de cada momento (con tono 0 no avanza; antes, al
   volver de una pausa larga, la voz saltaba lo de la pausa)
