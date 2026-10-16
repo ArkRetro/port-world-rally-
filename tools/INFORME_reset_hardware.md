@@ -64,3 +64,29 @@ Conclusión: NeoSD deja de servir la zona PORT/P2 de forma intermitente; la CPU 
 `build_catcher3.py`: experimento cronometrado en el momento del fallo (fases A sin cambios, B sprites apagados,
 C reset Z80, D reescritura de 0x2FFFF0, E espera; 32 muestras de ~15 ms por fase; '.' ok, 1-6 = ventanas P2 malas,
 P = falla P1, Z = ambas).
+
+## Build "P1 native": el código del port ejecutado desde P1, como el RoboCop de Teo Tormo
+Medido en MAME con el mismo método para los cuatro programas (taps de lectura, fotogramas 600-3000):
+
+| | World Rally HANDOVER | Kizuna | World Heroes | RoboCop (Teo Tormo) |
+|---|---|---|---|---|
+| Instrucciones leídas de P2 por fotograma | 10 800-22 900 (31-70 % del total) | 0 | 0 | 0 |
+| Datos leídos de P2 por fotograma | 250-460 palabras | 470 palabras | 0 | 0 |
+| Vectores IRQ en P2 | VBlank, timer 240 Hz, nivel 3, line-A | ninguno | ninguno | ninguno |
+| Escrituras al registro de banco 0x2FFFF0 | 1 (entrada USER) | 0 | 0 | 0 |
+
+RoboCop cabe en 1 MB (ROM arcade de 256 KB + runtime de 8,8 KB en 0x70000). World Rally no: su P1 es la ROM
+arcade completa (1 MB). El espacio se obtiene así: el port pagina a P2 (tabla 0x260F04) 147 páginas de 4 KB de la
+ROM arcade (0x19000-0x68FFF, 0x99000-0xCEFFF, 0xDD000-0xE5FFF, 0xEA000, 0xEE000-0xF0FFF) ya convertidas; los
+originales en P1 nunca se leen (cobertura: 16 min de atracción + 5 partidas, 0 lecturas en 0x19000-0x68FFF).
+
+`tools/builds/build_p1_native.py` copia el código nativo (0x200000-0x20B4DD, 46 302 bytes) a **0x020000-0x02B4DD**
+y reubica: 4 vectores (10/25/26/27), 63 `jsr/jmp` de P1, 213 operandos absolutos dentro del bloque (incluida la
+tabla line-A de 61 entradas) y anula la escritura a 0x2FFFF0. Las referencias relativas al PC no cambian porque el
+bloque se mueve entero. Las tablas de datos (0x20B4DE en adelante) siguen en P2 y se leen como datos, igual que Kizuna.
+
+Verificación (MAME 0.264, `neogeo` BIOS por defecto): con la copia antigua de P2 sustituida por opcodes ILLEGAL,
+0 instrucciones ejecutadas desde P2, 0 excepciones, y los hashes de pantalla cada 50 fotogramas idénticos a HANDOVER
+durante la intro, la demo y 5 partidas jugadas. La build final conserva la copia de P2 sin usar.
+`tools/builds/pack_formats.py` genera los formatos Darksoft (prom/srom/m1rom/vroma0/crom0 con entrelazado de 2 bytes,
+fpga "10") y Backbit (p1/s1/m1/v1/c1/c2 + neogeo.xml con CRC/SHA1), verificados byte a byte contra el RoboCop.
