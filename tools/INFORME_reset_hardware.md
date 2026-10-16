@@ -100,3 +100,21 @@ está replicada en `tools/builds/neobuilder_generic.py`. La réplica reproduce *
 Teo Tormo a partir de su set Backbit y el `WRally_NeoSD_PRO_AES_HANDOVER_v6.neo` a partir de sus ROMs separadas, y
 aplicada al set Backbit de la build P1-native da exactamente el `WRally_neogeo_P1native.neo` entregado (NGH 0x0999,
 P 2 MB sin inversión de mitades, V2 = 0, C entrelazado c1/c2).
+
+## Build "P1 native v2": también las tablas fuera de P2
+Con el código en P1 la consola seguía reiniciando (3..2..1 de la carrera y final del título). En MAME, simulando
+una ausencia de P2 de 0,5 s (las lecturas devuelven la palabra precargada, como en las fotos del capturador), la
+build P1-native se iba a excepción: las **tablas** del port (sprites, baldosas, texto, tabla de páginas) seguían
+en P2 y con basura producían violación de privilegio / error de dirección, y en hardware un reinicio.
+
+`tools/builds/build_p1_native2.py` mueve además a P1 toda la zona de datos nativa:
+0x20B4DE-0x232FFF → 0x099000 y 0x233000-0x261103 (incluida la tabla de páginas 0x260F04) → 0x02B500, ambas en
+páginas del arcade paginadas (muertas). En P2 quedan solo los datos de baldosas de las pistas (588 KB, ahora en
+0x20C000-0x29EFFF, lejos de 0x2FFFF0), leídos por bucles acotados que escriben en VRAM. Los datos no contienen
+punteros (todas las palabras largas "en rango" son atributos de sprite o índices de página), así que se copian tal
+cual; se reubican 283 operandos del código (213 al código, 69 a tablas, 1 a la base de páginas).
+
+Verificación: pantalla idéntica a HANDOVER (atracción + 5 partidas, con la escritura de banco conservada), 0
+instrucciones desde P2, 0 lecturas de P2 fuera de 0x20C000-0x29EFFF, intro y título sin ninguna lectura de P2.
+Con ausencias simuladas de P2 de 0,5-1 s en el final del título y en la carrera: sin excepción ni reinicio; solo
+baldosas corruptas mientras dura.
