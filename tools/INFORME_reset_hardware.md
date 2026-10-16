@@ -92,3 +92,11 @@ conservada: `--keep-bank-write`). Al anularla, el juego va una instrucción adel
 se desfasa unas décimas; es el único efecto. La build final conserva la copia de P2 sin usar y anula la escritura.
 `tools/builds/pack_formats.py` genera los formatos Darksoft (prom/srom/m1rom/vroma0/crom0 con entrelazado de 2 bytes,
 fpga "10") y Backbit (p1/s1/m1/v1/c1/c2 + neogeo.xml con CRC/SHA1), verificados byte a byte contra el RoboCop.
+
+### Comprobación con NeoBuilder v1.06 (la herramienta oficial de conversión a .neo)
+NeoBuilder solo corre en Windows (exige el runtime de VC++ 2015 de 32 bits; bajo mono se aborta en
+`CheckRuntimeInstalled`). Su ruta de conversión genérica (`-n/-m/-y/-g/-s zip`) se leyó del IL del ejecutable y
+está replicada en `tools/builds/neobuilder_generic.py`. La réplica reproduce **byte a byte** el `robocop.neo` de
+Teo Tormo a partir de su set Backbit y el `WRally_NeoSD_PRO_AES_HANDOVER_v6.neo` a partir de sus ROMs separadas, y
+aplicada al set Backbit de la build P1-native da exactamente el `WRally_neogeo_P1native.neo` entregado (NGH 0x0999,
+P 2 MB sin inversión de mitades, V2 = 0, C entrelazado c1/c2).
