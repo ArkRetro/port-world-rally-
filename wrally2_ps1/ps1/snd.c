@@ -62,7 +62,8 @@ static u16 volumen(int ch, int t)
 static void kon(int ch, u32 dir, u16 vol)
 {
     VOICE(ch, 0) = vol; VOICE(ch, 2) = vol; VOICE(ch, 4) = pausa_n ? 0 : tono; VOICE(ch, 6) = (u16)(dir >> 3);
-    VOICE(ch, 8) = 0x000F; VOICE(ch, 10) = 0x0000;   /* ADSR: ataque inmediato, sostenido maximo, sin caida */
+    VOICE(ch, 8) = 0x000F; VOICE(ch, 10) = 0x0006;   /* ADSR: ataque inmediato, sostenido maximo, sin caida; al KOFF,
+                                                        bajada lineal de ~3 ms (desplazamiento 6: -256 por muestra) */
     while ((u16)(t1_get() - t_key) < 2);
     R16(0x1F801D88) = 1u << ch; t_key = t1_get(); snd_kon++;
     voz[ch].dir = dir; voz[ch].pend = SIL; voz[ch].vol = vol; voz[ch].act = 1; voz[ch].cuadro_kon = (u8)cuadro;
@@ -70,7 +71,12 @@ static void kon(int ch, u32 dir, u16 vol)
 void snd_suceso(int ch, int t)
 {
     if (ch > 6) return;
-    if (t < 0) { VOICE(ch, 0) = 0; VOICE(ch, 2) = 0; VOICE(ch, 14) = SIL >> 3; voz[ch].act = 0; voz[ch].pend = 0; voz[ch].falta = voz[ch].falta_enc = 0; return; }
+    if (t < 0) {                                         /* se calla: KOFF (la envolvente baja en ~3 ms) en vez del volumen
+                                                            a 0 de golpe, que a media onda sonaba como un golpe */
+        while ((u16)(t1_get() - t_key) < 2);
+        R16(0x1F801D8C) = 1u << ch; t_key = t1_get();
+        VOICE(ch, 14) = SIL >> 3; voz[ch].act = 0; voz[ch].pend = 0; voz[ch].falta = voz[ch].falta_enc = 0; return;
+    }
     if (t >= 2) {                                        /* encolado: repeticion = trozo nuevo (cuando toque) */
         u32 d = trozo_dir(ch, t - 2);
         voz[ch].pend = d ? d : SIL; voz[ch].falta_enc = d ? 0 : (u8)(t - 1); snd_encolados++; return;

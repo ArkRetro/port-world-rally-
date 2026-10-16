@@ -183,6 +183,11 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   sitio y saltaban trampas de 0,35 s en carrera) y la lista de la GPU a 33 KB para la puerta R1. Partidas de prueba que
   no entran en los paquetes (AP 30/20, 35/60 y zigzag): faltas por cuadro 0,36 -> 0,09, 0,20 -> 0,07, 0,78 -> 0,22;
   0 trampas, ninguna parada. psxprof2: ROMCHECK=cuadro (rc_romtab y rc_romres contra prog.bin) y ESTADOAT=cuadro
+- [x] Pausa solo mientras se corre: FEFD1E = 1 desde el GO hasta la meta o el fin del tiempo; en el Continue? (aun
+  modo 1) START vuelve a ser del juego (antes la pausa se lo quedaba y no se podia continuar)
+- [x] Voces que se callan con KOFF y bajada lineal de ~3 ms (ADSR2 = 6) en vez del volumen a 0 de golpe (golpes en el
+  audio). Pendiente: el trozo del motor 0x7F8 (canal 6, segundo tramo de Portugal) no esta en ningun fichero de la SPU
+  (no salio en los SNDLOG de sndwr2.py): suena el siguiente
 - [x] Pausa en carrera (START, como el WR1): el 68000 y la MCU parados, el cuadro que se ve oscurecido con PAUSA, voces a
   tono 0, el CD sigue leyendo lo pedido; el tiempo de la pausa no cuenta para el reloj del sonido. START no llega al
   juego en carrera (modo 1)

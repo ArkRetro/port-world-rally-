@@ -161,6 +161,9 @@ static void pantalla(u32 modo)
    se ve se oscurece con PAUSA encima; las voces a tono 0; el CD acaba lo que estaba leyendo (y el fondo sigue llegando:
    la pausa tambien sirve de bufer) pero no se dibuja nada. El tiempo de la pausa no cuenta para el reloj del sonido.
    Sale con otra pulsacion de START */
+/* se corre: modo carrera (la demo es el 5) y FEFD1E = 1, que el juego pone con el GO y quita en la meta y al acabarse el
+   tiempo. En el Continue? (aun modo 1) START es del juego: antes se lo quedaba la pausa y no se podia continuar */
+static int corriendo(void) { return RW(0xFEC298) == 1 && RW(0xFEFD1E) == 1; }
 static void pausa(void)
 {
     int up = 0;
@@ -250,7 +253,7 @@ void rc_vblank(void)
         if (!(pad & 0x8000) && sq_last) gear ^= 1;      /* cuadrado: cambio de marcha */
         sq_last = (pad & 0x8000) != 0;
         if (gear) in0 |= 0x20;
-        if (!(pad & 0x0008) && RW(0xFEC298) != 1) in0 &= ~0x80;   /* START (en carrera es la pausa) */
+        if (!(pad & 0x0008) && !corriendo()) in0 &= ~0x80;   /* START (mientras se corre es la pausa) */
         if (!(pad & 0x0001)) in2 &= ~0x100;            /* SELECT: moneda */
         {   /* L2 + R2: cifras de depuracion si/no */
             int lr = !(pad & 0x0100) && !(pad & 0x0200);
@@ -259,7 +262,7 @@ void rc_vblank(void)
         }
         rc_set_io(in0, 0xFFFF, in2, 0xFFFF);
     }
-    if (!(pad & 0x0008) && start_up && RW(0xFEC298) == 1) {   /* carrera (la demo es el modo 5) */
+    if (!(pad & 0x0008) && start_up && corriendo()) {   /* solo mientras se corre (no en el Continue? ni en la meta) */
         pausa(); pad = joy_read();
         sq_last = (pad & 0x8000) != 0;          /* lo que siga pulsado al volver no cambia nada */
     }
