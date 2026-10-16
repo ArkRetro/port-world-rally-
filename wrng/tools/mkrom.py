@@ -57,6 +57,9 @@ PLAIN_SITES = {0x9916, 0x99B2, 0x9C4E, 0x9CEA, 0x9E56, 0x9E76, 0x11D34, 0x11D9E,
                0x3DFE, 0x3E0A, 0x3E24, 0x3E74, 0x11D02, 0x11D70}
 # VRAM-writing sites not found by the absolute-reference scan (address register destinations)
 EXTRA_SITES = [0xE79E, 0xE7AC, 0x9916, 0x99B2, 0x9C4E, 0x9CEA, 0x9E56, 0x9E76, 0x11D34, 0x11D9E, 0x11FE6, 0x11FFC, 0xB334]
+# arcade routines replaced whole by runtime versions (entry patched with jmp); their inner write sites get no stub
+DETOURS = {0x11CF4: 'blk_copy_l1', 0x11D62: 'blk_copy_l0', 0x11FDC: 'clear_l1', 0x11FF2: 'clear_l0'}
+DETOURED_SITES = {0x11D02, 0x11D34, 0x11D70, 0x11D9E, 0x11FE6, 0x11FFC}
 # stubs whose decrypted value is a RAM pointer that must be relocated too
 STUB_RELOC_RAM = {0xC33C, 0xC346, 0xB286}
 
@@ -105,7 +108,7 @@ def stub_sites(rom, refs):
         if r['region'] == 'VRAM' and r['access'] == 'w' and r['mnemonic'] == 'move.l':
             sites.append(int(r['pc'], 16))
     sites += EXTRA_SITES
-    return sorted(set(sites))
+    return sorted(set(sites) - DETOURED_SITES)
 
 
 def decode_site(md, rom, pc):
@@ -274,6 +277,9 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
             patch = bytes.fromhex('4E41') + b'\x4E\x71' * ((size - 2) // 2)       # trap #1
         assert len(patch) == size
         rom[pc:pc + size] = patch
+
+    for pc, name in DETOURS.items():
+        rom[pc:pc + 6] = bytes.fromhex('4EF9') + struct.pack('>I', syms[name])
 
     # 5. code patches
     for pc in (0x249C, 0x2812):                      # move.w #1,$FEF500 -> move.w #$A53E,...  (MCU signature)

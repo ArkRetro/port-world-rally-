@@ -209,3 +209,101 @@ selftest_decrypt:
 test_vals:
         .long   0x4D0FF8A6, 0x40544454, 0x095DB400, 0x4054EBE5, 0x3A3F3D18, 0xC8411F0E
         .align  2
+
+* ------------------------------------------------------------------------------------------
+* Fast replacements for the arcade routines that write whole blocks of tiles (patched at their
+* entry with `jmp` by tools/mkrom.py).  Same register effects as the originals.
+* ------------------------------------------------------------------------------------------
+        .global blk_copy_l1, blk_copy_l0, clear_l1, clear_l0
+
+* 0x11CF4 / 0x11D62: draw image block d0 at position d4 (row<<8 | column) into layer 1 / layer 0.
+* Header (decrypted): bits 0-7 height, 8-15 width, 16-31 offset into the data region.
+blk_copy_l1:
+        movem.l d5-d7/a0/a3/a6,-(sp)
+        lea     0xE5674,a1
+        movea.l ARC_WRAM+0x2C3C,a2
+        lsl.b   #2,d4
+        addi.b  #0x14,d4
+        addi.l  #0x102000,d4
+        moveq   #1,d7                   /* clip at the end of VRAM like the original */
+        bra     blk_common
+blk_copy_l0:
+        movem.l d5-d7/a0/a3/a6,-(sp)
+        lea     0xEA1BE,a1
+        movea.l ARC_WRAM+0x2C48,a2
+        lsl.b   #2,d4
+        addi.l  #0x100014,d4
+        moveq   #0,d7
+blk_common:
+        lsl.w   #2,d0
+        move.l  (a1,d0.w),d0
+        moveq   #0,d3
+        move.b  d0,d3                   /* height */
+        lsr.w   #8,d0
+        moveq   #0,d2
+        move.b  d0,d2                   /* width */
+        swap    d0
+        move.w  d0,d1                   /* data offset (16-bit, sign-extended by the original addressing) */
+        movea.l d4,a5
+        subq.w  #1,d2
+        subq.w  #1,d3
+        move.w  d2,d6
+blk_row:
+        movea.l a5,a4
+        move.w  d6,d2
+blk_col:
+        move.l  (a2,d1.w),d0
+        addq.w  #4,d1
+        movem.l d1-d2/a2,-(sp)
+        movea.l a4,a0
+        jsr     vram_store
+        movem.l (sp)+,d1-d2/a2
+        addq.l  #4,a4
+        tst.w   d7
+        beq     1f
+        cmpa.l  #0x104000,a4
+        bge     blk_done
+1:      dbra    d2,blk_col
+        adda.l  #0x100,a5
+        tst.w   d7
+        beq     2f
+        cmpa.l  #0x104000,a5
+        bge     blk_done
+2:      dbra    d3,blk_row
+blk_done:
+        movem.l (sp)+,d5-d7/a0/a3/a6
+        rts
+
+* 0x11FDC / 0x11FF2: fill a layer with the empty tile pair (0xDF64C / 0xDF650, decrypted at build time)
+clear_l1:
+        lea     ARC_VRAM+0x2000,a0
+        move.l  0xDF64C,d0
+        bsr     clear_fill
+        lea     rt_col_loaded+24,a0
+        bra     clear_inval
+clear_l0:
+        lea     ARC_VRAM,a0
+        move.l  0xDF650,d0
+        bsr     clear_fill
+        lea     rt_col_loaded,a0
+clear_inval:
+        moveq   #NCOLSPR-1,d0
+1:      move.b  #0xFF,(a0)+             /* column sprites reload at the next frame */
+        dbra    d0,1b
+        rts
+clear_fill:
+        movem.l d1-d7,-(sp)
+        move.l  d0,d1
+        move.l  d0,d2
+        move.l  d0,d3
+        move.l  d0,d4
+        move.l  d0,d5
+        move.l  d0,d6
+        move.l  d0,d7
+        move.w  #255,d0
+2:      movem.l d1-d7,(a0)
+        move.l  d1,28(a0)
+        lea     32(a0),a0
+        dbra    d0,2b
+        movem.l (sp)+,d1-d7
+        rts

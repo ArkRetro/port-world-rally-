@@ -270,10 +270,10 @@ vram_store:
         and.w   #63,d1                  /* j = (col - c0) & 63 */
         cmpi.w  #NCOLSPR,d1
         bcc     9f                      /* not in the window */
-        add.w   d1,d2                   /* c0 + j */
-        ext.l   d2
-        divu    #NCOLSPR,d2
-        swap    d2                      /* s */
+        add.w   d1,d2                   /* c0 + j (< 128) */
+        lea     mod_ncol,a0
+        move.b  (a0,d2.w),d2
+        and.w   #0xFF,d2                /* s */
         move.w  (sp),d1                 /* col */
         cmp.b   (a1,d2.w),d1
         bne     9f                      /* column not loaded yet (will be loaded whole) */
@@ -303,7 +303,16 @@ vram_store:
 sprites_update:
         lea     ARC_SPR+6,a0
         move.w  #SPR_OBJ,d7
-        move.w  #(0x1000-6)/8-1,d6
+        /* entries written this frame by the arcade copy routine 0x44E6: the three list counters */
+        move.w  ARC_WRAM+0x27E,d6
+        add.w   ARC_WRAM+0x280,d6
+        add.w   ARC_WRAM+0x282,d6
+        add.w   ARC_WRAM+0x284,d6
+        cmpi.w  #(0x1000-6)/8,d6
+        bls     1f
+        move.w  #(0x1000-6)/8,d6
+1:      subq.w  #1,d6
+        bmi     su_done
 su_loop:
         move.w  (a0)+,d0                /* w0: y, flips */
         move.w  (a0)+,d1                /* w1: unused */
@@ -397,6 +406,15 @@ tile_attr_table:
         .word   (((i & 0x1F) + PAL_TILES) << 8) + ((i >> 6) & 3)
         .set    i,i+1
         .endr
+
+* mod_ncol: i mod NCOLSPR for i < 128
+mod_ncol:
+        .set    i,0
+        .rept   128
+        .byte   i % NCOLSPR
+        .set    i,i+1
+        .endr
+        .align  2
 
 * pal_table: arcade xBRG444 (12 bits) -> Neo Geo colour word (4->5 bit expansion c5 = c4<<1 | c4>>3)
 pal_table:
