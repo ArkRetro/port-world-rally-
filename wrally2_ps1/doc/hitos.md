@@ -166,6 +166,15 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   sectores) y lectura de la SPU por DMA. Con `CD_CORRUPTO=50` (110 sectores malos en el attract): G-ESTADO igual en el
   attract y en Portugal, 0 sectores perdidos. Coste: cuadros lentos en carrera 0,4 % -> 0,6 %. Cifras en la tercera
   fila (L2 + R2)
+- [x] Lectura como los juegos de la PS1 (2): los de Sony (libcd) recogen cada sector en su interrupcion; este port
+  sondea, y en una PS1 de verdad, si pasan mas de 6,7 ms (un sector a 2x) sin recoger, el siguiente pisa el bufer de la
+  unidad. Huecos medidos de hasta 36 ms (compactar el banco ROM de la demo, apuntar cientos de sectores de L2, el
+  dibujo de los menus, el vblank entre la MCU y las paletas): sondeos en esos bucles; queda <= 107 lineas (6,8 ms) en
+  las cargas bloqueantes de menus. `cd.c`: sin reentrar desde la funcion de una lectura (el sector siguiente pisaria
+  sbuf). Pantallas de carga de al menos 3 s en cada negro entre pantallas (`carga_relleno`): CARGANDO con barra por
+  tiempo mientras el CD trae lo siguiente (secciones de MENUS, mapa/VO/L2/ROM, emergencias). Carrera de Portugal: 17
+  emergencias en vez de ~60. psxprof2: la SPU avanza con el tono de cada momento (con tono 0 no avanza; antes, al
+  volver de una pausa larga, la voz saltaba lo de la pausa)
 - [x] Pausa en carrera (START, como el WR1): el 68000 y la MCU parados, el cuadro que se ve oscurecido con PAUSA, voces a
   tono 0, el CD sigue leyendo lo pedido; el tiempo de la pausa no cuenta para el reloj del sonido. START no llega al
   juego en carrera (modo 1)

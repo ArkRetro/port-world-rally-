@@ -199,7 +199,8 @@ static long spu_perdidas;
    Mednafen; en MiSTer no). IRQ de la SPU (SPUCNT bit 6) cuando una voz empieza el bloque de la direccion del IRQ.
    Sucesos SPU_SALTO / SPU_FIN; cifra de saltos */
 static u32 voz_cur[24]; static u64 voz_tblk[24]; static u32 spu_endx_bits; static long spu_saltos; static int endx_borra = -1, spu_irq;
-static u64 blk_dur(int v) { u32 pitch = spu[v * 8 + 2] ? spu[v * 8 + 2] : 1; return (u64)28 * 4096 / pitch * 768; }
+static u64 voz_p0[24];                 /* ciclo en que el tono de la voz se puso a 0 (la voz no avanza: pausa de ps1/snd.c) */
+static u64 blk_dur(int v) { u32 pitch = spu[v * 8 + 2]; return pitch ? (u64)28 * 4096 / pitch * 768 : (u64)1 << 60; }
 static void voz_avanza(int v, u64 hasta)
 {
     while (voz_on[v]) {
@@ -1163,6 +1164,13 @@ static void io_write(u32 a, u32 v, int sz, int *cost)
         u32 r = (o - 0xC00) / 2;
         *cost = IO_SPU;
         if (r < 0xC0 && (r & 7) == 7) spu_avanza();         /* direccion de repeticion: la voz ya avanzo hasta ahora */
+        if (r < 0xC0 && (r & 7) == 2 && spu[r] != (u16)v) {  /* tono: hasta ahora con el de antes; con 0 la voz no avanza
+                                                               (al volver, el bloque sigue donde se quedo) */
+            int vz = (int)(r >> 3);
+            spu_avanza();
+            if (!spu[r] && v) voz_tblk[vz] += cyc - voz_p0[vz];
+            else if (spu[r] && !v) voz_p0[vz] = cyc;
+        }
         spu[r] = (u16)v;
         if (o == 0xDA6) spu_addr = (v & 0xFFFF) * 8;
         if (o == 0xDAA && !(v & 0x40)) spu_irq = 0;          /* SPUCNT sin el bit 6: se reconoce el IRQ */

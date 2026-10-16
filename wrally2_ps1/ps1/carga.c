@@ -127,6 +127,7 @@ static void dm_l2_apunta(void)
     if (vid_lay() != 2) return;
     for (; dm_l2reg < dm_l2; dm_l2reg++) {
         const u8 *b = area_l2 + dm_l2reg * SEC; int r;
+        carga_poll();                         /* pueden ser cientos de sectores de golpe: el CD entre uno y otro */
         if (!cab(b, 1)) { carga_err++; continue; }
         for (r = 0; r < b[5]; r++) vid_pon_l2(b + 32 + r * 144, dm_l2reg * 14 + r);
     }
@@ -221,12 +222,12 @@ void carga_init(void)
     }
 }
 /* hueco maximo entre sondeos con lectura activa (lineas; puerta <= 4 ms = 63 lineas) */
-u32 carga_hueco_max; static u16 t_poll; static int poll_ocupado;
+u32 carga_hueco_max, carga_hueco_pc, carga_hueco_pc0; static u32 pc_poll; static u16 t_poll; static int poll_ocupado;
 void carga_poll(void)
 {
     u16 t = T1; int b = cd_busy();
-    if (b && poll_ocupado) { u32 d = (u16)(t - t_poll); if (d > carga_hueco_max) carga_hueco_max = d; }
-    t_poll = t; poll_ocupado = b;
+    if (b && poll_ocupado) { u32 d = (u16)(t - t_poll); if (d > carga_hueco_max) { carga_hueco_max = d; carga_hueco_pc = (u32)__builtin_return_address(0); carga_hueco_pc0 = pc_poll; } }
+    t_poll = t; poll_ocupado = b; pc_poll = (u32)__builtin_return_address(0);
     cd_poll();
 }
 
@@ -273,6 +274,7 @@ static void bg_drain(void)
     if (bg_tipo == 2) { bg_got = pos; *bg_cuenta = bg_off + bg_a + pos; return; }
     while (bg_got < pos && !bg_para) {
         const u8 *b = ring[bg_got % RING];
+        carga_poll();
         if (!bg_tipo) procesa(b, bg_k, bg_a + bg_got);
         else if (dm_sector(b, 1) < 0) bg_para = 1;
         bg_got++;
@@ -370,7 +372,7 @@ void carga_atiende(void)
         int s = cd_read_state();
         if (s == 1) {
             u32 l = (u16)(T1 - em_t0);
-            if (em_b) { for (k = 0; k < em_n; k++) procesa_b(ring[k]); } else procesa(ebuf, 0xFF, 0);
+            if (em_b) { for (k = 0; k < em_n; k++) { procesa_b(ring[k]); carga_poll(); } } else procesa(ebuf, 0xFF, 0);
             em_on = 0;
             carga_emerg_lin += l; if (l > carga_emerg_max) carga_emerg_max = l;
         } else if (s < 0) {                   /* error o cortada por una carga bloqueante: el codigo se pide otra vez */
@@ -394,6 +396,30 @@ void carga_atiende(void)
     }
 }
 
+/* ---- pantalla de carga de al menos CARGA_MIN lineas (3 s) en los negros entre pantallas, como los juegos de la
+   PS1: el juego esta congelado y mientras se ve CARGANDO el CD sigue trayendo lo que viene (las demas secciones de
+   MENUS del modo, el mapa/VO/L2/ROM de la demo o del tramo, las emergencias) sin competir con el dibujo. hechas:
+   lineas que ya llevaba el negro (las cargas bloqueantes de antes). La barra va por tiempo */
+#ifndef CARGA_MIN
+#define CARGA_MIN (3 * 15734)
+#endif
+void carga_relleno(int fb, u32 hechas)
+{
+    u32 l = hechas, k = 0; u16 t = T1;
+    if (l >= CARGA_MIN) return;
+    if (!bloq_vis || bloq_fb != fb) vid_cargando(fb);
+    bloq_vis = 0;
+    snd_pausa(1);
+    while (l < CARGA_MIN) {
+        u16 n;
+        carga_atiende();
+        if (!(++k & 255)) vid_cargando_barra(fb, (int)(l >> 8), CARGA_MIN >> 8);
+        n = T1; l += (u16)(n - t); t = n;
+    }
+    vid_cargando_barra(fb, 1, 1);
+    snd_pausa(0);
+}
+
 #ifdef R1
 /* ---- R1: la ROM del 68000 fuera del EXE (diseno 3). Al arrancar, ROM.BIN entera al area (3 s a 2x): los tramos
    residentes a rc_romres y todos los bloques a la tabla; al acabar la suma del arranque (PC 0x2616) se quita todo menos
@@ -413,7 +439,10 @@ static struct { u32 a0, a1; u8 *p; } btr[NTR]; static int btr_n;   /* tramos del
 static void rom_swap(u8 *p, u32 n)
 {
     u32 *w = (u32 *)p;
-    for (n >>= 2; n; n--, w++) { u32 x = *w; *w = ((x & 0x00FF00FFu) << 8) | ((x >> 8) & 0x00FF00FFu); }
+    for (n >>= 2; n; n--, w++) {
+        u32 x = *w; *w = ((x & 0x00FF00FFu) << 8) | ((x >> 8) & 0x00FF00FFu);
+        if (!(n & 2047)) carga_poll();       /* el banco de la demo son 266 KB (~12 ms): el CD cada 8 KB */
+    }
 }
 static void bk_quita(void)
 {
@@ -434,6 +463,7 @@ static void rom_pon(u8 *b, int n)
         if (a != fin) { if (btr_n == NTR) { carga_err++; break; } btr[btr_n].a0 = a; btr[btr_n].p = w; btr_n++; }
         for (j = 0; j < m; j += 4) *(u32 *)(w + j) = *(const u32 *)(s + 32 + j);   /* hacia delante: w <= s */
         w += m; fin = a + m; btr[btr_n - 1].a1 = fin - 4;
+        if ((i & 7) == 7) carga_poll();       /* 130 sectores: el CD entre medias (la lectura de fondo sigue) */
     }
     rom_swap(b, (u32)(w - b));
     for (i = 0; i < btr_n; i++) rc_rom_mapa(btr[i].a0, btr[i].a1, btr[i].p);

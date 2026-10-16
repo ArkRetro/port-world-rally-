@@ -27,6 +27,8 @@ Diseno y plan: `doc/diseno.md` y `doc/hitos.md`.
 - La imagen del World Rally 2 solo tiene una pista de datos (el sonido son samples de la SPU que se leen de
   `SPU.BIN`, no pistas de audio). Cada sector se comprueba (EDC de Mode 2 Form 1) y el que llega mal se vuelve a leer;
   los de `SPU.BIN` ademas con su suma, y lo escrito en la RAM de la SPU se lee de vuelta para ver que llego.
+- Entre pantallas sale CARGANDO al menos 3 s: mientras tanto el CD trae lo que viene despues (como los juegos de la
+  PS1), y en la carrera casi no hace falta leer nada.
 - Con L2 + R2 salen las cifras; la tercera fila: sectores de `SPU.BIN` que llegaron mal, perdidos (sin leer bien en 4
   intentos), escrituras a la SPU que no salieron, errores del controlador del CD y errores de los paquetes. Si en la
   consola algo suena o se ve mal, esas cifras dicen si es el disco.

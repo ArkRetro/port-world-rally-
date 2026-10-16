@@ -50,6 +50,7 @@ static int hold; static u16 t_hold, n_hold; /* tras una Pause rechazada o un err
 static int rd_on, rd_lba, rd_n, rd_i, rd_fast, rd_err, rd_res; static unsigned rd_got;
 static u8 *rd_buf; static void (*rd_cb)(int i, const unsigned char *d); static u8 *(*rd_dst)(int i);
 static u8 sbuf[2048] __attribute__((aligned(4))); static int sbuf_dir = -1;   /* sbuf tiene el directorio */
+static int en_cb;                           /* dentro de rd_cb: cd_poll no hace nada (el sector siguiente pisaria sbuf) */
 /* los 2 sectores que llegan justo al acabar (o cortar) una lectura, mientras la unidad sigue un momento: si la
    siguiente empieza por ellos (el paquete de fondo que va detras en el disco: SNDFX, RACE y MENU2 al arrancar; POST
    y POST2 en la meta), se dan de aqui y la unidad sigue sin buscar. Antes, a 1x, cuando se pedia la siguiente (un
@@ -135,7 +136,7 @@ static void got(int i, const u8 *d)
     rd_err = 0;                             /* errores seguidos: uno bueno los borra */
     if (rd_buf) { rd_got |= 1u << i; while (rd_i < rd_n && (rd_got & (1u << rd_i))) rd_i++; } else rd_i++;
     if (rd_i == rd_n) { rd_on = 0; rd_res = 1; t_done = T1; spill_next = rd_lba + rd_n; spill_k = 0; }
-    if (rd_cb) rd_cb(i, d);
+    if (rd_cb) { en_cb = 1; rd_cb(i, d); en_cb = 0; }
 }
 static void event(int t)
 {
@@ -219,6 +220,7 @@ static void step(void)
 void cd_poll(void)
 {
     int k, t;
+    if (en_cb) return;                      /* desde dentro de la funcion de una lectura (sbuf aun en uso): nada */
     for (k = 0; k < 8; k++) {
         u8 *d = 0; int i = 0;
         CD0 = 1; t = CD3 & 7;

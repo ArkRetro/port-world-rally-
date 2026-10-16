@@ -361,7 +361,11 @@ static inline __attribute__((always_inline)) void emit_t(int x, int y, u32 e1, u
         lp += 10; win = 1;
     }
 }
-#define emit_a(x, y, h, cl, fl, semi) emit_t(x, y, te1[(h) >> 8] | ((semi) << 5), h, cl, fl, semi)
+static void __attribute__((noinline)) emit_af(int x, int y, u32 h, u32 cl, u32 fl, u32 semi)
+{   /* menus (reparto A): una sola copia de emit_t (en linea solo en el reparto B, el de la carrera) */
+    emit_t(x, y, te1[h >> 8] | (semi << 5), h, cl, fl, semi);
+}
+#define emit_a(x, y, h, cl, fl, semi) emit_af(x, y, h, cl, fl, semi)
 #define emit_b(x, y, h, cl, fl, semi) emit_t(x, y, te1b[(h) >> 8] | ((semi) << 5), h, cl, fl, semi)
 /* falta: cuadrado del color proxy del mosaico (main.c) y peticion al cargador. En el negro de una transicion
    (FEC298 = 0) la paleta esta apagada y el plano trae lo de antes o lo de despues: no cuenta ni se pide */
@@ -409,7 +413,9 @@ void vid_menu(void)
     now++; vid_faltas_cuadro = 0; negro = *(const u16 *)(rc_ram + 0xC298) == 0;
     /* plano 0: hueco | espejo << 12 | posicion << 14 | paleta << 23, y luego por paleta (cuenta y coloca) */
     for (i = 0; i < 65; i++) cnt[i] = 0;
-    for (j = 0; j < 16; j++)
+    for (j = 0; j < 16; j++) {
+        if ((j & 3) == 3) carga_poll();                   /* el CD cada ~1 ms (un sector a 2x son 6,7: en la PS1 de
+                                                             verdad, si no se recoge a tiempo, el siguiente lo pisa) */
         for (i = 0; i < 24; i++) {
             int e = ((((sy >> 4) + j) & 31) * 64 + (((sx >> 4) + i) & 63)) * 2;
             u32 w0 = m[e], c = m[e + 1], col = (w0 >> 9) & 0x3F, h;
@@ -420,10 +426,12 @@ void vid_menu(void)
             ent[n++] = h | ((w0 >> 7) & 1) << 12 | ((w0 >> 5) & 2) << 12 | (u32)(j * 24 + i) << 14 | col << 23;
             cnt[col + 1]++;
         }
+    }
     for (i = 1; i < 65; i++) cnt[i] += cnt[i - 1];
     for (i = 0; i < n; i++) ord[cnt[ent[i] >> 23]++] = (u16)i;
     for (i = 0; i < n; i++) {
         u32 e = ent[ord[i]], pos = (e >> 14) & 0x1FF;
+        if ((i & 63) == 63) carga_poll();
         emit_a((int)(pos % 24) * 16 - ox, (int)(pos / 24) * 16 - oy, e & 0xFFF, clid[e >> 23], (e >> 12) & 3, 0);
     }
     carga_poll();                                       /* el plano son ~3 ms */
@@ -431,6 +439,7 @@ void vid_menu(void)
     b = (vr[3] & 0x10) ? 1 : 0;
     for (j = 0; j < nsent[b]; j++) {
         const spr_t *s = &sent[b][j]; const u16 *cel = scel[b] + s->ci;
+        if ((j & 7) == 7) carga_poll();
         u32 d0 = s->d0, d1 = s->d1, d2 = s->d2, x, y;
         u32 xs = ((d2 >> 12) & 15) + 1, ys = ((d1 >> 12) & 15) + 1, fx = (d1 >> 11) & 1, fy = (d1 >> 10) & 1, fl = fx | fy << 1;
         for (y = 0; y < ys; y++)
@@ -818,7 +827,8 @@ void vid_b(void)
         }
     }
     /* plano 0 en orden (cada tile con su CLUT: no hay nada que agrupar) */
-    for (j = 0; j < 16; j++)
+    for (j = 0; j < 16; j++) {
+        if ((j & 3) == 3) carga_poll();
         for (i = 0; i < 24; i++) {
             int e = ((((sy >> 4) + j) & 31) * 64 + (((sx >> 4) + i) & 63)) * 2;
             u32 w0 = m[e], c = m[e + 1], col = (w0 >> 9) & 0x3F, cl;
@@ -831,10 +841,12 @@ void vid_b(void)
             cl = b_cl(h, col); hstamp[h] = now; hfl[h] &= (u8)~F_NUEVO;
             emit_b(i * 16 - ox, j * 16 - oy, (u32)h, cl, ((w0 >> 7) & 1) | ((w0 >> 5) & 2), 0);
         }
+    }
     carga_poll();
     b = (vr[3] & 0x10) ? 1 : 0;
     for (j = 0; j < nsent[b]; j++) {
         const spr_t *s = &sent[b][j]; const u16 *cel = scel[b] + s->ci;
+        if ((j & 7) == 7) carga_poll();
         u32 d0 = s->d0, d1 = s->d1, d2 = s->d2, x, y;
         u32 xs = ((d2 >> 12) & 15) + 1, ys = ((d1 >> 12) & 15) + 1, fx = (d1 >> 11) & 1, fy = (d1 >> 10) & 1, fl = fx | fy << 1;
         for (y = 0; y < ys; y++)

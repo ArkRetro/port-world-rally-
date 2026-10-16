@@ -138,10 +138,12 @@ static void pantalla(u32 modo)
     if (ped) modo_ped = ped;
     if (modo == 0 && modo_ant != 0) {
         /* las voces siguen sonando durante las cargas bloqueantes: el modelo del GAE1 va con el reloj (tiempo real) */
+        u16 t0 = T1;
         if (modo_ped == 0xB) ;                  /* mapa del tramo: la clave cambia al entrar en el (carga_demo_modo) */
         else if (modo_ped == 9 || modo_ped == 5 || modo_ped == 1) carga_demo_negro(modo_ped, fb ^ 1);
         else { carga_demo_fin(); carga_pantalla(modo_ped << 16 | f146, fb ^ 1, 0); }
         precarga_spu(modo_ped);
+        carga_relleno(fb ^ 1, (u16)(T1 - t0));  /* CARGANDO al menos 3 s: lo que venga, de fondo mientras tanto */
     } else if (modo == 9 || modo == 5 || modo == 0xB || modo == 1) {
         carga_demo_modo(modo, fb ^ 1);          /* recarga si no hubo negro (bloquea, con las voces quietas) */
     }
@@ -199,18 +201,23 @@ void rc_vblank(void)
     }
 #endif
     rc_snd_vblank();
+    carga_poll();                               /* el CD entre paso y paso del vblank (hueco <= ~3 ms) */
     snd_modo_tit = RW(0xFEC298) == 3;
     if (snd_pide) { carga_para(); snd_pausa(1); snd_atiende(); snd_pausa(0); }
     snd_vblank();
+    carga_poll();
     mcu_cuadro(rc_ram, &rc_mcu);
+    carga_poll();
     modo = RW(0xFEC298); menu = modo != 1;
     pantalla(modo);
+    carga_poll();
 #ifdef R1
     if (rc_suma_hecha) carga_rom_suma();
 #endif
     b = vid_lay() == 2;                         /* mapa de la demo y demo (y sus negros): formato B */
     if (draw) {
         if (menu || b) vid_paletas();
+        carga_poll();
         l_begin();
         vid_marco(fb);
         if (b || menu) { if (b) vid_b(); else vid_menu(); lvid_acc += vid_lineas; carga_poll(); }

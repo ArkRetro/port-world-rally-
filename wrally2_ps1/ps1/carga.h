@@ -26,3 +26,4 @@ extern u32 carga_emerg_sec, carga_dm_neg[2], carga_dm_neg_max[2], carga_dm_neg_n
 extern u32 carga_sectores, carga_emerg, carga_emerg_lin, carga_emerg_max, carga_bloq, carga_bloq_lin, carga_bloq_max, carga_fondo, carga_err, carga_hueco_max;
 extern int carga_menus;                  /* secciones del indice de MENUS.PAK (0: no esta en el disco) */
 #endif
+void carga_relleno(int fb, u32 hechas);   /* en un negro: CARGANDO hasta 3 s en total, cargando de fondo lo que venga */
