@@ -118,3 +118,17 @@ Verificación: pantalla idéntica a HANDOVER (atracción + 5 partidas, con la es
 instrucciones desde P2, 0 lecturas de P2 fuera de 0x20C000-0x29EFFF, intro y título sin ninguna lectura de P2.
 Con ausencias simuladas de P2 de 0,5-1 s en el final del título y en la carrera: sin excepción ni reinicio; solo
 baldosas corruptas mientras dura.
+
+## Homebrews que funcionan en NeoSD Pro (Rick Dangerous DX, Double Dragon, Blue&Red..., World Racer 32K)
+Los cuatro: SSP 0x10F300, reset 0xC00402, excepciones a la BIOS o a manejadores en P1, **0 instrucciones desde P2**.
+Double Dragon tiene P de 5 MB con bancos (escribe 0x2FFFF0) y lee de P2 solo datos (1,5 M lecturas en 2 min).
+World Rally v2 ya cumple el mismo patrón de P2, y en la intro/título no lee P2 en absoluto; si la v2 reinicia,
+el bus de P2 no es la causa. Diferencia que queda y no se puede cambiar sin el código fuente: las variables del
+arcade (RAM compartida FEC000-FEFFFF) viven en 0x10C000-0x10FFFF, zona de la BIOS, y la pila en 0x10FF80.
+
+## Registrador de caja negra (`tools/builds/build_recorder.py`, sobre la v2)
+Cada VBlank escribe en VRAM 0x8700-0x8713 (zona que ninguna BIOS borra al reiniciar): contador de VBlanks desde el
+arranque, contador de intro $10F38C, PC/SR/SP interrumpidos, PC de la última IRQ de timer, marca 'JB' si el VBlank
+saltó a la BIOS y 'EX'+vector si una excepción llegó a la pantalla de error. En la siguiente entrada USER, si hay
+registro válido, lo muestra 14 s en 4 filas de 5 palabras y después arranca el juego normalmente. Verificado en
+MAME con reinicio simulado (muestra contador, PC de la intro, SP 0x10FF6A) y sin reinicio (juego igual).
