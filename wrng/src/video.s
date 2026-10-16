@@ -6,7 +6,10 @@
 * horizontal scrolling moves the columns and re-loads one column per 16 px scrolled. The tiles were
 * converted 1:1 (gfx2crom.py), so an arcade tile code is a Neo Geo tile number.
 *
-* Sprite order (= priority): layer 1 (opaque, back) < layer 0 < arcade sprite list.
+* Sprite order (= priority): layer 1 (opaque, back) < layer 0 < arcade sprite list < layer-0 "HI" columns.
+* The arcade draws the layer-0 tiles whose attribute bit 5 is set (category 1, pens 8-15) above the sprites:
+* a third set of column sprites (SPR_HI) repeats layer 0 with only those cells (HI_BLANK elsewhere); a column
+* without category-1 cells gets height 0 so it does not count against the 96 sprites per scanline.
 
         .include "neogeo.i"
         .include "ram.i"
@@ -76,6 +79,7 @@ video_init:
         dbra    d0,3b
         bsr     video_mark_all_dirty
         clr.w   rt_sprites_used
+        clr.w   rt_sprites_used1
         rts
 
 video_mark_all_dirty:
@@ -206,6 +210,7 @@ lu_loop:
         beq     lu_pos                  /* already loaded (kept up to date by vram_store) */
         movem.l d0-d5,-(sp)
         move.b  d1,(a5,d0.w)            /* loaded[s] = column */
+        move.w  d0,d5                   /* s */
         move.w  d1,d2
         lsl.w   #2,d2
         lea     (a3,d2.w),a0            /* a0 = map column (row 0) */
@@ -224,9 +229,39 @@ lu_loop:
         move.w  (a1,d4.w),REG_VRAMRW
         lea     256(a0),a0
         dbra    d2,4b
-        movem.l (sp)+,d0-d5
+        cmpi.w  #SPR_LAYER0,d7
+        bne     5f
+        /* layer 0: the HI column of sprite SPR_HI+s shows the category-1 cells only */
+        move.w  d1,d2
+        lsl.w   #2,d2
+        lea     (a3,d2.w),a0
+        move.w  d5,d0
+        add.w   #SPR_HI,d0
+        lsl.w   #6,d0
+        move.w  d0,REG_VRAMADDR
+        moveq   #0,d3                   /* category-1 cells */
+        moveq   #31,d2
+6:      move.l  (a0),d4
+        btst    #5,d4                   /* attribute bit 5 */
+        beq     7f
+        addq.w  #1,d3
+        swap    d4
+        and.w   #0x3FFF,d4
+        bra     8f
+7:      move.w  #HI_BLANK,d4
+8:      move.w  d4,REG_VRAMRW
+        moveq   #0,d4
+        move.b  3(a0),d4
+        add.w   d4,d4
+        move.w  (a1,d4.w),REG_VRAMRW
+        lea     256(a0),a0
+        dbra    d2,6b
+        lea     rt_hi_cnt,a0
+        move.b  d3,(a0,d5.w)
+5:      movem.l (sp)+,d0-d5
 lu_pos:
         /* position: SCB4 x, SCB3 y (d0 = s, d2 = x) */
+        movea.w d0,a2                   /* s */
         add.w   d7,d0
         move.w  d0,d1
         add.w   #VRAM_SCB4,d1
@@ -238,7 +273,25 @@ lu_pos:
         add.w   #VRAM_SCB3,d0
         move.w  d0,REG_VRAMADDR
         move.w  d6,REG_VRAMRW
-        add.w   #16,d2
+        cmpi.w  #SPR_LAYER0,d7
+        bne     3f
+        /* HI column of layer 0: same x, same y, height 0 when it has no category-1 cell */
+        move.w  a2,d0
+        lea     rt_hi_cnt,a0
+        move.w  d6,d1
+        tst.b   (a0,d0.w)
+        bne     2f
+        and.w   #0xFF80,d1
+2:      add.w   #SPR_HI+VRAM_SCB3,d0
+        move.w  d0,REG_VRAMADDR
+        move.w  d1,REG_VRAMRW
+        add.w   #VRAM_SCB4-VRAM_SCB3,d0
+        move.w  d0,REG_VRAMADDR
+        move.w  d2,d1
+        and.w   #0x1FF,d1
+        lsl.w   #7,d1
+        move.w  d1,REG_VRAMRW
+3:      add.w   #16,d2
         addq.w  #1,d5
         cmpi.w  #NCOLSPR,d5
         bcs     lu_loop
@@ -250,6 +303,8 @@ lu_pos:
 * Trashes d0-d2/a0-a2.
 * ------------------------------------------------------------------------------------------
 vram_store:
+        move.l  d0,-(sp)                /* 6(sp): new pair */
+        move.w  2(a0),-(sp)             /* 4(sp): old attribute word */
         move.l  d0,(a0)
         move.l  a0,d1
         lea     rt_col_loaded,a1
@@ -262,9 +317,9 @@ vram_store:
         move.w  #SPR_LAYER1,a2
 1:      and.w   #0x1FFF,d1
         lsr.w   #2,d1                   /* tile index */
-        move.w  d1,-(sp)                /* keep: col = low 6 bits, row = bits 6-10 */
+        move.w  d1,-(sp)                /* 2(sp): col = low 6 bits, row = bits 6-10 */
         and.w   #63,d1                  /* col */
-        move.w  d1,-(sp)
+        move.w  d1,-(sp)                /* 0(sp) */
         sub.w   d2,d1
         and.w   #63,d1                  /* j = (col - c0) & 63 */
         cmpi.w  #NCOLSPR,d1
@@ -276,6 +331,7 @@ vram_store:
         move.w  (sp),d1                 /* col */
         cmp.b   (a1,d2.w),d1
         bne     9f                      /* column not loaded yet (will be loaded whole) */
+        movea.w d2,a0                   /* s */
         move.w  a2,d1
         add.w   d2,d1
         lsl.w   #6,d1                   /* SCB1 base of sprite s */
@@ -293,7 +349,36 @@ vram_store:
         add.w   d0,d0
         lea     tile_attr_table,a1
         move.w  (a1,d0.w),REG_VRAMRW
-9:      addq.l  #4,sp
+        cmp.w   #SPR_LAYER0,a2
+        bne     9f
+        /* layer 0: the HI column cell (tile if category 1, else blank) and its cell count */
+        move.w  a0,d1
+        add.w   #SPR_HI,d1
+        lsl.w   #6,d1
+        add.w   d2,d1
+        move.w  d1,REG_VRAMADDR
+        move.l  6(sp),d2
+        btst    #5,d2
+        beq     2f
+        swap    d2
+        and.w   #0x3FFF,d2
+        bra     3f
+2:      move.w  #HI_BLANK,d2
+3:      move.w  d2,REG_VRAMRW
+        move.w  (a1,d0.w),REG_VRAMRW
+        move.w  8(sp),d2                /* new attribute word */
+        move.w  4(sp),d0                /* old attribute word */
+        eor.w   d2,d0
+        btst    #5,d0
+        beq     9f                      /* category unchanged */
+        lea     rt_hi_cnt,a1
+        move.w  a0,d0
+        btst    #5,d2
+        beq     4f
+        addq.b  #1,(a1,d0.w)
+        bra     9f
+4:      subq.b  #1,(a1,d0.w)
+9:      lea     10(sp),sp
         rts
 
 * ------------------------------------------------------------------------------------------
@@ -301,7 +386,8 @@ vram_store:
 * ------------------------------------------------------------------------------------------
 sprites_update:
         lea     ARC_SPR+6,a0
-        move.w  #SPR_OBJ,d7
+        move.w  #SPR_OBJ,d7             /* next free sprite, normal priority (below the HI columns) */
+        movea.w #SPR_PRI1,a2            /* next free sprite, codes >= 0x3700 (HUD/text: above everything, as MAME) */
         /* entries written this frame by the arcade copy routine 0x44E6: the three list counters */
         move.w  ARC_WRAM+0x27E,d6
         add.w   ARC_WRAM+0x280,d6
@@ -333,12 +419,22 @@ su_loop:
         and.w   #0x3FF,d5
         cmpi.w  #319+16,d5
         bhi.w   su_next
-        /* SCB1: tile, attr */
-        move.w  d7,d1
+        /* pool by code: a3 = Neo Geo sprite number */
+        and.w   #0x3FFF,d3
+        movea.w d7,a3
+        cmpi.w  #0x3700,d3
+        bcs.s   3f
+        movea.w a2,a3
+        cmpa.w  #SPR_PRI1+SPR_PRI1_MAX,a3
+        bcc.w   su_next                 /* pool full */
+        bra.s   4f
+3:      cmpa.w  #SPR_HI,a3
+        bcc.w   su_next
+4:      /* SCB1: tile, attr */
+        move.w  a3,d1
         lsl.w   #6,d1
         move.w  d1,REG_VRAMADDR
         move.w  #1,REG_VRAMMOD
-        and.w   #0x3FFF,d3
         move.w  d2,d1
         lsr.w   #8,d1
         and.w   #0x7C,d1                /* colour<<2 */
@@ -356,7 +452,7 @@ su_loop:
         or.w    d0,d1
         move.w  d1,REG_VRAMRW
         /* SCB3: y */
-        move.w  d7,d1
+        move.w  a3,d1
         add.w   #VRAM_SCB3,d1
         move.w  d1,REG_VRAMADDR
         sub.w   #15,d4                  /* ny */
@@ -367,26 +463,34 @@ su_loop:
         addq.w  #1,d4                   /* height 1 */
         move.w  d4,REG_VRAMRW
         /* SCB4: x */
-        move.w  d7,d1
+        move.w  a3,d1
         add.w   #VRAM_SCB4,d1
         move.w  d1,REG_VRAMADDR
         sub.w   #16,d5
         and.w   #0x1FF,d5
         lsl.w   #7,d5
         move.w  d5,REG_VRAMRW
+        cmpa.w  d7,a3
+        bne.s   5f
         addq.w  #1,d7
-        cmpi.w  #SPR_OBJ+SPR_OBJ_MAX,d7
-        bcc.s   su_done
+        bra.s   su_next
+5:      addq.w  #1,a2
 su_next:
         dbra    d6,su_loop
 su_done:
-        /* hide the sprites used last frame but not now */
+        /* hide the sprites used last frame but not now (both pools; the second call falls through) */
         move.w  rt_sprites_used,d0
         move.w  d7,rt_sprites_used
-        sub.w   d7,d0
+        move.w  d7,d1
+        bsr.s   su_hide
+        move.w  rt_sprites_used1,d0
+        move.w  a2,rt_sprites_used1
+        move.w  a2,d1
+* su_hide: d0 = end of the pool last frame, d1 = end now: height 0 for sprites d1..d0-1
+su_hide:
+        sub.w   d1,d0
         ble.s   9f
         subq.w  #1,d0
-        move.w  d7,d1
         add.w   #VRAM_SCB3,d1
         move.w  d1,REG_VRAMADDR
         move.w  #1,REG_VRAMMOD

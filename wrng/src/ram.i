@@ -36,6 +36,7 @@
         .equ    rt_okiphrase,   RT_VARS+0x159   /* .b last OKI phrase byte written (0x80|phrase) */
         .equ    rt_sprites_used,RT_VARS+0x15A   /* .w Neo Geo sprites used by the previous frame's list */
         .equ    rt_gear,        RT_VARS+0x15C   /* .b gear toggle state */
+        .equ    rt_sprites_used1,RT_VARS+0x15E  /* .w same for the high-priority pool (SPR_PRI1..) */
         .equ    rt_saved_sp,    RT_VARS+0x160   /* .l SP of the arcade stack while its IRQ handler runs on ours */
         .equ    rt_prev_b,      RT_VARS+0x164   /* .b previous B button (gear toggle edge) */
         .equ    rt_in_game,     RT_VARS+0x165   /* .b */
@@ -52,6 +53,7 @@
         .equ    rt_test_out,    RT_VARS+0x180   /* 32 longs: self-test results (decrypt check) */
 
         .equ    backup_area,    RT_VARS+0x200   /* 256 bytes saved to MVS backup RAM (unused for now) */
+        .equ    rt_hi_cnt,      RT_VARS+0x300   /* NCOLSPR bytes: category-1 cells in the layer-0 column of sprite s */
 
         .equ    ARC_PALRAW,     0x10A000        /* 4 KB: arcade palette RAM 200000-200FFF as written by the game (xBRG444) */
         .equ    ARC_PALRAW_END, 0x10B000
@@ -77,7 +79,11 @@
         .equ    SPR_LAYER1,     1               /* first Neo Geo sprite of layer 1 (back) */
         .equ    SPR_LAYER0,     SPR_LAYER1+NCOLSPR
         .equ    SPR_OBJ,        SPR_LAYER0+NCOLSPR      /* first sprite for the arcade sprite list */
-        .equ    SPR_OBJ_MAX,    380-SPR_OBJ
+        .equ    SPR_PRI1_MAX,   96              /* arcade sprites with code >= 0x3700 (HUD, text): above the HI columns */
+        .equ    SPR_PRI1,       381-SPR_PRI1_MAX
+        .equ    SPR_HI,         SPR_PRI1-NCOLSPR        /* layer-0 columns again, category-1 cells only: above the sprites */
+        .equ    SPR_OBJ_MAX,    SPR_HI-SPR_OBJ
+        .equ    HI_BLANK,       4254            /* an all-transparent tile (fills the non-priority cells) */
         .equ    PAL_ARC_BASE,   16              /* arcade palette entry i (bank 0) -> Neo Geo palette 16 + i/16 */
         .equ    PAL_TILES,      PAL_ARC_BASE    /* arcade tile colours 0-31 -> palettes 16-47 */
         .equ    PAL_SPRITES,    PAL_ARC_BASE+32 /* arcade sprite colours (entries 0x200+) -> palettes 48-63 */
