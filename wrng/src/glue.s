@@ -344,6 +344,7 @@ arc_sound_tick:
 frame_hook:
         move.w  REG_LSPCMODE,rt_dbg     /* profiling: raster counter at each milestone */
         addq.l  #1,rt_ticks
+        bsr     frame_begin
         bsr     io_update
         /* run the arcade IRQ handler on the runtime stack with a fake exception frame */
         move.l  sp,rt_saved_sp
@@ -358,12 +359,71 @@ arc_irq_done:
         bsr     video_frame
         move.w  REG_LSPCMODE,rt_dbg+6
         bsr     diag_frame
+        bsr     frame_seal
 1:      tst.b   rt_snd_owed             /* sequencer runs held back during this tick */
         beq.s   2f
         subq.b  #1,rt_snd_owed
         jsr     ARC_SNDSEQ
         bra.s   1b
 2:      move.l  rt_saved_sp,sp
+        rts
+
+* frame_begin: the sprite set this frame fills - the one the frame still waiting to be shown does not use.
+* With two frames waiting (the main loop catching up), the older is dropped: its commands go out with
+* the next one, its sprites are not shown.  Trashes d0.
+frame_begin:
+        clr.b   rt_spr_conv
+        move    sr,-(sp)
+        ori     #0x0700,sr
+        cmpi.b  #2,rt_pend_n
+        bcs.s   1f
+        move.l  rt_pend_q+4,rt_pend_q
+        move.b  rt_pend_s+1,rt_pend_s
+        subq.b  #1,rt_pend_n
+1:      tst.b   rt_pend_n
+        beq.s   2f
+        moveq   #1,d0
+        sub.b   rt_pend_s,d0            /* (a waiting frame without sprites, 0xFF, leaves the set as is) */
+        bcs.s   2f
+        move.b  d0,rt_fill_set
+2:      move    (sp)+,sr
+        tst.b   rt_fill_set
+        bne.s   3f
+        move.l  #SPR_F0,rt_set_base
+        move.l  #EFF_DESC,rt_eff_base
+        rts
+3:      move.l  #SPR_SET1,rt_set_base
+        move.l  #EFF_SET1,rt_eff_base
+        rts
+
+* frame_seal: the frame is complete - its commands end at rt_vcmd_ptr, its sprites are in the set filled
+* (0xFF: the arcade did not convert its sprite lists this time, the screen keeps the sprites it has).
+* Trashes d0-d1/a0.
+frame_seal:
+        move    sr,-(sp)
+        ori     #0x0700,sr
+        moveq   #-1,d0
+        tst.b   rt_spr_conv
+        beq.s   1f
+        moveq   #0,d0
+        move.b  rt_fill_set,d0
+        lea     rt_set_cnt,a0
+        move.w  d0,d1
+        lsl.w   #3,d1
+        adda.w  d1,a0
+        move.w  rt_spr_n0,(a0)+
+        move.w  rt_spr_n1,(a0)+
+        move.w  rt_eff_n,(a0)
+1:      moveq   #0,d1
+        move.b  rt_pend_n,d1            /* 0 or 1 (frame_begin) */
+        lea     rt_pend_s,a0
+        move.b  d0,(a0,d1.w)
+        lsl.w   #2,d1
+        lea     rt_pend_q,a0
+        move.l  rt_vcmd_ptr,(a0,d1.w)
+        addq.b  #1,rt_pend_n
+        clr.b   rt_noseal
+        move    (sp)+,sr
         rts
 
 * ------------------------------------------------------------------------------------------

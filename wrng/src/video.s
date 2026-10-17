@@ -111,6 +111,16 @@ video_init:
         clr.w   rt_spr_n0
         clr.w   rt_spr_n1
         move.l  #VCMD_BUF,rt_vcmd_ptr
+        move.l  #VCMD_BUF,rt_vcmd_rd
+        clr.b   rt_pend_n
+        clr.b   rt_noseal
+        clr.b   rt_fill_set
+        move.l  #SPR_F0,rt_set_base
+        move.l  #EFF_DESC,rt_eff_base
+        clr.l   rt_set_cnt
+        clr.l   rt_set_cnt+4
+        clr.l   rt_set_cnt+8
+        clr.l   rt_set_cnt+12
         move.w  #0xFFFF,rt_lu_force     /* queue the layer positions on the first frame */
         rts
 
@@ -253,21 +263,38 @@ video_vblank:
 * never modified while the LSPC draws it, and no VRAM address/data sequence can be split by the IRQ.
 * ------------------------------------------------------------------------------------------
 
-* vc_room: make sure a block of up to 64 data words fits after a6; otherwise write the queue to VRAM now
-* (rare: whole-layer reloads) and restart it.  Preserves all registers except a6.
+* vc_room: make sure a block of up to 64 data words fits after a6 in the ring: past the end, a wrap mark
+* (0xFFFF) and on at VCMD_BUF; when the ring is full (the unplayed commands of up to three frames: rare,
+* whole-layer reloads), everything queued is written to VRAM now.  Preserves all registers except a6.
 vc_room:
-        cmpa.l  #VCMD_END-VCMD_ROOM,a6
-        bcs.s   9f
+        cmpa.l  #VCMD_END-VCMD_ROOM-2,a6
+        bcs.s   1f
+        move.w  #0xFFFF,(a6)            /* wrap */
+        lea     VCMD_BUF,a6
+1:      move.l  d0,-(sp)
+        move.l  rt_vcmd_rd,d0
+        sub.l   a6,d0
+        bls.s   9f                      /* the next command to play is not ahead of a6 (or the ring is empty) */
+        cmpi.l  #VCMD_ROOM+2,d0
+        bhi.s   9f
+        bsr.s   vc_play_all
+9:      move.l  (sp)+,d0
+        rts
+* vc_play_all: write every queued command (up to a6) to VRAM now; the sealed frames keep their sprites.
+* Preserves all registers.
+vc_play_all:
         movem.l d0-d1/a0-a2,-(sp)
         move    sr,-(sp)
-        ori.w   #0x0700,sr              /* a nested VBlank flush would move the VRAM address under us */
-        lea     VCMD_BUF,a0
+        ori.w   #0x0700,sr              /* a VBlank flush in between would move the VRAM address under us */
+        movea.l rt_vcmd_rd,a0
         movea.l a6,a2
         bsr     vc_play
-        lea     VCMD_BUF,a6
+        move.l  a6,rt_vcmd_rd
+        move.l  a6,rt_pend_q            /* their commands are written */
+        move.l  a6,rt_pend_q+4
         move    (sp)+,sr
         movem.l (sp)+,d0-d1/a0-a2
-9:      rts
+        rts
 
 * VW_COPY src, cnt, tmp: copy cnt+1 words from (src)+ to the VRAM data port (a1), 16 cycles per word
 * ("move.w (src)+,(a1) ; nop": more than the 12 cycles the LSPC needs between two writes; the dbra loop
@@ -289,58 +316,91 @@ vc_room:
         bpl.s   7b
         .endm
 
-* vc_play: write the blocks in [a0, a2) to VRAM.  Trashes d0-d1/a0-a1.
+* vc_play: write the blocks of the ring from a0 up to a2 to VRAM.  Trashes d0-d1/a0-a1.
 vc_play:
         lea     REG_VRAMRW,a1
-        cmpa.l  a2,a0
-        bcc.s   9f
+        bra.s   2f
 1:      move.w  (a0)+,d0                /* address */
+        cmpi.w  #0xFFFF,d0
+        beq.s   3f
         move.w  (a0)+,REG_VRAMMOD
         move.w  (a0)+,d1                /* count - 1 */
         move.w  d0,REG_VRAMADDR         /* (>= 16 cycles after the previous data write) */
         VW_COPY a0, d1, d0
-        cmpa.l  a2,a0
-        bcs.s   1b
-9:      rts
+2:      cmpa.l  a2,a0
+        bne.s   1b
+        rts
+3:      lea     VCMD_BUF,a0             /* wrap mark */
+        bra.s   2b
 
 * ------------------------------------------------------------------------------------------
 * vram_flush: called at the very start of the VBlank handler.  Replays the command queue, then writes
 * the two sprite pools prepared by spr_lists / sprites_slow and hides the sprites no longer used.
-* Trashes d0-d6/a0-a3.
+* Trashes d0-d7/a0-a5.
 * ------------------------------------------------------------------------------------------
 vram_flush:
-        lea     VCMD_BUF,a0
+        tst.b   rt_pend_n
+        bne.s   1f
+        /* no frame sealed since the last VBlank: the screen stays as it is - unless no frame work runs at
+           all (start-up, BIOS screens): then whatever is queued goes out */
+        tst.b   rt_in_hook
+        bne.s   0f
+        cmpi.b  #2,rt_noseal
+        bcc.s   2f
+        addq.b  #1,rt_noseal
+0:      rts
+2:      movea.l rt_vcmd_rd,a0
         movea.l rt_vcmd_ptr,a2
-        cmpa.l  a0,a2
-        bls.s   1f                      /* empty (or not initialised yet) */
+        move.l  a2,rt_vcmd_rd
+        bra     vc_play
+1:      /* the oldest sealed frame: its commands, then its sprite set */
+        addq.l  #1,rt_shown
+        movea.l rt_vcmd_rd,a0
+        movea.l rt_pend_q,a2
+        move.l  a2,rt_vcmd_rd
         bsr     vc_play
-1:      move.l  #VCMD_BUF,rt_vcmd_ptr
-        tst.b   rt_spr_busy
-        bne     9f                      /* interrupted while converting the sprites: keep last frame's */
+        moveq   #0,d0
+        move.b  rt_pend_s,d0
+        move.l  rt_pend_q+4,rt_pend_q
+        move.b  rt_pend_s+1,rt_pend_s
+        subq.b  #1,rt_pend_n
+        cmpi.b  #0xFF,d0
+        beq     9f                      /* no sprites converted for that frame: they stay as they are */
+        lea     rt_set_cnt,a3
+        lsl.w   #3,d0
+        adda.w  d0,a3                   /* the set's counts */
+        lea     EFF_DESC,a4
+        movea.l #SPR_F0,a5
+        tst.w   d0
+        beq.s   3f
+        lea     EFF_SET1,a4
+        movea.l #SPR_SET1,a5
+3:      move.w  4(a3),d7                /* headlight columns */
+        move.w  2(a3),-(sp)             /* pool 1 sprites */
         lea     REG_VRAMRW,a1
         move.w  #SPR_OBJ,d0
-        move.w  rt_spr_n0,d1
-        lea     SPR_F0,a0
+        move.w  (a3),d1
+        movea.l a5,a0
         move.w  #SPR_F0_SZ,d2
         lea     rt_sprites_used,a2
         bsr     vf_pool
         move.w  #SPR_PRI1,d0
-        move.w  rt_spr_n1,d1
-        lea     SPR_F1,a0
+        move.w  (sp)+,d1
+        lea     SPR_F1_OFS(a5),a0
         move.w  #SPR_F1_SZ,d2
         lea     rt_sprites_used1,a2
         bsr     vf_pool
-* vf_eff: the headlight columns (spr_lists sl_eff): their tiles, SCB3 and SCB4, and the columns used last
-* time but not now hidden.
+* vf_eff: the headlight columns of the set (a4 = its EFF_DESC, d7 = columns): their tiles, SCB3 and
+* SCB4, and the columns used last time but not now hidden.
 vf_eff:
-        move.w  rt_eff_n,d4
+        move.w  d7,d4
         move.w  rt_eff_used,d5
         move.w  d4,rt_eff_used
         subq.w  #1,d4
         bmi     5f
         move.w  #1,REG_VRAMMOD
-        lea     EFF_DESC,a0
-        lea     EFF_TILES,a3
+        movea.l a4,a0
+        lea     EFF_TILES_OFS(a4),a3
         move.w  #SPR_EFF<<6,d3          /* SCB1 of the first column */
         move.w  d4,d1
 1:      move.w  d3,REG_VRAMADDR
@@ -355,13 +415,13 @@ vf_eff:
         addq.l  #8,a0
         dbra    d1,1b
         move.w  #VRAM_SCB3+SPR_EFF,REG_VRAMADDR
-        lea     EFF_DESC,a0
+        movea.l a4,a0
         move.w  d4,d1
 2:      move.w  (a0),(a1)
         addq.l  #8,a0
         dbra    d1,2b
         move.w  #VRAM_SCB4+SPR_EFF,REG_VRAMADDR
-        lea     EFF_DESC+2,a0
+        lea     2(a4),a0
         move.w  d4,d1
 3:      move.w  (a0),(a1)
         addq.l  #8,a0
@@ -508,7 +568,25 @@ layer_update:
         neg.w   d2
         movea.w d2,a2                   /* a2 = x of window column 0 */
         move.w  d0,d3
-        lsr.w   #4,d3                   /* c0 = first map column (unwrapped, 0..66) */
+        lsr.w   #4,d3                   /* first map column (0..63) */
+        /* c0 counts the columns without the 64-column wrap of the map, modulo 192 (a multiple of 64 and
+           of NCOLSPR): column sprite s = c mod NCOLSPR then stays the same when the scroll wraps (with
+           c mod 64, 64 not being a multiple of NCOLSPR, every column moved to another sprite and the
+           whole layer was reloaded - more than two frames of work) */
+        move.w  (a4),d4
+        move.w  d3,d5
+        sub.w   d4,d5
+        and.w   #63,d5                  /* the step since last frame, -32..31 */
+        cmpi.w  #32,d5
+        bcs.s   1f
+        sub.w   #64,d5
+1:      add.w   d5,d4
+        bpl.s   2f
+        add.w   #192,d4
+2:      cmpi.w  #192,d4
+        bcs.s   3f
+        sub.w   #192,d4
+3:      move.w  d4,d3                   /* c0 (0..191; = the map column mod 64) */
         move.w  d3,(a4)                 /* rt_c0 of this layer, for vram_store */
         lea     mod_ncol,a0
         moveq   #0,d4
@@ -1137,6 +1215,7 @@ bg_recount:
 spr_lists:
         movem.l d0-d4/d7/a2-a6,-(sp)
         st      rt_spr_busy
+        st      rt_spr_conv
         clr.w   rt_eff_n
         clr.w   rt_eff_nt
         lea     spr_y_table,a5
@@ -1145,8 +1224,8 @@ spr_lists:
         btst    #0,ARC_WRAM+0x19B       /* night stage (the game loads its colours into palette bank 7) */
         beq.s   1f
         lea     spr_col_table_night,a3
-1:      lea     SPR_F0,a1
-        lea     SPR_F1,a2
+1:      movea.l rt_set_base,a1
+        lea     SPR_F1_OFS(a1),a2
         move.w  #SPR_OBJ_MAX,d7         /* free slots, pool 0 */
         moveq   #SPR_PRI1_MAX,d1        /* free slots, pool 1 */
         movea.w #(0x1000-6)/8,a4        /* entries the sprite RAM holds */
@@ -1179,7 +1258,9 @@ spr_lists:
         rts
 sl_slow:
         st      rt_spr_slow             /* (rt_spr_busy stays set until sprites_slow has refilled the pools) */
-        clr.w   rt_eff_n                /* the copy below overwrites the column buffers (ARC_SPR) */
+        clr.w   rt_eff_n                /* the copy below overwrites the column buffers (ARC_SPR) of both */
+        clr.w   rt_set_cnt+4            /* sets: none shown from the sealed frames either */
+        clr.w   rt_set_cnt+8+4
         movem.l (sp)+,d0-d4/d7/a2-a6
         lea     ARC_SPR+6,a1            /* the original routine from its second instruction */
         jmp     0x44EC
@@ -1275,7 +1356,8 @@ sl_eff:
         bne.s   2f
         move.w  rt_eff_n,d0
         lsl.w   #3,d0
-        lea     EFF_DESC-8,a1
+        movea.l rt_eff_base,a1
+        subq.l  #8,a1
         adda.w  d0,a1                   /* current column */
         cmpi.w  #16,6(a1)
         bcc.s   2f
@@ -1286,7 +1368,7 @@ sl_eff:
         cmpi.w  #EFF_MAX,d0
         bcc.s   9f
         lsl.w   #3,d0
-        lea     EFF_DESC,a1
+        movea.l rt_eff_base,a1
         adda.w  d0,a1
         move.w  d4,(a1)
         move.w  d5,2(a1)
@@ -1298,7 +1380,8 @@ sl_eff:
 3:      move.w  d4,rt_eff_last+4
         move.w  rt_eff_nt,d0
         lsl.w   #2,d0
-        lea     EFF_TILES,a1
+        movea.l rt_eff_base,a1
+        lea     EFF_TILES_OFS(a1),a1
         move.w  d3,(a1,d0.w)
         move.w  d2,2(a1,d0.w)
         addq.w  #1,rt_eff_nt
@@ -1326,7 +1409,7 @@ sprites_slow:
         lea     spr_y_table,a5
         lea     spr_x_table,a6
         /* pool 0 */
-        lea     SPR_F0,a1
+        movea.l rt_set_base,a1
         lea     SPR_F0_SZ(a1),a2
         lea     SPR_F0_SZ(a2),a3
         lea     SPR_F0_SZ(a3),a4
@@ -1359,7 +1442,7 @@ sprites_slow:
         move.w  #SPR_OBJ_MAX,d7
         sub.w   d0,d7
         add.w   d0,d0
-        lea     SPR_F0,a1
+        movea.l rt_set_base,a1
         adda.w  d0,a1
         lea     SPR_F0_SZ(a1),a2
         lea     SPR_F0_SZ(a2),a3
@@ -1385,7 +1468,8 @@ sprites_slow:
         sub.w   d7,d0
         add.w   d0,rt_spr_n0
 5:      /* pool 1 */
-        lea     SPR_F1,a1
+        movea.l rt_set_base,a1
+        lea     SPR_F1_OFS(a1),a1
         lea     SPR_F1_SZ(a1),a2
         lea     SPR_F1_SZ(a2),a3
         lea     SPR_F1_SZ(a3),a4
@@ -1553,10 +1637,10 @@ light_pal:
 pen0_table:
         .incbin "pen0.bin"
 
-* mod_ncol: i mod NCOLSPR for i < 128
+* mod_ncol: i mod NCOLSPR for i < 256 (c0 + window column < 192 + NCOLSPR)
 mod_ncol:
         .set    i,0
-        .rept   128
+        .rept   256
         .byte   i % NCOLSPR
         .set    i,i+1
         .endr

@@ -58,6 +58,19 @@
         .equ    rt_bg_recount,  RT_VARS+0x330   /* .b a tile palette changed: recount rt_bg_cnt next frame */
         .equ    rt_backdrop,    RT_VARS+0x332   /* .w Neo Geo backdrop colour for the next VBlank (colour 0 of the central layer-1 cell) */
         .equ    rt_dbg,         RT_VARS+0x340   /* 8 words: raster counter (REG_LSPCMODE) at frame_hook milestones (profiling) */
+* presentation queue: frame_hook seals each frame it prepares (end of its VRAM commands in the ring, the
+* sprite set it filled); every VBlank shows the oldest sealed frame.  The main loop runs up to one tick
+* ahead, so a tick that lasts more than a frame does not leave a VBlank without a new frame.
+        .equ    rt_vcmd_rd,     RT_VARS+0x350   /* .l next command to play in the ring */
+        .equ    rt_pend_n,      RT_VARS+0x354   /* .b sealed frames not shown yet (0..2) */
+        .equ    rt_fill_set,    RT_VARS+0x355   /* .b sprite set (0/1) the frame in preparation fills */
+        .equ    rt_noseal,      RT_VARS+0x356   /* .b VBlanks with no sealed frame (2: no frame work runs, play the queue as is) */
+        .equ    rt_pend_q,      RT_VARS+0x358   /* 2 x .l end of the commands of sealed frame 0 (oldest), 1 */
+        .equ    rt_pend_s,      RT_VARS+0x360   /* 2 x .b sprite set of sealed frame 0, 1 */
+        .equ    rt_set_cnt,     RT_VARS+0x368   /* 2 x (.w pool 0 sprites, .w pool 1 sprites, .w headlight columns, .w -) per set */
+        .equ    rt_eff_base,    RT_VARS+0x378   /* .l EFF_DESC of the set being filled (its tiles at +EFF_TILES_OFS) */
+        .equ    rt_spr_conv,    RT_VARS+0x357   /* .b spr_lists converted the sprite lists in this frame */
+        .equ    rt_set_base,    RT_VARS+0x37C   /* .l SPR_F0 of the set being filled (pool 1 at +SPR_F1_OFS) */
         .equ    rt_pal0_black,  RT_VARS+0x3C0   /* 32 bytes: 1 if colour 0 of tile palette p is black (backdrop recount trigger) */
         .equ    rt_vcmd_ptr,    RT_VARS+0x3E0   /* .l end of the commands queued in VCMD_BUF */
         .equ    rt_spr_n0,      RT_VARS+0x3E4   /* .w sprites prepared in pool 0 (for the next flush) */
@@ -87,6 +100,7 @@
         .equ    rt_eff_n,       RT_VARS+0x3B6   /* .w headlight columns prepared (spr_lists) */
         .equ    rt_eff_nt,      RT_VARS+0x3B8   /* .w their tiles */
         .equ    rt_eff_last,    RT_VARS+0x3BA   /* .w SCB4, .w attribute, .w SCB3 of the last tile added (3 words, to 0x3BF) */
+        .equ    rt_shown,       RT_VARS+0x3FC   /* .l sealed frames shown (profiling: VBlanks - this = frames repeated) */
         .equ    rt_eff_used,    RT_VARS+0x3FA   /* .w columns written to VRAM last time */
         .equ    rt_cmp_any,     RT_VARS+0x3B4   /* 2 x .b some HI / BG companion column is marked dirty (layer_update recounts) */
         .equ    rt_prev_sel,    RT_VARS+0x39E
@@ -107,11 +121,14 @@
         .equ    SPR_F1,         SPR_F0+4*SPR_F0_SZ      /* pool 1 (SPR_PRI1..): 4 x SPR_PRI1_MAX words */
         .equ    SPR_F1_SZ,      SPR_PRI1_MAX*2
         .equ    SPR_F_END,      SPR_F1+4*SPR_F1_SZ
+        .equ    SPR_F1_OFS,     4*SPR_OBJ_MAX*2 /* SPR_F1 - SPR_F0 (written out: a difference of forward symbols assembles as 0) */
+        .equ    SPR_SET_SZ,     0x780           /* >= SPR_F_END-SPR_F0; set 1 right after set 0 */
+        .equ    SPR_SET1,       SPR_F0+SPR_SET_SZ
 * VRAM command buffer: blocks of (address.w, VRAMMOD.w, count-1.w, count data words), written by the
 * frame preparation and by vram_store, replayed by vram_flush at the start of the next VBlank so that the
 * screen never changes while it is being drawn
-        .equ    VCMD_BUF,       0x10C280
-        .equ    VCMD_END,       0x10E700
+        .equ    VCMD_BUF,       SPR_SET1+SPR_SET_SZ     /* a ring: a block that would not fit before VCMD_END */
+        .equ    VCMD_END,       0x10E700                /* leaves the word 0xFFFF and starts again at VCMD_BUF */
         .equ    ARC_PALB7,      0x10E700        /* 2 KB: arcade palette bank 7 (203800-203FFF: the night stages' undimmed colours) */
         .equ    ARC_PALB7_END,  0x10EF00
         .equ    VCMD_ROOM,      160             /* bytes reserved per block (header + up to 64 words + slack) */
@@ -153,6 +170,8 @@
         .equ    SPR_OBJ_MAX,    SPR_EFF-SPR_OBJ
         .equ    EFF_DESC,       ARC_SPR         /* EFF_MAX x (.w SCB3 of the top tile | height, .w SCB4, .w first tile, .w tiles) */
         .equ    EFF_TILES,      ARC_SPR+0x200   /* EFF_TILES_MAX x (.w tile, .w attribute); ARC_SPR is only used by the */
+        .equ    EFF_TILES_OFS,  0x200
+        .equ    EFF_SET1,       ARC_SPR+0x600   /* the second set of headlight columns (set 0 at ARC_SPR) */
         .equ    EFF_TILES_MAX,  256             /* fallback copy of 0x44E6, which then leaves no columns (sl_slow) */
         .equ    HI_BLANK,       4254            /* an all-transparent tile (fills the non-priority cells) */
         .equ    PAL_ARC_BASE,   16              /* arcade palette entry i (bank 0) -> Neo Geo palette 16 + i/16 */

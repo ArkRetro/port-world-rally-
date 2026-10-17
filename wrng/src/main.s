@@ -92,10 +92,11 @@ irq_vblank:
         bsr     vbl_stats
         tst.b   rt_in_hook
         beq.s   1f
-        /* a tick is still running (it was allowed to be interrupted): its palettes, layers and sprites are
-           half prepared, so nothing is shown from them - the screen keeps the last complete frame (showing
-           part of a tick mixed sprite and layer positions of two frames); the next VBlank shows it */
+        /* a tick is still running (it was allowed to be interrupted): nothing of it is shown, but the frame
+           sealed before it (if any) is */
         addq.w  #1,rt_skip
+        bsr     vram_flush
+        bsr     tick_bonus
         cmpi.b  #4,rt_mw_age            /* the VBlank's tick is owed to the main loop all the same */
         bcc.s   3f
         cmpi.b  #2,rt_tick_pend
@@ -109,6 +110,7 @@ irq_vblank:
            tick (and the map changes the main loop made since) */
         bsr     video_vblank
         bsr     vram_flush
+        bsr     tick_bonus
         move.w  REG_LSPCMODE,rt_dbg+12  /* profiling: raster line at the end of the VRAM flush */
         move.l  sp,rt_io_sp
         jsr     SYSTEM_IO               /* inputs, coins, credits; may re-enter USER (see above) */
@@ -146,6 +148,21 @@ irq_after_io:
         clr.b   rt_in_hook
         movem.l (sp)+,d0-d7/a0-a6
         rte
+
+* tick_bonus: no frame left waiting after this VBlank's (the main loop is not ahead): one tick more for it,
+* so that it gets one frame ahead of the screen again and a long tick does not leave a VBlank without a new
+* frame.  (Only while it runs its frame loop; the credit stays bounded by 2.)
+tick_bonus:
+        tst.b   rt_pend_n
+        bne.s   9f
+        tst.b   rt_in_hook              /* a frame in preparation counts as waiting */
+        bne.s   9f
+        cmpi.b  #4,rt_mw_age
+        bcc.s   9f
+        cmpi.b  #2,rt_tick_pend
+        bcc.s   9f
+        addq.b  #1,rt_tick_pend
+9:      rts
 
 * vbl_stats: once a second, the arcade ticks run and the idle time of its main loop (diagnostic overlay),
 * in BCD so that the overlay's hex digits read as decimal.  Trashes d0-d1.
