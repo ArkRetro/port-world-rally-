@@ -45,7 +45,9 @@ DEC_REGIONS = [
     (0xEA1BE, 336 * 4),             # image blocks layer 0: headers
     (0xEA6FE, 0xED32A - 0xEA6FE),   # image blocks layer 0: data
     (0xF01FC, 90 * 4),              # tile animation table (class 0x0E00)
+    (0xF03FC, 90 * 4),              #   same, x-flipped frames (index | 0x80, used by 0x9E76)
     (0xF05FC, 90 * 4),              # tile animation table (class 0x1080)
+    (0xF07FC, 90 * 4),              #   same, x-flipped frames
     (0xEFEF2, 72 * 4),              # default records table
     (0xDF64C, 8),                   # empty tile pairs (layer 1, layer 0)
 ]
@@ -59,7 +61,15 @@ PLAIN_SITES = {0x9916, 0x99B2, 0x9C4E, 0x9CEA, 0x9E56, 0x9E76, 0x11D34, 0x11D9E,
 EXTRA_SITES = [0xE79E, 0xE7AC, 0x9916, 0x99B2, 0x9C4E, 0x9CEA, 0x9E56, 0x9E76, 0x11D34, 0x11D9E, 0x11FE6, 0x11FFC, 0xB334]
 # arcade routines replaced whole by runtime versions (entry patched with jmp); their inner write sites get no stub
 DETOURS = {0x11CF4: 'blk_copy_l1', 0x11D62: 'blk_copy_l0', 0x11FDC: 'clear_l1', 0x11FF2: 'clear_l0'}
-DETOURED_SITES = {0x11D02, 0x11D34, 0x11D70, 0x11D9E, 0x11FE6, 0x11FFC}
+DETOURED_SITES = {0x11D02, 0x11D34, 0x11D70, 0x11D9E, 0x11FE6, 0x11FFC, 0x9916, 0x99B2, 0x9C4E, 0x9CEA}
+# map strip copies (scrolling: one new row / column of cells): the inner block "test C224, store (a0) to the
+# cell (a1), step a1" is replaced by a jsr to a native routine (src/glue.s) instead of a trap per cell
+STRIP_PATCHES = (
+    (0x9904, '3e3900fec224024700f0be7c00906700000422905849', 'strip_h7'),
+    (0x99A0, '3e3900fec224024700f0be7c0090670000042290d2fc0100', 'strip_v7'),
+    (0x9C3C, '3c3900fec224024600f0bc7c00906700000422905849', 'strip_h6'),
+    (0x9CD8, '3c3900fec224024600f0bc7c0090670000042290d2fc0100', 'strip_v6'),
+)
 # stubs whose decrypted value is a RAM pointer that must be relocated too
 STUB_RELOC_RAM = {0xC33C, 0xC346, 0xB286}
 
@@ -280,6 +290,11 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
 
     for pc, name in DETOURS.items():
         rom[pc:pc + 6] = bytes.fromhex('4EF9') + struct.pack('>I', syms[name])
+
+    for pc, expect, name in STRIP_PATCHES:
+        n = len(expect) // 2
+        assert orig[pc:pc + n] == bytes.fromhex(expect), hex(pc)
+        rom[pc:pc + n] = bytes.fromhex('4EB9') + struct.pack('>I', syms[name]) + b'\x4E\x71' * ((n - 6) // 2)
 
     # 4b. sound: OKI register writes -> Z80 command hooks (src/sound.s)
     for pc, name, expect in ((0x1402C, 'snd_hook_stopall', '13FC00780070000F'), (0x1437A, 'snd_hook_stop0', '13C00070000F'),

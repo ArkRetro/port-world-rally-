@@ -166,11 +166,11 @@ ms_ax40:
         add.w   #0x18,d7
 ms_cmp:
         /* fire if (cmd & 0x80) ? pos >= thr : pos < thr  (signed) */
-        cmp.w   d6,d7
         tst.b   d5
-        bmi   ms_ge
+        bmi     ms_ge
+        cmp.w   d6,d7                   /* (after the tst: it would overwrite the flags) */
         bge     ms_ret                  /* pos >= thr -> no fire */
-        bra   ms_run
+        bra     ms_run
 ms_ge:
         cmp.w   d6,d7
         blt     ms_ret

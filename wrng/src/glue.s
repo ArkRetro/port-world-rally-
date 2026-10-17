@@ -311,30 +311,91 @@ blk_common:
         subq.w  #1,d2
         subq.w  #1,d3
         move.w  d2,d6
+        /* the cells go straight to the shadow map; the column sprites showing the block's map columns
+           are reloaded whole at the next frame (much cheaper than one queued cell per tile) */
+        move.l  a5,d0
+        and.w   #0x1FFF,d0
+        lsr.w   #2,d0
+        and.w   #63,d0                  /* first map column */
+        move.w  d6,d5                   /* width - 1 */
+        lea     rt_col_loaded,a0
+        tst.w   d7
+        beq.s   3f
+        lea     24(a0),a0               /* layer 1 */
+3:      moveq   #NCOLSPR-1,d2
+4:      move.b  (a0),d4
+        cmpi.b  #0xFF,d4
+        beq.s   5f
+        sub.b   d0,d4
+        and.b   #63,d4
+        cmp.b   d5,d4
+        bhi.s   5f
+        move.b  #0xFF,(a0)              /* inside the block: reload */
+5:      addq.l  #1,a0
+        dbra    d2,4b
 blk_row:
         movea.l a5,a4
         move.w  d6,d2
 blk_col:
-        move.l  (a2,d1.w),d0
+        move.l  (a2,d1.w),(a4)+
         addq.w  #4,d1
-        movem.l d1-d2/a2,-(sp)
-        movea.l a4,a0
-        jsr     vram_store
-        movem.l (sp)+,d1-d2/a2
-        addq.l  #4,a4
         tst.w   d7
-        beq     1f
+        beq.s   1f
         cmpa.l  #0x104000,a4
-        bge     blk_done
+        bge.s   blk_done
 1:      dbra    d2,blk_col
         adda.l  #0x100,a5
         tst.w   d7
-        beq     2f
+        beq.s   2f
         cmpa.l  #0x104000,a5
-        bge     blk_done
+        bge.s   blk_done
 2:      dbra    d3,blk_row
 blk_done:
         movem.l (sp)+,d5-d7/a0/a3/a6
+        rts
+
+* Map strip copies (patched at 0x9904 / 0x99A0 / 0x9C3C / 0x9CD8 by tools/mkrom.py): the original inner
+* block is "dX = C224 & $F0 ; if dX != $90: move.l (a0),(a1) ; step a1" with dX = d7 or d6 and a step of
+* 4 (row strip) or $100 (column strip).
+        .global strip_h7, strip_v7, strip_h6, strip_v6
+strip_h7:
+        move.w  ARC_WRAM+0x224,d7
+        andi.w  #0xF0,d7
+        cmpi.w  #0x90,d7
+        beq.s   1f
+        bsr.s   strip_store
+1:      addq.l  #4,a1
+        rts
+strip_v7:
+        move.w  ARC_WRAM+0x224,d7
+        andi.w  #0xF0,d7
+        cmpi.w  #0x90,d7
+        beq.s   1f
+        bsr.s   strip_store
+1:      lea     0x100(a1),a1
+        rts
+strip_h6:
+        move.w  ARC_WRAM+0x224,d6
+        andi.w  #0xF0,d6
+        cmpi.w  #0x90,d6
+        beq.s   1f
+        bsr.s   strip_store
+1:      addq.l  #4,a1
+        rts
+strip_v6:
+        move.w  ARC_WRAM+0x224,d6
+        andi.w  #0xF0,d6
+        cmpi.w  #0x90,d6
+        beq.s   1f
+        bsr.s   strip_store
+1:      lea     0x100(a1),a1
+        rts
+strip_store:
+        movem.l d0-d2/a0-a2,-(sp)
+        move.l  (a0),d0
+        movea.l a1,a0
+        jsr     vram_store
+        movem.l (sp)+,d0-d2/a0-a2
         rts
 
 * 0x11FDC / 0x11FF2: fill a layer with the empty tile pair (0xDF64C / 0xDF650, decrypted at build time)

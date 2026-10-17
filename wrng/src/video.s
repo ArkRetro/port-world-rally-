@@ -721,6 +721,32 @@ vram_store:
         addq.w  #1,rt_dbg+14            /* profiling: calls per frame */
         cmp.l   (a0),d0
         beq     vs_same                 /* same pair: nothing changes */
+        /* fast path: a map column that no column sprite shows only needs the shadow write */
+        move.l  a0,d1
+        lea     rt_col_loaded,a1
+        move.w  rt_c0,d2
+        btst    #13,d1
+        beq.s   1f
+        lea     24(a1),a1
+        move.w  rt_c0+2,d2
+1:      lsr.w   #2,d1
+        and.w   #63,d1                  /* col */
+        sub.w   d2,d1
+        and.w   #63,d1                  /* j = (col - c0) & 63 */
+        cmpi.w  #NCOLSPR,d1
+        bcc.s   2f                      /* not in the window */
+        add.w   d1,d2
+        lea     mod_ncol,a2
+        move.b  (a2,d2.w),d2
+        and.w   #0xFF,d2                /* s */
+        move.l  a0,d1
+        lsr.w   #2,d1
+        and.w   #63,d1
+        cmp.b   (a1,d2.w),d1
+        beq.s   vs_slow                 /* shown: queue it */
+2:      move.l  d0,(a0)
+        rts
+vs_slow:
         move    sr,-(sp)                /* 18(sp) */
         ori.w   #0x0700,sr
         move.l  a6,-(sp)                /* 14(sp) */
@@ -922,7 +948,8 @@ sprites_update:
         cmpi.w  #(0x1000-6)/8,d6
         bls.s   1f
         move.w  #(0x1000-6)/8,d6
-1:      move.w  d6,-(sp)                /* entries */
+1:      subq.w  #1,d6
+        move.w  d6,-(sp)                /* entries - 1 (dbra counter) */
         lea     spr_y_table,a5
         lea     spr_x_table,a6
         /* pool 0 */
@@ -931,8 +958,10 @@ sprites_update:
         lea     SPR_F0_SZ(a2),a3
         lea     SPR_F0_SZ(a3),a4
         move.w  #SPR_OBJ_MAX,d7         /* free slots */
+        lea     ARC_SPR+6,a0
+        move.w  (sp),d6
         moveq   #0,d0                   /* select: code < 0x3700 */
-        bsr.s   su_pass
+        bsr     su_pass
         move.w  #SPR_OBJ_MAX,d0
         sub.w   d7,d0
         move.w  d0,rt_spr_n0
@@ -942,22 +971,42 @@ sprites_update:
         lea     SPR_F1_SZ(a2),a3
         lea     SPR_F1_SZ(a3),a4
         move.w  #SPR_PRI1_MAX,d7
+        lea     ARC_SPR+6,a0
+        move.w  (sp),d6
         moveq   #-1,d0                  /* select: code >= 0x3700 */
-        bsr.s   su_pass
+        bsr     su_pass
         move.w  #SPR_PRI1_MAX,d0
         sub.w   d7,d0
         move.w  d0,rt_spr_n1
-        addq.l  #2,sp
+        tst.w   d6
+        bmi.s   9f
+        /* pool 1 full (big title logos): the rest goes to pool 0, after its own sprites */
+        move.w  rt_spr_n0,d1
+        move.w  #SPR_OBJ_MAX,d7
+        sub.w   d1,d7
+        beq.s   9f
+        add.w   d1,d1
+        lea     SPR_F0,a1
+        adda.w  d1,a1
+        lea     SPR_F0_SZ(a1),a2
+        lea     SPR_F0_SZ(a2),a3
+        lea     SPR_F0_SZ(a3),a4
+        move.w  d7,-(sp)
+        moveq   #-1,d0
+        bsr     su_pass
+        move.w  (sp)+,d0
+        sub.w   d7,d0
+        add.w   d0,rt_spr_n0
+9:      addq.l  #2,sp
         movea.l (sp)+,a6
         rts
 
-* su_pass: d0 = 0 (codes < 0x3700) or -1 (>= 0x3700), 4(sp) = entries, a1-a4 = field pointers,
-* d7 = free slots (decremented), a5/a6 = y/x tables.  Trashes d0-d6/a0.
+* su_pass: a0 = first entry, d6 = entries left - 1, d0 = 0 (codes < 0x3700) or -1 (>= 0x3700),
+* a1-a4 = field pointers, d7 = free slots (decremented), a5/a6 = y/x tables.  Returns when the list
+* ends (d6 = -1) or the pool is full (d7 = 0; a0/d6 then designate the next entry).  Trashes d0-d5.
 su_pass:
-        move.w  4(sp),d6
-        subq.w  #1,d6
+        tst.w   d6
         bmi     su_end
-        lea     ARC_SPR+6,a0
         tst.w   d0
         bne     su_hi
 su_lo:  /* ---- codes below 0x3700 ---- */
@@ -968,11 +1017,11 @@ su_lo:  /* ---- codes below 0x3700 ---- */
         bsr.s   su_conv
         bne.s   su_lo_next              /* off screen */
         subq.w  #1,d7
-        beq.s   su_end
+        beq.s   su_full
 su_lo_next:
         addq.l  #8,a0
         dbra    d6,su_lo
-        bra.s   su_end
+        rts
 su_hi:  /* ---- codes 0x3700 and above ---- */
         move.w  6(a0),d3
         and.w   #0x3FFF,d3
@@ -981,10 +1030,14 @@ su_hi:  /* ---- codes 0x3700 and above ---- */
         bsr.s   su_conv
         bne.s   su_hi_next
         subq.w  #1,d7
-        beq.s   su_end
+        beq.s   su_full
 su_hi_next:
         addq.l  #8,a0
         dbra    d6,su_hi
+        rts
+su_full:
+        addq.l  #8,a0
+        subq.w  #1,d6
 su_end: rts
 
 * su_conv: a0 -> arcade entry (w0 y/flips, w1, w2 x/colour, w3 code), d3 = code: append the Neo Geo

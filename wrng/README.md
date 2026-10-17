@@ -24,7 +24,7 @@ AES y en flashcarts.
 |---------|--------|
 | Joystick izquierda/derecha | Volante |
 | A o C | Acelerador |
-| B | Cambio de marcha (alterna) |
+| B | Cambio de marcha (alterna baja/alta; se sale en baja: hay que cambiar a alta para coger velocidad y derrapar) |
 | Start | Start (en MVS hace falta crédito; se usa el contador de créditos de la BIOS) |
 
 ## Construcción
