@@ -68,6 +68,10 @@ video_init:
         moveq   #15,d0
 1:      move.w  #0x8000,(a0)+
         dbra    d0,1b
+        lea     light_pal,a1            /* light palette (night stages) */
+        moveq   #15,d0
+2:      move.w  (a1)+,(a0)+
+        dbra    d0,2b
         /* sprite 0: the LSPC draws it at the end of every scanline list with fewer than 96 sprites (real
            hardware; MAME does not): transparent tiles, off screen */
         move.w  #0,REG_VRAMADDR
@@ -1057,7 +1061,10 @@ spr_lists:
         lea     spr_y_table,a5
         lea     spr_x_table,a6
         lea     spr_col_table,a3
-        lea     SPR_F0,a1
+        btst    #0,ARC_WRAM+0x19B       /* night stage (the game loads its colours into palette bank 7) */
+        beq.s   1f
+        lea     spr_col_table_night,a3
+1:      lea     SPR_F0,a1
         lea     SPR_F1,a2
         move.w  #SPR_OBJ_MAX,d7         /* free slots, pool 0 */
         moveq   #SPR_PRI1_MAX,d1        /* free slots, pool 1 */
@@ -1314,8 +1321,13 @@ su_conv:
         lsr.w   #2,d2                   /* colour << 8 */
         add.w   #PAL_SPRITES<<8,d2
         bra.s   2f
-1:      move.w  #PAL_SHADOW<<8,d2       /* shadow: dithered tile set (gfx2crom --shadow) */
+1:      btst    #0,ARC_WRAM+0x19B
+        bne.s   3f
+        move.w  #PAL_SHADOW<<8,d2       /* shadow: dithered tile set (gfx2crom --shadow) */
         or.w    #0x4000,d3
+        bra.s   2f
+3:      move.w  #PAL_LIGHT<<8,d2        /* night: light tile set (gfx2crom --light) */
+        or.w    #0x8000,d3
 2:      move.w  (a0),d0
         rol.w   #2,d0                   /* w0 bits 15,14 -> 1,0 (vflip, hflip) */
         and.w   #3,d0
@@ -1372,6 +1384,8 @@ spr_x_table:
         .endr
 
 * spr_col_table: arcade sprite colour (5 bits) -> high word: palette << 8, low word: tile OR mask
+* (colours 16-31: the colour-effect sprites, drawn with the shadow tile set; spr_col_table_night: with the
+* light tile set and palette, for the night stages)
 spr_col_table:
         .set    i,0
         .rept   32
@@ -1382,6 +1396,20 @@ spr_col_table:
         .endif
         .set    i,i+1
         .endr
+spr_col_table_night:
+        .set    i,0
+        .rept   32
+        .if i < 16
+        .long   (PAL_SPRITES + i) << 24
+        .else
+        .long   (PAL_LIGHT << 24) + 0x8000
+        .endif
+        .set    i,i+1
+        .endr
+
+* light_pal: palette PAL_LIGHT, pen p = p-8 steps brighter (warm white, brighter for higher pens)
+light_pal:
+        .word   0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x0775,0x0996,0x0AA7,0x0BB8,0x0CC9,0x0EEA,0x0FFB
 
 * pen0_table: one byte per arcade tile, 1 if it has at least 64 pen-0 pixels (gfx2crom.py --pen0)
 pen0_table:

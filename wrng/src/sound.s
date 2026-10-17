@@ -44,6 +44,8 @@ snd_init:
 * snd_send: d0.b = command; waits for the Z80's ack toggle (bit 6 of the reply)
 snd_send:
         movem.l d1-d2,-(sp)
+        move    sr,-(sp)
+        ori     #0x0700,sr              /* the main loop and the VBlank both send: one command at a time */
         move.b  REG_SOUND,d1
         and.b   #0x40,d1
         move.b  d0,REG_SOUND
@@ -52,6 +54,7 @@ snd_send:
         and.b   #0x40,d0
         cmp.b   d0,d1
         dbne    d2,1b
+        move    (sp)+,sr
         movem.l (sp)+,d1-d2
         rts
 

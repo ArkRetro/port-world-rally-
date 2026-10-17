@@ -78,6 +78,12 @@
         .equ    rt_tick_pend,   RT_VARS+0x392   /* .b ticks owed to the main loop (0..2): one per VBlank, main_wait runs one at the end of each frame */
         .equ    rt_col_inval,   RT_VARS+0x393   /* .b rt_col_loaded entries were invalidated (layer_update must check every column) */
         .equ    rt_idle,        RT_VARS+0x3A0   /* .l main_wait loop iterations (profiling: idle time of the main loop) */
+        .equ    rt_st_cnt,      RT_VARS+0x3A4   /* .b VBlanks left before the next per-second statistics */
+        .equ    rt_st_ticks,    RT_VARS+0x3A8   /* .l rt_ticks one second ago */
+        .equ    rt_st_idle,     RT_VARS+0x3AC   /* .l rt_idle one second ago */
+        .equ    rt_tps,         RT_VARS+0x3B0   /* .w arcade ticks in the last second, BCD (60 = full speed; diagnostic overlay) */
+        .equ    rt_idlepct,     RT_VARS+0x3B2   /* .w idle time of the main loop in the last second, %, BCD */
+        .equ    rt_snd_owed,    RT_VARS+0x39D   /* .b sound sequencer runs owed: a VBlank came in the middle of a tick */
         .equ    rt_spr_slow,    RT_VARS+0x39C   /* .b spr_lists left the lists to the multi-pass conversion (sprites_slow, in video_frame) */
         .equ    rt_ticks,       RT_VARS+0x398   /* .l arcade ticks run (frame_hook calls; profiling) */
         .equ    rt_lu_c0last,   RT_VARS+0x394   /* 2 x .w first map column checked by the last pass 1 (layer 0, layer 1) */
@@ -98,7 +104,9 @@
 * frame preparation and by vram_store, replayed by vram_flush at the start of the next VBlank so that the
 * screen never changes while it is being drawn
         .equ    VCMD_BUF,       0x10C280
-        .equ    VCMD_END,       0x10EF00
+        .equ    VCMD_END,       0x10E700
+        .equ    ARC_PALB7,      0x10E700        /* 2 KB: arcade palette bank 7 (203800-203FFF: the night stages' undimmed colours) */
+        .equ    ARC_PALB7_END,  0x10EF00
         .equ    VCMD_ROOM,      160             /* bytes reserved per block (header + up to 64 words + slack) */
 * companion columns (HI over layer 0, BG under layer 1): only the rows r0 .. r0+h-1 of the map column that
 * hold something are uploaded and displayed (sprites per scanline); a cell changing category marks the
@@ -139,6 +147,7 @@
         .equ    PAL_TILES,      PAL_ARC_BASE    /* arcade tile colours 0-31 -> palettes 16-47 */
         .equ    PAL_SPRITES,    PAL_ARC_BASE+32 /* arcade sprite colours (entries 0x200+) -> palettes 48-63 */
         .equ    PAL_SHADOW,     80              /* shadow sprites */
+        .equ    PAL_LIGHT,      81              /* the same sprites in the night stages: headlight beams (gfx2crom --light) */
         .equ    PAL_FIX,        1               /* fix layer text (fix palettes must be 0..15) */
         .equ    CROP_X,         9               /* arcade frame x of Neo Geo x=0 (visarea 8 + 1) */
         .equ    SCB2_SHRINK,    0x0DFF          /* every sprite 14 pixels wide: the 368-pixel arcade screen x 7/8 = 322 -> the whole width in 320 */

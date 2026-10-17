@@ -30,6 +30,8 @@ RAM_WRAM = 0x104000      # arcade FEC000-FEFFFF
 RAM_PALRAW = 0x10A000    # arcade 200000-203FFF (only 200000-200FFF really used)
 RAM_SPR = 0x108C00       # arcade 440000-440FFF
 RAM_IO = 0x10B800        # arcade 700000-7000FF
+PALB7 = 0x10E700         # arcade 203800-203FFF (palette bank 7, src/ram.i ARC_PALB7)
+PALB7_LEA = {0x8B4C, 0x8B7E}     # lea $203800 / $203820 (night palette load); 0x8A60 (banks 6..0) -> night_banks
 RUNTIME_ORG = 0x15000
 
 TRACK_LO, TRACK_HI = 0x15000, 0xCE88C          # moved to P2 (maps + metatiles of both layers)
@@ -264,6 +266,8 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
         if tgt is None:
             continue
         pc = int(r['pc'], 16)
+        if pc in PALB7_LEA:                 # palette bank 7 (night stages) has its own 2 KB in the port
+            tgt = PALB7 + int(r['address'], 16) - 0x203800
         off = pc + int(r['operand_offset'])
         kind = r['kind']
         if kind in ('absL', 'imm', 'imm32'):
@@ -313,6 +317,13 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
     #      Neo Geo sprite pools (src/video.s spr_lists)
     assert rom[0x44E6:0x44EC] == bytes.fromhex('43F9') + struct.pack('>I', reloc_target('SPR', 0x440006)), 'sprite copy 0x44E6'
     rom[0x44E6:0x44EC] = bytes.fromhex('4EF9') + struct.pack('>I', syms['spr_lists'])
+    # 4a0. night palette banks 6..0 (0x8A60, lea $203000,a2 ...) -> src/glue.s night_banks (banks 2-6 not kept)
+    assert rom[0x8A60:0x8A62] == bytes.fromhex('45F9'), 'night banks 0x8A60'
+    rom[0x8A60:0x8A66] = bytes.fromhex('4EF9') + struct.pack('>I', syms['night_banks'])
+    # 4a00. busy-wait delays (fades) measured with the raster counter (src/glue.s delay_long / delay_short)
+    assert rom[0x2F70:0x2F8C] == bytes.fromhex('303CFFF051C8FFFE51C9FFF64E75303C0FF051C8FFFE51C9FFF64E75'), 'delays 0x2F70'
+    rom[0x2F70:0x2F76] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_long'])
+    rom[0x2F7E:0x2F84] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_short'])
     # 4a2. faster equivalents of two arcade routines that the race calls very often (same registers and flags):
     #  0xA07A search of a record by key -> indexed (src/glue.s srch_hook)
     assert rom[0xA07A:0xA080] == bytes.fromhex('B0516700000E'), 'search 0xA07A'

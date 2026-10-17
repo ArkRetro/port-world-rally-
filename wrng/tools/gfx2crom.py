@@ -16,6 +16,12 @@ selects palette bank p-8 for the pixel below: bank 0 is the normal palette (no c
 a darker copy and leaves banks 2-7 black.  So pens 0-8 become transparent, pen 9 is kept on a checkerboard only
 (50 % dither: a black palette gives a translucent-looking shadow on hardware without alpha blending) and pens
 10-15 are kept whole (black).
+--light (after --shadow) appends a third set (numbers 0x8000+) for the same sprites in the night stages, where
+the game makes bank 0 (the tiles) the darkest and banks 1-7 brighter copies: the headlight beams.  The Neo Geo
+cannot recolour what is below, so the beam is an open dither of light pixels: pen p >= 9 (p-8 = how many
+steps brighter) lights 1 to 3 pixels in 16 (ordered 4x4 pattern), more for brighter pens, keeping the pen so
+that the runtime's light palette can give each step its own brightness.  The roads stay visible below.
+The C ROMs are padded to a power of two.
 """
 import sys
 
@@ -85,6 +91,21 @@ def main():
                     m[i] = p
             shadow.append(bytes(m))
         tiles = tiles + shadow
+    if '--light' in a:
+        bayer = (0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
+        light = []
+        for t in tiles[:16384]:
+            m = bytearray(256)
+            for i in range(256):
+                p = t[i]
+                if p >= 9:
+                    lit = (p - 8) * 3 // 7 + (1 if (p - 8) * 3 % 7 else 0)      # 1..3 of 16
+                    if bayer[((i >> 4) & 3) * 4 + (i & 3)] < lit:
+                        m[i] = p
+            light.append(bytes(m))
+        tiles = tiles + light
+        while len(tiles) & (len(tiles) - 1):
+            tiles.append(bytes(256))
     c1, c2 = encode_neogeo(tiles)
     open(oc1, 'wb').write(c1)
     open(oc2, 'wb').write(c2)

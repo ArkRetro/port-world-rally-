@@ -11,7 +11,8 @@
         .include "ram.i"
 
         .text
-        .global game_main, sound_init, frame_hook, trap1_handler, main_wait, arc_sound_tick, srch_hook
+        .global game_main, sound_init, frame_hook, trap1_handler, main_wait, arc_sound_tick, srch_hook, night_banks
+        .global delay_long, delay_short
 
         .equ    ARC_RESET,      0x2400
         .equ    ARC_IRQ6,       0x2F8C
@@ -222,15 +223,115 @@ srch_tabs:
 srch_idx:
         .include "srch_idx.inc"
 
+* ------------------------------------------------------------------------------------------
+* night_banks (jmp at 0x8A60, a1 = FEF87E): the night stages build palette banks 6..0 of the arcade, each
+* one step darker than the previous (0x203000 down to 0x200000; the tiles show bank 0, the headlight
+* sprites pick brighter ones).  The port keeps arcade palette RAM 200000-200FFF (banks 0 and 1) and bank
+* 7 only: the same loop with the bank address kept as an arcade address, storing only what is kept
+* (before, banks 2-6 were written over the RAM that follows the palette shadow: I/O, sprite pools and
+* VRAM queue - a black screen).  Same registers at the end as the original.
+* ------------------------------------------------------------------------------------------
+night_banks:
+        move.l  d3,-(sp)
+        movea.l #0x203000,a2            /* bank 6, arcade address */
+        move.w  #6,d6
+1:      move.l  a1,d5
+2:      move.w  (a1),d4
+        move.w  d4,d0
+        andi.w  #0x000F,d0
+        subq.w  #1,d0
+        bcc.s   3f
+        clr.w   d0
+3:      move.w  d4,d1
+        andi.w  #0x00F0,d1
+        subi.w  #0x0010,d1
+        bcc.s   4f
+        clr.w   d1
+4:      move.w  d4,d2
+        andi.w  #0x0F00,d2
+        subi.w  #0x0100,d2
+        bcc.s   5f
+        clr.w   d2
+5:      or.w    d2,d1
+        or.w    d1,d0
+        cmpa.l  #0x201000,a2
+        bcc.s   6f                      /* banks 2-6: not kept */
+        move.l  a2,d3
+        sub.l   #0x200000-ARC_PALRAW,d3
+        exg     d3,a2
+        move.w  d0,(a2)
+        exg     d3,a2
+6:      addq.l  #2,a2
+        move.w  d0,(a1)+
+        cmpa.l  #ARC_WRAM+0x3E7E,a1     /* FEFE7E */
+        blt.s   2b
+        suba.l  #0x600,a1
+        suba.l  #0xE00,a2
+        dbra    d6,1b
+        suba.l  #0x200000-ARC_PALRAW,a2
+        move.l  (sp)+,d3
+        rts
+
+* ------------------------------------------------------------------------------------------
+* delay_long / delay_short (jmp at 0x2F70 / 0x2F7E): the arcade's busy-wait delays, d1+1 units of a dbra
+* loop (65521 / 4081 iterations: about 655,000 / 40,800 cycles, 54.6 / 3.4 ms at 12 MHz).  They set
+* the speed of the fades and of some screens.  On the Neo Geo the VBlank work of the port takes part of
+* those cycles, so the same loop lasted longer (much longer on hardware): the time is measured with the
+* raster line counter instead (768 cycles a line), so the delays last what they last on the arcade.
+* Returns d0.w = d1.w = $FFFF like the loops.
+* ------------------------------------------------------------------------------------------
+delay_long:
+        move.l  #655226,d0
+        bra.s   delay_units
+delay_short:
+        move.l  #40834,d0
+delay_units:
+        movem.l d2-d4,-(sp)
+        moveq   #0,d2
+        move.w  d1,d2
+        addq.l  #1,d2                   /* units */
+        move.l  d0,d3
+        swap    d3
+        mulu    d2,d3
+        swap    d3
+        clr.w   d3
+        mulu    d2,d0
+        add.l   d3,d0                   /* cycles to wait */
+        move.w  REG_LSPCMODE,d3
+        lsr.w   #7,d3                   /* line (0xF8..0x1FF) */
+1:      move.b  d0,REG_WATCHDOG
+        move.w  REG_LSPCMODE,d4
+        lsr.w   #7,d4
+        move.w  d4,d2
+        sub.w   d3,d2                   /* lines since the last read */
+        bpl.s   2f
+        add.w   #264,d2                 /* past the last line: the counter went back to 0xF8 */
+2:      move.w  d4,d3
+        mulu    #768,d2
+        sub.l   d2,d0
+        bgt.s   1b
+        movem.l (sp)+,d2-d4
+        moveq   #-1,d0
+        moveq   #-1,d1
+        rts
+
 * arc_sound_tick: the arcade sound sequencer (called once per arcade interrupt at 0x2FFE, moved here so
 * that it runs every VBlank even when a tick is held back)
 arc_sound_tick:
         tst.b   rt_arcade_on
         beq.s   1f
+        tst.b   rt_in_hook
+        bne.s   2f
         movem.l d0-d7/a0-a6,-(sp)
         jsr     ARC_SNDSEQ
         movem.l (sp)+,d0-d7/a0-a6
 1:      rts
+2:      /* a tick of the arcade is running: as on the arcade (the sequencer is part of its interrupt), it
+           must not be interrupted by the sequencer - frame_hook runs it when the tick ends */
+        cmpi.b  #3,rt_snd_owed
+        bcc.s   1b
+        addq.b  #1,rt_snd_owed
+        rts
 
 frame_hook:
         move.w  REG_LSPCMODE,rt_dbg     /* profiling: raster counter at each milestone */
@@ -249,7 +350,12 @@ arc_irq_done:
         bsr     video_frame
         move.w  REG_LSPCMODE,rt_dbg+6
         bsr     diag_frame
-        move.l  rt_saved_sp,sp
+1:      tst.b   rt_snd_owed             /* sequencer runs held back during this tick */
+        beq.s   2f
+        subq.b  #1,rt_snd_owed
+        jsr     ARC_SNDSEQ
+        bra.s   1b
+2:      move.l  rt_saved_sp,sp
         rts
 
 * ------------------------------------------------------------------------------------------
@@ -257,7 +363,7 @@ arc_irq_done:
 * the arcade program and the ticks skipped, on the fix layer.  "OK" / "MAL" compares a sum with the
 * value of the original program.  Queued like any other VRAM change.
 * ------------------------------------------------------------------------------------------
-        .equ    DIAG_N, 19
+        .equ    DIAG_N, 21
 diag_frame:
         move.b  BIOS_P1CURRENT,d0
         btst    #7,d0
@@ -434,6 +540,14 @@ diag_tab:
         .long   0
         .ascii  "SKIP"
         .long   rt_skip
+        .word   2
+        .long   0
+        .ascii  "TPS "                  /* arcade ticks per second (decimal; 60 = full speed) */
+        .long   rt_tps
+        .word   2
+        .long   0
+        .ascii  "IDLE"                  /* % of the CPU left over in the last second (decimal) */
+        .long   rt_idlepct
         .word   2
         .long   0
 

@@ -89,6 +89,7 @@ irq_vblank:
         move.b  d0,REG_WATCHDOG
         addq.l  #1,rt_frame
         st      rt_vbl_flag
+        bsr     vbl_stats
         tst.b   rt_in_hook
         beq.s   1f
         /* a tick is still running (it was allowed to be interrupted): its palettes, layers and sprites are
@@ -144,6 +145,48 @@ irq_after_io:
         clr.b   rt_in_hook
         movem.l (sp)+,d0-d7/a0-a6
         rte
+
+* vbl_stats: once a second, the arcade ticks run and the idle time of its main loop (diagnostic overlay),
+* in BCD so that the overlay's hex digits read as decimal.  Trashes d0-d1.
+vbl_stats:
+        subq.b  #1,rt_st_cnt
+        bpl.s   9f
+        move.b  #59,rt_st_cnt
+        move.l  rt_ticks,d0
+        move.l  d0,d1
+        sub.l   rt_st_ticks,d0
+        move.l  d1,rt_st_ticks
+        bsr.s   to_bcd
+        move.w  d0,rt_tps
+        move.l  rt_idle,d0
+        move.l  d0,d1
+        sub.l   rt_st_idle,d0
+        move.l  d1,rt_st_idle
+        cmpi.l  #2253*100,d0
+        bls.s   1f
+        move.l  #2253*100,d0
+1:      divu    #2253,d0                /* main_wait iterations (54 cycles) per second -> % of 12.17 Mcycles */
+        and.l   #0xFFFF,d0
+        bsr.s   to_bcd
+        move.w  d0,rt_idlepct
+9:      rts
+to_bcd: /* d0.l (0..999) -> d0.w BCD */
+        cmpi.l  #999,d0
+        bls.s   1f
+        move.w  #999,d0
+1:      and.l   #0xFFFF,d0
+        divu    #100,d0
+        move.w  d0,d1                   /* hundreds */
+        clr.w   d0
+        swap    d0
+        divu    #10,d0                  /* tens, units in the high word */
+        lsl.w   #4,d1
+        or.w    d0,d1
+        swap    d0
+        lsl.w   #4,d1
+        or.w    d0,d1
+        move.w  d1,d0
+        rts
 
 irq_timer:
         btst    #7,BIOS_SYSTEM_MODE
