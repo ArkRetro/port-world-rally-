@@ -113,8 +113,7 @@ start:
         out     (0x0C),a                ; reply: idle, nothing busy
         call    ym_init
         xor     a
-        out     (0x08),a                ; enable NMI
-        ei
+        out     (0x08),a                ; enable NMI (maskable interrupts stay disabled: the YM timers are unused)
 main:
         ; poll the ADPCM-A end flags and keep the busy mask / reply up to date
         in      a,(0x06)
@@ -176,6 +175,9 @@ ym_wait:
         ret
 
 ym_init:
+        ld      a,#0x27                 ; stop timers A/B and clear their flags (the BIOS driver leaves them
+        ld      c,#0x30                 ; running: a pending timer IRQ would otherwise stay asserted)
+        call    ym_a0
         ld      a,#0x00
         ld      c,#0xBF                 ; dump all ADPCM-A channels
         call    ym_a1

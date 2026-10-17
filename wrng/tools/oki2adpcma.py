@@ -400,6 +400,10 @@ def main(argv):
         err = rms_rel_error(res16, dec16[:nsamp_ym])
         errors.append(err)
 
+        # the YM2610's ADPCM-A address counter only carries 20 bits: a sample must not cross a 1 MB
+        # boundary (MAME plays it anyway, the real chip wraps inside the 1 MB bank) -> pad to the boundary
+        if (len(vrom) >> 20) != ((len(vrom) + len(data) - 1) >> 20):
+            vrom += bytes(((len(vrom) >> 20) + 1 << 20) - len(vrom))
         vstart = len(vrom)
         vrom += data
         vend = len(vrom) - 1
@@ -420,6 +424,11 @@ def main(argv):
     if len(vrom) > VROM_MAX:
         print("ERROR: V-ROM is %d bytes, more than 16 MB" % len(vrom), file=sys.stderr)
         return 1
+    # real cartridges (and flash carts mapping them) use power-of-two V-ROM sizes
+    size = 1 << 20
+    while size < len(vrom):
+        size <<= 1
+    vrom += bytes(size - len(vrom))
     with open(f_v1, "wb") as f:
         f.write(vrom)
 

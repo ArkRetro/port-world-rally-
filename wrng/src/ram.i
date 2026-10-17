@@ -34,9 +34,9 @@
         .equ    rt_start_pulse, RT_VARS+0x157   /* .b frames left of a synthetic start press */
         .equ    rt_okibank,     RT_VARS+0x158   /* .b last OKI bank written */
         .equ    rt_okiphrase,   RT_VARS+0x159   /* .b last OKI phrase byte written (0x80|phrase) */
-        .equ    rt_sprites_used,RT_VARS+0x15A   /* .w Neo Geo sprites used by the previous frame's list */
+        .equ    rt_sprites_used,RT_VARS+0x15A   /* .w end of pool 0 as last written to VRAM (vram_flush) */
         .equ    rt_gear,        RT_VARS+0x15C   /* .b gear toggle state */
-        .equ    rt_sprites_used1,RT_VARS+0x15E  /* .w same for the high-priority pool (SPR_PRI1..) */
+        .equ    rt_sprites_used1,RT_VARS+0x15E  /* .w same for pool 1 (SPR_PRI1..) */
         .equ    rt_saved_sp,    RT_VARS+0x160   /* .l SP of the arcade stack while its IRQ handler runs on ours */
         .equ    rt_prev_b,      RT_VARS+0x164   /* .b previous B button (gear toggle edge) */
         .equ    rt_in_game,     RT_VARS+0x165   /* .b */
@@ -57,14 +57,42 @@
         .equ    rt_bg_cnt,      RT_VARS+0x318   /* NCOLSPR bytes: layer-1 cells needing an opaque backdrop, per column sprite s */
         .equ    rt_bg_recount,  RT_VARS+0x330   /* .b a tile palette changed: recount rt_bg_cnt next frame */
         .equ    rt_backdrop,    RT_VARS+0x332   /* .w Neo Geo backdrop colour for the next VBlank (colour 0 of the central layer-1 cell) */
+        .equ    rt_dbg,         RT_VARS+0x340   /* 8 words: raster counter (REG_LSPCMODE) at frame_hook milestones (profiling) */
+        .equ    rt_xbuf,        RT_VARS+0x350   /* NCOLSPR words: SCB4 x of column sprite s this frame (shared by the layer and its HI/BG set) */
+        .equ    rt_pal0_black,  RT_VARS+0x3C0   /* 32 bytes: 1 if colour 0 of tile palette p is black (backdrop recount trigger) */
+        .equ    rt_vcmd_ptr,    RT_VARS+0x3E0   /* .l end of the commands queued in VCMD_BUF */
+        .equ    rt_spr_n0,      RT_VARS+0x3E4   /* .w sprites prepared in pool 0 (for the next flush) */
+        .equ    rt_spr_n1,      RT_VARS+0x3E6   /* .w sprites prepared in pool 1 */
+        .equ    rt_lu_sig,      RT_VARS+0x3E8   /* 2 x (.w SCB4 x0, .w SCB3 y) of the positions queued last (layer 0, layer 1) */
+        .equ    rt_lu_force,    RT_VARS+0x3F0   /* 2 x .b positions must be queued again (column reloaded / companion shown or hidden) */
 
         .equ    ARC_PALRAW,     0x10A000        /* 4 KB: arcade palette RAM 200000-200FFF as written by the game (xBRG444) */
         .equ    ARC_PALRAW_END, 0x10B000
         .equ    ARC_PALLAST,    0x10B000        /* 2 KB: copy of entries 0-1023 last converted */
         .equ    ARC_IO,         0x10B800        /* 256 bytes: arcade I/O 700000-7000FF (inputs filled by us, latches ignored) */
         .equ    ARC_IO_END,     0x10B900
-        .equ    SPR_CACHE,      0x10B900        /* 381 x 8 bytes: arcade sprite entry last written to each Neo Geo sprite (0xFF.. none) */
-        .equ    SPR_CACHE_END,  0x10C500
+* sprite fields prepared by sprites_update and written to VRAM by vram_flush at the next VBlank:
+* per pool four word arrays (SCB1 tile, SCB1 attribute, SCB3, SCB4), one entry per Neo Geo sprite
+        .equ    SPR_F0,         0x10B900        /* pool 0 (SPR_OBJ..): 4 x SPR_OBJ_MAX words */
+        .equ    SPR_F0_SZ,      SPR_OBJ_MAX*2
+        .equ    SPR_F1,         SPR_F0+4*SPR_F0_SZ      /* pool 1 (SPR_PRI1..): 4 x SPR_PRI1_MAX words */
+        .equ    SPR_F1_SZ,      SPR_PRI1_MAX*2
+        .equ    SPR_F_END,      SPR_F1+4*SPR_F1_SZ
+* VRAM command buffer: blocks of (address.w, VRAMMOD.w, count-1.w, count data words), written by the
+* frame preparation and by vram_store, replayed by vram_flush at the start of the next VBlank so that the
+* screen never changes while it is being drawn
+        .equ    VCMD_BUF,       0x10C280
+        .equ    VCMD_END,       0x10EF00
+        .equ    VCMD_ROOM,      160             /* bytes reserved per block (header + up to 64 words + slack) */
+* companion columns (HI over layer 0, BG under layer 1): only the rows r0 .. r0+h-1 of the map column that
+* hold something are uploaded and displayed (sprites per scanline); a cell changing category marks the
+* column dirty and it is recounted on the next frame
+        .equ    CMP_HI_R0,      0x10EF00        /* NCOLSPR bytes: first map row shown by HI sprite SPR_HI+s */
+        .equ    CMP_HI_H,       0x10EF18        /* NCOLSPR bytes: its height in tiles */
+        .equ    CMP_BG_R0,      0x10EF30
+        .equ    CMP_BG_H,       0x10EF48
+        .equ    CMP_HI_DIRTY,   0x10EF60        /* NCOLSPR bytes */
+        .equ    CMP_BG_DIRTY,   0x10EF78
 
         .equ    RT_CLEAR_END,   0x10F000        /* RAM cleared at start; 0x10F000-0x10F2FF = runtime stack */
         .equ    RT_STACK,       BIOS_RAM        /* runtime stack top */

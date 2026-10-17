@@ -19,6 +19,7 @@ game_main:
         bsr     load_frame
 main_loop:
         bsr     wait_vblank
+        ori.w   #0x0700,sr              /* no VBlank flush while this loop queues / writes VRAM */
         /* select a dump with A/B/C/D (BIOS_P1CHANGE: pressed this frame) */
         move.b  BIOS_P1CHANGE,d0
         moveq   #-1,d1
@@ -52,6 +53,7 @@ main_loop:
         moveq   #0,d2
         move.w  d6,d2
         bsr     fix_hex16
+        andi.w  #0xF8FF,sr
         bra     main_loop
 
 * load_frame: d6 = index 0..4

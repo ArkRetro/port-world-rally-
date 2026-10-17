@@ -47,6 +47,16 @@
         .equ    REG_PALBANK0,   0x3A001F
 
 * ---- LSPC (video) ----
+* VRAM_GAP: during active display the LSPC grants the 68k few access slots; SNK's rules are at least 16 CPU
+* cycles between a data write and the next address write (12 between data writes), else writes are lost
+* (not emulated by MAME).  Four nops = 16 cycles.
+        .macro  VRAM_GAP
+        nop
+        nop
+        nop
+        nop
+        .endm
+
         .equ    REG_VRAMADDR,   0x3C0000
         .equ    REG_VRAMRW,     0x3C0002
         .equ    REG_VRAMMOD,    0x3C0004

@@ -85,10 +85,13 @@ irq_vblank:
         move.b  d0,REG_WATCHDOG
         addq.l  #1,rt_frame
         st      rt_vbl_flag
+        /* first of all, while the beam is in the vertical blank: palettes and the VRAM queue
+           prepared during the previous frame */
+        bsr     video_vblank
+        bsr     vram_flush
         move.l  sp,rt_io_sp
         jsr     SYSTEM_IO               /* inputs, coins, credits; may re-enter USER (see above) */
 irq_after_io:
-        bsr     video_vblank            /* palette flush (must be in VBlank) */
         jsr     snd_vblank
         jsr     frame_hook              /* game: arcade IRQ + uploads; viewer: rts */
         movem.l (sp)+,d0-d7/a0-a6

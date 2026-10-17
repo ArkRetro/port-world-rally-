@@ -152,6 +152,7 @@ io_update:
 
 * frame_hook: runs inside our VBlank handler (all registers saved by the caller)
 frame_hook:
+        move.w  REG_LSPCMODE,rt_dbg     /* profiling: raster counter at each milestone */
         bsr     io_update
         /* run the arcade IRQ handler on the runtime stack with a fake exception frame */
         move.l  sp,rt_saved_sp
@@ -160,8 +161,11 @@ frame_hook:
         move    sr,-(sp)
         jmp     ARC_IRQ6
 arc_irq_done:
+        move.w  REG_LSPCMODE,rt_dbg+2
         bsr     palette_sync
+        move.w  REG_LSPCMODE,rt_dbg+4
         bsr     video_frame
+        move.w  REG_LSPCMODE,rt_dbg+6
         move.l  rt_saved_sp,sp
         rts
 
@@ -193,39 +197,53 @@ trap_error_pc:
 
 * palette_sync: arcade palette RAM shadow (xBRG444, entries 0..1023) -> ARC_PAL (Neo Geo format) for
 * the 16-colour palettes whose raw words changed since the last call.
+* Half of the 64 palettes is checked per frame (alternating), so a change shows up at most two frames
+* later; the compare is 8 cmpm.l per palette with an early exit on the first difference.
 palette_sync:
         lea     ARC_PALRAW,a0
         lea     ARC_PALLAST,a1
         lea     ARC_PAL,a2
         lea     rt_pal_dirty,a3
         lea     pal_table,a4
-        moveq   #63,d7
+        btst    #0,rt_frame+3
+        beq.s   1f
+        lea     1024(a0),a0             /* odd frames: palettes 32..63 */
+        lea     1024(a1),a1
+        lea     1024(a2),a2
+        lea     32(a3),a3
+1:      moveq   #31,d7
 ps_pal:
-        movem.l (a0),d0-d3
-        cmp.l   (a1),d0
+        cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
-        cmp.l   4(a1),d1
+        cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
-        cmp.l   8(a1),d2
+        cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
-        cmp.l   12(a1),d3
+        cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
-        movem.l 16(a0),d0-d3
-        cmp.l   16(a1),d0
+        cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
-        cmp.l   20(a1),d1
+        cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
-        cmp.l   24(a1),d2
+        cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
-        cmp.l   28(a1),d3
+        cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
-        lea     32(a0),a0
-        lea     32(a1),a1
         lea     32(a2),a2
         addq.l  #1,a3
         dbra    d7,ps_pal
         rts
 ps_conv:
+        /* back to the start of this palette and convert its 16 entries (a1 is past the differing long,
+           which may be the last one of the palette: step back before rounding down) */
+        move.l  a1,d0
+        subq.l  #4,d0
+        sub.l   #ARC_PALLAST,d0
+        and.w   #0xFFE0,d0
+        lea     ARC_PALLAST,a1
+        adda.l  d0,a1
+        lea     ARC_PALRAW,a0
+        adda.l  d0,a0
         moveq   #15,d6
 1:      move.w  (a0)+,d0
         move.w  d0,(a1)+
