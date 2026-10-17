@@ -1,5 +1,10 @@
 # World Rally → Neo Geo (AES / MVS) — port `wrng`
 
+> **Versión recomendada: [`../wrally_final/`](../wrally_final/)** — el port "WRally neogeo final" de arkretro
+> (probado en MiSTer / NeoSD). Se compila con `wrally_final/compilar.sh <carpeta ROM wrally>`.
+> `wrng` queda como port experimental.
+
+
 Port de **World Rally** (Gaelco, 1993) a Neo Geo hecho desde cero: un programa Neo Geo limpio en
 ensamblador 68000 que aloja la lógica original del juego arcade (reubicada y parcheada en tiempo
 de construcción) sobre una capa de hardware nueva. Todo el código vive en P1, se respetan las
