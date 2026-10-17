@@ -57,7 +57,7 @@ io_init:
 * Build the arcade input word from the Neo Geo controls (BIOS_P1CURRENT: bit0 up,1 down,2 left,3 right,
 * 4 A,5 B,6 C,7 D, active high after SYSTEM_IO).  A = accelerate, B = gear toggle, C = accelerate too.
 io_update:
-        move.w  #0xFFFF,d0              /* idle; the gear bit (4) reads 1 at power-on on the arcade (MAME default) */
+        move.w  #0xFFFF,d0              /* idle (the gear bit 4 is set below) */
         move.b  BIOS_P1CURRENT,d1
         btst    #0,d1
         beq.s   1f
@@ -85,8 +85,11 @@ io_update:
         tst.b   d2
         beq.s   6f
         eori.b  #1,rt_gear
-6:      tst.b   rt_gear
-        beq.s   7f
+6:      tst.b   rt_gear                 /* the gear lever reads 0 at power-on (MAME: toggle, active high,
+                                           reversed; the arcade's own variable C1F6 shows it): the attract
+                                           demo was recorded in that gear - in the other one the car drove
+                                           off its line and crashed */
+        bne.s   7f
         bclr    #ARC_P1_GEAR,d0
 7:      /* ---- credits: on MVS the BIOS owns them (backup RAM 0xD00034, BCD); mirror every increment
            into the arcade as a coin pulse so its own counter stays in sync ---- */
@@ -825,6 +828,7 @@ blk_done:
         cmp.b   d5,d4
         bhi.s   5f
         move.b  #0xFF,(a0)              /* inside the block: reload */
+        st      rt_col_inval            /* (layer_update checks every column even if the scroll is the same) */
 5:      addq.l  #1,a0
         dbra    d2,4b
         movem.l (sp)+,d5-d7/a0/a3/a6

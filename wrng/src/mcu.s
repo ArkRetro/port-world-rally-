@@ -534,10 +534,11 @@ mcu_autopilot:
         move.w  d0,d3
         bsr     div32x16
         and.l   #0xFFFF,d2              /* q */
-        /* find first entry with q < ratio (11 entries of 4 bytes), else the last */
+        /* find the first entry with q <= ratio (11 entries of 4 bytes), else the last (MCU 0x0400: an
+           equal ratio selects the entry) */
         moveq   #10,d3
 9:      cmp.w   (a0),d2
-        bcs   10f
+        bls   10f
         addq.l  #4,a0
         dbra    d3,9b
         subq.l  #4,a0                   /* none: last entry */
@@ -654,7 +655,9 @@ ap_ret2:
         rts
 
 * velocidad (MCU 0x0618): EAA8 = ext(sin[EAB1]*EAD2), EAAC = ext(cos[EAB1]*EAD2)
-*   ext(P) = (P << 1) >> 8 with the top byte = 0xFF if bit 31 of P was set, else 0
+*   P = |s| * v, negated when s < 0; ext(P) = (P >> 8) << 1 | cin, top byte 0xFF if bit 31 of P was set,
+*   else 0.  cin is the carry the MCU leaves before its shift (an RL, which keeps the carry): 1 from the
+*   CJNE of the positive case, the borrow of the negation in the negative case (1 unless P = 0)
 velocidad:
         moveq   #0,d0
         move.b  EAB1,d0
@@ -670,7 +673,7 @@ velocidad:
         bsr     vel_one
         move.l  d0,EAAC
         rts
-* vel_one: d1.w = table value (signed), d4 = speed -> d0.l
+* vel_one: d1.w = table value (signed), d4 = speed -> d0.l.  Trashes d1-d2.
 vel_one:
         move.w  d1,d2
         bpl   1f
@@ -678,12 +681,19 @@ vel_one:
 1:      and.l   #0xFFFF,d2
         mulu    d4,d2                   /* |s| * v, 32 bits */
         tst.w   d1
+        smi     d1                      /* d1.b = 0xFF: negative case */
         bpl   2f
-        neg.l   d2
+        neg.l   d2                      /* P (X = borrow = P != 0) */
 2:      move.l  d2,d0
-        add.l   d0,d0                   /* P << 1 ; carry = bit 31 of P */
-        lsr.l   #8,d0
+        clr.b   d0
+        lsr.l   #7,d0
+        and.l   #0x00FFFFFF,d0          /* (P >> 8) << 1 */
+        tst.b   d1
+        beq   4f                        /* positive: cin = 1 */
         tst.l   d2
+        beq   5f                        /* negative zero: no borrow, cin = 0 */
+4:      or.b    #1,d0
+5:      tst.l   d2
         bpl   3f
         or.l    #0xFF000000,d0
 3:      rts

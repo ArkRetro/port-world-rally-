@@ -73,6 +73,9 @@ seeds = []
 for v in range(1, 64):
     t = struct.unpack('>I', rom[v * 4:v * 4 + 4])[0]
     if t < ROMSZ and not (t & 1): seeds.append(t)
+# code only reached through a pointer the game keeps in a VRAM cell (0x90D8: move.l $DF850,$103AF0; 0x9382:
+# move.l $103AF0,$FEF7F8; 0x603C: jmp via $FEF7F8): the steering block at 0x6476 (absent from the coverage run)
+seeds += [0x6476]
 exec_set = set()
 if args.seeds:
     for line in open(args.seeds):

@@ -1454,6 +1454,16 @@ pc,insn_size,operand_offset,address,mnemonic,operands,access,op_size,region,kind
 006448,6,2,FEEA96,move.w,"$feea96.l, d1",r,.w,RAM,absL,ok
 00645C,6,2,FEC1B6,move.w,"$fec1b6.l, d0",r,.w,RAM,absL,ok
 00646E,6,2,FEEA96,move.w,"d1, $feea96.l",w,.w,RAM,absL,ok
+006476,8,4,FEC1FC,btst.b,"#$0, $fec1fc.l",r,.b,RAM,absL,ok
+006482,6,2,FEEAC2,move.w,"$feeac2.l, d0",r,.w,RAM,absL,ok
+006494,8,4,FEC154,btst.b,"#$d, $fec154.l",r,.b,RAM,absL,ok
+0064A0,8,4,FEC230,bset.b,"#$a, $fec230.l",rw,.b,RAM,absL,ok
+0064AC,8,4,FEEACC,move.w,"#$13, $feeacc.l",w,.w,RAM,absL,ok
+0064B4,8,4,FEEAD0,andi.w,"#$ff00, $feead0.l",rw,.w,RAM,absL,ok
+0064C0,8,4,FEC1FC,btst.b,"#$1, $fec1fc.l",r,.b,RAM,absL,ok
+0064CC,6,2,FEEAC2,move.w,"$feeac2.l, d0",r,.w,RAM,absL,ok
+0064DE,8,4,FEEACE,move.w,"#$13, $feeace.l",w,.w,RAM,absL,ok
+0064E6,8,4,FEEAD0,andi.w,"#$ff00, $feead0.l",rw,.w,RAM,absL,ok
 0064F2,6,2,FEEAC2,move.w,"$feeac2.l, d0",r,.w,RAM,absL,ok
 006504,8,4,FEEAC8,move.w,"#$0, $feeac8.l",w,.w,RAM,absL,ok
 00650C,6,2,FEEACA,addq.w,"#$1, $feeaca.l",rw,.w,RAM,absL,ok
