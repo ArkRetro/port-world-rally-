@@ -9,11 +9,11 @@ python3 -I build_patch.py "Lightening Force (USA).bin" frame_000.png tf4_ecco.bi
 ```
 Con `--everywhere` el delfín sale en todo el juego (demos y partida normal), no solo en el primer demo.
 
-`frame_000.png` es el fotograma del delfín extraído de Ecco (73×32, mirando a la derecha). El script lo reduce a 32×14 y lo ajusta a la paleta de la nave.
+El segundo argumento es la carpeta `frames/` del delfín extraído de Ecco (fotogramas mirando a la derecha). Se usa una pose para cada fotograma de la nave (`FRAMES` en el script: 5, 4, 1, 0, 3, 27, 24, de morro arriba a morro abajo), reducida a 32×16 y ajustada a la paleta de la nave. Si se pasa un solo PNG, se usa para los 7 fotogramas.
 
 ## Cómo funciona
-- La nave son 5 fotogramas de 4×2 tiles (32×16), paleta 0, tiles de VRAM 0x448–0x46F.
-- Vienen comprimidos en el archivo de ROM `0x90000`, entrada 3 (descompresor en `0x000EAE`, portado en `tf4_unpack.py`), que se descomprime a RAM `FF0800`. La nave ocupa `FF0900–FF0DFF` y luego se pasa a VRAM por DMA.
+- La nave son 7 fotogramas de 4×2 tiles (32×16), paleta 0, tiles de VRAM 0x440–0x477, desde inclinada hacia arriba del todo (0x440) hasta hacia abajo del todo (0x470).
+- Vienen comprimidos en el archivo de ROM `0x90000`, entrada 3 (descompresor en `0x000EAE`, portado en `tf4_unpack.py`), que se descomprime a RAM `FF0800`. La nave ocupa `FF0800–FF0EFF` y luego se pasa a VRAM por DMA.
 - En `0x000B72`, justo después de descomprimir esa entrada, `lea $90000.l,a0` pasa a ser `jsr $100000.l`. La rutina nueva comprueba:
   - `$FFF2FE` ≠ 0: modo demo.
   - `$FFF0B8` = 0: fase 0. El demo rota las fases 0–3 (contador `$FFF074`, empieza en 3) y la primera tras encender es la 0.
