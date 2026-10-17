@@ -789,15 +789,20 @@ blk_common:
         subq.w  #1,d3
         move.w  d2,d6
         /* the cells go straight to the shadow map; the column sprites showing the block's map columns
-           are reloaded whole at the next frame (much cheaper than one queued cell per tile).  They are
-           marked after the copy: a VBlank during the copy may load a column half written */
+           where a cell changed are reloaded whole at the next frame (much cheaper than one queued cell
+           per tile; a block drawn again unchanged costs nothing).  They are marked after the copy: a
+           VBlank during the copy may load a column half written */
         move.l  a5,d0
         and.w   #0x1FFF,d0
         lsr.w   #2,d0
         and.w   #63,d0                  /* first map column */
         move.w  d6,d5                   /* width - 1 */
         st      rt_col_inval
-        lea     rt_col_loaded,a0
+        moveq   #0,d4                   /* block columns with a changed cell (bit j; all if wider than 32) */
+        cmpi.w  #32,d6
+        bcs.s   1f
+        moveq   #-1,d4
+1:      lea     rt_col_loaded,a0
         tst.w   d7
         beq.s   blk_row
         lea     24(a0),a0               /* layer 1 */
@@ -805,7 +810,14 @@ blk_row:
         movea.l a5,a4
         move.w  d6,d2
 blk_col:
-        move.l  (a2,d1.w),(a4)+
+        move.l  (a2,d1.w),d5
+        cmp.l   (a4),d5
+        beq.s   3f
+        move.l  d5,(a4)
+        move.w  d6,d5
+        sub.w   d2,d5
+        bset    d5,d4
+3:      addq.l  #4,a4
         addq.w  #4,d1
         tst.w   d7
         beq.s   1f
@@ -819,19 +831,25 @@ blk_col:
         bge.s   blk_done
 2:      dbra    d3,blk_row
 blk_done:
+        tst.l   d4
+        beq.s   6f                      /* the block was already there: nothing to reload */
+        move.w  d6,d5
         moveq   #NCOLSPR-1,d2
-4:      move.b  (a0),d4
-        cmpi.b  #0xFF,d4
+4:      move.b  (a0),d3
+        cmpi.b  #0xFF,d3
         beq.s   5f
-        sub.b   d0,d4
-        and.b   #63,d4
-        cmp.b   d5,d4
+        sub.b   d0,d3
+        and.w   #63,d3
+        cmp.w   d5,d3
         bhi.s   5f
-        move.b  #0xFF,(a0)              /* inside the block: reload */
+        btst    d3,d4
+        beq.s   5f
+        move.b  #0xFF,(a0)              /* a changed column of the block: reload */
         st      rt_col_inval            /* (layer_update checks every column even if the scroll is the same) */
 5:      addq.l  #1,a0
         dbra    d2,4b
-        movem.l (sp)+,d5-d7/a0/a3/a6
+        moveq   #-1,d3                  /* as the original leaves it */
+6:      movem.l (sp)+,d5-d7/a0/a3/a6
         rts
 
 * Map strip copies (patched at 0x9904 / 0x99A0 / 0x9C3C / 0x9CD8 by tools/mkrom.py): the original inner
@@ -1086,6 +1104,349 @@ nat_v6:                                 /* 0x9CC0 */
         move.w  (sp)+,d5
         dbra    d3,nat_v6
         rts
+
+* nat_obj (jmp at 0x4708): the builder of the arcade's sprite list 2 (text and HUD objects, from the
+* object list at a0 into a3, count at FEC280).  An object one tile high (most of them: the characters
+* of the strings) takes a direct path; any other one runs the original code (transcribed below).  Same memory
+* effects; a0/a3/a4/a6 as the original leaves them.
+        .global nat_obj
+nat_obj:
+        lea     ARC_WRAM+0x280,a4
+        clr.w   (a4)
+no_loop:
+        move.w  (a0),d7
+        bpl.s   1f
+        move.w  #0x8000,(a6)
+        rts
+1:      tst.w   ARC_WRAM+0x3824         /* flipped screen: the original path */
+        bne     no_gen
+        move.w  d7,d0
+        andi.w  #0x3FF,d0
+        add.w   d0,d0
+        add.w   d0,d0
+        lea     0xD07D6,a1
+        cmpi.b  #1,3(a1,d0.w)           /* one row of tiles */
+        bne     no_gen
+        moveq   #0,d2
+        move.b  2(a1,d0.w),d2           /* width */
+        beq     no_gen
+        subq.w  #1,d2
+        moveq   #0,d1
+        move.w  (a1,d0.w),d1
+        movea.l ARC_WRAM+0x15FC,a2
+        adda.l  d1,a2
+        move.w  d7,d4
+        lsr.w   #8,d4
+        andi.b  #0x3C,d4
+        lsr.b   #2,d4
+        move.b  d4,ARC_WRAM+0x288       /* palette (as the original keeps it) */
+        move.w  ARC_WRAM+0x28E8,d6      /* y: (Y0 - (y + 13)) & 255 */
+        sub.w   4(a0),d6
+        subi.w  #13,d6
+        andi.w  #0xFF,d6
+        move.w  2(a0),d0                /* x: (x - 69 + 14) & 511, then + 16 a column */
+        subi.w  #55,d0
+        andi.w  #0x1FF,d0
+1:      tst.w   2(a2)
+        beq.s   9f
+        move.w  (a2),d5
+        andi.w  #0xFF00,d5
+        or.w    d6,d5
+        move.w  d5,(a3)
+        move.b  1(a2),d5
+        btst    #14,d7
+        beq.s   2f
+        lsr.b   #2,d5
+        andi.b  #0x30,d5
+        or.b    d4,d5
+        add.b   d5,d5
+        add.b   d5,d5
+2:      eori.b  #0x20,d5
+        lsl.w   #8,d5
+        or.w    d0,d5
+        move.w  d5,4(a3)
+        move.w  2(a2),d5
+        addi.w  #0x2E00,d5
+        move.w  d5,6(a3)
+        addq.l  #8,a3
+        addq.w  #1,(a4)
+9:      addq.l  #4,a2
+        addi.w  #16,d0
+        dbra    d2,1b
+        addq.l  #6,a0
+        bra     no_loop
+no_gen:                                 /* 0x471C */
+        lea     0xD07D6,a1
+        movea.l ARC_WRAM+0x15FC,a2
+        clr.l   d0
+        move.w  (a0),d0
+        andi.w  #0x3FF,d0
+        clr.w   d5
+        move.b  (a0),d5
+        andi.b  #0x3C,d5
+        lsr.w   #2,d5
+        move.b  d5,ARC_WRAM+0x288
+        add.w   d0,d0
+        add.w   d0,d0
+        adda.l  d0,a1
+        clr.l   d1
+        move.w  (a1)+,d1
+        adda.l  d1,a2
+        move.w  2(a0),d4
+        move.w  4(a0),d5
+        subi.w  #69,d4
+        addi.w  #13,d5
+        clr.l   d2
+        move.w  (a1),d2
+        clr.w   d3
+        move.b  d2,d3
+        lsr.w   #8,d2
+        move.w  d2,d1
+        add.w   d1,d1
+        add.w   d1,d1
+        subq.w  #1,d3
+        subq.w  #1,d2
+        tst.w   ARC_WRAM+0x3824
+        bne     no_flip
+        move.w  #-14,d0
+        sub.w   d4,d0
+        neg.w   d0
+        andi.w  #0x1FF,d0
+        move.w  ARC_WRAM+0x28E8,d4
+        swap    d4
+        move.b  ARC_WRAM+0x288,d4
+1:      movea.l a2,a5
+        movea.w d3,a1
+        swap    d4
+        move.w  d4,d6
+        swap    d4
+        sub.w   d5,d6
+        andi.w  #0xFF,d6
+2:      tst.w   2(a2)
+        beq.s   4f
+        move.w  (a2),d7
+        andi.w  #0xFF00,d7
+        or.w    d6,d7
+        move.w  d7,(a3)
+        addq.l  #4,a3
+        move.l  (a2),d7
+        swap    d7
+        btst    #6,(a0)
+        beq.s   3f
+        lsr.b   #2,d7
+        andi.b  #0x30,d7
+        or.b    d4,d7
+        add.b   d7,d7
+        add.b   d7,d7
+3:      eori.w  #0x20,d7
+        lsl.w   #8,d7
+        or.w    d0,d7
+        swap    d7
+        addi.w  #0x2E00,d7
+        move.l  d7,(a3)+
+        addq.w  #1,(a4)
+4:      adda.l  d1,a2
+        subi.w  #16,d6
+        dbra    d3,2b
+        move.w  a1,d3
+        movea.l a5,a2
+        addq.l  #4,a2
+        addi.w  #16,d0
+        dbra    d2,1b
+        addq.l  #6,a0
+        bra     no_loop
+no_flip:                                /* 0x47FE */
+        move.w  #-14,d0
+        sub.w   d4,d0
+        addi.w  #396,d0
+        andi.w  #0x1FF,d0
+        move.w  ARC_WRAM+0x28E8,d4
+        swap    d4
+        move.b  ARC_WRAM+0x288,d4
+1:      movea.l a2,a5
+        movea.w d3,a1
+        swap    d4
+        move.w  d4,d6
+        swap    d4
+        sub.w   d5,d6
+        subi.w  #234,d6
+        neg.w   d6
+        andi.w  #0xFF,d6
+2:      tst.w   2(a2)
+        beq.s   4f
+        move.w  (a2),d7
+        andi.w  #0xFF00,d7
+        or.w    d6,d7
+        eori.w  #0xC000,d7
+        move.w  d7,(a3)
+        addq.w  #4,a3
+        move.l  (a2),d7
+        swap    d7
+        btst    #6,(a0)
+        beq.s   3f
+        lsr.b   #2,d7
+        andi.b  #0x30,d7
+        or.b    d4,d7
+        add.b   d7,d7
+        add.b   d7,d7
+3:      eori.w  #0x20,d7
+        lsl.w   #8,d7
+        or.w    d0,d7
+        swap    d7
+        addi.w  #0x2E00,d7
+        move.l  d7,(a3)+
+        addq.w  #1,(a4)
+4:      adda.l  d1,a2
+        addi.w  #16,d6
+        dbra    d3,2b
+        move.w  a1,d3
+        movea.l a5,a2
+        addq.l  #4,a2
+        subi.w  #16,d0
+        dbra    d2,1b
+        addq.w  #6,a0
+        bra     no_loop
+
+* nat_txt (jmp at 0x12172): the arcade's string printer, which appends one sprite-list entry per
+* character (code, x/y) and handles the control codes 1-9 in between, translated with the variables
+* addressed off a3 (FEF400) and the codes dispatched at once instead of through a chain of nine compares.
+* Same memory and register effects as the original (a3 kept).
+        .global nat_txt
+        .equ    TX,     ARC_WRAM+0x3400
+nat_txt:
+        move.l  a3,-(sp)
+        lea     TX,a3
+nt_loop:
+        move.w  0xF4(a3),d0
+        andi.w  #0x7F,d0
+        cmpi.w  #100,d0
+        bne.s   1f
+        move.w  0x11A(a3),d0            /* code 9 mode: stop after the given count */
+        cmp.w   0x124(a3),d0
+        beq     nt_end
+1:      clr.w   d0
+        move.b  (a5),d0
+        cmpi.w  #9,d0
+        bhi.s   nt_char
+        add.w   d0,d0
+        move.w  nt_tab(pc,d0.w),d0
+        jmp     nt_tab(pc,d0.w)
+nt_tab: .word   nt_char-nt_tab, nt_c1-nt_tab, nt_c2-nt_tab, nt_c3-nt_tab, nt_c4-nt_tab
+        .word   nt_c5-nt_tab, nt_c6-nt_tab, nt_c7-nt_tab, nt_c8-nt_tab, nt_c9-nt_tab
+nt_char:
+        movea.l 0xF6(a3),a2
+        clr.w   d0
+        move.b  (a5),d0
+        add.w   0x11E(a3),d0
+        add.w   0xF2(a3),d0
+        move.w  0xF4(a3),d1
+        andi.w  #0x7F,d1
+        add.w   d1,d0
+        move.w  d0,(a2)+
+        move.l  0xEE(a3),(a2)+
+        move.l  a2,0xF6(a3)
+        addq.w  #1,0x11A(a3)
+        move.w  0x11A(a3),d1
+        cmp.w   0x114(a3),d1
+        bne.s   2f
+        move.w  0x10C(a3),0x10A(a3)
+        bra.s   3f
+2:      cmp.w   0x116(a3),d1
+        bne.s   3f
+        move.w  0x112(a3),0x10E(a3)
+3:      clr.w   d0
+        move.b  (a5)+,d0
+        move.w  0xF4(a3),d1
+        andi.w  #0x7F,d1
+        add.w   d1,d0
+        add.w   d0,d0
+        lea     0xEFC46,a1
+        move.w  0xEE(a3),d1
+        add.w   (a1,d0.w),d1
+        add.w   0x10A(a3),d1
+        move.w  d1,0xEE(a3)
+        move.w  0xF0(a3),d1
+        add.w   0x10E(a3),d1
+        move.w  d1,0xF0(a3)
+        bra     nt_loop
+nt_c3:  move.w  0xF4(a3),d0             /* end of the string (d0 as the original leaves it) */
+        andi.w  #0x7F,d0
+nt_end:                                 /* 0x121DC */
+        clr.w   0x10A(a3)
+        clr.w   0x10E(a3)
+        clr.w   0x114(a3)
+        clr.w   0x116(a3)
+        clr.w   0x11A(a3)
+        andi.w  #0xFF80,0xF4(a3)
+        movea.l (sp)+,a3
+        rts
+nt_c1:  addq.l  #1,a5                   /* x, y */
+        clr.l   d0
+        move.b  (a5)+,d0
+        add.w   d0,d0
+        swap    d0
+        move.b  (a5)+,d0
+        add.w   d0,d0
+        move.l  d0,0xEE(a3)
+        bra     nt_loop
+nt_c2:  addq.l  #1,a5                   /* palette */
+        clr.w   d0
+        move.b  (a5)+,d0
+        ror.w   #6,d0
+        move.w  d0,0xF2(a3)
+        bra     nt_loop
+nt_c4:  addq.l  #1,a5                   /* x step */
+        clr.w   d0
+        move.b  (a5)+,d0
+        ext.w   d0
+        move.w  d0,0x10A(a3)
+        bra     nt_loop
+nt_c5:  addq.l  #1,a5                   /* position from the table at FEF52A */
+        clr.w   d0
+        move.b  (a5)+,d0
+        lsl.w   #2,d0
+        lea     TX+0x12A,a1
+        adda.w  d0,a1
+        move.l  (a1),0xEE(a3)
+        bra     nt_loop
+nt_c6:  addq.l  #1,a5
+        clr.w   d0
+        move.b  (a5)+,d0
+        lsl.w   #2,d0
+        lea     TX+0x146,a1
+        adda.w  d0,a1
+        move.b  (a1),d0
+        ext.w   d0
+        move.w  d0,0x10A(a3)
+        move.b  1(a1),d0
+        ext.w   d0
+        move.w  d0,0x10C(a3)
+        move.b  2(a1),0x115(a3)
+        bra     nt_loop
+nt_c7:  addq.l  #1,a5                   /* y step */
+        clr.w   d0
+        move.b  (a5)+,d0
+        ext.w   d0
+        move.w  d0,0x10E(a3)
+        bra     nt_loop
+nt_c8:  addq.l  #1,a5
+        clr.w   d0
+        move.b  (a5)+,d0
+        lsl.w   #2,d0
+        lea     TX+0x146,a1
+        adda.w  d0,a1
+        move.b  (a1),d0
+        ext.w   d0
+        move.w  d0,0x10E(a3)
+        move.b  1(a1),d0
+        ext.w   d0
+        move.w  d0,0x112(a3)
+        move.b  2(a1),0x117(a3)
+        bra     nt_loop
+nt_c9:  addq.l  #1,a5
+        andi.w  #0xFF80,0xF4(a3)
+        ori.w   #100,0xF4(a3)
+        bra     nt_loop
 
 * strip_win: a0 -> source pair, a1 -> map cell of a column in the window.  Preserves every register.
 strip_win:

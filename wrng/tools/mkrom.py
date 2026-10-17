@@ -328,6 +328,12 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
     rom[0x2F7E:0x2F84] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_short'])
     # 4a2. faster equivalents of two arcade routines that the race calls very often (same registers and flags):
     #  map strip copy loops -> native (src/glue.s nat_h7/nat_v7/nat_h6/nat_v6): the loop heads take a jmp
+    #  sprite list 2 builder -> native (src/glue.s nat_obj); its loop ends with bra 0x4710 / 0x4710
+    assert orig[0x4708:0x470E] == bytes.fromhex('49F900FEC280') and orig[0x47FA:0x47FE] == bytes.fromhex('6000FF14')
+    rom[0x4708:0x470E] = bytes.fromhex('4EF9') + struct.pack('>I', syms['nat_obj'])
+    #  string printer -> native (src/glue.s nat_txt)
+    assert orig[0x12172:0x12178] == bytes.fromhex('303900FEF4F4') and orig[0x12390:0x12392] == bytes.fromhex('FDE2')
+    rom[0x12172:0x12178] = bytes.fromhex('4EF9') + struct.pack('>I', syms['nat_txt'])
     for pc, expect, name in ((0x98EC, '3F053F032F093F01', 'nat_h7'), (0x9988, '3F053F032F093F02', 'nat_v7'),
                              (0x9C24, '3F053F032F093F01', 'nat_h6'), (0x9CC0, '3F053F032F093F02', 'nat_v6')):
         assert orig[pc:pc + 8] == bytes.fromhex(expect), hex(pc)
