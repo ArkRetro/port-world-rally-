@@ -108,10 +108,10 @@ irq_vblank:
         rte
 1:      /* first of all, while the beam is in the vertical blank: palettes and the VRAM queue of the last
            tick (and the map changes the main loop made since) */
-        bsr     video_vblank
         bsr     vram_flush
-        bsr     tick_bonus
         move.w  REG_LSPCMODE,rt_dbg+12  /* profiling: raster line at the end of the VRAM flush */
+        bsr     video_vblank
+        bsr     tick_bonus
         move.l  sp,rt_io_sp
         jsr     SYSTEM_IO               /* inputs, coins, credits; may re-enter USER (see above) */
 irq_after_io:

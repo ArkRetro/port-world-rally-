@@ -56,6 +56,8 @@
         .equ    rt_hi_cnt,      RT_VARS+0x300   /* NCOLSPR bytes: category-1 cells in the layer-0 column of sprite s */
         .equ    rt_bg_cnt,      RT_VARS+0x318   /* NCOLSPR bytes: layer-1 cells needing an opaque backdrop, per column sprite s */
         .equ    rt_bg_recount,  RT_VARS+0x330   /* .b a tile palette changed: recount rt_bg_cnt next frame */
+        .equ    rt_eff_cp,      RT_VARS+0x334   /* .l sl_eff: EFF_DESC entry of the current headlight column */
+        .equ    rt_eff_tp,      RT_VARS+0x338   /* .l sl_eff: next free tile slot */
         .equ    rt_backdrop,    RT_VARS+0x332   /* .w Neo Geo backdrop colour for the next VBlank (colour 0 of the central layer-1 cell) */
         .equ    rt_dbg,         RT_VARS+0x340   /* 8 words: raster counter (REG_LSPCMODE) at frame_hook milestones (profiling) */
 * presentation queue: frame_hook seals each frame it prepares (end of its VRAM commands in the ring, the

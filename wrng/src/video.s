@@ -1515,8 +1515,8 @@ sl_eff:
         move.l  a1,-(sp)
         cmpi.w  #EFF_TILES_MAX,rt_eff_nt
         bcc     9f                      /* no room left: dropped */
-        move.w  rt_eff_n,d0
-        beq.s   2f
+        tst.w   rt_eff_n
+        beq.s   4f                      /* first column of the frame */
         cmp.w   rt_eff_last,d5          /* same x */
         bne.s   2f
         cmp.w   rt_eff_last+2,d2        /* same attribute */
@@ -1525,36 +1525,33 @@ sl_eff:
         sub.w   #0x800,d0               /* 16 lines lower */
         cmp.w   d0,d4
         bne.s   2f
-        move.w  rt_eff_n,d0
-        lsl.w   #3,d0
-        movea.l rt_eff_base,a1
-        subq.l  #8,a1
-        adda.w  d0,a1                   /* current column */
+        movea.l rt_eff_cp,a1            /* current column */
         cmpi.w  #16,6(a1)
         bcc.s   2f
         addq.w  #1,6(a1)
         addq.w  #1,(a1)                 /* height + 1 */
         bra.s   3f
-2:      move.w  rt_eff_n,d0             /* a new column */
-        cmpi.w  #EFF_MAX,d0
+4:      movea.l rt_eff_base,a1
+        move.l  a1,rt_eff_tp
+        addi.l  #EFF_TILES_OFS,rt_eff_tp
+        bra.s   5f
+2:      cmpi.w  #EFF_MAX,rt_eff_n       /* a new column */
         bcc.s   9f
-        lsl.w   #3,d0
-        movea.l rt_eff_base,a1
-        adda.w  d0,a1
-        move.w  d4,(a1)
-        move.w  d5,2(a1)
-        move.w  rt_eff_nt,4(a1)
-        move.w  #1,6(a1)
+        movea.l rt_eff_cp,a1
+        addq.l  #8,a1
+5:      move.l  a1,rt_eff_cp
+        move.w  d4,(a1)+
+        move.w  d5,(a1)+
+        move.w  rt_eff_nt,(a1)+
+        move.w  #1,(a1)
         addq.w  #1,rt_eff_n
         move.w  d5,rt_eff_last
         move.w  d2,rt_eff_last+2
 3:      move.w  d4,rt_eff_last+4
-        move.w  rt_eff_nt,d0
-        lsl.w   #2,d0
-        movea.l rt_eff_base,a1
-        lea     EFF_TILES_OFS(a1),a1
-        move.w  d3,(a1,d0.w)
-        move.w  d2,2(a1,d0.w)
+        movea.l rt_eff_tp,a1
+        move.w  d3,(a1)+
+        move.w  d2,(a1)+
+        move.l  a1,rt_eff_tp
         addq.w  #1,rt_eff_nt
 9:      movea.l (sp)+,a1
         bra     sl_next
