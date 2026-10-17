@@ -81,6 +81,7 @@ irq_vblank:
         bne.s   1f
         jmp     SYSTEM_INT1             /* BIOS owns the screen (menus, how-to-play...) */
 1:      movem.l d0-d7/a0-a6,-(sp)
+        move.w  REG_LSPCMODE,rt_irq_line /* profiling: raster line at the VBlank interrupt entry */
         move.w  #4,REG_IRQACK
         move.b  d0,REG_WATCHDOG
         addq.l  #1,rt_frame
@@ -89,11 +90,25 @@ irq_vblank:
            prepared during the previous frame */
         bsr     video_vblank
         bsr     vram_flush
-        move.l  sp,rt_io_sp
+        move.w  REG_LSPCMODE,rt_dbg+12  /* profiling: raster line at the end of the VRAM flush */
+        tst.b   rt_in_hook
+        beq.s   2f
+        /* the previous frame's work is still running (it was allowed to be interrupted): the VRAM has
+           been updated on time; this tick of the arcade is skipped so that its main loop still runs
+           between two of its interrupts */
+        movem.l (sp)+,d0-d7/a0-a6
+        rte
+2:      move.l  sp,rt_io_sp
         jsr     SYSTEM_IO               /* inputs, coins, credits; may re-enter USER (see above) */
 irq_after_io:
         jsr     snd_vblank
+        st      rt_in_hook
+        /* the frame work (arcade IRQ, layers, sprites) can last longer than a frame: the next VBlank may
+           interrupt it to flush the VRAM in the blanking (otherwise it would be written during the display) */
+        move    #0x2000,sr
         jsr     frame_hook              /* game: arcade IRQ + uploads; viewer: rts */
+        move    #0x2100,sr
+        clr.b   rt_in_hook
         movem.l (sp)+,d0-d7/a0-a6
         rte
 

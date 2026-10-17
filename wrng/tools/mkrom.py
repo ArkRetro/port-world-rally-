@@ -304,6 +304,25 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
         assert orig[pc:pc + n] == bytes.fromhex(expect), hex(pc)
         rom[pc:pc + n] = bytes.fromhex('4EB9') + struct.pack('>I', syms[name]) + b'\x4E\x71' * ((n - 6) // 2)
 
+    # 4c. checksums of the arcade code: the port patches the summed ranges, and a wrong sum arms Gaelco's
+    #     sabotage flags (FEF520 -> FEC154/FEF4BB/FEEAC6/FEF4DE/FEF38A, FEF53C; among the effects: jumps whose
+    #     "gravity" is the car speed, so the car flies up and off the screen).  The loops are replaced by the
+    #     sums of the original bytes; the registers they leave are not used afterwards.
+    def sum32(start, nlongs):
+        return sum(be32(orig, start + 4 * i) for i in range(nlongs)) & 0xFFFFFFFF
+    # 0xC14A: clr.l d0 ; lea $8FE6,a5 ; move.l #67,d4 ; loop: move.l (a5)+,d1 ; add.l d1,d0 ; dbra d4
+    assert orig[0xC14A:0xC160] == bytes.fromhex('42804BF900008FE6283C00000043221DD08151CCFFFA'), 'checksum 0xC14A'
+    rom[0xC14A:0xC160] = bytes.fromhex('203C') + struct.pack('>I', sum32(0x8FE6, 68)) + b'\x4E\x71' * 8
+    # 0x8EF4: clr.l $FEF53C ; lea $BD2E,a2 ; move.l #19,d3 ; loop: move.l (a2)+,d2 ; add.l d2,$FEF53C ; dbra d3
+    assert orig[0x8EF4:0x8F12] == bytes.fromhex('42B900FEF53C45F90000BD2E263C00000013241AD5B900FEF53C51CBFFF6'), \
+        'checksum 0x8EF4'
+    rom[0x8EF4:0x8F12] = (bytes.fromhex('23FC') + struct.pack('>II', sum32(0xBD2E, 20), reloc_target('RAM', 0xFEF53C))
+                          + b'\x4E\x71' * 10)
+    # 0x2704 (self test "ROM Checksum"): word sum of the whole 1 MB program
+    assert orig[0x2704:0x271E] == bytes.fromhex('207C000000004241343C000F303C7FFFD25851C8FFFC51CAFFF4'), 'checksum 0x2704'
+    wsum = sum(struct.unpack('>524288H', bytes(orig[:0x100000]))) & 0xFFFF
+    rom[0x2704:0x271E] = bytes.fromhex('323C') + struct.pack('>H', wsum) + b'\x4E\x71' * 11
+
     # 5. code patches
     for pc in (0x249C, 0x2812):                      # move.w #1,$FEF500 -> move.w #$A53E,...  (MCU signature)
         assert rom[pc:pc + 4] == bytes.fromhex('33FC0001'), hex(pc)

@@ -13,10 +13,12 @@ AES y en flashcarts.
 |------|--------|
 | Self-test, intro, título, atracción | Completo, a velocidad real |
 | Partida (MVS: moneda + start; AES: start) | Funciona; volante/acelerador/marcha en el joystick |
-| Gráficos | Tilemaps emulados con sprites-columna, sprites, sombras (dither), paleta convertida, prioridad de tiles de categoría 1 y de HUD/textos, fondo opaco de la capa 1 (columnas de color 0) |
+| Gráficos | Tilemaps emulados con sprites-columna, sprites, sombras (dither), paleta convertida, prioridad de tiles de categoría 1 y de HUD/textos, fondo opaco de la capa 1 (columnas de color 0); VRAM escrita siempre en el VBlank (el trabajo largo de un frame es interrumpible) |
 | Sonido | Driver Z80 propio sobre ADPCM-A (4 canales = 4 canales del OKI M6295), mismo secuenciador que el arcade |
 | MCU DS5002FP | Reimplementado en 68000 (`src/mcu.s`: intérprete de scripts y autopiloto) |
-| Pendiente | Prioridad de tiles de categoría 1 sobre sprites, pequeñas diferencias en la lista de sprites, columnas de borde en la pantalla Gaelco |
+| Pantalla | El arcade mide 368 píxeles y el Neo Geo 320: el recorte (48 px) se centra en el contenido (x 21-341) y el HUD (listas de sprites 2-3) se comprime a 15/16 para que quepa entero |
+| Protección | Además del MCU, el programa comprueba sumas de su propio código (0x8FE6, 0xBD2E) y activa sabotajes si fallan (p. ej. saltos en los que el coche sale volando); `mkrom.py` sustituye esos bucles por las sumas originales |
+| Pendiente | Presupuesto de CPU: en escenas cargadas el bucle principal del arcade corre algo más lento que en el original (la demo se desincroniza); textos de las pantallas de menú que llegan al borde del área de 368 px |
 
 ## Controles
 

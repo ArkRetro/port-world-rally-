@@ -63,7 +63,7 @@ video_init_min:
 * ------------------------------------------------------------------------------------------
 video_init:
         bsr     video_init_min
-        /* shadow palette: every pen black (the dithered tile set leaves half the pixels transparent) */
+        /* shadow palette: every pen black (pen 9 is dithered in the shadow tile set, pens 10-15 are black) */
         lea     PALETTES+PAL_SHADOW*32,a0
         moveq   #15,d0
 1:      move.w  #0x8000,(a0)+
@@ -187,10 +187,13 @@ vc_room:
         cmpa.l  #VCMD_END-VCMD_ROOM,a6
         bcs.s   9f
         movem.l d0-d1/a0-a2,-(sp)
+        move    sr,-(sp)
+        ori.w   #0x0700,sr              /* a nested VBlank flush would move the VRAM address under us */
         lea     VCMD_BUF,a0
         movea.l a6,a2
         bsr     vc_play
         lea     VCMD_BUF,a6
+        move    (sp)+,sr
         movem.l (sp)+,d0-d1/a0-a2
 9:      rts
 
@@ -948,7 +951,13 @@ sprites_update:
         cmpi.w  #(0x1000-6)/8,d6
         bls.s   1f
         move.w  #(0x1000-6)/8,d6
-1:      subq.w  #1,d6
+1:      move.w  ARC_WRAM+0x282,d0       /* lists 2-3 (HUD, credits): x through the compressed table */
+        add.w   ARC_WRAM+0x284,d0
+        cmp.w   d6,d0
+        bls.s   2f
+        move.w  d6,d0
+2:      move.w  d0,rt_hud_n
+        subq.w  #1,d6
         move.w  d6,-(sp)                /* entries - 1 (dbra counter) */
         lea     spr_y_table,a5
         lea     spr_x_table,a6
@@ -965,39 +974,64 @@ sprites_update:
         move.w  #SPR_OBJ_MAX,d0
         sub.w   d7,d0
         move.w  d0,rt_spr_n0
-        /* pool 1 */
+        /* hi entries (codes >= 0x3700) beyond what pool 1 holds: the first ones of the list go to pool 0 after
+           its own sprites, so that the list order (later entries on top) is kept (big title logos) */
+        lea     ARC_SPR+6,a0
+        moveq   #-SPR_PRI1_MAX,d1
+        move.w  (sp),d6
+        bmi.s   5f                      /* empty list */
+1:      move.w  6(a0),d3
+        and.w   #0x3FFF,d3
+        cmpi.w  #0x3700,d3
+        bcs.s   2f
+        addq.w  #1,d1
+2:      addq.l  #8,a0
+        dbra    d6,1b
+        lea     ARC_SPR+6,a0
+        move.w  (sp),d6
+        tst.w   d1
+        ble.s   5f
+        move.w  rt_spr_n0,d0
+        move.w  #SPR_OBJ_MAX,d7
+        sub.w   d0,d7
+        add.w   d0,d0
+        lea     SPR_F0,a1
+        adda.w  d0,a1
+        lea     SPR_F0_SZ(a1),a2
+        lea     SPR_F0_SZ(a2),a3
+        lea     SPR_F0_SZ(a3),a4
+        move.w  d7,-(sp)
+3:      move.w  6(a0),d3
+        and.w   #0x3FFF,d3
+        cmpi.w  #0x3700,d3
+        bcs.s   4f
+        tst.w   d7
+        beq.s   6f
+        bsr     su_conv
+        bne.s   6f
+        subq.w  #1,d7
+6:      subq.w  #1,d1
+        bne.s   4f
+        addq.l  #8,a0                   /* K entries done: pool 1 starts at the next one */
+        subq.w  #1,d6
+        bra.s   7f
+4:      addq.l  #8,a0
+        dbra    d6,3b
+7:      move.w  (sp)+,d0
+        sub.w   d7,d0
+        add.w   d0,rt_spr_n0
+5:      /* pool 1 */
         lea     SPR_F1,a1
         lea     SPR_F1_SZ(a1),a2
         lea     SPR_F1_SZ(a2),a3
         lea     SPR_F1_SZ(a3),a4
         move.w  #SPR_PRI1_MAX,d7
-        lea     ARC_SPR+6,a0
-        move.w  (sp),d6
         moveq   #-1,d0                  /* select: code >= 0x3700 */
         bsr     su_pass
         move.w  #SPR_PRI1_MAX,d0
         sub.w   d7,d0
         move.w  d0,rt_spr_n1
-        tst.w   d6
-        bmi.s   9f
-        /* pool 1 full (big title logos): the rest goes to pool 0, after its own sprites */
-        move.w  rt_spr_n0,d1
-        move.w  #SPR_OBJ_MAX,d7
-        sub.w   d1,d7
-        beq.s   9f
-        add.w   d1,d1
-        lea     SPR_F0,a1
-        adda.w  d1,a1
-        lea     SPR_F0_SZ(a1),a2
-        lea     SPR_F0_SZ(a2),a3
-        lea     SPR_F0_SZ(a3),a4
-        move.w  d7,-(sp)
-        moveq   #-1,d0
-        bsr     su_pass
-        move.w  (sp)+,d0
-        sub.w   d7,d0
-        add.w   d0,rt_spr_n0
-9:      addq.l  #2,sp
+        addq.l  #2,sp
         movea.l (sp)+,a6
         rts
 
@@ -1052,7 +1086,10 @@ su_conv:
         move.w  d2,d5
         and.w   #0x3FF,d5
         add.w   d5,d5
-        move.w  (a6,d5.w),d5            /* SCB4, bit 0 set = off screen */
+        cmp.w   rt_hud_n,d6             /* d6 = entries left - 1: the last rt_hud_n entries are the HUD */
+        bcc.s   3f
+        add.w   #2048,d5                /* compressed table */
+3:      move.w  (a6,d5.w),d5            /* SCB4, bit 0 set = off screen */
         btst    #0,d5
         bne.s   8f
         and.w   #0x7C00,d2              /* colour << 10 */
@@ -1077,6 +1114,7 @@ su_conv:
 9:      moveq   #1,d0                   /* Z clear: skipped */
         rts
 
+        .section .rodata
 * ------------------------------------------------------------------------------------------
 * Tables  (NB: in m68k gas '|' starts a comment, so expressions use '+' for disjoint bit fields)
 * ------------------------------------------------------------------------------------------
@@ -1108,6 +1146,19 @@ spr_x_table:
         .set    i,0
         .rept   1024
         .set    nx, i - 15 - CROP_X
+        .if (nx >= -16) && (nx <= 319)
+        .word   (nx & 0x1FF) << 7
+        .else
+        .word   -1
+        .endif
+        .set    i,i+1
+        .endr
+* (spr_x_table+2048) HUD sprites: the arcade HUD spans x 10..352 of the 368-pixel screen; its positions are
+* compressed by 15/16 around HUD_CX so that all of it fits in 320 pixels (the sprites keep their 16 pixels:
+* neighbours overlap by one column, like a horizontal shrink to 15 pixels)
+        .set    i,0
+        .rept   1024
+        .set    nx, 160 + (((i - 23 - HUD_CX) * 15 + 8 + 16 * 256) / 16) - 256
         .if (nx >= -16) && (nx <= 319)
         .word   (nx & 0x1FF) << 7
         .else

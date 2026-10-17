@@ -312,7 +312,8 @@ blk_common:
         subq.w  #1,d3
         move.w  d2,d6
         /* the cells go straight to the shadow map; the column sprites showing the block's map columns
-           are reloaded whole at the next frame (much cheaper than one queued cell per tile) */
+           are reloaded whole at the next frame (much cheaper than one queued cell per tile).  They are
+           marked after the copy: a VBlank during the copy may load a column half written */
         move.l  a5,d0
         and.w   #0x1FFF,d0
         lsr.w   #2,d0
@@ -320,19 +321,8 @@ blk_common:
         move.w  d6,d5                   /* width - 1 */
         lea     rt_col_loaded,a0
         tst.w   d7
-        beq.s   3f
+        beq.s   blk_row
         lea     24(a0),a0               /* layer 1 */
-3:      moveq   #NCOLSPR-1,d2
-4:      move.b  (a0),d4
-        cmpi.b  #0xFF,d4
-        beq.s   5f
-        sub.b   d0,d4
-        and.b   #63,d4
-        cmp.b   d5,d4
-        bhi.s   5f
-        move.b  #0xFF,(a0)              /* inside the block: reload */
-5:      addq.l  #1,a0
-        dbra    d2,4b
 blk_row:
         movea.l a5,a4
         move.w  d6,d2
@@ -351,6 +341,17 @@ blk_col:
         bge.s   blk_done
 2:      dbra    d3,blk_row
 blk_done:
+        moveq   #NCOLSPR-1,d2
+4:      move.b  (a0),d4
+        cmpi.b  #0xFF,d4
+        beq.s   5f
+        sub.b   d0,d4
+        and.b   #63,d4
+        cmp.b   d5,d4
+        bhi.s   5f
+        move.b  #0xFF,(a0)              /* inside the block: reload */
+5:      addq.l  #1,a0
+        dbra    d2,4b
         movem.l (sp)+,d5-d7/a0/a3/a6
         rts
 
