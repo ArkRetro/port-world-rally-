@@ -17,6 +17,7 @@
         .equ    REG_STATUS_B,   0x380000        /* byte read: start/select, MVS/AES bit 6, memcard */
         .equ    REG_POUTPUT,    0x380001
         .equ    REG_CRDBANK,    0x380011
+        .equ    REG_P2BANK,     0x2FFFF0        /* P ROM bank register (cartridge, 0x200000 window) */
         .equ    REG_SLOT,       0x380021
         .equ    REG_LEDLATCHES, 0x380031
         .equ    REG_LEDDATA,    0x380041

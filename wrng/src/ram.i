@@ -65,7 +65,6 @@
         .equ    rt_spr_n1,      RT_VARS+0x3E6   /* .w sprites prepared in pool 1 */
         .equ    rt_lu_sig,      RT_VARS+0x3E8   /* 2 x (.w SCB4 x0, .w SCB3 y) of the positions queued last (layer 0, layer 1) */
         .equ    rt_lu_force,    RT_VARS+0x3F0   /* 2 x .b positions must be queued again (column reloaded / companion shown or hidden) */
-        .equ    rt_hud_n,       RT_VARS+0x3F2   /* .w entries of the arcade sprite lists 2-3 (HUD): the last ones of the list */
         .equ    rt_irq_line,    RT_VARS+0x3F4   /* .w REG_LSPCMODE at the VBlank interrupt entry (profiling) */
         .equ    rt_in_hook,     RT_VARS+0x3F6   /* .b the VBlank handler is running the frame work (interruptible) */
         .equ    rt_pal_half,    RT_VARS+0x3F7   /* .b palette_sync: half converted last time (0 / 0xFF) */
@@ -97,6 +96,7 @@
         .equ    CMP_BG_H,       0x10EF48
         .equ    CMP_HI_DIRTY,   0x10EF60        /* NCOLSPR bytes */
         .equ    CMP_BG_DIRTY,   0x10EF78
+        .equ    LAY_H,          0x10EF90        /* 2 x 24 bytes: tiles shown by layer column s (layer 0, then layer 1): past its last non-empty row, 0 = empty */
 
         .equ    RT_CLEAR_END,   0x10F000        /* RAM cleared at start; 0x10F000-0x10F2FF = runtime stack */
         .equ    RT_STACK,       BIOS_RAM        /* runtime stack top */
@@ -110,7 +110,7 @@
         .equ    IO_OKI,         ARC_IO+0x0F     /* .b */
 
 * ---- column engine constants ----
-        .equ    NCOLSPR,        21              /* column sprites per layer (320 px + 15 px fine scroll = 335 px -> 21 x 16) */
+        .equ    NCOLSPR,        24              /* column sprites per layer: 14-pixel (shrunk) columns, 321 px + 13 px fine scroll -> 24 */
         .equ    SPR_BG,         1               /* backdrop columns: palette colour 0 behind the layer-1 cells (the arcade's back layer is opaque) */
         .equ    SPR_LAYER1,     SPR_BG+NCOLSPR  /* first Neo Geo sprite of layer 1 (back) */
         .equ    SPR_LAYER0,     SPR_LAYER1+NCOLSPR
@@ -127,6 +127,6 @@
         .equ    PAL_SPRITES,    PAL_ARC_BASE+32 /* arcade sprite colours (entries 0x200+) -> palettes 48-63 */
         .equ    PAL_SHADOW,     80              /* shadow sprites */
         .equ    PAL_FIX,        1               /* fix layer text (fix palettes must be 0..15) */
-        .equ    CROP_X,         29              /* arcade frame x of Neo Geo x=0 (visarea 8 + 21: centred on the content, x 8..352) */
-        .equ    HUD_CX,         181             /* HUD sprites (lists 2-3): visible x HUD_CX -> Neo Geo x 160, distances x 15/16 */
+        .equ    CROP_X,         9               /* arcade frame x of Neo Geo x=0 (visarea 8 + 1) */
+        .equ    SCB2_SHRINK,    0x0DFF          /* every sprite 14 pixels wide: the 368-pixel arcade screen x 7/8 = 322 -> the whole width in 320 */
         .equ    CROP_Y,         20              /* arcade frame y of Neo Geo y=0 (visarea 16 + 4) */

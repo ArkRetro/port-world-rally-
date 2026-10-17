@@ -16,9 +16,9 @@ AES y en flashcarts.
 | Gráficos | Tilemaps emulados con sprites-columna, sprites, sombras (dither), paleta convertida, prioridad de tiles de categoría 1 y de HUD/textos, fondo opaco de la capa 1 (columnas de color 0); VRAM escrita siempre en el VBlank (el trabajo largo de un frame es interrumpible) |
 | Sonido | Driver Z80 propio sobre ADPCM-A (4 canales = 4 canales del OKI M6295), mismo secuenciador que el arcade |
 | MCU DS5002FP | Reimplementado en 68000 (`src/mcu.s`: intérprete de scripts y autopiloto) |
-| Pantalla | El arcade mide 368 píxeles y el Neo Geo 320: el recorte (48 px) se centra en el contenido (x 21-341) y el HUD (listas de sprites 2-3) se comprime a 15/16 para que quepa entero |
-| Protección | Además del MCU, el programa comprueba sumas de su propio código (0x8FE6, 0xBD2E) y activa sabotajes si fallan (p. ej. saltos en los que el coche sale volando); `mkrom.py` sustituye esos bucles por las sumas originales |
-| Pendiente | Presupuesto de CPU: en escenas cargadas el bucle principal del arcade corre algo más lento que en el original (la demo se desincroniza); textos de las pantallas de menú que llegan al borde del área de 368 px |
+| Pantalla | Ancho completo: los 368 píxeles del arcade se muestran en 320 encogiendo todos los sprites a 14 píxeles (shrink horizontal del LSPC, posiciones x 7/8; también corrige la proporción). Columnas de capa vacías con altura 0 para no gastar el límite de 96 sprites por línea |
+| Protección | Además del MCU, el programa suma zonas de su propio código (FEF502, FEF520, FEF53C, FEF846, más FEF80C sobre los datos) y se sabotea si no cuadran: coche que gira solo, no choca con los márgenes, saltos en los que sale volando. `mkrom.py` sustituye esos bucles por las sumas originales |
+| Pendiente | Presupuesto de CPU: en los tramos cargados el juego va algo por debajo de la velocidad del original (~96 % en la prueba de referencia) |
 
 ## Controles
 
@@ -26,7 +26,7 @@ AES y en flashcarts.
 |---------|--------|
 | Joystick izquierda/derecha | Volante |
 | A o C | Acelerador |
-| B | Cambio de marcha (alterna baja/alta; se sale en baja: hay que cambiar a alta para coger velocidad y derrapar) |
+| B | Cambio de marcha (alterna; arranca en la misma posición que el arcade) |
 | Start | Start (en MVS hace falta crédito; se usa el contador de créditos de la BIOS) |
 
 ## Construcción

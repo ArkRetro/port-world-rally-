@@ -16,6 +16,9 @@
 USER:
         move    #0x2700,sr
         lea     BIOS_RAM,sp
+        /* the track data lives in the second megabyte of the P ROM, seen through the banked window at
+           0x200000: on a real cartridge / NeoSD the bank register need not be 0 at power-on */
+        move.w  #0,REG_P2BANK
         moveq   #0,d0
         move.b  BIOS_USER_REQUEST,d0
         /* MVS: a coin during the demo makes the BIOS re-enter USER (request 3 "title") from inside

@@ -55,7 +55,7 @@ io_init:
 * Build the arcade input word from the Neo Geo controls (BIOS_P1CURRENT: bit0 up,1 down,2 left,3 right,
 * 4 A,5 B,6 C,7 D, active high after SYSTEM_IO).  A = accelerate, B = gear toggle, C = accelerate too.
 io_update:
-        move.w  #0xFFEF,d0              /* idle: gear bit (4) low like the arcade's toggle switch */
+        move.w  #0xFFFF,d0              /* idle; the gear bit (4) reads 1 at power-on on the arcade (MAME default) */
         move.b  BIOS_P1CURRENT,d1
         btst    #0,d1
         beq.s   1f
@@ -85,7 +85,7 @@ io_update:
         eori.b  #1,rt_gear
 6:      tst.b   rt_gear
         beq.s   7f
-        bset    #ARC_P1_GEAR,d0
+        bclr    #ARC_P1_GEAR,d0
 7:      /* ---- credits: on MVS the BIOS owns them (backup RAM 0xD00034, BCD); mirror every increment
            into the arcade as a coin pulse so its own counter stays in sync ---- */
         tst.b   BIOS_MVS_FLAG
@@ -391,12 +391,42 @@ strip_v6:
         bsr.s   strip_store
 1:      lea     0x100(a1),a1
         rts
+* strip_store: a0 -> source pair, a1 -> map cell.  Inline fast path for cells outside the column window
+* (most of them: the arcade prepares the map ahead of the scroll), the rest through vram_store.
+* Preserves every register.
 strip_store:
-        movem.l d0-d2/a0-a2,-(sp)
+        move.l  d0,-(sp)
         move.l  (a0),d0
+        cmp.l   (a1),d0
+        beq.s   8f                      /* same pair */
+        move.l  d1,-(sp)
+        move    sr,-(sp)
+        ori.w   #0x0700,sr              /* check + write atomic with respect to the VBlank column loads */
+        move.l  a1,d1
+        btst    #13,d1
+        bne.s   3f
+        lsr.w   #2,d1
+        and.w   #63,d1
+        sub.w   rt_c0,d1
+        bra.s   4f
+3:      lsr.w   #2,d1
+        and.w   #63,d1
+        sub.w   rt_c0+2,d1
+4:      and.w   #63,d1                  /* j = (col - c0) & 63 */
+        cmpi.w  #NCOLSPR,d1
+        bcs.s   6f                      /* in the window: vram_store */
+        move.l  d0,(a1)
+        move    (sp)+,sr
+        move.l  (sp)+,d1
+8:      move.l  (sp)+,d0
+        rts
+6:      move    (sp)+,sr
+        move.l  (sp)+,d1
+        movem.l d1-d2/a0-a2,-(sp)
         movea.l a1,a0
         jsr     vram_store
-        movem.l (sp)+,d0-d2/a0-a2
+        movem.l (sp)+,d1-d2/a0-a2
+        move.l  (sp)+,d0
         rts
 
 * 0x11FDC / 0x11FF2: fill a layer with the empty tile pair (0xDF64C / 0xDF650, decrypted at build time)

@@ -305,23 +305,40 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
         rom[pc:pc + n] = bytes.fromhex('4EB9') + struct.pack('>I', syms[name]) + b'\x4E\x71' * ((n - 6) // 2)
 
     # 4c. checksums of the arcade code: the port patches the summed ranges, and a wrong sum arms Gaelco's
-    #     sabotage flags (FEF520 -> FEC154/FEF4BB/FEEAC6/FEF4DE/FEF38A, FEF53C; among the effects: jumps whose
-    #     "gravity" is the car speed, so the car flies up and off the screen).  The loops are replaced by the
+    #     sabotage flags (FEF520 -> FEC154/FEF4BB/FEEAC6/FEF4DE/FEF38A, FEF53C, FEF502, FEF846; among the effects:
+    #     jumps whose "gravity" is the car speed, a car that steers by itself and ignores the road edges).  The loops are replaced by the
     #     sums of the original bytes; the registers they leave are not used afterwards.
     def sum32(start, nlongs):
         return sum(be32(orig, start + 4 * i) for i in range(nlongs)) & 0xFFFFFFFF
     # 0xC14A: clr.l d0 ; lea $8FE6,a5 ; move.l #67,d4 ; loop: move.l (a5)+,d1 ; add.l d1,d0 ; dbra d4
     assert orig[0xC14A:0xC160] == bytes.fromhex('42804BF900008FE6283C00000043221DD08151CCFFFA'), 'checksum 0xC14A'
-    rom[0xC14A:0xC160] = bytes.fromhex('203C') + struct.pack('>I', sum32(0x8FE6, 68)) + b'\x4E\x71' * 8
+    rom[0xC14A:0xC160] = (bytes.fromhex('203C') + struct.pack('>I', sum32(0x8FE6, 68))         # move.l #sum,d0
+                          + bytes.fromhex('4BF9') + struct.pack('>I', 0x8FE6 + 68 * 4)       # lea end,a5
+                          + bytes.fromhex('283C0000FFFF') + b'\x4E\x71' * 2)                # move.l #$FFFF,d4
     # 0x8EF4: clr.l $FEF53C ; lea $BD2E,a2 ; move.l #19,d3 ; loop: move.l (a2)+,d2 ; add.l d2,$FEF53C ; dbra d3
     assert orig[0x8EF4:0x8F12] == bytes.fromhex('42B900FEF53C45F90000BD2E263C00000013241AD5B900FEF53C51CBFFF6'), \
         'checksum 0x8EF4'
     rom[0x8EF4:0x8F12] = (bytes.fromhex('23FC') + struct.pack('>II', sum32(0xBD2E, 20), reloc_target('RAM', 0xFEF53C))
-                          + b'\x4E\x71' * 10)
+                          + bytes.fromhex('45F9') + struct.pack('>I', 0xBD2E + 20 * 4)       # lea end,a2
+                          + bytes.fromhex('263C0000FFFF')                                    # move.l #$FFFF,d3
+                          + bytes.fromhex('243C') + orig[0xBD2E + 19 * 4:0xBD2E + 20 * 4]    # move.l #last,d2
+                          + b'\x4E\x71')
+    # 0x8900: clr.l d1 ; lea $9268,a2 ; move.l #93,d0 ; loop: add.l (a2),d1 ; addq.l #4,a2 ; dbra d0  -> FEF502
+    assert orig[0x8900:0x8916] == bytes.fromhex('428145F900009268203C0000005DD29258 8A51C8FFFA'.replace(' ', '')), \
+        'checksum 0x8900'
+    rom[0x8900:0x8916] = (bytes.fromhex('223C') + struct.pack('>I', sum32(0x9268, 94))       # move.l #sum,d1
+                          + bytes.fromhex('45F9') + struct.pack('>I', 0x9268 + 94 * 4)    # lea end,a2
+                          + bytes.fromhex('203C0000FFFF') + b'\x4E\x71' * 2)            # move.l #$FFFF,d0
+    # 0x11BE2: clr.l d0 ; lea $B25E,a6 ; move.l #160,d3 ; loop: add.l (a6)+,d0 ; dbra d3  -> FEF846
+    assert orig[0x11BE2:0x11BF6] == bytes.fromhex('42804DF90000B25E263C000000A0D09E51CBFFFC'), 'checksum 0x11BE2'
+    rom[0x11BE2:0x11BF6] = (bytes.fromhex('203C') + struct.pack('>I', sum32(0xB25E, 161))      # move.l #sum,d0
+                            + bytes.fromhex('4DF9') + struct.pack('>I', 0xB25E + 161 * 4)    # lea end,a6
+                            + bytes.fromhex('263C0000FFFF') + b'\x4E\x71')                 # move.l #$FFFF,d3
     # 0x2704 (self test "ROM Checksum"): word sum of the whole 1 MB program
     assert orig[0x2704:0x271E] == bytes.fromhex('207C000000004241343C000F303C7FFFD25851C8FFFC51CAFFF4'), 'checksum 0x2704'
     wsum = sum(struct.unpack('>524288H', bytes(orig[:0x100000]))) & 0xFFFF
     rom[0x2704:0x271E] = bytes.fromhex('323C') + struct.pack('>H', wsum) + b'\x4E\x71' * 11
+    assert len(rom) == 0x100000, 'a checksum patch changed the ROM size'
 
     # 5. code patches
     for pc in (0x249C, 0x2812):                      # move.w #1,$FEF500 -> move.w #$A53E,...  (MCU signature)

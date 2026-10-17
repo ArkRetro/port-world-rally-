@@ -93,9 +93,14 @@ def main():
         # one byte per arcade tile: 1 if it has at least 64 pen-0 pixels (the runtime draws an opaque
         # backdrop behind such layer-1 cells, since the arcade's back layer shows palette colour 0 there;
         # tiles with fewer pen-0 pixels are left transparent to save sprites per scanline)
-        flags = bytes(1 if sum(1 for p in t if p == 0) >= 64 else 0 for t in tiles[:16384])
+        # bit 1: every pixel is pen 0 (fully transparent tile: a layer column made only of these, or ending
+        # with them, is shortened so that it does not count against the 96 sprites per scanline)
+        def flag(t):
+            n0 = sum(1 for p in t if p == 0)
+            return (1 if n0 >= 64 else 0) | (2 if n0 == 256 else 0)
+        flags = bytes(flag(t) for t in tiles[:16384])
         open(a[a.index('--pen0') + 1], 'wb').write(flags)
-        print('pen0 flags:', sum(flags))
+        print('pen0 flags:', sum(f & 1 for f in flags), 'empty tiles:', sum(1 for f in flags if f & 2))
     if '--png' in a:
         from PIL import Image
         cols = 128

@@ -68,6 +68,13 @@ video_init:
         moveq   #15,d0
 1:      move.w  #0x8000,(a0)+
         dbra    d0,1b
+        /* every sprite 14 pixels wide (horizontal shrink): the whole 368-pixel arcade width fits in 320 */
+        move.w  #VRAM_SCB2+1,REG_VRAMADDR
+        move.w  #1,REG_VRAMMOD
+        move.w  #380-1,d0
+5:      move.w  #SCB2_SHRINK,REG_VRAMRW
+        VRAM_GAP
+        dbra    d0,5b
         /* column sprites of both layers: height 32 tiles, x off-screen for now */
         move.w  #VRAM_SCB3+SPR_LAYER1,REG_VRAMADDR
         move.w  #1,REG_VRAMMOD
@@ -355,7 +362,12 @@ layer_update:
         or.w    #0x20,d1                /* SCB3 value: y | height 32 */
         move.w  d1,d6
         move.w  d0,d2
-        and.w   #15,d2                  /* fine scroll */
+        and.w   #15,d2                  /* fine scroll f */
+        move.w  d2,d1
+        lsl.w   #3,d2
+        sub.w   d1,d2
+        addq.w  #4,d2
+        lsr.w   #3,d2                   /* round(f * 7/8): the columns are 14 pixels wide */
         neg.w   d2
         movea.w d2,a2                   /* a2 = x of window column 0 */
         move.w  d0,d3
@@ -418,13 +430,13 @@ lu_chk:
         beq     lu_done
 4:      move.l  d0,(a0)
         clr.b   (a4)
-        /* x of sprite s = x0 + 16 * ((s - s0) mod NCOLSPR) -> rt_xbuf */
+        /* x of sprite s = x0 + 14 * ((s - s0) mod NCOLSPR) -> rt_xbuf */
         moveq   #NCOLSPR,d3
         sub.w   d4,d3
         cmpi.w  #NCOLSPR,d3
         bcs.s   1f
         moveq   #0,d3
-1:      lsl.w   #4,d3
+1:      mulu    #14,d3
         add.w   a2,d3                   /* x of s = 0 */
         lea     rt_xbuf,a0
         moveq   #0,d0
@@ -436,7 +448,7 @@ lu_x:   cmp.w   d4,d0
         and.w   #0x1FF,d1
         lsl.w   #7,d1
         move.w  d1,(a0)+
-        add.w   #16,d3
+        add.w   #14,d3
         addq.w  #1,d0
         dbra    d5,lu_x
         /* SCB4 of the layer's sprites and of the companion set */
@@ -449,14 +461,24 @@ lu_x:   cmp.w   d4,d0
         move.w  #SPR_BG,d3
 3:      move.w  d3,d0                   /* companion base */
         bsr     lu_scb4
-        /* SCB3: the layer: y | 32 for every column */
+        /* SCB3: the layer: y | rows to show (32, fewer when the bottom of the column is empty, 0 when it
+           is all empty: such columns do not count against the 96 sprites per scanline) */
         move.w  d7,d0
         add.w   #VRAM_SCB3,d0
         move.w  d0,(a6)+
         move.w  #1,(a6)+
         move.w  #NCOLSPR-1,(a6)+
+        lea     LAY_H,a0
+        cmpi.w  #SPR_LAYER0,d7
+        beq.s   1f
+        lea     24(a0),a0
+1:      move.w  d6,d1
+        and.w   #0xFF80,d1
         moveq   #NCOLSPR-1,d5
-4:      move.w  d6,(a6)+
+4:      moveq   #0,d2
+        move.b  (a0)+,d2
+        or.w    d1,d2
+        move.w  d2,(a6)+
         dbra    d5,4b
         /* the companion set: y of its first row, height = its row range; height 0 when empty */
         bsr     vc_room
@@ -530,17 +552,29 @@ col_load:
         move.w  d0,(a6)+
         move.w  #1,(a6)+
         move.w  #63,(a6)+
+        lea     pen0_table,a2
+        moveq   #0,d3                   /* rows to show: past the last non-empty one */
         moveq   #31,d2
 4:      move.l  (a0),d4
         swap    d4
         and.w   #0x3FFF,d4
         move.w  d4,(a6)+
-        moveq   #0,d4
+        btst    #1,(a2,d4.w)
+        bne.s   5f                      /* fully transparent tile */
+        moveq   #32,d3
+        sub.w   d2,d3
+5:      moveq   #0,d4
         move.b  3(a0),d4
         add.w   d4,d4
         move.w  (a1,d4.w),(a6)+
         lea     256(a0),a0
         dbra    d2,4b
+        lea     LAY_H,a2
+        move.w  d5,d0
+        cmpi.w  #SPR_LAYER0,d7
+        beq.s   6f
+        add.w   #24,d0
+6:      move.b  d3,(a2,d0.w)            /* (pass 2 is forced by hi_count / bg_count below) */
         move.w  d5,d0
         cmpi.w  #SPR_LAYER0,d7
         bne.s   1f
@@ -721,10 +755,12 @@ bg_upload:
 * queue is appended with interrupts masked.  Trashes d0-d2/a0-a2.
 * ------------------------------------------------------------------------------------------
 vram_store:
-        addq.w  #1,rt_dbg+14            /* profiling: calls per frame */
         cmp.l   (a0),d0
         beq     vs_same                 /* same pair: nothing changes */
-        /* fast path: a map column that no column sprite shows only needs the shadow write */
+        /* fast path: a map column that no column sprite shows only needs the shadow write (check and
+           write with the VBlank masked: a column load in between would read the old pair) */
+        move    sr,-(sp)
+        ori.w   #0x0700,sr
         move.l  a0,d1
         lea     rt_col_loaded,a1
         move.w  rt_c0,d2
@@ -748,10 +784,9 @@ vram_store:
         cmp.b   (a1,d2.w),d1
         beq.s   vs_slow                 /* shown: queue it */
 2:      move.l  d0,(a0)
+        move    (sp)+,sr
         rts
-vs_slow:
-        move    sr,-(sp)                /* 18(sp) */
-        ori.w   #0x0700,sr
+vs_slow:                                /* (sr saved at 18(sp), interrupts masked) */
         move.l  a6,-(sp)                /* 14(sp) */
         movea.l rt_vcmd_ptr,a6
         cmpa.l  #VCMD_BUF,a6
@@ -801,7 +836,28 @@ vs_slow:
         swap    d1
         and.w   #0x3FFF,d1
         move.w  d1,(a6)+
-        and.w   #0xFF,d0
+        /* a non-empty cell past the rows the column shows: show more (positions queued next frame) */
+        lea     pen0_table,a1
+        btst    #1,(a1,d1.w)
+        bne.s   7f
+        move.w  2(sp),d1
+        lsr.w   #6,d1
+        addq.w  #1,d1                   /* row + 1 */
+        move.w  a0,d2                   /* s */
+        lea     rt_lu_force,a1
+        cmp.w   #SPR_LAYER0,a2
+        beq.s   6f
+        add.w   #24,d2
+        addq.l  #1,a1
+6:      move.l  a1,-(sp)
+        lea     LAY_H,a1
+        cmp.b   (a1,d2.w),d1
+        bls.s   8f
+        move.b  d1,(a1,d2.w)
+        movea.l (sp),a1
+        st      (a1)
+8:      addq.l  #4,sp
+7:      and.w   #0xFF,d0
         add.w   d0,d0
         lea     tile_attr_table,a1
         move.w  (a1,d0.w),(a6)+
@@ -951,13 +1007,93 @@ sprites_update:
         cmpi.w  #(0x1000-6)/8,d6
         bls.s   1f
         move.w  #(0x1000-6)/8,d6
-1:      move.w  ARC_WRAM+0x282,d0       /* lists 2-3 (HUD, credits): x through the compressed table */
-        add.w   ARC_WRAM+0x284,d0
-        cmp.w   d6,d0
-        bls.s   2f
-        move.w  d6,d0
-2:      move.w  d0,rt_hud_n
+1:      lea     spr_y_table,a5
+        lea     spr_x_table,a6
+        lea     spr_col_table,a3
+        lea     SPR_F0,a1
+        lea     SPR_F1,a2
+        move.w  #SPR_OBJ_MAX,d7         /* free slots, pool 0 */
+        moveq   #SPR_PRI1_MAX,d1        /* free slots, pool 1 */
+        lea     ARC_SPR+6,a0
         subq.w  #1,d6
+        bmi     sf_end
+        /* one pass: codes < 0x3700 -> pool 0, the others -> pool 1 (both in list order) */
+sf_loop:
+        moveq   #0,d4
+        move.b  1(a0),d4                /* y byte */
+        add.w   d4,d4
+        move.w  (a5,d4.w),d4            /* SCB3 (y | height 1), 0 = off screen */
+        beq.s   sf_next
+        move.w  4(a0),d2                /* w2: x, colour */
+        move.w  d2,d5
+        and.w   #0x3FF,d5
+        add.w   d5,d5
+        move.w  (a6,d5.w),d5            /* SCB4, bit 0 set = off screen */
+        btst    #0,d5
+        bne.s   sf_next
+        rol.w   #6,d2
+        and.w   #0x1F,d2
+        lsl.w   #2,d2
+        move.l  (a3,d2.w),d2            /* palette << 8 : tile OR mask (shadow tile set) */
+        move.w  (a0),d0
+        rol.w   #2,d0                   /* w0 bits 15,14 -> 1,0 (vflip, hflip) */
+        and.w   #3,d0
+        move.w  6(a0),d3
+        and.w   #0x3FFF,d3
+        cmpi.w  #0x3700,d3
+        bcc.s   sf_hi
+        or.w    d2,d3
+        swap    d2
+        or.w    d0,d2
+        subq.w  #1,d7
+        bmi.s   sf_full0
+        move.w  d3,(a1)
+        move.w  d2,SPR_F0_SZ(a1)
+        move.w  d4,2*SPR_F0_SZ(a1)
+        move.w  d5,3*SPR_F0_SZ(a1)
+        addq.l  #2,a1
+sf_next:
+        addq.l  #8,a0
+        dbra    d6,sf_loop
+sf_end:
+        move.w  #SPR_OBJ_MAX,d0
+        sub.w   d7,d0
+        move.w  d0,rt_spr_n0
+        moveq   #SPR_PRI1_MAX,d0
+        sub.w   d1,d0
+        move.w  d0,rt_spr_n1
+        movea.l (sp)+,a6
+        rts
+sf_full0:
+        addq.w  #1,d7                   /* pool 0 full: the sprite is dropped */
+        bra.s   sf_next
+sf_hi:
+        or.w    d2,d3
+        swap    d2
+        or.w    d0,d2
+        subq.w  #1,d1
+        bmi.s   sf_slow
+        move.w  d3,(a2)
+        move.w  d2,SPR_F1_SZ(a2)
+        move.w  d4,2*SPR_F1_SZ(a2)
+        move.w  d5,3*SPR_F1_SZ(a2)
+        addq.l  #2,a2
+        bra.s   sf_next
+sf_slow:
+        /* more than SPR_PRI1_MAX high-priority sprites (title logos): start again with the pass per
+           pool, which puts the first ones of the list in pool 0 */
+        movea.l (sp)+,a6
+sprites_slow:
+        move.l  a6,-(sp)
+        /* entries written this frame by the arcade copy routine 0x44E6: the list counters */
+        move.w  ARC_WRAM+0x27E,d6
+        add.w   ARC_WRAM+0x280,d6
+        add.w   ARC_WRAM+0x282,d6
+        add.w   ARC_WRAM+0x284,d6
+        cmpi.w  #(0x1000-6)/8,d6
+        bls.s   1f
+        move.w  #(0x1000-6)/8,d6
+1:      subq.w  #1,d6
         move.w  d6,-(sp)                /* entries - 1 (dbra counter) */
         lea     spr_y_table,a5
         lea     spr_x_table,a6
@@ -1086,10 +1222,7 @@ su_conv:
         move.w  d2,d5
         and.w   #0x3FF,d5
         add.w   d5,d5
-        cmp.w   rt_hud_n,d6             /* d6 = entries left - 1: the last rt_hud_n entries are the HUD */
-        bcc.s   3f
-        add.w   #2048,d5                /* compressed table */
-3:      move.w  (a6,d5.w),d5            /* SCB4, bit 0 set = off screen */
+        move.w  (a6,d5.w),d5            /* SCB4, bit 0 set = off screen */
         btst    #0,d5
         bne.s   8f
         and.w   #0x7C00,d2              /* colour << 10 */
@@ -1141,25 +1274,12 @@ spr_y_table:
         .set    i,i+1
         .endr
 
-* spr_x_table: arcade sprite x (10 bits) -> SCB4 word, -1 when off screen
+* spr_x_table: arcade sprite x (10 bits) -> SCB4 word (x scaled by 7/8), -1 when off screen
 spr_x_table:
         .set    i,0
         .rept   1024
-        .set    nx, i - 15 - CROP_X
-        .if (nx >= -16) && (nx <= 319)
-        .word   (nx & 0x1FF) << 7
-        .else
-        .word   -1
-        .endif
-        .set    i,i+1
-        .endr
-* (spr_x_table+2048) HUD sprites: the arcade HUD spans x 10..352 of the 368-pixel screen; its positions are
-* compressed by 15/16 around HUD_CX so that all of it fits in 320 pixels (the sprites keep their 16 pixels:
-* neighbours overlap by one column, like a horizontal shrink to 15 pixels)
-        .set    i,0
-        .rept   1024
-        .set    nx, 160 + (((i - 23 - HUD_CX) * 15 + 8 + 16 * 256) / 16) - 256
-        .if (nx >= -16) && (nx <= 319)
+        .set    nx, (((i - 15 - CROP_X + 512) * 7) / 8) - 448      /* x 7/8: sprites are shrunk to 14 pixels */
+        .if (nx >= -14) && (nx <= 319)
         .word   (nx & 0x1FF) << 7
         .else
         .word   -1
