@@ -206,7 +206,46 @@ video_vblank:
         lea     32(a2),a2
         lea     32(a4),a4
         dbra    d0,1b
-9:      rts
+9:      /* rewrite 4 palettes per VBlank (all of them every 16 frames) and the shadow / light palettes:
+           the BIOS clears the palette RAM when a coin goes in on MVS, and the converted palettes are
+           otherwise only written when the game changes them */
+        moveq   #0,d0
+        move.b  rt_pal_rot,d0
+        addq.b  #1,rt_pal_rot
+        and.w   #15,d0
+        move.w  d0,d1
+        lsl.w   #7,d1                   /* 4 palettes x 32 bytes */
+        lea     ARC_PAL,a1
+        adda.w  d1,a1
+        lea     PALETTES+PAL_ARC_BASE*32,a2
+        adda.w  d1,a2
+        moveq   #3,d2
+4:      movem.l (a1)+,d3-d7/a3-a5
+        movem.l d3-d7/a3-a5,(a2)
+        lea     32(a2),a2
+        dbra    d2,4b
+        cmpi.w  #8,d0                   /* tile palettes 0..31: their backdrop colour too */
+        bcc.s   6f
+        lea     ARC_PAL,a1
+        adda.w  d1,a1
+        lea     PALETTES+PAL_BG*32+30,a2
+        adda.w  d1,a2
+        moveq   #3,d2
+5:      move.w  (a1),(a2)
+        lea     32(a1),a1
+        lea     32(a2),a2
+        dbra    d2,5b
+6:      tst.w   d0
+        bne.s   8f
+        lea     PALETTES+PAL_SHADOW*32,a0
+        moveq   #15,d2
+7:      move.w  #0x8000,(a0)+
+        dbra    d2,7b
+        lea     light_pal,a1
+        moveq   #15,d2
+7:      move.w  (a1)+,(a0)+
+        dbra    d2,7b
+8:      rts
 
 * ------------------------------------------------------------------------------------------
 * VRAM command buffer.  Everything the frame changes in VRAM is queued (vc_* helpers, a6 = write pointer
@@ -284,12 +323,60 @@ vram_flush:
         lea     SPR_F0,a0
         move.w  #SPR_F0_SZ,d2
         lea     rt_sprites_used,a2
-        bsr.s   vf_pool
+        bsr     vf_pool
         move.w  #SPR_PRI1,d0
         move.w  rt_spr_n1,d1
         lea     SPR_F1,a0
         move.w  #SPR_F1_SZ,d2
         lea     rt_sprites_used1,a2
+        bsr     vf_pool
+* vf_eff: the headlight columns (spr_lists sl_eff): their tiles, SCB3 and SCB4, and the columns used last
+* time but not now hidden.
+vf_eff:
+        move.w  rt_eff_n,d4
+        move.w  rt_eff_used,d5
+        move.w  d4,rt_eff_used
+        subq.w  #1,d4
+        bmi     5f
+        move.w  #1,REG_VRAMMOD
+        lea     EFF_DESC,a0
+        lea     EFF_TILES,a3
+        move.w  #SPR_EFF<<6,d3          /* SCB1 of the first column */
+        move.w  d4,d1
+1:      move.w  d3,REG_VRAMADDR
+        move.w  4(a0),d0
+        lsl.w   #2,d0
+        lea     (a3,d0.w),a2
+        move.w  6(a0),d0
+        add.w   d0,d0
+        subq.w  #1,d0                   /* words - 1 */
+        VW_COPY a2, d0, d6
+        add.w   #64,d3
+        addq.l  #8,a0
+        dbra    d1,1b
+        move.w  #VRAM_SCB3+SPR_EFF,REG_VRAMADDR
+        lea     EFF_DESC,a0
+        move.w  d4,d1
+2:      move.w  (a0),(a1)
+        addq.l  #8,a0
+        dbra    d1,2b
+        move.w  #VRAM_SCB4+SPR_EFF,REG_VRAMADDR
+        lea     EFF_DESC+2,a0
+        move.w  d4,d1
+3:      move.w  (a0),(a1)
+        addq.l  #8,a0
+        dbra    d1,3b
+5:      addq.w  #1,d4                   /* columns now */
+        sub.w   d4,d5                   /* columns to hide */
+        ble.s   9f
+        move.w  #1,REG_VRAMMOD
+        add.w   #VRAM_SCB3+SPR_EFF,d4
+        VRAM_GAP
+        move.w  d4,REG_VRAMADDR
+        subq.w  #1,d5
+6:      move.w  #0,(a1)
+        dbra    d5,6b
+9:      rts
 * vf_pool: d0 = first sprite, d1 = count, a0 = fields (4 arrays of d2 bytes), a1 = REG_VRAMRW,
 * a2 -> end of the pool as written last time (updated).
 vf_pool:
@@ -454,12 +541,17 @@ lu_chk:
         moveq   #0,d0
 2:      dbra    d5,lu_chk
 lu_p1done:
-        /* companion columns with cells that changed category: recount them */
+        /* companion columns with cells that changed category: recount them (rt_cmp_any: any marked) */
         lea     CMP_HI_DIRTY,a0
+        lea     rt_cmp_any,a4
         cmpi.w  #SPR_LAYER0,d7
         beq.s   1f
         lea     CMP_BG_DIRTY,a0
-1:      moveq   #0,d0
+        addq.l  #1,a4
+1:      tst.b   (a4)
+        beq     lu_p2
+        clr.b   (a4)
+        moveq   #0,d0
 2:      tst.b   (a0,d0.w)
         beq.s   4f
         clr.b   (a0,d0.w)
@@ -475,7 +567,7 @@ lu_p1done:
 4:      addq.w  #1,d0
         cmpi.w  #NCOLSPR,d0
         bcs.s   2b
-        /* pass 2: skip when nothing moved (same x0, same y, no forced update) */
+lu_p2:  /* pass 2: skip when nothing moved (same x0, same y, no forced update) */
         lea     rt_lu_sig,a0
         lea     rt_lu_force,a4
         cmpi.w  #SPR_LAYER0,d7
@@ -958,6 +1050,7 @@ vs_hi_dirty:
         lea     CMP_HI_DIRTY,a2
         move.w  a0,d2
         st      (a2,d2.w)
+        st      rt_cmp_any
         bra     vs_out
 vs_layer1:
         /* layer 1: a cell changing significance (pen-0 heavy tile with a non-black colour 0) marks the BG
@@ -1002,6 +1095,7 @@ vs_bg_dirty:
         lea     CMP_BG_DIRTY,a2
         move.w  a0,d2
         st      (a2,d2.w)
+        st      rt_cmp_any+1
 vs_out:
         lea     12(sp),sp
         move.l  a6,rt_vcmd_ptr
@@ -1058,6 +1152,8 @@ bg_recount:
 spr_lists:
         movem.l d0-d4/d7/a2-a6,-(sp)
         st      rt_spr_busy
+        clr.w   rt_eff_n
+        clr.w   rt_eff_nt
         lea     spr_y_table,a5
         lea     spr_x_table,a6
         lea     spr_col_table,a3
@@ -1071,17 +1167,17 @@ spr_lists:
         movea.w #(0x1000-6)/8,a4        /* entries the sprite RAM holds */
         lea     ARC_WRAM+0x1600,a0
         move.w  ARC_WRAM+0x27E,d6
-        bsr.s   sl_seg
-        bne.s   sl_slow
+        bsr     sl_seg
+        bne     sl_slow
         lea     ARC_WRAM+0x1DF8,a0
         move.w  ARC_WRAM+0x280,d6
-        bsr.s   sl_seg
-        bne.s   sl_slow
+        bsr     sl_seg
+        bne     sl_slow
         lea     ARC_WRAM+0x25C8,a0
         move.w  ARC_WRAM+0x282,d6
         add.w   ARC_WRAM+0x284,d6
-        bsr.s   sl_seg
-        bne.s   sl_slow
+        bsr     sl_seg
+        bne     sl_slow
         move.w  #SPR_OBJ_MAX,d0
         sub.w   d7,d0
         move.w  d0,rt_spr_n0
@@ -1098,6 +1194,7 @@ spr_lists:
         rts
 sl_slow:
         st      rt_spr_slow             /* (rt_spr_busy stays set until sprites_slow has refilled the pools) */
+        clr.w   rt_eff_n                /* the copy below overwrites the column buffers (ARC_SPR) */
         movem.l (sp)+,d0-d4/d7/a2-a6
         lea     ARC_SPR+6,a1            /* the original routine from its second instruction */
         jmp     0x44EC
@@ -1131,6 +1228,8 @@ sl_loop:
         and.w   #3,d0
         move.w  6(a0),d3
         and.w   #0x3FFF,d3
+        tst.w   d2
+        bmi     sl_eff                  /* night: headlight tile (light tile set, OR mask 0x8000) */
         cmpi.w  #0x3700,d3
         bcc.s   sl_hi
         or.w    d2,d3
@@ -1166,6 +1265,60 @@ sl_hi:
         bra.s   sl_next
 1:      moveq   #1,d0                   /* Z clear: pool 1 overflow */
         rts
+
+* sl_eff: a headlight tile of a night stage (d3 code, d2 = palette<<8 : 0x8000, d0 flips, d4 SCB3 with
+* height 1, d5 SCB4).  The arcade draws its beams as grids of 16x16 tiles, column by column, downwards:
+* a tile right below the previous one (same x and attribute) extends that column - one Neo Geo sprite
+* up to 16 tiles tall instead of one sprite per tile (there are about 250 of them, more than the pool and
+* than the 96 sprites a scanline can show).
+sl_eff:
+        or.w    d2,d3                   /* tile */
+        swap    d2
+        or.w    d0,d2                   /* attribute */
+        move.l  a1,-(sp)
+        cmpi.w  #EFF_TILES_MAX,rt_eff_nt
+        bcc     9f                      /* no room left: dropped */
+        move.w  rt_eff_n,d0
+        beq.s   2f
+        cmp.w   rt_eff_last,d5          /* same x */
+        bne.s   2f
+        cmp.w   rt_eff_last+2,d2        /* same attribute */
+        bne.s   2f
+        move.w  rt_eff_last+4,d0
+        sub.w   #0x800,d0               /* 16 lines lower */
+        cmp.w   d0,d4
+        bne.s   2f
+        move.w  rt_eff_n,d0
+        lsl.w   #3,d0
+        lea     EFF_DESC-8,a1
+        adda.w  d0,a1                   /* current column */
+        cmpi.w  #16,6(a1)
+        bcc.s   2f
+        addq.w  #1,6(a1)
+        addq.w  #1,(a1)                 /* height + 1 */
+        bra.s   3f
+2:      move.w  rt_eff_n,d0             /* a new column */
+        cmpi.w  #EFF_MAX,d0
+        bcc.s   9f
+        lsl.w   #3,d0
+        lea     EFF_DESC,a1
+        adda.w  d0,a1
+        move.w  d4,(a1)
+        move.w  d5,2(a1)
+        move.w  rt_eff_nt,4(a1)
+        move.w  #1,6(a1)
+        addq.w  #1,rt_eff_n
+        move.w  d5,rt_eff_last
+        move.w  d2,rt_eff_last+2
+3:      move.w  d4,rt_eff_last+4
+        move.w  rt_eff_nt,d0
+        lsl.w   #2,d0
+        lea     EFF_TILES,a1
+        move.w  d3,(a1,d0.w)
+        move.w  d2,2(a1,d0.w)
+        addq.w  #1,rt_eff_nt
+9:      movea.l (sp)+,a1
+        bra     sl_next
 
 * ------------------------------------------------------------------------------------------
 * sprites_slow: arcade sprite list (copy in ARC_SPR) -> the field arrays of the two pools (SPR_F0/SPR_F1),
@@ -1407,9 +1560,9 @@ spr_col_table_night:
         .set    i,i+1
         .endr
 
-* light_pal: palette PAL_LIGHT, pen p = p-8 steps brighter (warm white, brighter for higher pens)
+* light_pal: palette PAL_LIGHT, pen p = p-8 steps brighter (lit ground: warm sand, brighter for higher pens)
 light_pal:
-        .word   0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x0775,0x0996,0x0AA7,0x0BB8,0x0CC9,0x0EEA,0x0FFB
+        .word   0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x0542,0x0752,0x0873,0x0A84,0x0B94,0x0DA5,0x0EB6
 
 * pen0_table: one byte per arcade tile, 1 if it has at least 64 pen-0 pixels (gfx2crom.py --pen0)
 pen0_table:

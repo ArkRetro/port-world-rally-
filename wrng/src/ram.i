@@ -66,7 +66,7 @@
         .equ    rt_lu_force,    RT_VARS+0x3F0   /* 2 x .b positions must be queued again (column reloaded / companion shown or hidden) */
         .equ    rt_irq_line,    RT_VARS+0x3F4   /* .w REG_LSPCMODE at the VBlank interrupt entry (profiling) */
         .equ    rt_in_hook,     RT_VARS+0x3F6   /* .b the VBlank handler is running the frame work (interruptible) */
-        .equ    rt_pal_half,    RT_VARS+0x3F7   /* .b palette_sync: half converted last time (0 / 0xFF) */
+        .equ    rt_pal_half,    RT_VARS+0x3F7   /* .b palette_sync: quarter checked last time (0..3) */
         .equ    rt_spr_busy,    RT_VARS+0x3F8   /* .b sprites_update is filling the field arrays (a nested VBlank flush leaves the sprites as they are) */
         .equ    rt_oki_cnt,     RT_VARS+0x380   /* 4 words: frames left of the phrase on OKI channel n (emulated busy bits) */
         .equ    rt_diag_hold,   RT_VARS+0x388   /* .b frames D has been held (diagnostic overlay toggle) */
@@ -83,7 +83,14 @@
         .equ    rt_st_idle,     RT_VARS+0x3AC   /* .l rt_idle one second ago */
         .equ    rt_tps,         RT_VARS+0x3B0   /* .w arcade ticks in the last second, BCD (60 = full speed; diagnostic overlay) */
         .equ    rt_idlepct,     RT_VARS+0x3B2   /* .w idle time of the main loop in the last second, %, BCD */
-        .equ    rt_snd_owed,    RT_VARS+0x39D   /* .b sound sequencer runs owed: a VBlank came in the middle of a tick */
+        .equ    rt_snd_owed,    RT_VARS+0x39D
+        .equ    rt_eff_n,       RT_VARS+0x3B6   /* .w headlight columns prepared (spr_lists) */
+        .equ    rt_eff_nt,      RT_VARS+0x3B8   /* .w their tiles */
+        .equ    rt_eff_last,    RT_VARS+0x3BA   /* .w SCB4, .w attribute, .w SCB3 of the last tile added (3 words, to 0x3BF) */
+        .equ    rt_eff_used,    RT_VARS+0x3FA   /* .w columns written to VRAM last time */
+        .equ    rt_cmp_any,     RT_VARS+0x3B4   /* 2 x .b some HI / BG companion column is marked dirty (layer_update recounts) */
+        .equ    rt_prev_sel,    RT_VARS+0x39E
+        .equ    rt_pal_rot,     RT_VARS+0x39F   /* .b video_vblank: next group of 4 palettes to rewrite (0..15) */   /* .b SELECT pressed last frame (coin button, edge) */   /* .b sound sequencer runs owed: a VBlank came in the middle of a tick */
         .equ    rt_spr_slow,    RT_VARS+0x39C   /* .b spr_lists left the lists to the multi-pass conversion (sprites_slow, in video_frame) */
         .equ    rt_ticks,       RT_VARS+0x398   /* .l arcade ticks run (frame_hook calls; profiling) */
         .equ    rt_lu_c0last,   RT_VARS+0x394   /* 2 x .w first map column checked by the last pass 1 (layer 0, layer 1) */
@@ -141,7 +148,12 @@
         .equ    SPR_PRI1_MAX,   96              /* arcade sprites with code >= 0x3700 (HUD, text): above the HI columns */
         .equ    SPR_PRI1,       381-SPR_PRI1_MAX
         .equ    SPR_HI,         SPR_PRI1-NCOLSPR        /* layer-0 columns again, category-1 cells only: above the sprites */
-        .equ    SPR_OBJ_MAX,    SPR_HI-SPR_OBJ
+        .equ    EFF_MAX,        48              /* night stages: columns of headlight tiles (one sprite each, up to 16 tiles) */
+        .equ    SPR_EFF,        SPR_HI-EFF_MAX
+        .equ    SPR_OBJ_MAX,    SPR_EFF-SPR_OBJ
+        .equ    EFF_DESC,       ARC_SPR         /* EFF_MAX x (.w SCB3 of the top tile | height, .w SCB4, .w first tile, .w tiles) */
+        .equ    EFF_TILES,      ARC_SPR+0x200   /* EFF_TILES_MAX x (.w tile, .w attribute); ARC_SPR is only used by the */
+        .equ    EFF_TILES_MAX,  256             /* fallback copy of 0x44E6, which then leaves no columns (sl_slow) */
         .equ    HI_BLANK,       4254            /* an all-transparent tile (fills the non-priority cells) */
         .equ    PAL_ARC_BASE,   16              /* arcade palette entry i (bank 0) -> Neo Geo palette 16 + i/16 */
         .equ    PAL_TILES,      PAL_ARC_BASE    /* arcade tile colours 0-31 -> palettes 16-47 */

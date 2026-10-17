@@ -101,15 +101,22 @@ io_update:
         tst.b   d2
         ble     8f
         add.b   d2,rt_coins_due
-8:      /* PLAYER_START seen: on AES inject a coin first, then hold START until the arcade takes a credit */
+8:      /* SELECT = coin (AES and MVS: the arcade counts it; on MVS the coin slots work too) */
+        move.b  BIOS_STATCURNT,d1
+        and.b   #0x02,d1                /* P1 SELECT */
+        move.b  rt_prev_sel,d2
+        move.b  d1,rt_prev_sel
+        tst.b   d2
+        bne.s   82f
+        tst.b   d1
+        beq.s   82f
+        addq.b  #1,rt_coins_due
+82:     /* PLAYER_START seen: hold START until the arcade takes a credit (no credit: nothing happens, as on
+           the arcade - the coin is SELECT) */
         tst.b   rt_start_req
         beq     9f
         clr.b   rt_start_req
-        moveq   #1,d1                   /* MVS: coin already mirrored, start right away */
-        tst.b   BIOS_MVS_FLAG
-        bne     81f
-        addq.b  #1,rt_coins_due
-        moveq   #90,d1                  /* AES: let the arcade credit the coin and fade to its prompt */
+        moveq   #1,d1
 81:     move.b  d1,rt_start_wait
         move.w  #240,rt_start_hold
         move.w  ARC_WRAM+0x1EE,rt_cred_start
@@ -578,22 +585,44 @@ trap_error_pc:
         jmp     trap_error
 
 * palette_sync: arcade palette RAM shadow (xBRG444, entries 0..1023) -> ARC_PAL (Neo Geo format) for
-* the 16-colour palettes whose raw words changed since the last call.
-* Half of the 64 palettes is checked per frame (alternating), so a change shows up at most two frames
-* later; the compare is 8 cmpm.l per palette with an early exit on the first difference.
+* the 16-colour palettes whose raw words changed since the last call.  A quarter of the 64 palettes is
+* checked per call (the palettes hardly change during a race); when one of them changed, the other
+* three quarters are checked too in the same call (a fade or a new screen changes them all at once).
+* The compare is 8 cmpm.l per palette with an early exit on the first difference.
 palette_sync:
-        lea     ARC_PALRAW,a0
-        lea     ARC_PALLAST,a1
-        lea     ARC_PAL,a2
-        lea     rt_pal_dirty,a3
         lea     pal_table,a4
-        not.b   rt_pal_half                 /* alternate halves per call (not per VBlank: a long frame skips the */
-        beq.s   1f                          /* next tick, and a VBlank parity would always pick the same half) */
-        lea     1024(a0),a0             /* odd frames: palettes 32..63 */
-        lea     1024(a1),a1
-        lea     1024(a2),a2
-        lea     32(a3),a3
-1:      moveq   #31,d7
+        moveq   #0,d0
+        move.b  rt_pal_half,d0
+        addq.b  #1,d0
+        and.b   #3,d0
+        move.b  d0,rt_pal_half          /* quarter checked by this call */
+        moveq   #0,d5                   /* palettes converted */
+        bsr.s   ps_quarter
+        tst.w   d5
+        beq.s   9f
+1:      addq.b  #1,d0                   /* something changed: the other quarters as well */
+        and.b   #3,d0
+        cmp.b   rt_pal_half,d0
+        beq.s   9f
+        bsr.s   ps_quarter
+        bra.s   1b
+9:      rts
+* ps_quarter: d0.b = quarter 0..3 (palettes 16*q .. 16*q+15).  d5 += palettes converted.  Keeps d0/a4.
+ps_quarter:
+        move.w  d0,d1
+        lsl.w   #8,d1
+        add.w   d1,d1                   /* q * 512 bytes */
+        lea     ARC_PALRAW,a0
+        adda.w  d1,a0
+        lea     ARC_PALLAST,a1
+        adda.w  d1,a1
+        lea     ARC_PAL,a2
+        adda.w  d1,a2
+        lea     rt_pal_dirty,a3
+        move.w  d0,d1
+        lsl.w   #4,d1
+        adda.w  d1,a3
+        moveq   #15,d7
 ps_pal:
         cmpm.l  (a0)+,(a1)+
         bne.s   ps_conv
@@ -618,23 +647,24 @@ ps_pal:
 ps_conv:
         /* back to the start of this palette and convert its 16 entries (a1 is past the differing long,
            which may be the last one of the palette: step back before rounding down) */
-        move.l  a1,d0
-        subq.l  #4,d0
-        sub.l   #ARC_PALLAST,d0
-        and.w   #0xFFE0,d0
+        move.l  a1,d1
+        subq.l  #4,d1
+        sub.l   #ARC_PALLAST,d1
+        and.w   #0xFFE0,d1
         lea     ARC_PALLAST,a1
-        adda.l  d0,a1
+        adda.l  d1,a1
         lea     ARC_PALRAW,a0
-        adda.l  d0,a0
+        adda.l  d1,a0
         moveq   #15,d6
-1:      move.w  (a0)+,d0
-        move.w  d0,(a1)+
-        and.w   #0x0FFF,d0
-        add.w   d0,d0
-        move.w  (a4,d0.w),(a2)+
+1:      move.w  (a0)+,d1
+        move.w  d1,(a1)+
+        and.w   #0x0FFF,d1
+        add.w   d1,d1
+        move.w  (a4,d1.w),(a2)+
         dbra    d6,1b
         st      (a3)+
         st      rt_pal_any
+        addq.w  #1,d5
         dbra    d7,ps_pal
         rts
 

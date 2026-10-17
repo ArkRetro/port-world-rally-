@@ -101,7 +101,8 @@ irq_vblank:
         cmpi.b  #2,rt_tick_pend
         bcc.s   3f
         addq.b  #1,rt_tick_pend
-3:      jsr     arc_sound_tick
+3:      jsr     snd_vblank              /* the emulated OKI busy bits keep counting down (a frozen count kept */
+        jsr     arc_sound_tick          /* channels "busy" and the next start on them was dropped) */
         movem.l (sp)+,d0-d7/a0-a6
         rte
 1:      /* first of all, while the beam is in the vertical blank: palettes and the VRAM queue of the last
