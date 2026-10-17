@@ -9,8 +9,9 @@
 *   snd_hook_phrase   0x14394  move.b d1,$70000F     (d1 = 0x80 | phrase)
 *   snd_hook_play     0x143A8  move.b d1,$70000F     (d1 = (1<<channel)<<4 | volume  -> starts the phrase)
 *
-* The arcade reads the OKI status (bits 0-3 = channel busy) at 0x70000F: snd_vblank copies the Z80's
-* busy mask there every frame and the stop hooks clear bits immediately.
+* The arcade reads the OKI status (bits 0-3 = channel busy) at 0x70000F.  As in the arkretro port it is
+* emulated from each phrase's length (tools/oki2adpcma.py -> sample_dur.inc): set on play, counted down by
+* snd_vblank, cleared by the stop hooks; a start on a busy channel is ignored, like the OKI does.
 *
 * Z80 protocol (z80/driver.s): every command byte is acknowledged by toggling bit 6 of the reply, and
 * snd_send waits for that toggle (with a timeout) so two commands never collide in the sound latch.
@@ -61,6 +62,8 @@ snd_hook_stopall:
         bsr     snd_send
         move.l  (sp)+,d0
         clr.b   IO_OKI
+        clr.l   rt_oki_cnt
+        clr.l   rt_oki_cnt+4
         rts
 
 * d0 / d1 = OKI stop command byte (channels in bits 3-6)
@@ -76,20 +79,24 @@ snd_hook_stop1:
         movem.l (sp)+,d0-d1
         rts
 snd_stop_mask:
-        move.l  d2,-(sp)
+        movem.l d2/a0,-(sp)
         lsr.b   #3,d1
         and.w   #0x0F,d1
         moveq   #0,d2
 1:      btst    d2,d1
         beq     2f
         bclr    d2,IO_OKI
+        move.w  d2,d0
+        add.w   d0,d0
+        lea     rt_oki_cnt,a0
+        clr.w   (a0,d0.w)
         move.b  d2,d0
         add.b   #Z80_STOPCH,d0
         bsr     snd_send
 2:      addq.w  #1,d2
         cmpi.w  #4,d2
         bcs     1b
-        move.l  (sp)+,d2
+        movem.l (sp)+,d2/a0
         rts
 
 snd_hook_bank:
@@ -129,7 +136,18 @@ snd_hook_play:
         cmpi.w  #60,d2
         bcs     3b
         bra     9f                      /* unknown phrase: ignore */
-4:      lsl.b   #4,d0                   /* select channel + volume, then play */
+4:      move.b  IO_OKI,d1
+        and.b   d3,d1
+        bne     9f                      /* the OKI ignores a start on a channel that is playing */
+        move.w  d2,d1
+        add.w   d1,d1
+        lea     sample_dur,a0
+        move.w  (a0,d1.w),d1            /* busy for the phrase's length */
+        add.w   d0,d0
+        lea     rt_oki_cnt,a0
+        move.w  d1,(a0,d0.w)
+        lsr.w   #1,d0
+        lsl.b   #4,d0                   /* select channel + volume, then play */
         and.b   #0x0F,d4
         or.b    d4,d0
         or.b    #Z80_SELECT,d0
@@ -137,14 +155,30 @@ snd_hook_play:
         move.b  d2,d0
         add.b   #Z80_PLAY,d0
         bsr     snd_send
-        or.b    d3,IO_OKI               /* busy at once (the Z80 confirms every frame) */
+        or.b    d3,IO_OKI
 9:      movem.l (sp)+,d0-d4/a0
         rts
+sample_dur:
+        .include "sample_dur.inc"
 
-* snd_vblank: Z80 reply (0x80 | busy) -> arcade OKI status byte
+* snd_vblank: the arcade's OKI status byte (bit n = channel n busy) from the phrase lengths, as the
+* arkretro port does: it does not depend on the YM2610's end flags, which the real chip and MAME do not
+* report alike
 snd_vblank:
-        move.b  REG_SOUND,d0
-        bpl     1f
-        and.b   #0x0F,d0
-        move.b  d0,IO_OKI
-1:      rts
+        movem.l d0-d2/a0,-(sp)
+        lea     rt_oki_cnt,a0
+        moveq   #0,d1                   /* busy mask */
+        moveq   #0,d2                   /* channel */
+1:      move.w  (a0),d0
+        beq.s   2f
+        subq.w  #1,d0
+        move.w  d0,(a0)
+        beq.s   2f
+        bset    d2,d1
+2:      addq.l  #2,a0
+        addq.w  #1,d2
+        cmpi.w  #4,d2
+        bcs.s   1b
+        move.b  d1,IO_OKI
+        movem.l (sp)+,d0-d2/a0
+        rts
