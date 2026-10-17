@@ -131,7 +131,7 @@
         .equ    VCMD_END,       0x10E700                /* leaves the word 0xFFFF and starts again at VCMD_BUF */
         .equ    ARC_PALB7,      0x10E700        /* 2 KB: arcade palette bank 7 (203800-203FFF: the night stages' undimmed colours) */
         .equ    ARC_PALB7_END,  0x10EF00
-        .equ    VCMD_ROOM,      160             /* bytes reserved per block (header + up to 64 words + slack) */
+        .equ    VCMD_ROOM,      256             /* bytes reserved after a vc_room call (one or a few blocks: up to 162 bytes) */
 * companion columns (HI over layer 0, BG under layer 1): only the rows r0 .. r0+h-1 of the map column that
 * hold something are uploaded and displayed (sprites per scanline); a cell changing category marks the
 * column dirty and it is recounted on the next frame

@@ -269,6 +269,15 @@ video_vblank:
 vc_room:
         cmpa.l  #VCMD_END-VCMD_ROOM-2,a6
         bcs.s   1f
+        /* wrap - unless the next command to play is in the first block of the ring: then a6 would come
+           round onto it and a full ring would look empty, so everything goes out first */
+        move.l  d0,-(sp)
+        move.l  rt_vcmd_rd,d0
+        sub.l   #VCMD_BUF,d0
+        cmpi.l  #VCMD_ROOM+2,d0
+        bhi.s   2f
+        bsr.s   vc_play_all
+2:      move.l  (sp)+,d0
         move.w  #0xFFFF,(a6)            /* wrap */
         lea     VCMD_BUF,a6
 1:      move.l  d0,-(sp)
