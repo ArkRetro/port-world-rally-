@@ -8,7 +8,9 @@
 ;     0x03  BIOS soft reset    -> silence, restart
 ;     0x08  stop all channels
 ;     0x0C+ch (0x0C-0x0F)       stop channel ch
-;     0x40 + sample (0x40-0x7B) play sample 0..59 (table at samples:) on the selected channel/volume
+;     0x40 + slot (0x40-0x7F)   play OKI phrase slot 0x00-0x3F (= phrase 0x00-0x3F) on the selected
+;                               channel/volume (table at samples:)
+;     0xC0 + n (0xC0-0xEF)      play slot 0x40 + n (= phrase 0x50 + n)
 ;     0x80 | ch<<4 | vol        select channel ch (0..3) and OKI volume vol (0..15) for the next play
 ;   reply byte (read by the 68k at 0x320000): 0x80 | ack | busy mask (bit n = channel n playing);
 ;   bit 6 (ack) toggles every time a command is taken, so the 68k can wait before sending the next
@@ -56,14 +58,20 @@ nmi:
         jr      c,cmd_stopch
         cp      #0x40
         jr      c,nmi_done
-        cp      #0x7C
-        jr      nc,cmd_select
-        sub     #0x40
+        cp      #0x80
+        jr      c,cmd_play_lo
+        cp      #0xC0
+        jr      c,cmd_select
+        cp      #0xF0
+        jr      nc,nmi_done
+        sub     #0x80                   ; 0xC0-0xEF -> slot 0x40-0x6F
+        call    play_cmd
+        jr      nmi_done
+cmd_play_lo:
+        sub     #0x40                   ; 0x40-0x7F -> slot 0x00-0x3F
         call    play_cmd
         jr      nmi_done
 cmd_select:
-        cp      #0xC0
-        jr      nc,nmi_done
         and     #0x0F
         ld      (pend_vol),a
         ld      a,b
@@ -233,9 +241,9 @@ mask_of_b:
 4$:     pop     bc
         ret
 
-; play_cmd: a = sample (0..59), channel and volume from the last select command
+; play_cmd: a = phrase slot (0..0x6F), channel and volume from the last select command
 play_cmd:
-        cp      #60
+        cp      #0x70
         ret     nc
         ld      e,a
         ld      a,(pend_ch)

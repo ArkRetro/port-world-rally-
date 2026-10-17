@@ -23,10 +23,9 @@
         .global snd_hook_stopall, snd_hook_stop0, snd_hook_stop1, snd_hook_bank, snd_hook_phrase, snd_hook_play
         .global snd_vblank, snd_init
 
-        .equ    OKI_TABLE,      0x144AC         /* 60 x (bank, phrase) in the arcade ROM */
         .equ    Z80_STOPALL,    0x08
         .equ    Z80_STOPCH,     0x0C
-        .equ    Z80_PLAY,       0x40            /* + sample index 0..59 */
+        .equ    Z80_PLAY,       0x40            /* + phrase slot 0x00-0x3F; slots 0x40-0x6F use 0xC0 + n */
         .equ    Z80_SELECT,     0x80            /* | channel<<4 | OKI volume nibble */
         .equ    SND_TIMEOUT,    500             /* snd_send spins (about 1.5 ms, only if the Z80 is dead) */
 
@@ -123,19 +122,16 @@ snd_hook_play:
         addq.w  #1,d0
         bra     1b
 2:      and.w   #3,d0                   /* d0 = channel 0..3 */
-        /* (bank, phrase) -> sample index: linear search in the arcade's table */
-        lea     OKI_TABLE,a0
-        move.b  rt_okibank,d1
-        lsl.w   #8,d1
-        move.b  rt_okiphrase,d1
-        and.w   #0x0F7F,d1              /* bank:phrase */
-        moveq   #0,d2
-3:      cmp.w   (a0)+,d1
-        beq     4f
-        addq.w  #1,d2
-        cmpi.w  #60,d2
-        bcs     3b
-        bra     9f                      /* unknown phrase: ignore */
+        /* phrase -> slot (tools/oki2adpcma.py converts every phrase of the OKI ROM, its bank follows from
+           the phrase number): not only the 60 pairs of the arcade's table are played - some script opcodes
+           send a phrase number directly (coin, start countdown) */
+        moveq   #0x7F,d2
+        and.b   rt_okiphrase,d2         /* phrase */
+        cmpi.b  #0x40,d2
+        bcs     4f                      /* 0x00-0x3F: slot = phrase */
+        cmpi.b  #0x50,d2
+        bcs     9f                      /* 0x40-0x4F: not defined in the ROM */
+        sub.b   #0x10,d2                /* 0x50-0x7F: slot 0x40-0x6F */
 4:      move.b  IO_OKI,d1
         and.b   d3,d1
         bne     9f                      /* the OKI ignores a start on a channel that is playing */
@@ -153,8 +149,11 @@ snd_hook_play:
         or.b    #Z80_SELECT,d0
         bsr     snd_send
         move.b  d2,d0
-        add.b   #Z80_PLAY,d0
-        bsr     snd_send
+        add.b   #Z80_PLAY,d0            /* slot 0x00-0x3F -> 0x40-0x7F */
+        cmpi.b  #0x80,d0
+        bcs     5f
+        add.b   #0x40,d0                /* slot 0x40-0x6F -> 0xC0-0xEF */
+5:      bsr     snd_send
         or.b    d3,IO_OKI
 9:      movem.l (sp)+,d0-d4/a0
         rts

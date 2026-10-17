@@ -188,7 +188,12 @@ ms_loop:
         move.w  d5,d0
         and.w   #0x1F,d0
         lea     1(a0,d3.w),a1           /* a1 -> p0 */
+        /* the command routines use d2/d3/d5/a0 as scratch (RACE_START's VELOCIDAD walks a0 through the
+           sine table, RACE_START2's division runs in d2): keep the interpreter's offset, index, command
+           byte and script pointer, or the script resumes at a garbage offset after every jump */
+        movem.l d2-d3/d5/a0/a6,-(sp)
         bsr     ms_exec                 /* d0 = h (extra bytes); d0 = -1 if the command stored the offset itself */
+        movem.l (sp)+,d2-d3/d5/a0/a6    /* (movem leaves the flags of ms_exec's result) */
         bmi     ms_ret
         add.w   d0,d3
         btst    #5,d5
@@ -209,8 +214,8 @@ ms_skip:
 ms_ret:
         rts
 
-* ms_exec: d0 = command k, a1 -> p0, d2 = off, d3 = q.  Returns d0 = h (>=0) or -1.
-* Preserves d2, d3, d5, a0, a6.
+* ms_exec: d0 = command k, a1 -> p0, d2 = off, d3 = q.  Returns d0 = h (>=0) or -1 with the flags set
+* from d0.  May use any register but d0's result: the caller keeps d2, d3, d5, a0, a6.
 ms_exec:
         cmpi.w  #0x0C,d0
         bhi     cmd_sign                /* 0x0D-0x1F = SIGN */
