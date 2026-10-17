@@ -166,8 +166,194 @@ arc_irq_done:
         move.w  REG_LSPCMODE,rt_dbg+4
         bsr     video_frame
         move.w  REG_LSPCMODE,rt_dbg+6
+        bsr     diag_frame
         move.l  rt_saved_sp,sp
         rts
+
+* ------------------------------------------------------------------------------------------
+* Diagnostic overlay (hold D for one second to toggle it): the protection sums and sabotage flags of
+* the arcade program and the ticks skipped, on the fix layer.  "OK" / "MAL" compares a sum with the
+* value of the original program.  Queued like any other VRAM change.
+* ------------------------------------------------------------------------------------------
+        .equ    DIAG_N, 19
+diag_frame:
+        move.b  BIOS_P1CURRENT,d0
+        btst    #7,d0
+        beq.s   1f
+        addq.b  #1,rt_diag_hold
+        cmpi.b  #60,rt_diag_hold
+        bne.s   2f
+        not.b   rt_diag_on
+        bne.s   2f
+        st      rt_diag_clr
+        bra.s   2f
+1:      clr.b   rt_diag_hold
+2:      tst.b   rt_diag_on
+        bne.s   3f
+        tst.b   rt_diag_clr
+        bne.s   3f
+        rts
+3:      movea.l rt_vcmd_ptr,a6
+        cmpa.l  #VCMD_BUF,a6
+        bcc.s   4f
+        lea     VCMD_BUF,a6
+4:      lea     diag_tab,a0
+        moveq   #0,d7                   /* line */
+dg_line:
+        jsr     vc_room
+        move.w  d7,d0
+        addq.w  #7,d0                   /* row (below the HUD) */
+        add.w   #VRAM_FIX+2*32,d0       /* column 2 */
+        move.w  d0,(a6)+
+        move.w  #32,(a6)+
+        move.w  #17-1,(a6)+
+        tst.b   rt_diag_on
+        bne.s   5f
+        moveq   #16,d0                  /* turned off: blank the line */
+6:      move.w  #0x00FF,(a6)+
+        dbra    d0,6b
+        lea     14(a0),a0
+        bra     dg_next
+5:      moveq   #3,d0                   /* label */
+7:      moveq   #0,d1
+        move.b  (a0)+,d1
+        or.w    #(PAL_FIX<<12)&0xFFFF,d1
+        move.w  d1,(a6)+
+        dbra    d0,7b
+        move.w  #(PAL_FIX<<12)+0x20,(a6)+
+        movea.l (a0)+,a1                /* address */
+        move.w  (a0)+,d1                /* size: 1, 2 or 4 */
+        move.l  (a0)+,d4                /* expected (0 = none) */
+        moveq   #0,d2
+        cmpi.w  #4,d1
+        bne.s   8f
+        move.l  (a1),d2
+        moveq   #7,d3
+        bra.s   10f
+8:      move.w  (a1),d2
+        swap    d2
+        move.w  #(PAL_FIX<<12)+0x20,(a6)+
+        move.w  #(PAL_FIX<<12)+0x20,(a6)+
+        move.w  #(PAL_FIX<<12)+0x20,(a6)+
+        move.w  #(PAL_FIX<<12)+0x20,(a6)+
+        moveq   #3,d3
+10:     rol.l   #4,d2
+        moveq   #15,d0
+        and.w   d2,d0
+        move.b  diag_hex(pc,d0.w),d0
+        or.w    #(PAL_FIX<<12)&0xFFFF,d0
+        move.w  d0,(a6)+
+        dbra    d3,10b
+        move.w  #(PAL_FIX<<12)+0x20,(a6)+
+        lea     diag_none(pc),a2
+        tst.l   d4
+        beq.s   11f
+        lea     diag_ok(pc),a2
+        cmp.l   (a1),d4
+        beq.s   11f
+        lea     diag_bad(pc),a2
+11:     moveq   #2,d0
+12:     moveq   #0,d1
+        move.b  (a2)+,d1
+        or.w    #(PAL_FIX<<12)&0xFFFF,d1
+        move.w  d1,(a6)+
+        dbra    d0,12b
+dg_next:
+        addq.w  #1,d7
+        cmpi.w  #DIAG_N,d7
+        bcs     dg_line
+        move.l  a6,rt_vcmd_ptr
+        tst.b   rt_diag_on
+        bne.s   13f
+        clr.b   rt_diag_clr
+13:     rts
+diag_hex:
+        .ascii  "0123456789ABCDEF"
+diag_ok:
+        .ascii  " OK"
+diag_bad:
+        .ascii  "MAL"
+diag_none:
+        .ascii  "   "
+        .align  2
+* label (4 chars), address, size, expected value of the original program (0 = not checked)
+diag_tab:
+        .ascii  "F502"
+        .long   ARC_WRAM+0x3502
+        .word   4
+        .long   0x14AA816C
+        .ascii  "F520"
+        .long   ARC_WRAM+0x3520
+        .word   4
+        .long   0xAFC9EA39
+        .ascii  "F53C"
+        .long   ARC_WRAM+0x353C
+        .word   4
+        .long   0xC7542125
+        .ascii  "F540"
+        .long   ARC_WRAM+0x3540
+        .word   4
+        .long   0x67CE546B
+        .ascii  "F846"
+        .long   ARC_WRAM+0x3846
+        .word   4
+        .long   0x1CF15E75
+        .ascii  "F80C"
+        .long   ARC_WRAM+0x380C
+        .word   4
+        .long   0
+        .ascii  "SUMK"
+        .long   0xF0A00
+        .word   4
+        .long   0
+        .ascii  "F81E"
+        .long   ARC_WRAM+0x381E
+        .word   4
+        .long   0xA209E4F1
+        .ascii  "F54E"
+        .long   ARC_WRAM+0x354E
+        .word   2
+        .long   0
+        .ascii  "C162"
+        .long   ARC_WRAM+0x162
+        .word   2
+        .long   0
+        .ascii  "C154"
+        .long   ARC_WRAM+0x154
+        .word   2
+        .long   0
+        .ascii  "F4B4"
+        .long   ARC_WRAM+0x34B4
+        .word   2
+        .long   0
+        .ascii  "F4BA"
+        .long   ARC_WRAM+0x34BA
+        .word   2
+        .long   0
+        .ascii  "C230"
+        .long   ARC_WRAM+0x230
+        .word   2
+        .long   0
+        .ascii  "C22E"
+        .long   ARC_WRAM+0x22E
+        .word   2
+        .long   0
+        .ascii  "F556"
+        .long   ARC_WRAM+0x3556
+        .word   2
+        .long   0
+        .ascii  "EAE8"
+        .long   ARC_WRAM+0x2AE8
+        .word   2
+        .long   0
+        .ascii  "EAF2"
+        .long   ARC_WRAM+0x2AF2
+        .word   4
+        .long   0
+        .ascii  "SKIP"
+        .long   rt_skip
+        .word   2
+        .long   0
 
 * TRAP #1: dispatch an arcade VRAM write (2/4-byte instruction replaced by the trap) to its stub.
 * Stack on entry: SR.w, PC.l (PC = address after the trap opcode).

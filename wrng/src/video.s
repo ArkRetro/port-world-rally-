@@ -15,7 +15,7 @@
         .include "ram.i"
 
         .text
-        .global video_init, video_init_min, video_vblank, video_frame
+        .global vc_room, video_init, video_init_min, video_vblank, video_frame
         .global pal_write, vram_mark_dirty, video_mark_all_dirty, pal_table, vram_store, vram_flush
 
 * ------------------------------------------------------------------------------------------
@@ -68,6 +68,20 @@ video_init:
         moveq   #15,d0
 1:      move.w  #0x8000,(a0)+
         dbra    d0,1b
+        /* sprite 0: the LSPC draws it at the end of every scanline list with fewer than 96 sprites (real
+           hardware; MAME does not): transparent tiles, off screen */
+        move.w  #0,REG_VRAMADDR
+        move.w  #1,REG_VRAMMOD
+        moveq   #31,d0
+6:      move.w  #HI_BLANK,REG_VRAMRW
+        VRAM_GAP
+        move.w  #0,REG_VRAMRW
+        VRAM_GAP
+        dbra    d0,6b
+        move.w  #VRAM_SCB4,REG_VRAMADDR
+        VRAM_GAP
+        move.w  #320<<7,REG_VRAMRW
+        VRAM_GAP
         /* every sprite 14 pixels wide (horizontal shrink): the whole 368-pixel arcade width fits in 320 */
         move.w  #VRAM_SCB2+1,REG_VRAMADDR
         move.w  #1,REG_VRAMMOD
@@ -148,6 +162,13 @@ vram_mark_dirty:
 * ------------------------------------------------------------------------------------------
 video_vblank:
         move.w  rt_backdrop,PALETTES+255*32+30
+        tst.b   rt_diag_on              /* diagnostic overlay: white text */
+        beq.s   1f
+        move.l  #0x00007FFF,PALETTES+PAL_FIX*32
+        move.l  #0x7FFF7FFF,PALETTES+PAL_FIX*32+4
+        move.l  #0x7FFF7FFF,PALETTES+PAL_FIX*32+8
+        move.l  #0x00000000,PALETTES+PAL_FIX*32+12
+1:
         tst.b   rt_pal_any
         beq.s   9f
         clr.b   rt_pal_any

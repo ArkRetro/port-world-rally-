@@ -70,6 +70,10 @@
         .equ    rt_pal_half,    RT_VARS+0x3F7   /* .b palette_sync: half converted last time (0 / 0xFF) */
         .equ    rt_spr_busy,    RT_VARS+0x3F8   /* .b sprites_update is filling the field arrays (a nested VBlank flush leaves the sprites as they are) */
         .equ    rt_oki_cnt,     RT_VARS+0x380   /* 4 words: frames left of the phrase on OKI channel n (emulated busy bits) */
+        .equ    rt_diag_hold,   RT_VARS+0x388   /* .b frames D has been held (diagnostic overlay toggle) */
+        .equ    rt_diag_on,     RT_VARS+0x389   /* .b diagnostic overlay shown */
+        .equ    rt_diag_clr,    RT_VARS+0x38A   /* .b overlay just turned off: blank it once */
+        .equ    rt_skip,        RT_VARS+0x38C   /* .w arcade ticks skipped (the frame work was still running at VBlank) */
 
         .equ    ARC_PALRAW,     0x10A000        /* 4 KB: arcade palette RAM 200000-200FFF as written by the game (xBRG444) */
         .equ    ARC_PALRAW_END, 0x10B000

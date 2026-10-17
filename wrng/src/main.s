@@ -99,6 +99,7 @@ irq_vblank:
         /* the previous frame's work is still running (it was allowed to be interrupted): the VRAM has
            been updated on time; this tick of the arcade is skipped so that its main loop still runs
            between two of its interrupts */
+        addq.w  #1,rt_skip
         movem.l (sp)+,d0-d7/a0-a6
         rte
 2:      move.l  sp,rt_io_sp
