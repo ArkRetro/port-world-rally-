@@ -1,6 +1,7 @@
 """Lightening Force (USA): replace the player ship with Ecco's dolphin, demo mode only.
 
-Usage: python3 build_patch.py <tf4.bin> <ecco frame png> <out.bin> [out.ips]
+Usage: python3 build_patch.py <tf4.bin> <ecco frame png> <out.bin> [out.ips] [--everywhere]
+--everywhere: use the dolphin in the whole game, not only the first demo.
 - Ship tiles: ROM archive 0x90000 entry 3, unpacked to RAM FF0800; bytes 0x100-0x5FF
   (FF0900-FF0DFF) are the 5 ship frames (4x2 tiles each), DMA'd to VRAM tiles 0x448-0x46F.
 - Demo flag: word $FFF2FE (non-zero = demo, 0 = real game). Stage: word $FFF0B8.
@@ -46,14 +47,18 @@ def frame_tiles(png):
                     out.append((row[x] << 4) | row[x+1])
     return bytes(out), px
 
-def routine(data_addr):
+def routine(data_addr, everywhere=False):
     c = bytearray()
-    c += bytes.fromhex('4A78F2FE')                 # tst.w   $f2fe.w
-    c += bytes.fromhex('6700')                      # beq.s   done (patched below)
-    beq = [len(c) - 1]
-    c += bytes.fromhex('4A78F0B8')                 # tst.w   $f0b8.w   (stage: 0 = first demo stage)
-    c += bytes.fromhex('6600')                      # bne.s   done
-    beq.append(len(c) - 1)
+    beq = []
+    if everywhere:
+        c += bytes.fromhex('4E71' * 5)             # nop padding where the demo/stage checks go
+    else:
+        c += bytes.fromhex('4A78F2FE')             # tst.w   $f2fe.w
+        c += bytes.fromhex('6700')                  # beq.s   done (patched below)
+        beq.append(len(c) - 1)
+        c += bytes.fromhex('4A78F0B8')             # tst.w   $f0b8.w   (stage: 0 = first demo stage)
+        c += bytes.fromhex('6600')                  # bne.s   done
+        beq.append(len(c) - 1)
     c += bytes.fromhex('41F9') + data_addr.to_bytes(4, 'big')  # lea data.l,a0
     c += bytes.fromhex('43F9') + SHIP_RAM.to_bytes(4, 'big')   # lea $ff0900.l,a1
     c += bytes.fromhex('303C') + (NTILES*32//4 - 1).to_bytes(2, 'big')  # move.w #n-1,d0
@@ -66,12 +71,12 @@ def routine(data_addr):
     c += bytes.fromhex('4E75')                      # rts
     return bytes(c)
 
-def main(rom_path, png, out_path):
+def main(rom_path, png, out_path, everywhere=False):
     rom = bytearray(open(rom_path, 'rb').read())
     assert len(rom) == 0x100000 and rom[HOOK:HOOK+6] == bytes.fromhex('41F900090000'), 'unexpected ROM'
     tiles, _ = frame_tiles(png)
     data = tiles * 5                                # same image for the 5 banking frames
-    code = routine(NEW + 0x100)
+    code = routine(NEW + 0x100, everywhere)
     rom += b'\xFF' * 0x100000                       # grow to 2 MB
     rom[NEW:NEW+len(code)] = code
     rom[NEW+0x100:NEW+0x100+len(data)] = data
@@ -104,7 +109,8 @@ def make_ips(orig, patched):
     return bytes(out + b'EOF')
 
 if __name__ == '__main__':
-    patched = main(*sys.argv[1:4])
-    if len(sys.argv) > 4:
+    args = [a for a in sys.argv[1:] if a != '--everywhere']
+    patched = main(*args[:3], everywhere='--everywhere' in sys.argv)
+    if len(args) > 3:
         # IPS only describes changes, so the file must grow: the 2 MB tail is written as 0xFF runs
-        open(sys.argv[4], 'wb').write(make_ips(open(sys.argv[1], 'rb').read(), patched))
+        open(args[3], 'wb').write(make_ips(open(args[0], 'rb').read(), patched))
