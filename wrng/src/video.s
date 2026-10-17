@@ -231,6 +231,8 @@ vram_flush:
         bls.s   1f                      /* empty (or not initialised yet) */
         bsr     vc_play
 1:      move.l  #VCMD_BUF,rt_vcmd_ptr
+        tst.b   rt_spr_busy
+        bne     9f                      /* interrupted while converting the sprites: keep last frame's */
         lea     REG_VRAMRW,a1
         move.w  #SPR_OBJ,d0
         move.w  rt_spr_n0,d1
@@ -998,6 +1000,7 @@ bg_recount:
 * per pool over the list keeps the arcade's order inside each pool.
 * ------------------------------------------------------------------------------------------
 sprites_update:
+        st      rt_spr_busy
         move.l  a6,-(sp)
         /* entries written this frame by the arcade copy routine 0x44E6: the list counters */
         move.w  ARC_WRAM+0x27E,d6
@@ -1063,6 +1066,7 @@ sf_end:
         sub.w   d1,d0
         move.w  d0,rt_spr_n1
         movea.l (sp)+,a6
+        clr.b   rt_spr_busy
         rts
 sf_full0:
         addq.w  #1,d7                   /* pool 0 full: the sprite is dropped */
@@ -1169,6 +1173,7 @@ sprites_slow:
         move.w  d0,rt_spr_n1
         addq.l  #2,sp
         movea.l (sp)+,a6
+        clr.b   rt_spr_busy
         rts
 
 * su_pass: a0 = first entry, d6 = entries left - 1, d0 = 0 (codes < 0x3700) or -1 (>= 0x3700),
