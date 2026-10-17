@@ -205,8 +205,8 @@ palette_sync:
         lea     ARC_PAL,a2
         lea     rt_pal_dirty,a3
         lea     pal_table,a4
-        btst    #0,rt_frame+3
-        beq.s   1f
+        not.b   rt_pal_half                 /* alternate halves per call (not per VBlank: a long frame skips the */
+        beq.s   1f                          /* next tick, and a VBlank parity would always pick the same half) */
         lea     1024(a0),a0             /* odd frames: palettes 32..63 */
         lea     1024(a1),a1
         lea     1024(a2),a2

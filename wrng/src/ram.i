@@ -68,6 +68,7 @@
         .equ    rt_hud_n,       RT_VARS+0x3F2   /* .w entries of the arcade sprite lists 2-3 (HUD): the last ones of the list */
         .equ    rt_irq_line,    RT_VARS+0x3F4   /* .w REG_LSPCMODE at the VBlank interrupt entry (profiling) */
         .equ    rt_in_hook,     RT_VARS+0x3F6   /* .b the VBlank handler is running the frame work (interruptible) */
+        .equ    rt_pal_half,    RT_VARS+0x3F7   /* .b palette_sync: half converted last time (0 / 0xFF) */
 
         .equ    ARC_PALRAW,     0x10A000        /* 4 KB: arcade palette RAM 200000-200FFF as written by the game (xBRG444) */
         .equ    ARC_PALRAW_END, 0x10B000
