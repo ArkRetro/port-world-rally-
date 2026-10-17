@@ -112,6 +112,10 @@ video_init:
         clr.w   rt_spr_n1
         move.l  #VCMD_BUF,rt_vcmd_ptr
         move.l  #VCMD_BUF,rt_vcmd_rd
+        lea     CELL_ROWS,a0
+        move.w  #(CELL_END-CELL_ROWS)/4-1,d0
+4:      clr.l   (a0)+
+        dbra    d0,4b
         clr.b   rt_pend_n
         clr.b   rt_noseal
         clr.b   rt_fill_set
@@ -121,7 +125,10 @@ video_init:
         clr.l   rt_set_cnt+4
         clr.l   rt_set_cnt+8
         clr.l   rt_set_cnt+12
-        move.w  #0xFFFF,rt_lu_force     /* queue the layer positions on the first frame */
+        move.w  #0xFFFF,rt_lu_force     /* queue the layer positions on the first frame (SCB3 via the */
+        moveq   #-1,d0                  /* force, SCB4 through a signature no frame can match) */
+        move.l  d0,rt_lu_sig
+        move.l  d0,rt_lu_sig+4
         rts
 
 video_mark_all_dirty:
@@ -542,6 +549,7 @@ video_frame:
         lea     rt_col_loaded,a5
         move.w  #SPR_LAYER0,d7
         bsr     layer_update
+        bsr     cells_flush
         move.l  a6,rt_vcmd_ptr
         clr.b   rt_col_inval
         move.w  REG_LSPCMODE,rt_dbg+10  /* profiling */
@@ -661,15 +669,31 @@ lu_p2:  /* pass 2: skip when nothing moved (same x0, same y, no forced update) *
         beq.s   3f
         addq.l  #4,a0
         addq.l  #1,a4
-3:      move.w  a2,d0
-        swap    d0
-        move.w  d6,d0                   /* d0 = x0:y signature */
-        tst.b   (a4)
-        bne.s   4f
-        cmp.l   (a0),d0
-        beq     lu_done
-4:      move.l  d0,(a0)
+3:      /* x signature: s0 | fine x (a whole-column step changes s0, not x0); y signature: SCB3 y.  A moved
+           x rewrites the SCB4 blocks, a moved y or a forced update (rows shown / companions changed) the
+           SCB3 blocks: horizontal or vertical scrolling alone writes half of the words */
+        moveq   #0,d1                   /* bit 0: SCB4, bit 1: SCB3 */
+        move.w  d4,d0
+        lsl.w   #8,d0
+        move.w  a2,d2
+        move.b  d2,d0
+        cmp.w   (a0),d0
+        beq.s   4f
+        move.w  d0,(a0)
+        moveq   #1,d1
+4:      cmp.w   2(a0),d6
+        beq.s   5f
+        move.w  d6,2(a0)
+        bset    #1,d1
+5:      tst.b   (a4)
+        beq.s   6f
         clr.b   (a4)
+        bset    #1,d1
+6:      tst.b   d1
+        beq     lu_done
+        move.w  d1,-(sp)
+        btst    #0,d1
+        beq     lu_scb3
         /* SCB4 of the layer's sprites: x of sprite s = x0 + 14 * ((s - s0) mod NCOLSPR), in the SCB4 form
            (x << 7: the 9-bit wrap of x comes with the 16-bit word), then the same block for the companion set */
         bsr     vc_room
@@ -709,6 +733,14 @@ lu_p2:  /* pass 2: skip when nothing moved (same x0, same y, no forced update) *
         moveq   #NCOLSPR/2-1,d5
 5:      move.l  (a0)+,(a6)+
         dbra    d5,5b
+lu_scb3:
+        btst    #1,1(sp)
+        beq     lu_p2end
+        move.w  #SPR_HI,d3              /* companion base (also set by the SCB4 part) */
+        cmpi.w  #SPR_LAYER0,d7
+        beq.s   1f
+        move.w  #SPR_BG,d3
+1:      bsr     vc_room
         /* SCB3: the layer: y | rows to show (32, fewer when the bottom of the column is empty, 0 when it
            is all empty: such columns do not count against the 96 sprites per scanline) */
         move.w  d7,d0
@@ -761,11 +793,13 @@ lu_p2:  /* pass 2: skip when nothing moved (same x0, same y, no forced update) *
         addq.l  #1,a1
         addq.l  #1,a4
         dbra    d5,5b
-        bra.s   lu_done
+        bra.s   lu_p2end
 6:      move.w  d1,(a6)+
         addq.l  #1,a1
         addq.l  #1,a4
         dbra    d5,5b
+lu_p2end:
+        addq.l  #2,sp
 lu_done:
         lea     tile_attr_table,a1
         rts
@@ -905,20 +939,29 @@ hi_upload:
 * bg_count: d0 = s, d1 = map column (layer 1): rt_bg_cnt[s] = cells needing the backdrop, CMP_BG_R0/H[s] =
 * their row range; queues the BG column (those rows) when there are some.  Preserves registers except a6.
 bg_count:
-        movem.l d0-d6/a0-a1,-(sp)
-        movea.w d1,a1                   /* keep the column (bg_sig trashes d1) */
+        movem.l d0-d6/a0-a3,-(sp)
+        movea.w d1,a1                   /* keep the column */
         move.w  d1,d2
         lsl.w   #2,d2
         lea     ARC_VRAM+0x2000,a0
         adda.w  d2,a0
+        lea     pen0_table,a2
+        lea     ARC_PAL,a3
         move.w  d0,d6                   /* s */
         moveq   #0,d3                   /* count */
         moveq   #-1,d4                  /* first row */
         moveq   #0,d5                   /* last row */
         moveq   #0,d2                   /* row */
-1:      move.l  (a0),d0
-        bsr     bg_sig
-        beq.s   2f
+1:      move.l  (a0),d0                 /* (bg_sig inline) */
+        moveq   #0x1F,d1
+        and.w   d0,d1
+        lsl.w   #5,d1
+        cmpi.w  #0x8000,(a3,d1.w)
+        beq.s   2f                      /* colour 0 black */
+        swap    d0
+        and.w   #0x3FFF,d0
+        btst    #0,(a2,d0.w)
+        beq.s   2f                      /* no pen-0 pixels */
         addq.w  #1,d3
         tst.w   d4
         bpl.s   3f
@@ -942,7 +985,7 @@ bg_count:
         lea     CMP_BG_H,a0
         move.b  d5,(a0,d0.w)
         bsr     bg_upload
-4:      movem.l (sp)+,d0-d6/a0-a1
+4:      movem.l (sp)+,d0-d6/a0-a3
         rts
 
 * bg_upload: d0 = s, d1 = map column: queue SCB1 of backdrop sprite SPR_BG+s = rows r0..r0+h-1 (solid
@@ -981,6 +1024,116 @@ bg_upload:
         lea     256(a0),a0
         dbra    d2,1b
         movem.l (sp)+,d0-d4/a0
+        rts
+
+* cells_flush: the map cells marked by vram_store, row by row: each run of consecutive marked column
+* sprites is one block of tiles and one of attributes (VRAMMOD 64 = from one sprite to the next).  Read
+* from the shadow map now (the current pairs).  a6 = command queue.  Trashes d0-d7/a0-a5.
+cells_flush:
+        moveq   #0,d7                   /* 0: layer 0, 4: layer 1 */
+cf_layer:
+        lea     CELL_ROWS,a0
+        move.l  (a0,d7.w),d6
+        beq     cf_next
+        clr.l   (a0,d7.w)
+        lea     CELL_MASK,a4
+        lea     rt_col_loaded,a5
+        lea     ARC_VRAM,a3
+        move.w  #SPR_LAYER0,d5
+        tst.w   d7
+        beq.s   1f
+        lea     128(a4),a4
+        lea     24(a5),a5
+        lea     ARC_VRAM+0x2000,a3
+        move.w  #SPR_LAYER1,d5
+1:      moveq   #0,d4                   /* row */
+cf_row:
+        lsr.l   #1,d6
+        bcc     cf_rnext
+        move.w  d4,d0
+        lsl.w   #2,d0
+        move.l  (a4,d0.w),d3            /* sprites marked in this row */
+        clr.l   (a4,d0.w)
+        moveq   #0,d2                   /* s */
+cf_bit:
+        btst    d2,d3
+        beq.s   cf_skip
+        cmpi.b  #0xFF,(a5,d2.w)
+        beq.s   cf_skip                 /* not loaded: col_load writes it whole */
+        move.w  d2,d1                   /* end of the run */
+2:      addq.w  #1,d1
+        cmpi.w  #NCOLSPR,d1
+        bcc.s   3f
+        btst    d1,d3
+        beq.s   3f
+        cmpi.b  #0xFF,(a5,d1.w)
+        bne.s   2b
+3:      bsr.s   cf_emit                 /* sprites d2 .. d1-1 */
+        move.w  d1,d2
+        bra.s   cf_test
+cf_skip:
+        addq.w  #1,d2
+cf_test:
+        cmpi.w  #NCOLSPR,d2
+        bcs.s   cf_bit
+cf_rnext:
+        addq.w  #1,d4
+        tst.l   d6
+        bne     cf_row
+cf_next:
+        addq.w  #4,d7
+        cmpi.w  #8,d7
+        bcs     cf_layer
+        rts
+* cf_emit: run of sprites d2 .. d1-1 at row d4 (d5 = first sprite of the layer, a3 = map, a5 = loaded
+* table): two blocks, tiles then attributes.  Preserves d1-d7.
+cf_emit:
+        movem.l d1-d3/d6,-(sp)
+        bsr     vc_room
+        move.w  d5,d0
+        add.w   d2,d0
+        lsl.w   #6,d0
+        move.w  d4,d3
+        add.w   d3,d3
+        add.w   d3,d0                   /* SCB1 word of (first sprite, row): tile */
+        movea.w d0,a0
+        move.w  d1,d6
+        sub.w   d2,d6
+        subq.w  #1,d6                   /* words - 1 */
+        move.w  d4,d3
+        lsl.w   #8,d3
+        lea     (a3,d3.w),a1            /* the map row */
+        lea     tile_attr_table,a2
+        move.w  d0,(a6)+
+        move.w  #64,(a6)+
+        move.w  d6,(a6)+
+        move.w  d6,d1
+        move.w  d2,d3
+1:      moveq   #0,d0
+        move.b  (a5,d3.w),d0
+        lsl.w   #2,d0
+        move.w  (a1,d0.w),d0
+        and.w   #0x3FFF,d0
+        move.w  d0,(a6)+
+        addq.w  #1,d3
+        dbra    d1,1b
+        move.w  a0,d0
+        addq.w  #1,d0                   /* attribute words */
+        move.w  d0,(a6)+
+        move.w  #64,(a6)+
+        move.w  d6,(a6)+
+        move.w  d6,d1
+        move.w  d2,d3
+2:      moveq   #0,d0
+        move.b  (a5,d3.w),d0
+        lsl.w   #2,d0
+        move.b  3(a1,d0.w),d0
+        and.w   #0xFF,d0
+        add.w   d0,d0
+        move.w  (a2,d0.w),(a6)+
+        addq.w  #1,d3
+        dbra    d1,2b
+        movem.l (sp)+,d1-d3/d6
         rts
 
 * ------------------------------------------------------------------------------------------
@@ -1042,20 +1195,30 @@ vs_slow:                                /* (sr saved at 18(sp), interrupts maske
         and.w   #63,d1                  /* col */
         move.w  d1,-(sp)                /* 0(sp): col */
         movea.w d2,a0                   /* s */
-        move.w  a2,d1
-        add.w   d2,d1
-        lsl.w   #6,d1                   /* SCB1 base of sprite s */
-        move.w  2(sp),d2
-        lsr.w   #6,d2                   /* row */
-        add.w   d2,d2
-        add.w   d2,d1
-        move.w  d1,(a6)+                /* queue the cell: tile, attribute */
-        move.w  #1,(a6)+
-        move.w  #1,(a6)+
+        /* mark the cell (cells_flush writes it with the other marked cells of its row) */
+        move.w  2(sp),d1
+        lsr.w   #6,d1                   /* row */
+        move.l  d3,-(sp)
+        lea     CELL_ROWS,a1
+        cmp.w   #SPR_LAYER0,a2
+        beq.s   1f
+        addq.l  #4,a1
+1:      move.l  (a1),d3
+        bset    d1,d3
+        move.l  d3,(a1)
+        lea     CELL_MASK,a1
+        cmp.w   #SPR_LAYER0,a2
+        beq.s   2f
+        lea     128(a1),a1
+2:      lsl.w   #2,d1
+        adda.w  d1,a1
+        move.l  (a1),d3
+        bset    d2,d3
+        move.l  d3,(a1)
+        move.l  (sp)+,d3
         move.l  d0,d1
         swap    d1
-        and.w   #0x3FFF,d1
-        move.w  d1,(a6)+
+        and.w   #0x3FFF,d1              /* tile */
         /* a non-empty cell past the rows the column shows: show more (positions queued next frame) */
         lea     pen0_table,a1
         btst    #1,(a1,d1.w)
@@ -1080,7 +1243,6 @@ vs_slow:                                /* (sr saved at 18(sp), interrupts maske
 7:      and.w   #0xFF,d0
         add.w   d0,d0
         lea     tile_attr_table,a1
-        move.w  (a1,d0.w),(a6)+
         cmp.w   #SPR_LAYER0,a2
         bne     vs_layer1
         /* layer 0 (stack: 0 col, 2 tile index, 4 old pair, 8 new pair): a cell changing category marks the

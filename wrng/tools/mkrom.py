@@ -78,7 +78,9 @@ STUB_RELOC_RAM = {0xC33C, 0xC346, 0xB286}
 ANTITAMPER_LEA = 0xDA44        # lea $1900a,a4
 ANTITAMPER_CONST = 0xF0A00     # compared with the sum of 0xD620 longs from 0x1900A
 ANTITAMPER_START, ANTITAMPER_LONGS = 0x1900A, 0xD620
-IMM_IN_TRACK = [0xCCF6 + 2]    # move.l #$8005c,$fef52a : immediate operand at pc+2
+# (0xCCF6 move.l #$8005C,$FEF52A is not a pointer into the track data: it sets two words of the text
+#  position table, x = 8 (the Final Standings labels slide in by 8 until x = 168) and y = $5C)
+IMM_IN_TRACK = []
 
 
 def be32(b, o):
@@ -325,6 +327,11 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
     rom[0x2F70:0x2F76] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_long'])
     rom[0x2F7E:0x2F84] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_short'])
     # 4a2. faster equivalents of two arcade routines that the race calls very often (same registers and flags):
+    #  map strip copy loops -> native (src/glue.s nat_h7/nat_v7/nat_h6/nat_v6): the loop heads take a jmp
+    for pc, expect, name in ((0x98EC, '3F053F032F093F01', 'nat_h7'), (0x9988, '3F053F032F093F02', 'nat_v7'),
+                             (0x9C24, '3F053F032F093F01', 'nat_h6'), (0x9CC0, '3F053F032F093F02', 'nat_v6')):
+        assert orig[pc:pc + 8] == bytes.fromhex(expect), hex(pc)
+        rom[pc:pc + 6] = bytes.fromhex('4EF9') + struct.pack('>I', syms[name])
     #  0x9E00 animated tiles of layer 0 (every 12 frames) -> src/glue.s anim_scan
     assert orig[0x9E00:0x9E0A] == bytes.fromhex('207C00100000363C000E'), 'anim scan 0x9E00'
     rom[0x9E00:0x9E06] = bytes.fromhex('4EF9') + struct.pack('>I', syms['anim_scan'])

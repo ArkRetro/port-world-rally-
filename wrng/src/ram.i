@@ -128,7 +128,13 @@
 * frame preparation and by vram_store, replayed by vram_flush at the start of the next VBlank so that the
 * screen never changes while it is being drawn
         .equ    VCMD_BUF,       SPR_SET1+SPR_SET_SZ     /* a ring: a block that would not fit before VCMD_END */
-        .equ    VCMD_END,       0x10E700                /* leaves the word 0xFFFF and starts again at VCMD_BUF */
+        .equ    VCMD_END,       CELL_ROWS               /* leaves the word 0xFFFF and starts again at VCMD_BUF */
+* map cells changed in the shown columns (vram_store): one bit per column sprite s, per map row and layer;
+* video_frame (cells_flush) writes each row as runs of consecutive sprites (VRAMMOD 64: one block per
+* run instead of one per cell)
+        .equ    CELL_ROWS,      0x10E5F8        /* 2 x .l rows with marked cells (layer 0, layer 1) */
+        .equ    CELL_MASK,      0x10E600        /* 2 x 32 x .l sprites marked per row */
+        .equ    CELL_END,       0x10E700
         .equ    ARC_PALB7,      0x10E700        /* 2 KB: arcade palette bank 7 (203800-203FFF: the night stages' undimmed colours) */
         .equ    ARC_PALB7_END,  0x10EF00
         .equ    VCMD_ROOM,      256             /* bytes reserved after a vc_room call (one or a few blocks: up to 162 bytes) */

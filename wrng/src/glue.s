@@ -880,6 +880,213 @@ strip_h6:
         STRIP   d6,0
 strip_v6:
         STRIP   d6,1
+* Native versions of the four map strip copies (jmp at their loop heads 0x98EC / 0x9988 / 0x9C24 /
+* 0x9CC0, tools/mkrom.py): the arcade loops instruction for instruction (same registers, same stack frame
+* saved at FEF862, same address helpers 0x9A1A/0x9A38 and 0x9D52/0x9D70), with the per-cell store inline:
+* no call per cell, and the C224 test ("& $F0 = $90: store nothing") made once per group of cells, after
+* the helper that clobbers d6/d7 (C224 does not change inside the loop).
+        .macro  SCELL vert
+        tst.b   d6
+        bne.s   9f
+        move.l  (a0),d7
+        cmp.l   (a1),d7
+        beq.s   9f
+        move.w  a1,d7
+        lsr.w   #2,d7
+        btst    #11,d7
+        bne.s   1f
+        sub.w   rt_c0,d7
+        bra.s   2f
+1:      sub.w   rt_c0+2,d7
+2:      andi.w  #63,d7
+        cmpi.w  #NCOLSPR,d7
+        bcs.s   3f
+        move.l  (a0),(a1)
+        bra.s   9f
+3:      bsr     strip_win
+9:
+        .if     \vert
+        adda.w  #256,a1
+        .else
+        addq.w  #4,a1
+        .endif
+        .endm
+        .macro  C224FLAG
+        move.w  ARC_WRAM+0x224,d6
+        andi.w  #0xF0,d6
+        cmpi.w  #0x90,d6
+        seq     d6
+        .endm
+
+        .global nat_h7, nat_v7, nat_h6, nat_v6
+nat_h7:                                 /* 0x98EC */
+        move.w  d5,-(sp)
+        move.w  d3,-(sp)
+        move.l  a1,-(sp)
+        move.w  d1,-(sp)
+        move.l  sp,ARC_WRAM+0x3862
+10:     jsr     0x9A1A
+11:     move.l  a0,-(sp)
+        jsr     0x9A38
+        C224FLAG
+12:     SCELL   0
+        dbra    d5,13f
+        bra.s   15f
+13:     addq.l  #4,a0
+        addi.w  #16,d1
+        move.w  d1,d4
+        andi.w  #112,d4
+        bne     12b
+        move.w  d1,d4
+        andi.w  #896,d4
+        bne.s   14f
+        suba.w  #256,a1
+14:     movea.l (sp)+,a0
+        addq.l  #2,a0
+        move.w  d1,d4
+        andi.w  #3968,d4
+        bne     11b
+        bra     10b
+15:     movea.l ARC_WRAM+0x3862,sp
+        move.w  (sp)+,d1
+        addi.w  #16,d2
+        movea.l (sp)+,a1
+        adda.w  #256,a1
+        move.w  a1,d4
+        andi.w  #7936,d4
+        bne.s   16f
+        suba.w  #8192,a1
+16:     move.w  (sp)+,d3
+        move.w  (sp)+,d5
+        dbra    d3,nat_h7
+        rts
+
+nat_v7:                                 /* 0x9988 */
+        move.w  d5,-(sp)
+        move.w  d3,-(sp)
+        move.l  a1,-(sp)
+        move.w  d2,-(sp)
+        move.l  sp,ARC_WRAM+0x3862
+10:     jsr     0x9A1A
+11:     move.l  a0,-(sp)
+        jsr     0x9A38
+        C224FLAG
+12:     SCELL   1
+        dbra    d5,13f
+        bra.s   15f
+13:     adda.l  #32,a0
+        addi.w  #16,d2
+        move.w  d2,d4
+        andi.w  #112,d4
+        bne     12b
+        move.w  d2,d4
+        andi.w  #384,d4
+        bne.s   14f
+        suba.w  #8192,a1
+14:     movea.l (sp)+,a0
+        adda.l  #64,a0
+        move.w  d2,d4
+        andi.w  #16256,d4
+        bne     11b
+        bra     10b
+15:     movea.l ARC_WRAM+0x3862,sp
+        move.w  (sp)+,d2
+        addi.w  #16,d1
+        movea.l (sp)+,a1
+        addq.w  #4,a1
+        move.w  a1,d4
+        andi.w  #255,d4
+        bne.s   16f
+        suba.w  #256,a1
+16:     move.w  (sp)+,d3
+        move.w  (sp)+,d5
+        dbra    d3,nat_v7
+        rts
+
+nat_h6:                                 /* 0x9C24 */
+        move.w  d5,-(sp)
+        move.w  d3,-(sp)
+        move.l  a1,-(sp)
+        move.w  d1,-(sp)
+        move.l  sp,ARC_WRAM+0x3862
+10:     jsr     0x9D52
+11:     move.l  a0,-(sp)
+        jsr     0x9D70
+        C224FLAG
+12:     SCELL   0
+        dbra    d5,13f
+        bra.s   15f
+13:     addq.l  #4,a0
+        addi.w  #16,d1
+        move.w  d1,d4
+        andi.w  #112,d4
+        bne     12b
+        move.w  d1,d4
+        andi.w  #896,d4
+        bne.s   14f
+        suba.w  #256,a1
+14:     movea.l (sp)+,a0
+        addq.l  #2,a0
+        move.w  d1,d4
+        andi.w  #3968,d4
+        bne     11b
+        bra     10b
+15:     movea.l ARC_WRAM+0x3862,sp
+        move.w  (sp)+,d1
+        addi.w  #16,d2
+        movea.l (sp)+,a1
+        adda.w  #256,a1
+        move.w  a1,d4
+        andi.w  #7936,d4
+        bne.s   16f
+        suba.w  #8192,a1
+16:     move.w  (sp)+,d3
+        move.w  (sp)+,d5
+        dbra    d3,nat_h6
+        rts
+
+nat_v6:                                 /* 0x9CC0 */
+        move.w  d5,-(sp)
+        move.w  d3,-(sp)
+        move.l  a1,-(sp)
+        move.w  d2,-(sp)
+        move.l  sp,ARC_WRAM+0x3862
+10:     jsr     0x9D52
+11:     move.l  a0,-(sp)
+        jsr     0x9D70
+        C224FLAG
+12:     SCELL   1
+        dbra    d5,13f
+        bra.s   15f
+13:     adda.l  #32,a0
+        addi.w  #16,d2
+        move.w  d2,d4
+        andi.w  #112,d4
+        bne     12b
+        move.w  d2,d4
+        andi.w  #384,d4
+        bne.s   14f
+        suba.w  #8192,a1
+14:     movea.l (sp)+,a0
+        adda.l  #64,a0
+        move.w  d2,d4
+        andi.w  #16256,d4
+        bne     11b
+        bra     10b
+15:     movea.l ARC_WRAM+0x3862,sp
+        move.w  (sp)+,d2
+        addi.w  #16,d1
+        movea.l (sp)+,a1
+        addq.w  #4,a1
+        move.w  a1,d4
+        andi.w  #255,d4
+        bne.s   16f
+        suba.w  #256,a1
+16:     move.w  (sp)+,d3
+        move.w  (sp)+,d5
+        dbra    d3,nat_v6
+        rts
+
 * strip_win: a0 -> source pair, a1 -> map cell of a column in the window.  Preserves every register.
 strip_win:
         movem.l d0-d2/a0-a2,-(sp)
