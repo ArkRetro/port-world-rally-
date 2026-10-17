@@ -659,9 +659,10 @@ palette_sync:
         move.b  d0,rt_pal_half          /* quarter checked by this call */
         moveq   #0,d5                   /* palettes converted */
         bsr.s   ps_quarter
-        tst.w   d5
-        beq.s   9f
-1:      addq.b  #1,d0                   /* something changed: the other quarters as well */
+        cmpi.w  #2,d5
+        bcs.s   9f
+1:      addq.b  #1,d0                   /* several changed (a fade): the other quarters as well (a single
+                                           palette changing, a colour cycle, does not need the full scan) */
         and.b   #3,d0
         cmp.b   rt_pal_half,d0
         beq.s   9f
