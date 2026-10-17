@@ -19,7 +19,7 @@ a darker copy and leaves banks 2-7 black.  So pens 0-8 become transparent, pen 9
 --light (after --shadow) appends a third set (numbers 0x8000+) for the same sprites in the night stages, where
 the game makes bank 0 (the tiles) the darkest and banks 1-7 brighter copies: the headlight beams.  The Neo Geo
 cannot recolour what is below, so the beam is an open dither of light pixels: pen p >= 9 (p-8 = how many
-steps brighter) lights 2 to 12 pixels in 16 (ordered 4x4 pattern; 12 in 16 in the middle of the beam, which
+steps brighter) lights 1 to 5 pixels in 16 (ordered 4x4 pattern; 5 in 16 in the middle of the beam, which
 is pen 15), keeping the pen so
 that the runtime's light palette can give each step its own brightness.  The roads stay visible below.
 The C ROMs are padded to a power of two.
@@ -100,7 +100,7 @@ def main():
             for i in range(256):
                 p = t[i]
                 if p >= 9:
-                    lit = ((p - 8) * 12 + 3) // 7                               # 2..12 of 16
+                    lit = ((p - 8) * 5 + 3) // 7                                # 1..5 of 16
                     if bayer[((i >> 4) & 3) * 4 + (i & 3)] < lit:
                         m[i] = p
             light.append(bytes(m))

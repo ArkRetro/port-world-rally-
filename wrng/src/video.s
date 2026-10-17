@@ -934,7 +934,7 @@ vram_store:
 2:      move.l  d0,(a0)
         move    (sp)+,sr
         rts
-vs_slow:                                /* (sr saved at 18(sp), interrupts masked) */
+vs_slow:                                /* (sr saved at 18(sp), interrupts masked; d2.w = s) */
         move.l  a6,-(sp)                /* 14(sp) */
         movea.l rt_vcmd_ptr,a6
         cmpa.l  #VCMD_BUF,a6
@@ -944,31 +944,16 @@ vs_slow:                                /* (sr saved at 18(sp), interrupts maske
         move.l  d0,-(sp)                /* new pair (8(sp) once the col/index words are pushed) */
         move.l  (a0),-(sp)              /* old pair (4(sp)) */
         move.l  d0,(a0)
-        move.l  a0,d1
-        lea     rt_col_loaded,a1
-        move.w  rt_c0,d2
-        move.w  #SPR_LAYER0,a2          /* a2.w = sprite base of the layer */
+        move.w  a0,d1
+        movea.w #SPR_LAYER0,a2          /* a2.w = sprite base of the layer */
         btst    #13,d1
         beq.s   1f
-        lea     24(a1),a1
-        move.w  rt_c0+2,d2
-        move.w  #SPR_LAYER1,a2
+        movea.w #SPR_LAYER1,a2
 1:      and.w   #0x1FFF,d1
         lsr.w   #2,d1                   /* tile index */
         move.w  d1,-(sp)                /* 2(sp): tile index: col = low 6 bits, row = bits 6-10 */
         and.w   #63,d1                  /* col */
         move.w  d1,-(sp)                /* 0(sp): col */
-        sub.w   d2,d1
-        and.w   #63,d1                  /* j = (col - c0) & 63 */
-        cmpi.w  #NCOLSPR,d1
-        bcc     vs_out                  /* not in the window */
-        add.w   d1,d2                   /* c0 + j (< 128) */
-        lea     mod_ncol,a0
-        move.b  (a0,d2.w),d2
-        and.w   #0xFF,d2                /* s */
-        move.w  (sp),d1                 /* col */
-        cmp.b   (a1,d2.w),d1
-        bne     vs_out                  /* column not loaded yet (will be loaded whole) */
         movea.w d2,a0                   /* s */
         move.w  a2,d1
         add.w   d2,d1
@@ -1562,7 +1547,7 @@ spr_col_table_night:
 
 * light_pal: palette PAL_LIGHT, pen p = p-8 steps brighter (lit ground: warm sand, brighter for higher pens)
 light_pal:
-        .word   0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x0542,0x0752,0x0873,0x0A84,0x0B94,0x0DA5,0x0EB6
+        .word   0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x0863,0x0974,0x0A85,0x0B96,0x0CA6,0x0EC7,0x0FD9
 
 * pen0_table: one byte per arcade tile, 1 if it has at least 64 pen-0 pixels (gfx2crom.py --pen0)
 pen0_table:

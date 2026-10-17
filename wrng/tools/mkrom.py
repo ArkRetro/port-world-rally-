@@ -325,6 +325,9 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
     rom[0x2F70:0x2F76] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_long'])
     rom[0x2F7E:0x2F84] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_short'])
     # 4a2. faster equivalents of two arcade routines that the race calls very often (same registers and flags):
+    #  0x9E00 animated tiles of layer 0 (every 12 frames) -> src/glue.s anim_scan
+    assert orig[0x9E00:0x9E0A] == bytes.fromhex('207C00100000363C000E'), 'anim scan 0x9E00'
+    rom[0x9E00:0x9E06] = bytes.fromhex('4EF9') + struct.pack('>I', syms['anim_scan'])
     #  0xA07A search of a record by key -> indexed (src/glue.s srch_hook)
     assert rom[0xA07A:0xA080] == bytes.fromhex('B0516700000E'), 'search 0xA07A'
     rom[0xA07A:0xA080] = bytes.fromhex('4EF9') + struct.pack('>I', syms['srch_hook'])

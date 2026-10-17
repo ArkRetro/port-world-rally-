@@ -166,6 +166,7 @@ io_update:
 * otherwise waits for the next one.  Preserves all registers; the code after it clears C1A6 as before.
 * ------------------------------------------------------------------------------------------
 main_wait:
+        move.w  REG_LSPCMODE,rt_dbg+14  /* profiling */
         clr.b   rt_mw_age
         move    sr,-(sp)
         ori     #0x0700,sr
@@ -772,76 +773,112 @@ blk_done:
 * block is "dX = C224 & $F0 ; if dX != $90: move.l (a0),(a1) ; step a1" with dX = d7 or d6 and a step of
 * 4 (row strip) or $100 (column strip).
         .global strip_h7, strip_v7, strip_h6, strip_v6
+* d7 / d6 are scratch there (the arcade reloads them from C224 for every cell and the code after the
+* copy sets them again before any use).  A cell that already holds the pair (most of them) is skipped at
+* once; a cell of a map column outside the column window only needs the shadow write (rt_c0 only changes
+* in video_frame, which cannot run in the middle of the main loop, so no masking is needed); the rest goes
+* through vram_store.
+        .macro  STRIP reg, vert
+        move.l  (a0),\reg
+        cmp.l   (a1),\reg
+        beq.s   9f
+        move.w  ARC_WRAM+0x224,\reg
+        andi.w  #0xF0,\reg
+        cmpi.w  #0x90,\reg
+        beq.s   9f
+        move.w  a1,\reg
+        lsr.w   #2,\reg
+        btst    #11,\reg               /* layer 1 (shadow VRAM + 0x2000) */
+        bne.s   1f
+        sub.w   rt_c0,\reg
+        bra.s   2f
+1:      sub.w   rt_c0+2,\reg
+2:      andi.w  #63,\reg               /* j = (col - c0) & 63 */
+        cmpi.w  #NCOLSPR,\reg
+        bcs.s   3f
+        move.l  (a0),(a1)
+9:
+        .if     \vert
+        lea     0x100(a1),a1
+        .else
+        addq.l  #4,a1
+        .endif
+        rts
+3:      bsr     strip_win
+        bra.s   9b
+        .endm
 strip_h7:
-        move.w  ARC_WRAM+0x224,d7
-        andi.w  #0xF0,d7
-        cmpi.w  #0x90,d7
-        beq.s   1f
-        bsr.s   strip_store
-1:      addq.l  #4,a1
-        rts
+        STRIP   d7,0
 strip_v7:
-        move.w  ARC_WRAM+0x224,d7
-        andi.w  #0xF0,d7
-        cmpi.w  #0x90,d7
-        beq.s   1f
-        bsr.s   strip_store
-1:      lea     0x100(a1),a1
-        rts
+        STRIP   d7,1
 strip_h6:
-        move.w  ARC_WRAM+0x224,d6
-        andi.w  #0xF0,d6
-        cmpi.w  #0x90,d6
-        beq.s   1f
-        bsr.s   strip_store
-1:      addq.l  #4,a1
-        rts
+        STRIP   d6,0
 strip_v6:
-        move.w  ARC_WRAM+0x224,d6
-        andi.w  #0xF0,d6
-        cmpi.w  #0x90,d6
-        beq.s   1f
-        bsr.s   strip_store
-1:      lea     0x100(a1),a1
-        rts
-* strip_store: a0 -> source pair, a1 -> map cell.  Inline fast path for cells outside the column window
-* (most of them: the arcade prepares the map ahead of the scroll), the rest through vram_store.
-* Preserves every register.
-strip_store:
-        move.l  d0,-(sp)
+        STRIP   d6,1
+* strip_win: a0 -> source pair, a1 -> map cell of a column in the window.  Preserves every register.
+strip_win:
+        movem.l d0-d2/a0-a2,-(sp)
         move.l  (a0),d0
-        cmp.l   (a1),d0
-        beq.s   8f                      /* same pair */
-        move.l  d1,-(sp)
-        move    sr,-(sp)
-        ori.w   #0x0700,sr              /* check + write atomic with respect to the VBlank column loads */
-        move.l  a1,d1
-        btst    #13,d1
-        bne.s   3f
-        lsr.w   #2,d1
-        and.w   #63,d1
-        sub.w   rt_c0,d1
-        bra.s   4f
-3:      lsr.w   #2,d1
-        and.w   #63,d1
-        sub.w   rt_c0+2,d1
-4:      and.w   #63,d1                  /* j = (col - c0) & 63 */
-        cmpi.w  #NCOLSPR,d1
-        bcs.s   6f                      /* in the window: vram_store */
-        move.l  d0,(a1)
-        move    (sp)+,sr
-        move.l  (sp)+,d1
-8:      move.l  (sp)+,d0
-        rts
-6:      move    (sp)+,sr
-        move.l  (sp)+,d1
-        movem.l d1-d2/a0-a2,-(sp)
         movea.l a1,a0
         jsr     vram_store
-        movem.l (sp)+,d1-d2/a0-a2
-        move.l  (sp)+,d0
+        movem.l (sp)+,d0-d2/a0-a2
         rts
 
+* anim_scan (jmp at 0x9E00): every 12 frames the arcade steps the animated tiles of layer 0 in the
+* 24 x 15 cells around the view (codes with code & $1F80 = $0800 take the next code from the table at
+* $F01FC, $0A80 from $F05FC; attribute bit 6 selects the second half of the table, codes >= 90 within
+* the group stay).  Same cells and stores as the original loop, with a byte table on the high byte of
+* the code to skip the other cells quickly.  d0 = first cell offset; continues at 0x9E92 (d5 kept).
+        .global anim_scan
+anim_scan:
+        movea.l #ARC_VRAM,a0
+        lea     anim_hi,a2
+        moveq   #14,d3
+1:      moveq   #23,d2
+        moveq   #0,d4
+2:      move.b  (a0,d0.w),d4            /* high byte of the code */
+        tst.b   (a2,d4.w)
+        bne.s   5f
+3:      addq.b  #4,d0
+        dbra    d2,2b
+        subi.b  #96,d0
+        addi.w  #256,d0
+        andi.w  #8191,d0
+        dbra    d3,1b
+        jmp     0x9E92
+5:      move.w  (a0,d0.w),d1            /* code */
+        move.w  d1,d4
+        andi.w  #0x1F80,d4
+        lea     0xF01FC,a1
+        cmpi.w  #0x0800,d4
+        beq.s   6f
+        lea     0xF05FC,a1
+        cmpi.w  #0x0A80,d4
+        bne.s   9f
+6:      andi.w  #127,d1
+        cmpi.w  #90,d1
+        bge.s   9f
+        btst    #6,3(a0,d0.w)
+        beq.s   7f
+        bset    #7,d1
+7:      add.w   d1,d1
+        add.w   d1,d1
+        movem.l d0-d3/a0-a2,-(sp)
+        move.l  (a1,d1.w),d1
+        lea     (a0,d0.w),a0
+        move.l  d1,d0
+        jsr     vram_store
+        movem.l (sp)+,d0-d3/a0-a2
+9:      moveq   #0,d4
+        bra.s   3b
+* anim_hi: 1 for the high bytes of the codes that anim_scan has to look at ($08 / $0A in bits 12-8)
+anim_hi:
+        .set    i,0
+        .rept   256
+        .byte   ((i & 0x1F) == 0x08) | ((i & 0x1F) == 0x0A)
+        .set    i,i+1
+        .endr
+        .even
 * 0x11FDC / 0x11FF2: fill a layer with the empty tile pair (0xDF64C / 0xDF650, decrypted at build time)
 clear_l1:
         lea     ARC_VRAM+0x2000,a0
