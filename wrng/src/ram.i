@@ -58,7 +58,6 @@
         .equ    rt_bg_recount,  RT_VARS+0x330   /* .b a tile palette changed: recount rt_bg_cnt next frame */
         .equ    rt_backdrop,    RT_VARS+0x332   /* .w Neo Geo backdrop colour for the next VBlank (colour 0 of the central layer-1 cell) */
         .equ    rt_dbg,         RT_VARS+0x340   /* 8 words: raster counter (REG_LSPCMODE) at frame_hook milestones (profiling) */
-        .equ    rt_xbuf,        RT_VARS+0x350   /* NCOLSPR words: SCB4 x of column sprite s this frame (shared by the layer and its HI/BG set) */
         .equ    rt_pal0_black,  RT_VARS+0x3C0   /* 32 bytes: 1 if colour 0 of tile palette p is black (backdrop recount trigger) */
         .equ    rt_vcmd_ptr,    RT_VARS+0x3E0   /* .l end of the commands queued in VCMD_BUF */
         .equ    rt_spr_n0,      RT_VARS+0x3E4   /* .w sprites prepared in pool 0 (for the next flush) */
@@ -74,6 +73,13 @@
         .equ    rt_diag_on,     RT_VARS+0x389   /* .b diagnostic overlay shown */
         .equ    rt_diag_clr,    RT_VARS+0x38A   /* .b overlay just turned off: blank it once */
         .equ    rt_skip,        RT_VARS+0x38C   /* .w arcade ticks skipped (the frame work was still running at VBlank) */
+        .equ    rt_mwait,       RT_VARS+0x390   /* .b the arcade main loop is in one of its "wait for the tick" loops (main_wait) */
+        .equ    rt_mw_age,      RT_VARS+0x391   /* .b VBlanks since the main loop last entered main_wait (saturates at 255) */
+        .equ    rt_tick_pend,   RT_VARS+0x392   /* .b ticks owed to the main loop (0..2): one per VBlank, main_wait runs one at the end of each frame */
+        .equ    rt_col_inval,   RT_VARS+0x393   /* .b rt_col_loaded entries were invalidated (layer_update must check every column) */
+        .equ    rt_spr_slow,    RT_VARS+0x39C   /* .b spr_lists left the lists to the multi-pass conversion (sprites_slow, in video_frame) */
+        .equ    rt_ticks,       RT_VARS+0x398   /* .l arcade ticks run (frame_hook calls; profiling) */
+        .equ    rt_lu_c0last,   RT_VARS+0x394   /* 2 x .w first map column checked by the last pass 1 (layer 0, layer 1) */
 
         .equ    ARC_PALRAW,     0x10A000        /* 4 KB: arcade palette RAM 200000-200FFF as written by the game (xBRG444) */
         .equ    ARC_PALRAW_END, 0x10B000

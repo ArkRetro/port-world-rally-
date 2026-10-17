@@ -296,6 +296,34 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
         assert orig[pc:pc + n] == bytes.fromhex(expect), hex(pc)
         rom[pc:pc + n] = bytes.fromhex('4EB9') + struct.pack('>I', syms[name]) + b'\x4E\x71' * ((n - 6) // 2)
 
+    # 4a. the arcade's "wait for the interrupt tick" loops (tst.w $FEC1A6 / beq.s *-6) -> jsr main_wait (src/glue.s):
+    #     a tick that arrives in the middle of a frame is held back until the frame ends; the sound sequencer
+    #     call of the interrupt handler moves to the VBlank (it keeps running every frame)
+    nwait = 0
+    for r in refs:
+        if r['address'] == 'FEC1A6' and r['mnemonic'] == 'tst.w':
+            pc = int(r['pc'], 16)
+            assert rom[pc:pc + 8] == bytes.fromhex('4A79') + struct.pack('>I', reloc_target('RAM', 0xFEC1A6)) + bytes.fromhex('67F8'), hex(pc)
+            rom[pc:pc + 8] = bytes.fromhex('4EB9') + struct.pack('>I', syms['main_wait']) + bytes.fromhex('4E71')
+            nwait += 1
+    assert nwait == 26, nwait
+    assert rom[0x2FFE:0x3004] == bytes.fromhex('4EB900014122')
+    rom[0x2FFE:0x3004] = bytes.fromhex('4E71') * 3
+    # 4a1. 0x44E6 (arcade interrupt: copy the sprite lists to sprite RAM) -> converted straight into the
+    #      Neo Geo sprite pools (src/video.s spr_lists)
+    assert rom[0x44E6:0x44EC] == bytes.fromhex('43F9') + struct.pack('>I', reloc_target('SPR', 0x440006)), 'sprite copy 0x44E6'
+    rom[0x44E6:0x44EC] = bytes.fromhex('4EF9') + struct.pack('>I', syms['spr_lists'])
+    # 4a2. faster equivalents of two arcade routines that the race calls very often (same registers and flags):
+    #  0xA07A search of a record by key -> indexed (src/glue.s srch_hook)
+    assert rom[0xA07A:0xA080] == bytes.fromhex('B0516700000E'), 'search 0xA07A'
+    rom[0xA07A:0xA080] = bytes.fromhex('4EF9') + struct.pack('>I', syms['srch_hook'])
+    #  0x5E16 random number generator: it saved and restored 14 registers around a mulu/divu that only uses d0
+    #  (movem leaves the flags of "move.w d0,d7": tst.w d7 gives the same N/Z, V=C=0)
+    seed = struct.pack('>I', reloc_target('RAM', 0xFEC266))
+    assert rom[0x5E16:0x5E3C] == (bytes.fromhex('48E7FEFE3039') + seed + bytes.fromhex('5240C0FC004B80FC01014840534033C0')
+                                  + seed + bytes.fromhex('3E004CDF7F7F4E75')), 'random 0x5E16'
+    rom[0x5E16:0x5E3C] = (bytes.fromhex('2F003039') + seed + bytes.fromhex('5240C0FC004B80FC01014840534033C0') + seed
+                          + bytes.fromhex('3E00201F4A474E754E71'))
     # 4b. sound: OKI register writes -> Z80 command hooks (src/sound.s)
     for pc, name, expect in ((0x1402C, 'snd_hook_stopall', '13FC00780070000F'), (0x1437A, 'snd_hook_stop0', '13C00070000F'),
                              (0x142A2, 'snd_hook_stop1', '13C10070000F'), (0x14386, 'snd_hook_bank', '13C40070000D'),

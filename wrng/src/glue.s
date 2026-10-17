@@ -11,10 +11,11 @@
         .include "ram.i"
 
         .text
-        .global game_main, sound_init, frame_hook, trap1_handler
+        .global game_main, sound_init, frame_hook, trap1_handler, main_wait, arc_sound_tick, srch_hook
 
         .equ    ARC_RESET,      0x2400
         .equ    ARC_IRQ6,       0x2F8C
+        .equ    ARC_SNDSEQ,     0x14122         /* sound sequencer, called by the arcade interrupt at 0x2FFE */
         .equ    ARC_WRAM_STACK, ARC_WRAM+0x3F80
 
 * ---- arcade input word (700002/3), active low ----
@@ -151,8 +152,88 @@ io_update:
         rts
 
 * frame_hook: runs inside our VBlank handler (all registers saved by the caller)
+* ------------------------------------------------------------------------------------------
+* main_wait: replaces every "tst.w C1A6 / beq.s *-6" loop of the arcade (wait for the next interrupt
+* tick).  Runs a tick that the VBlank held back because the frame was not finished (see irq_vblank),
+* otherwise waits for the next one.  Preserves all registers; the code after it clears C1A6 as before.
+* ------------------------------------------------------------------------------------------
+main_wait:
+        clr.b   rt_mw_age
+        move    sr,-(sp)
+        ori     #0x0700,sr
+        tst.b   rt_tick_pend
+        bne.s   2f
+        st      rt_mwait                /* (with the interrupts masked: no tick can be held back in between) */
+        move    (sp)+,sr
+1:      tst.w   ARC_WRAM+0x1A6
+        beq.s   1b
+        sf      rt_mwait
+        rts
+2:      subq.b  #1,rt_tick_pend
+        st      rt_in_hook              /* a VBlank meanwhile only flushes the VRAM (irq_vblank) */
+        move    (sp),sr
+        movem.l d0-d7/a0-a6,-(sp)
+        jsr     frame_hook
+        clr.b   rt_in_hook
+        movem.l (sp)+,d0-d7/a0-a6
+        move    (sp)+,sr
+        rts
+
+* ------------------------------------------------------------------------------------------
+* srch_hook (jmp at 0xA07A): the arcade looks for the record of key d0 in the table at a1, one compare
+* per record ("cmp.w (a1),d0 / beq / skip to $00FF / next").  With the index of tools/mksrch.py the
+* record is found at once; anything not in the index takes the original loop.  Continues at 0xA08C with
+* a1 -> the key word, as the original; only a1 changes.
+* ------------------------------------------------------------------------------------------
+srch_hook:
+        cmpi.w  #64,d0
+        bcc.s   9f
+        movem.l d0-d1/a0,-(sp)
+        lea     srch_tabs,a0
+        moveq   #3,d1
+1:      cmpa.l  (a0)+,a1
+        beq.s   2f
+        dbra    d1,1b
+        bra.s   8f                      /* not one of the four tables */
+2:      neg.w   d1
+        addq.w  #3,d1                   /* table number */
+        lsl.w   #8,d1
+        and.w   #0x3F,d0
+        lsl.w   #2,d0
+        add.w   d0,d1
+        lea     srch_idx,a0
+        move.l  (a0,d1.w),d1
+        beq.s   8f                      /* not indexed: the loop */
+        movea.l d1,a1
+        movem.l (sp)+,d0-d1/a0
+        jmp     0xA08C
+8:      movem.l (sp)+,d0-d1/a0
+9:      cmp.w   (a1),d0                 /* the original loop */
+        beq.s   1f
+2:      addq.l  #2,a1
+        cmpi.w  #0xFF,(a1)
+        bne.s   2b
+        addq.l  #2,a1
+        bra.s   9b
+1:      jmp     0xA08C
+srch_tabs:
+        .long   0xE15B2, 0xE1A12, 0xE1382, 0xE17E2
+srch_idx:
+        .include "srch_idx.inc"
+
+* arc_sound_tick: the arcade sound sequencer (called once per arcade interrupt at 0x2FFE, moved here so
+* that it runs every VBlank even when a tick is held back)
+arc_sound_tick:
+        tst.b   rt_arcade_on
+        beq.s   1f
+        movem.l d0-d7/a0-a6,-(sp)
+        jsr     ARC_SNDSEQ
+        movem.l (sp)+,d0-d7/a0-a6
+1:      rts
+
 frame_hook:
         move.w  REG_LSPCMODE,rt_dbg     /* profiling: raster counter at each milestone */
+        addq.l  #1,rt_ticks
         bsr     io_update
         /* run the arcade IRQ handler on the runtime stack with a fake exception frame */
         move.l  sp,rt_saved_sp
@@ -505,6 +586,7 @@ blk_common:
         lsr.w   #2,d0
         and.w   #63,d0                  /* first map column */
         move.w  d6,d5                   /* width - 1 */
+        st      rt_col_inval
         lea     rt_col_loaded,a0
         tst.w   d7
         beq.s   blk_row
@@ -628,6 +710,7 @@ clear_l0:
         bsr     clear_fill
         lea     rt_col_loaded,a0
 clear_inval:
+        st      rt_col_inval
         moveq   #NCOLSPR-1,d0
 1:      move.b  #0xFF,(a0)+             /* column sprites reload at the next frame */
         dbra    d0,1b

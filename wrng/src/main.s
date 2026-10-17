@@ -89,24 +89,53 @@ irq_vblank:
         move.b  d0,REG_WATCHDOG
         addq.l  #1,rt_frame
         st      rt_vbl_flag
-        /* first of all, while the beam is in the vertical blank: palettes and the VRAM queue
-           prepared during the previous frame */
+        tst.b   rt_in_hook
+        beq.s   1f
+        /* a tick is still running (it was allowed to be interrupted): its palettes, layers and sprites are
+           half prepared, so nothing is shown from them - the screen keeps the last complete frame (showing
+           part of a tick mixed sprite and layer positions of two frames); the next VBlank shows it */
+        addq.w  #1,rt_skip
+        cmpi.b  #4,rt_mw_age            /* the VBlank's tick is owed to the main loop all the same */
+        bcc.s   3f
+        cmpi.b  #2,rt_tick_pend
+        bcc.s   3f
+        addq.b  #1,rt_tick_pend
+3:      jsr     arc_sound_tick
+        movem.l (sp)+,d0-d7/a0-a6
+        rte
+1:      /* first of all, while the beam is in the vertical blank: palettes and the VRAM queue of the last
+           tick (and the map changes the main loop made since) */
         bsr     video_vblank
         bsr     vram_flush
         move.w  REG_LSPCMODE,rt_dbg+12  /* profiling: raster line at the end of the VRAM flush */
-        tst.b   rt_in_hook
-        beq.s   2f
-        /* the previous frame's work is still running (it was allowed to be interrupted): the VRAM has
-           been updated on time; this tick of the arcade is skipped so that its main loop still runs
-           between two of its interrupts */
-        addq.w  #1,rt_skip
-        movem.l (sp)+,d0-d7/a0-a6
-        rte
-2:      move.l  sp,rt_io_sp
+        move.l  sp,rt_io_sp
         jsr     SYSTEM_IO               /* inputs, coins, credits; may re-enter USER (see above) */
 irq_after_io:
         jsr     snd_vblank
-        st      rt_in_hook
+        jsr     arc_sound_tick          /* the arcade sound sequencer keeps the 60 Hz of the music */
+        cmpi.b  #255,rt_mw_age
+        beq.s   3f
+        addq.b  #1,rt_mw_age
+3:      /* the arcade main loop is in the middle of a frame (it waited for a tick less than 4 VBlanks ago and
+           is not waiting now): hold this tick back, main_wait runs it as soon as the frame is finished.  The
+           arcade's interrupt work (race clock, sprite lists built from the objects, scroll) thus always
+           follows a complete frame of its main loop, as on the arcade where the loop fits in a frame: the
+           clock no longer runs ahead of the car and the sprites never mix two frames */
+        cmpi.b  #4,rt_mw_age
+        bcc.s   4f
+        /* each VBlank gives the main loop one tick (two at most are kept: after a long frame the next one
+           starts at once, so the average speed comes back without ever going above 60 ticks a second) */
+        cmpi.b  #2,rt_tick_pend
+        bcc.s   5f
+        addq.b  #1,rt_tick_pend
+5:      tst.b   rt_mwait
+        beq.s   6f                      /* in the middle of a frame: main_wait will run it */
+        subq.b  #1,rt_tick_pend
+        bra.s   7f
+6:      movem.l (sp)+,d0-d7/a0-a6
+        rte
+4:      clr.b   rt_tick_pend            /* the main loop is not in its frame loop: one tick per VBlank */
+7:      st      rt_in_hook
         /* the frame work (arcade IRQ, layers, sprites) can last longer than a frame: the next VBlank may
            interrupt it to flush the VRAM in the blanking (otherwise it would be written during the display) */
         move    #0x2000,sr

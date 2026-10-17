@@ -66,7 +66,10 @@ $(BUILD)/wr_cpu.bin: $(WRPROG_HI) $(WRPROG_LO)
 $(BUILD)/stubs.s: tools/mkrom.py analysis/absrefs.csv $(BUILD)/wr_cpu.bin
 	python3 -I tools/mkrom.py stubs $(BUILD)/wr_cpu.bin analysis/absrefs.csv $@
 
-$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin $(BUILD)/sample_dur.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
+$(BUILD)/srch_idx.inc: tools/mksrch.py $(BUILD)/wr_cpu.bin
+	python3 -I tools/mksrch.py $(BUILD)/wr_cpu.bin $@
+
+$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin $(BUILD)/sample_dur.inc $(BUILD)/srch_idx.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
 	for f in $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(dir $(WRDALLAS)) -I $(BUILD) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
 	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_sound.o $(BUILD)/g_stubs.o
 

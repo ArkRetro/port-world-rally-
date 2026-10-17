@@ -96,6 +96,7 @@ video_init:
 2:      move.w  #0x0020,REG_VRAMRW      /* y=0 (496), not sticky, 32 tiles */
         dbra    d0,2b
         /* no column loaded yet, everything dirty */
+        st      rt_col_inval
         lea     rt_col_loaded,a0
         moveq   #2*24/4-1,d0
 3:      move.l  #-1,(a0)+
@@ -367,8 +368,15 @@ video_frame:
         move.w  #SPR_LAYER0,d7
         bsr     layer_update
         move.l  a6,rt_vcmd_ptr
+        clr.b   rt_col_inval
         move.w  REG_LSPCMODE,rt_dbg+10  /* profiling */
-        bra     sprites_update
+        /* the sprites were converted by spr_lists inside the arcade interrupt, unless the lists had more
+           high-priority sprites than pool 1 holds */
+        tst.b   rt_spr_slow
+        beq.s   1f
+        clr.b   rt_spr_slow
+        bra     sprites_slow
+1:      rts
 
 * layer_update: d0 = scrollx, d1 = scrolly, a3 = map base (shadow VRAM), a4 = rt_c0 slot of the layer,
 *               a5 = loaded-column table, d7 = first Neo Geo sprite of the layer, a6 = command queue.
@@ -400,7 +408,17 @@ layer_update:
         moveq   #0,d4
         move.b  (a0,d3.w),d4            /* s0 = sprite of window column 0 */
         lea     tile_attr_table,a1
-        /* pass 1: columns whose map column changed */
+        /* pass 1: columns whose map column changed - nothing to do when the first map column is the one
+           checked last time and no column was invalidated since (only col_load changes the table then) */
+        lea     rt_lu_c0last,a0
+        cmpi.w  #SPR_LAYER0,d7
+        beq.s   1f
+        addq.l  #2,a0
+1:      tst.b   rt_col_inval
+        bne.s   2f
+        cmp.w   (a0),d3
+        beq.s   lu_p1done
+2:      move.w  d3,(a0)
         move.w  d4,d0                   /* s */
         move.w  d3,d1                   /* unwrapped map column */
         moveq   #NCOLSPR-1,d5
@@ -416,6 +434,7 @@ lu_chk:
         bcs.s   2f
         moveq   #0,d0
 2:      dbra    d5,lu_chk
+lu_p1done:
         /* companion columns with cells that changed category: recount them */
         lea     CMP_HI_DIRTY,a0
         cmpi.w  #SPR_LAYER0,d7
@@ -453,37 +472,45 @@ lu_chk:
         beq     lu_done
 4:      move.l  d0,(a0)
         clr.b   (a4)
-        /* x of sprite s = x0 + 14 * ((s - s0) mod NCOLSPR) -> rt_xbuf */
-        moveq   #NCOLSPR,d3
-        sub.w   d4,d3
-        cmpi.w  #NCOLSPR,d3
-        bcs.s   1f
-        moveq   #0,d3
-1:      mulu    #14,d3
-        add.w   a2,d3                   /* x of s = 0 */
-        lea     rt_xbuf,a0
-        moveq   #0,d0
-        moveq   #NCOLSPR-1,d5
-lu_x:   cmp.w   d4,d0
-        bne.s   2f
-        move.w  a2,d3                   /* s0 shows window column 0 */
-2:      move.w  d3,d1
-        and.w   #0x1FF,d1
-        lsl.w   #7,d1
-        move.w  d1,(a0)+
-        add.w   #14,d3
-        addq.w  #1,d0
-        dbra    d5,lu_x
-        /* SCB4 of the layer's sprites and of the companion set */
+        /* SCB4 of the layer's sprites: x of sprite s = x0 + 14 * ((s - s0) mod NCOLSPR), in the SCB4 form
+           (x << 7: the 9-bit wrap of x comes with the 16-bit word), then the same block for the companion set */
         bsr     vc_room
         move.w  d7,d0
-        bsr     lu_scb4
+        add.w   #VRAM_SCB4,d0
+        move.w  d0,(a6)+
+        move.w  #1,(a6)+
+        move.w  #NCOLSPR-1,(a6)+
+        movea.l a6,a0                   /* the x words, copied for the companion set below */
+        move.w  a2,d3
+        lsl.w   #7,d3                   /* x of s0 */
+        move.w  #14<<7,d1
+        moveq   #NCOLSPR,d0
+        sub.w   d4,d0
+        mulu    #14<<7,d0
+        add.w   d3,d0                   /* x of sprite 0 (window column NCOLSPR - s0) */
+        move.w  d4,d5
+        subq.w  #1,d5
+        bmi.s   2f
+1:      move.w  d0,(a6)+                /* sprites 0 .. s0-1 */
+        add.w   d1,d0
+        dbra    d5,1b
+2:      moveq   #NCOLSPR-1,d5
+        sub.w   d4,d5
+3:      move.w  d3,(a6)+                /* sprites s0 .. NCOLSPR-1 */
+        add.w   d1,d3
+        dbra    d5,3b
         move.w  #SPR_HI,d3
         cmpi.w  #SPR_LAYER0,d7
-        beq.s   3f
+        beq.s   4f
         move.w  #SPR_BG,d3
-3:      move.w  d3,d0                   /* companion base */
-        bsr     lu_scb4
+4:      move.w  d3,d0                   /* companion base */
+        add.w   #VRAM_SCB4,d0
+        move.w  d0,(a6)+
+        move.w  #1,(a6)+
+        move.w  #NCOLSPR-1,(a6)+
+        moveq   #NCOLSPR/2-1,d5
+5:      move.l  (a0)+,(a6)+
+        dbra    d5,5b
         /* SCB3: the layer: y | rows to show (32, fewer when the bottom of the column is empty, 0 when it
            is all empty: such columns do not count against the 96 sprites per scanline) */
         move.w  d7,d0
@@ -543,19 +570,6 @@ lu_x:   cmp.w   d4,d0
         dbra    d5,5b
 lu_done:
         lea     tile_attr_table,a1
-        rts
-
-* lu_scb4: d0 = first sprite of a set: queue SCB4 of its NCOLSPR sprites from rt_xbuf.  Trashes d0/d5/a1.
-lu_scb4:
-        add.w   #VRAM_SCB4,d0
-        move.w  d0,(a6)+
-        move.w  #1,(a6)+
-        move.w  #NCOLSPR-1,(a6)+
-        lea     rt_xbuf,a1
-        moveq   #NCOLSPR-1,d5
-1:      move.w  (a1)+,(a6)+
-        dbra    d5,1b
-        lea     tile_attr_table,a1      /* (callers expect a1 = tile_attr_table) */
         rts
 
 * col_load: d0 = s, d3 = map column: queue the column for sprite d7+s and refresh its companion (HI/BG)
@@ -1015,99 +1029,128 @@ bg_recount:
         rts
 
 * ------------------------------------------------------------------------------------------
-* sprites_update: arcade sprite list (ARC_SPR) -> the field arrays of the two pools (SPR_F0/SPR_F1),
-* written to VRAM by vram_flush at the next VBlank.  Pool 0 (SPR_OBJ..) gets the codes < 0x3700, pool 1
-* (SPR_PRI1.., above the HI columns) the codes >= 0x3700 (HUD, texts: MAME's priority rule).  One pass
-* per pool over the list keeps the arcade's order inside each pool.
+* spr_lists (jmp at 0x44E6, in the arcade interrupt): the arcade copies its three sprite lists (built in
+* the previous interrupt) to sprite RAM; they are converted straight into the field arrays of the two
+* pools instead (same entries and order as sprites_update over the copy).  With more high-priority
+* sprites than pool 1 holds, the original copy runs and video_frame calls sprites_slow on it.
+* Keeps every register but a0/a1/d5/d6, like the original.
 * ------------------------------------------------------------------------------------------
-sprites_update:
+        .global spr_lists
+spr_lists:
+        movem.l d0-d4/d7/a2-a6,-(sp)
         st      rt_spr_busy
-        move.l  a6,-(sp)
-        /* entries written this frame by the arcade copy routine 0x44E6: the list counters */
-        move.w  ARC_WRAM+0x27E,d6
-        add.w   ARC_WRAM+0x280,d6
-        add.w   ARC_WRAM+0x282,d6
-        add.w   ARC_WRAM+0x284,d6
-        cmpi.w  #(0x1000-6)/8,d6
-        bls.s   1f
-        move.w  #(0x1000-6)/8,d6
-1:      lea     spr_y_table,a5
+        lea     spr_y_table,a5
         lea     spr_x_table,a6
         lea     spr_col_table,a3
         lea     SPR_F0,a1
         lea     SPR_F1,a2
         move.w  #SPR_OBJ_MAX,d7         /* free slots, pool 0 */
         moveq   #SPR_PRI1_MAX,d1        /* free slots, pool 1 */
-        lea     ARC_SPR+6,a0
-        subq.w  #1,d6
-        bmi     sf_end
-        /* one pass: codes < 0x3700 -> pool 0, the others -> pool 1 (both in list order) */
-sf_loop:
-        moveq   #0,d4
-        move.b  1(a0),d4                /* y byte */
-        add.w   d4,d4
-        move.w  (a5,d4.w),d4            /* SCB3 (y | height 1), 0 = off screen */
-        beq.s   sf_next
-        move.w  4(a0),d2                /* w2: x, colour */
-        move.w  d2,d5
-        and.w   #0x3FF,d5
-        add.w   d5,d5
-        move.w  (a6,d5.w),d5            /* SCB4, bit 0 set = off screen */
-        btst    #0,d5
-        bne.s   sf_next
-        rol.w   #6,d2
-        and.w   #0x1F,d2
-        lsl.w   #2,d2
-        move.l  (a3,d2.w),d2            /* palette << 8 : tile OR mask (shadow tile set) */
-        move.w  (a0),d0
-        rol.w   #2,d0                   /* w0 bits 15,14 -> 1,0 (vflip, hflip) */
-        and.w   #3,d0
-        move.w  6(a0),d3
-        and.w   #0x3FFF,d3
-        cmpi.w  #0x3700,d3
-        bcc.s   sf_hi
-        or.w    d2,d3
-        swap    d2
-        or.w    d0,d2
-        subq.w  #1,d7
-        bmi.s   sf_full0
-        move.w  d3,(a1)
-        move.w  d2,SPR_F0_SZ(a1)
-        move.w  d4,2*SPR_F0_SZ(a1)
-        move.w  d5,3*SPR_F0_SZ(a1)
-        addq.l  #2,a1
-sf_next:
-        addq.l  #8,a0
-        dbra    d6,sf_loop
-sf_end:
+        movea.w #(0x1000-6)/8,a4        /* entries the sprite RAM holds */
+        lea     ARC_WRAM+0x1600,a0
+        move.w  ARC_WRAM+0x27E,d6
+        bsr.s   sl_seg
+        bne.s   sl_slow
+        lea     ARC_WRAM+0x1DF8,a0
+        move.w  ARC_WRAM+0x280,d6
+        bsr.s   sl_seg
+        bne.s   sl_slow
+        lea     ARC_WRAM+0x25C8,a0
+        move.w  ARC_WRAM+0x282,d6
+        add.w   ARC_WRAM+0x284,d6
+        bsr.s   sl_seg
+        bne.s   sl_slow
         move.w  #SPR_OBJ_MAX,d0
         sub.w   d7,d0
         move.w  d0,rt_spr_n0
         moveq   #SPR_PRI1_MAX,d0
         sub.w   d1,d0
         move.w  d0,rt_spr_n1
-        movea.l (sp)+,a6
+        move.w  ARC_WRAM+0x27E,d0       /* the copy's count, as the original keeps it */
+        add.w   ARC_WRAM+0x280,d0
+        add.w   ARC_WRAM+0x282,d0
+        add.w   ARC_WRAM+0x284,d0
+        move.w  d0,ARC_WRAM+0x27C
         clr.b   rt_spr_busy
+        movem.l (sp)+,d0-d4/d7/a2-a6
         rts
-sf_full0:
+sl_slow:
+        st      rt_spr_slow             /* (rt_spr_busy stays set until sprites_slow has refilled the pools) */
+        movem.l (sp)+,d0-d4/d7/a2-a6
+        lea     ARC_SPR+6,a1            /* the original routine from its second instruction */
+        jmp     0x44EC
+
+* sl_seg: a0 = list, d6 = entries, a4 = entries the sprite RAM still holds (decremented): converts them.
+* Z set when done, Z clear when pool 1 overflowed.
+sl_seg:
+        move.w  a4,d0
+        cmp.w   d0,d6
+        bls.s   1f
+        move.w  d0,d6
+1:      suba.w  d6,a4
+        subq.w  #1,d6
+        bmi.s   sl_done
+sl_loop:
+        moveq   #0,d4
+        move.b  1(a0),d4                /* y byte */
+        add.w   d4,d4
+        move.w  (a5,d4.w),d4            /* SCB3 (y | height 1), 0 = off screen */
+        beq.s   sl_next
+        move.w  4(a0),d5                /* w2: x, colour */
+        and.w   #0x3FF,d5
+        add.w   d5,d5
+        move.w  (a6,d5.w),d5            /* SCB4 + 1, 0 = off screen */
+        beq.s   sl_next
+        moveq   #0x7C,d2
+        and.b   4(a0),d2                /* colour * 4 */
+        move.l  (a3,d2.w),d2            /* palette << 8 : tile OR mask */
+        move.w  (a0),d0
+        rol.w   #2,d0                   /* w0 bits 15,14 -> 1,0 (vflip, hflip) */
+        and.w   #3,d0
+        move.w  6(a0),d3
+        and.w   #0x3FFF,d3
+        cmpi.w  #0x3700,d3
+        bcc.s   sl_hi
+        or.w    d2,d3
+        swap    d2
+        or.w    d0,d2
+        subq.w  #1,d7
+        bmi.s   sl_full0
+        move.w  d3,(a1)
+        move.w  d2,SPR_F0_SZ(a1)
+        move.w  d4,2*SPR_F0_SZ(a1)
+        move.w  d5,3*SPR_F0_SZ(a1)
+        addq.l  #2,a1
+sl_next:
+        addq.l  #8,a0
+        dbra    d6,sl_loop
+sl_done:
+        moveq   #0,d0                   /* Z set */
+        rts
+sl_full0:
         addq.w  #1,d7                   /* pool 0 full: the sprite is dropped */
-        bra.s   sf_next
-sf_hi:
+        bra.s   sl_next
+sl_hi:
         or.w    d2,d3
         swap    d2
         or.w    d0,d2
         subq.w  #1,d1
-        bmi.s   sf_slow
+        bmi.s   1f
         move.w  d3,(a2)
         move.w  d2,SPR_F1_SZ(a2)
         move.w  d4,2*SPR_F1_SZ(a2)
         move.w  d5,3*SPR_F1_SZ(a2)
         addq.l  #2,a2
-        bra.s   sf_next
-sf_slow:
-        /* more than SPR_PRI1_MAX high-priority sprites (title logos): start again with the pass per
-           pool, which puts the first ones of the list in pool 0 */
-        movea.l (sp)+,a6
+        bra.s   sl_next
+1:      moveq   #1,d0                   /* Z clear: pool 1 overflow */
+        rts
+
+* ------------------------------------------------------------------------------------------
+* sprites_slow: arcade sprite list (copy in ARC_SPR) -> the field arrays of the two pools (SPR_F0/SPR_F1),
+* when it holds more high-priority sprites (codes >= 0x3700: HUD, texts, title logos; MAME's priority rule)
+* than pool 1: one pass per pool, and the first of those entries go to pool 0 after its own sprites so
+* that the list order (later entries on top) is kept.
+* ------------------------------------------------------------------------------------------
 sprites_slow:
         move.l  a6,-(sp)
         /* entries written this frame by the arcade copy routine 0x44E6: the list counters */
@@ -1248,9 +1291,8 @@ su_conv:
         move.w  d2,d5
         and.w   #0x3FF,d5
         add.w   d5,d5
-        move.w  (a6,d5.w),d5            /* SCB4, bit 0 set = off screen */
-        btst    #0,d5
-        bne.s   8f
+        move.w  (a6,d5.w),d5            /* SCB4 + 1, 0 = off screen */
+        beq.s   8f
         and.w   #0x7C00,d2              /* colour << 10 */
         cmpi.w  #0x4000,d2
         bcc.s   1f
@@ -1300,15 +1342,16 @@ spr_y_table:
         .set    i,i+1
         .endr
 
-* spr_x_table: arcade sprite x (10 bits) -> SCB4 word (x scaled by 7/8), -1 when off screen
+* spr_x_table: arcade sprite x (10 bits) -> SCB4 word (x scaled by 7/8) + 1 (the unused bit 0, so that the
+* word is never 0), 0 when off screen
 spr_x_table:
         .set    i,0
         .rept   1024
         .set    nx, (((i - 15 - CROP_X + 512) * 7) / 8) - 448      /* x 7/8: sprites are shrunk to 14 pixels */
         .if (nx >= -14) && (nx <= 319)
-        .word   (nx & 0x1FF) << 7
+        .word   ((nx & 0x1FF) << 7) + 1
         .else
-        .word   -1
+        .word   0
         .endif
         .set    i,i+1
         .endr
