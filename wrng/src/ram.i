@@ -77,6 +77,7 @@
         .equ    rt_mw_age,      RT_VARS+0x391   /* .b VBlanks since the main loop last entered main_wait (saturates at 255) */
         .equ    rt_tick_pend,   RT_VARS+0x392   /* .b ticks owed to the main loop (0..2): one per VBlank, main_wait runs one at the end of each frame */
         .equ    rt_col_inval,   RT_VARS+0x393   /* .b rt_col_loaded entries were invalidated (layer_update must check every column) */
+        .equ    rt_idle,        RT_VARS+0x3A0   /* .l main_wait loop iterations (profiling: idle time of the main loop) */
         .equ    rt_spr_slow,    RT_VARS+0x39C   /* .b spr_lists left the lists to the multi-pass conversion (sprites_slow, in video_frame) */
         .equ    rt_ticks,       RT_VARS+0x398   /* .l arcade ticks run (frame_hook calls; profiling) */
         .equ    rt_lu_c0last,   RT_VARS+0x394   /* 2 x .w first map column checked by the last pass 1 (layer 0, layer 1) */

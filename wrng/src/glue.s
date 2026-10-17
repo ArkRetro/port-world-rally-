@@ -165,7 +165,8 @@ main_wait:
         bne.s   2f
         st      rt_mwait                /* (with the interrupts masked: no tick can be held back in between) */
         move    (sp)+,sr
-1:      tst.w   ARC_WRAM+0x1A6
+1:      addq.l  #1,rt_idle              /* profiling: 54 cycles per iteration */
+        tst.w   ARC_WRAM+0x1A6
         beq.s   1b
         sf      rt_mwait
         rts

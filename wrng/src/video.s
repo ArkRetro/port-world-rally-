@@ -226,6 +226,26 @@ vc_room:
         movem.l (sp)+,d0-d1/a0-a2
 9:      rts
 
+* VW_COPY src, cnt, tmp: copy cnt+1 words from (src)+ to the VRAM data port (a1), 16 cycles per word
+* ("move.w (src)+,(a1) ; nop": more than the 12 cycles the LSPC needs between two writes; the dbra loop
+* took 22), unrolled by 8 with a jump into the block for the remainder.  Trashes cnt and tmp.
+        .macro  VW_COPY src, cnt, tmp
+        addq.w  #1,\cnt
+        moveq   #7,\tmp
+        and.w   \cnt,\tmp
+        lsr.w   #3,\cnt                 /* whole groups of 8 */
+        neg.w   \tmp
+        add.w   \tmp,\tmp
+        add.w   \tmp,\tmp              /* -4 * remainder */
+        jmp     8f(pc,\tmp\().w)
+7:      .rept   8
+        move.w  (\src)+,(a1)
+        nop
+        .endr
+8:      subq.w  #1,\cnt
+        bpl.s   7b
+        .endm
+
 * vc_play: write the blocks in [a0, a2) to VRAM.  Trashes d0-d1/a0-a1.
 vc_play:
         lea     REG_VRAMRW,a1
@@ -235,16 +255,15 @@ vc_play:
         move.w  (a0)+,REG_VRAMMOD
         move.w  (a0)+,d1                /* count - 1 */
         move.w  d0,REG_VRAMADDR         /* (>= 16 cycles after the previous data write) */
-2:      move.w  (a0)+,(a1)              /* 22 cycles per word: >= 12 between data writes */
-        dbra    d1,2b
+        VW_COPY a0, d1, d0
         cmpa.l  a2,a0
         bcs.s   1b
 9:      rts
 
 * ------------------------------------------------------------------------------------------
 * vram_flush: called at the very start of the VBlank handler.  Replays the command queue, then writes
-* the two sprite pools prepared by sprites_update and hides the sprites no longer used.
-* Trashes d0-d5/a0-a3.
+* the two sprite pools prepared by spr_lists / sprites_slow and hides the sprites no longer used.
+* Trashes d0-d6/a0-a3.
 * ------------------------------------------------------------------------------------------
 vram_flush:
         lea     VCMD_BUF,a0
@@ -273,21 +292,19 @@ vf_pool:
         move.w  d1,d5
         add.w   d0,d5                   /* new end */
         subq.w  #1,d1
-        bmi.s   5f
+        bmi     5f
         move.w  d0,d3
         lsl.w   #6,d3                   /* SCB1 of the first sprite */
         move.w  #64,REG_VRAMMOD
         move.w  d3,REG_VRAMADDR
         movea.l a0,a3
         move.w  d1,d4
-1:      move.w  (a3)+,(a1)              /* tiles (SCB1 even words) */
-        dbra    d4,1b
+        VW_COPY a3, d4, d6               /* tiles (SCB1 even words) */
         addq.w  #1,d3
         lea     (a0,d2.w),a3
         move.w  d3,REG_VRAMADDR
         move.w  d1,d4
-2:      move.w  (a3)+,(a1)              /* attributes (SCB1 odd words) */
-        dbra    d4,2b
+        VW_COPY a3, d4, d6               /* attributes (SCB1 odd words) */
         move.w  #1,REG_VRAMMOD
         move.w  d0,d3
         add.w   #VRAM_SCB3,d3
@@ -295,16 +312,14 @@ vf_pool:
         adda.w  d2,a3
         move.w  d3,REG_VRAMADDR
         move.w  d1,d4
-3:      move.w  (a3)+,(a1)              /* SCB3 */
-        dbra    d4,3b
+        VW_COPY a3, d4, d6               /* SCB3 */
         add.w   #VRAM_SCB4-VRAM_SCB3,d3
         lea     (a0,d2.w),a3
         adda.w  d2,a3
         adda.w  d2,a3
         move.w  d3,REG_VRAMADDR
         move.w  d1,d4
-4:      move.w  (a3)+,(a1)              /* SCB4 */
-        dbra    d4,4b
+        VW_COPY a3, d4, d6               /* SCB4 */
 5:      /* hide the sprites of the pool used last time but not now */
         move.w  (a2),d4
         move.w  d5,(a2)
