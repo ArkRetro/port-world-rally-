@@ -36,9 +36,9 @@ softdip:
         .word   0xFFFF,0xFFFF
         .byte   0xFF,0xFF
         .byte   0,0,0,0,0,0,0,0,0,0
-| Todo nuestro codigo esta en el segundo mega de la ROM P (0x200000, ventana con bancos).
-| En un cartucho real (NeoSD) el registro de banco no tiene por que valer 0 al arrancar:
-| se fija aqui, desde el primer mega, antes de saltar a 0x200000.
+| Todo nuestro codigo y sus tablas estan en el primer mega de la ROM P (ver build.py); en el segundo
+| (0x200000, ventana con bancos) solo quedan los mapas descifrados (maptab). En un cartucho real
+| (NeoSD) el registro de banco no tiene por que valer 0 al arrancar: se fija aqui.
         .even
 user_p1:
         move.b  %d0,0x300001            | watchdog

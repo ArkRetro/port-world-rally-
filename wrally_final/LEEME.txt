@@ -2,6 +2,16 @@ WRally neogeo final - World Rally (Gaelco 1993), port a Neo Geo por arkretro. SO
 No incluye BIOS: usa la tuya (neogeo.zip / BIOS de tu consola). Hecho a partir de las ROM de tu
 propia placa: no lo distribuyas (para Patreon, mejor el video y el codigo fuente).
 
+CAMBIO PARA NEOSD (sobre la version final)
+  - Todo el codigo del port, sus interrupciones y sus tablas pasan al primer mega de la ROM P
+    (0x19000-0x68FFF y 0x99000-0xCEFFF, paginas de los mapas cifrados del original, que el port ya
+    lee descifrados de maptab y el original no lee nunca). En el segundo mega (ventana con bancos
+    en 0x200000) solo quedan los mapas descifrados, leidos como datos. Es lo que hace el port wrng,
+    que si carga en NeoSD: en AES + NeoSD la zona P2 deja de responder a ratos (bus abierto, ver
+    tools/INFORME_reset_hardware.md) y con codigo alli la consola se reiniciaba.
+  - Comprobado en MAME: 0 instrucciones ejecutadas desde P2 y la misma imagen, byte a byte, que la
+    version final en atraccion y carrera.
+
 CONTENIDO
   neosd_mister/WRally_neogeo_final.neo   NeoSD / NeoSD Pro y MiSTer (formato .neo de TerraOnion)
   backbit/wrallyng/                      BackBit Platinum (MVS): ROM sueltas al estilo MAME

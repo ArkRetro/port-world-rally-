@@ -279,7 +279,6 @@ snd_dur: .incbin "{BLD}/snd_dur.bin"
         .globl spr_xtab, spr_ytab, spr_atab, gd_info, tattr_tab, tile_empty_tab
 tile_empty_tab: .incbin "{BLD}/ttr.bin"
 tattr_tab: .incbin "{BLD}/tattr.bin"
-gd_info: .incbin "{BLD}/gdinfo.bin"
 spr_xtab: .incbin "{BLD}/sxt.bin"
 spr_ytab: .incbin "{BLD}/syt.bin"
 spr_atab: .incbin "{BLD}/sat.bin"
@@ -293,6 +292,9 @@ scan_dec: .incbin "{BLD}/scand.bin"
 alt1_tab: .incbin "{BLD}/alt1.bin"
         .globl map_ptab, maptab
 map_ptab: .incbin "{BLD}/mapptab.bin"
+        .section .rodata.zgdinfo,"a"
+        .balign 4
+gd_info: .incbin "{BLD}/gdinfo.bin"
         .section .rodata.zmaptab,"a"
         .balign 4
 maptab: .incbin "{BLD}/maptab.bin"
@@ -339,7 +341,14 @@ _tb = np.zeros(0x800, np.uint8)
 for _i in np.where(_empty)[0]: _tb[_i >> 3] |= 1 << (_i & 7)
 open(f'{BLD}/ttr.bin', 'wb').write(_tb.tobytes())
 open(f'{SRC}/gen_cfg.h', 'w').write(f'#define BLANK_TILE 0x{BLANK:04x}\n')
-# 6) compilar codigo Neo Geo (P2 en 0x200000)
+# 6) compilar codigo Neo Geo. Codigo, vectores y tablas van en el PRIMER mega (P1), en las paginas de
+# los mapas cifrados del original (0x19000-0x68FFF y 0x99000-0xCEFFF): el port lee esos mapas ya
+# descifrados de maptab y el original no las lee nunca (comprobado en MAME, atraccion y carrera).
+# En P2 (ventana con bancos en 0x200000) solo queda maptab, que se lee como datos en bucles acotados.
+# Motivo: en AES + NeoSD la zona P2 deja de responder a ratos (bus abierto, ver
+# tools/INFORME_reset_hardware.md); con codigo o IRQ alli la CPU ejecuta basura y la consola se reinicia.
+P1A, P1A_END = 0x19000, 0x69000
+P1B, P1B_END = 0x99000, 0xCF000
 CF = '-m68000 -O2 -fomit-frame-pointer -ffreestanding -nostdlib -fno-builtin -Wall -fno-pic -std=gnu99 -Wno-misleading-indentation' + f' -DFULLW={FULLW}'
 objs = []
 subprocess.check_call(f'python3 /home/claude/wrally/neo/rc/rc51.py {BLD}/gen_mcu.s', shell=True)
@@ -369,12 +378,16 @@ for f in ['shell_wr.s', 'main.c', 'video.c', 'fast.s', 'sound.c', 'crypt.c', 'mc
 LD = f'''OUTPUT_ARCH(m68k)
 ENTRY(user_entry)
 MEMORY {{ hdr (rx) : ORIGIN = 0x100, LENGTH = 0x300
+         p1a (rx) : ORIGIN = {P1A:#x}, LENGTH = {P1A_END - P1A:#x}
+         p1b (rx) : ORIGIN = {P1B:#x}, LENGTH = {P1B_END - P1B:#x}
          p2 (rx) : ORIGIN = 0x200000, LENGTH = 1M
          ram (rwx) : ORIGIN = 0x10A100, LENGTH = 0x1E00 }}
 SECTIONS {{
   .hdr : {{ KEEP(*(.text.header)) }} > hdr
-  .text : {{ *(.text .text.*) *(.rodata .rodata.*) . = ALIGN(4); }} > p2
-  .data : {{ *(.data .data.*) . = ALIGN(4); }} > ram AT > p2
+  .text : {{ *(.text .text.*) *(.rodata) *(EXCLUDE_FILE(*gen_data.o) .rodata.*) . = ALIGN(4); }} > p1a
+  .textb : {{ *(.rodata.zgdinfo) . = ALIGN(4); }} > p1b
+  .p2 : {{ *(.rodata.zmaptab) . = ALIGN(4); }} > p2
+  .data : {{ *(.data .data.*) . = ALIGN(4); }} > ram AT > p1a
   .bss (NOLOAD) : {{ *(.bss .bss.* COMMON) . = ALIGN(4); }} > ram
   /DISCARD/ : {{ *(.comment) *(.note*) *(.eh_frame*) }}
 }}
@@ -386,11 +399,15 @@ for l in subprocess.check_output(f'm68k-linux-gnu-nm {BLD}/wr.elf', shell=True).
     p = l.split()
     if len(p) == 3: syms[p[2]] = int(p[0], 16)
 hdr = subprocess.check_output(f'm68k-linux-gnu-objcopy -O binary -j .hdr {BLD}/wr.elf /dev/stdout', shell=True)
-p2 = bytearray(subprocess.check_output(f'm68k-linux-gnu-objcopy -O binary -j .text {BLD}/wr.elf /dev/stdout', shell=True))
-assert len(p2) <= 0x100000
+def _sect(n): return bytearray(subprocess.check_output(f'm68k-linux-gnu-objcopy -O binary -j {n} {BLD}/wr.elf /dev/stdout', shell=True))
+p1a, p1b, p2 = _sect('.text'), _sect('.textb'), _sect('.p2')
+assert len(p1a) <= P1A_END - P1A and len(p1b) <= P1B_END - P1B and len(p2) <= 0x100000
+assert syms['maptab'] == 0x200000 and syms['gd_info'] == P1B
+D[P1A:P1A + len(p1a)] = p1a
+D[P1B:P1B + len(p1b)] = p1b
 dsz = subprocess.check_output(f'm68k-linux-gnu-size -A {BLD}/wr.elf', shell=True).decode()
 assert '.data' not in dsz or ' 0 ' in [l for l in dsz.split('\n') if l.startswith('.data')][0], dsz
-print('P2 usado %d bytes' % len(p2))
+print('P1 usado %d + %d bytes, P2 (solo maptab) %d bytes' % (len(p1a), len(p1b), len(p2)))
 
 # cabecera y vectores
 assert all(b in (0, 0xff) for b in D[0x100:0x400])
@@ -414,9 +431,9 @@ D[0xB026:0xB02C] = bytes.fromhex('4EB9') + struct.pack('>I', syms['palb_hook'])
 # fin de las rutinas que cargan paletas enteras (inicio de tramo, tras el fundido): paletas ya.
 # Trampolines: la instruccion desplazada se copia al trampolin (relleno de NOP en fast.s)
 def _tramp(site, n, name):
-    o = syms[name] - 0x200000 + 14
-    assert bytes(p2[o:o + n]) == bytes.fromhex('4E71' * (n // 2)), name
-    p2[o:o + n] = D[site:site + n]
+    o = syms[name] + 14
+    assert bytes(D[o:o + n]) == bytes.fromhex('4E71' * (n // 2)), name
+    D[o:o + n] = D[site:site + n]
     D[site:site + n] = bytes.fromhex('4EB9') + struct.pack('>I', syms[name]) + bytes.fromhex('4E71' * ((n - 6) // 2))
 assert bytes(D[0x8BCC:0x8BCE]) == bytes.fromhex('3039')     # move.w abs.l,d0
 _tramp(0x8BCC, 6, 'palt6')
