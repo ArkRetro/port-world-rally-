@@ -12,9 +12,9 @@
 ;                               channel/volume (table at samples:)
 ;     0xC0 + n (0xC0-0xEF)      play slot 0x40 + n (= phrase 0x50 + n)
 ;     0x80 | ch<<4 | vol        select channel ch (0..3) and OKI volume vol (0..15) for the next play
-;   reply byte (read by the 68k at 0x320000): 0x80 | ack | busy mask (bit n = channel n playing);
-;   bit 6 (ack) toggles every time a command is taken, so the 68k can wait before sending the next
-;   one (the latch holds a single byte).  After the BIOS slot-switch command the reply is 0x01.
+;   reply byte (read by the 68k at 0x320000): 0x80 | ack; bit 6 (ack) toggles every time the NMI takes a
+;   command into the queue, so the 68k can wait before sending the next one (the latch holds a single
+;   byte).  After the BIOS slot-switch command the reply is 0x01.
 ;
 ; YM2610 ports: 4/5 = address/data of register bank A0, 6/7 = bank A1 (ADPCM-A registers).  The end-of-
 ; sample flags are read from port 6 (bits 0-5 = ADPCM-A channels) and reset through register 0x1C (A0).
@@ -34,99 +34,64 @@ reset:
         reti
 
         .org    0x0066                  ; NMI: command from the 68k
+; The NMI only queues the command and acknowledges it at once; the main loop carries it out.  (Carrying
+; it out in the NMI kept the 68k waiting for the YM2610 writes of a play - about 0.7 ms each, longer on
+; the real chip - and when the 68k gave up waiting, the next command arrived while the NMI was still
+; running: nested NMIs, lost commands, sound cut off.)
 nmi:
         push    af
-        push    bc
-        push    de
         push    hl
         in      a,(0x00)
         out     (0x00),a                ; clears the latch
-        ld      b,a
+        ld      h,#>queue
+        push    af
+        ld      a,(qwr)
+        ld      l,a
+        pop     af
+        ld      (hl),a
+        inc     l
+        ld      a,l
+        ld      (qwr),a
         ld      a,(ack)
         xor     #0x40
         ld      (ack),a
-        ld      a,b
-        cp      #0x01
-        jr      z,cmd_slot
-        cp      #0x03
-        jr      z,cmd_reset
-        cp      #0x08
-        jr      z,cmd_stopall
-        cp      #0x0C
-        jr      c,nmi_done
-        cp      #0x10
-        jr      c,cmd_stopch
-        cp      #0x40
-        jr      c,nmi_done
-        cp      #0x80
-        jr      c,cmd_play_lo
-        cp      #0xC0
-        jr      c,cmd_select
-        cp      #0xF0
-        jr      nc,nmi_done
-        sub     #0x80                   ; 0xC0-0xEF -> slot 0x40-0x6F
-        call    play_cmd
-        jr      nmi_done
-cmd_play_lo:
-        sub     #0x40                   ; 0x40-0x7F -> slot 0x00-0x3F
-        call    play_cmd
-        jr      nmi_done
-cmd_select:
-        and     #0x0F
-        ld      (pend_vol),a
-        ld      a,b
-        rrca
-        rrca
-        rrca
-        rrca
-        and     #0x03
-        ld      (pend_ch),a
-        jr      nmi_done
-cmd_slot:
-        call    silence
-        ld      a,#0x01
-        out     (0x0C),a
-        ld      a,#0xFF
-        ld      (slot_mode),a
-        jr      nmi_done
-cmd_reset:
-        call    silence
+        or      #0x80
+        out     (0x0C),a                ; reply: 0x80 | ack
         pop     hl
-        pop     de
-        pop     bc
-        pop     af
-        jp      start
-cmd_stopall:
-        call    silence
-        jr      nmi_done
-cmd_stopch:
-        sub     #0x0C                   ; channel
-        call    stop_channel
-nmi_done:
-        call    reply
-        pop     hl
-        pop     de
-        pop     bc
         pop     af
         retn
 
 start:
         xor     a
         ld      (busy),a
-        ld      (slot_mode),a
         ld      (ack),a
         ld      (pend_ch),a
         ld      (pend_vol),a
+        ld      (qrd),a
+        ld      (qwr),a
         ld      a,#0x80
-        out     (0x0C),a                ; reply: idle, nothing busy
+        out     (0x0C),a                ; reply: idle
         call    ym_init
         xor     a
         out     (0x08),a                ; enable NMI (maskable interrupts stay disabled: the YM timers are unused)
 main:
-        ; poll the ADPCM-A end flags and keep the busy mask / reply up to date
+        ld      a,(qwr)
+        ld      b,a
+        ld      a,(qrd)
+        cp      b
+        jr      z,main_poll
+        ld      l,a
+        ld      h,#>queue
+        inc     a
+        ld      (qrd),a
+        ld      a,(hl)
+        call    command
+        jr      main
+main_poll:
+        ; poll the ADPCM-A end flags (reset them so that they can report the next end)
         in      a,(0x06)
         and     #0x0F
-        jr      z,main_reply
+        jr      z,main
         ld      c,a                     ; channels that ended
         cpl
         ld      b,a
@@ -138,22 +103,59 @@ main:
         ld      c,#0x00
         ld      a,#0x1C
         call    ym_a0
-main_reply:
-        call    reply
         jr      main
 
-; reply: 0x80 | ack | busy (nothing while the BIOS slot switch is pending)
-reply:
-        ld      a,(slot_mode)
-        or      a
-        ret     nz
-        ld      a,(busy)
-        or      #0x80
+; command: a = command byte from the queue
+command:
         ld      b,a
-        ld      a,(ack)
-        or      b
-        out     (0x0C),a
+        cp      #0x01
+        jr      z,cmd_slot
+        cp      #0x03
+        jr      z,cmd_reset
+        cp      #0x08
+        jr      z,cmd_stopall
+        cp      #0x0C
+        ret     c
+        cp      #0x10
+        jr      c,cmd_stopch
+        cp      #0x40
+        ret     c
+        cp      #0x80
+        jr      c,cmd_play_lo
+        cp      #0xC0
+        jr      c,cmd_select
+        cp      #0xF0
+        ret     nc
+        sub     #0x80                   ; 0xC0-0xEF -> slot 0x40-0x6F
+        jp      play_cmd
+cmd_play_lo:
+        sub     #0x40                   ; 0x40-0x7F -> slot 0x00-0x3F
+        jp      play_cmd
+cmd_select:
+        and     #0x0F
+        ld      (pend_vol),a
+        ld      a,b
+        rrca
+        rrca
+        rrca
+        rrca
+        and     #0x03
+        ld      (pend_ch),a
         ret
+cmd_slot:
+        call    silence
+        ld      a,#0x01
+        out     (0x0C),a                ; BIOS slot switch: reply 0x01
+        ret
+cmd_reset:
+        call    silence
+        ld      sp,#0xFFFC
+        jp      start
+cmd_stopall:
+        jp      silence
+cmd_stopch:
+        sub     #0x0C                   ; channel
+        jp      stop_channel
 
 ; ---- YM2610 helpers ----
 ; write register a = value c in bank A1 / A0
@@ -324,7 +326,10 @@ samples:
         .area   DATA (ABS)
         .org    0xF800
 busy:           .ds 1
-slot_mode:      .ds 1
+qrd:            .ds 1                   ; command queue: next to carry out
+qwr:            .ds 1                   ;                next free (both wrap at 256)
 ack:            .ds 1                   ; 0x00 / 0x40, toggled per command taken
 pend_ch:        .ds 1                   ; channel selected for the next play
 pend_vol:       .ds 1                   ; OKI volume nibble selected for the next play
+        .org    0xF900
+queue:          .ds 256                 ; commands from the 68k (filled by the NMI)
