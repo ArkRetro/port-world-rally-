@@ -201,19 +201,7 @@ video_vblank:
 1:      move.w  #SCB2_SHRINK,REG_VRAMRW
         nop
         dbra    d0,1b
-        /* a new screen still being drawn on a black one (blocks copied in the last two frames): its colours
-           wait until it is complete - the arcade draws it during the black frames, the port's slower
-           main loop would show it coming together piece by piece.  At most 30 VBlanks */
-        cmpi.b  #2,rt_blk_age
-        bcc.s   3f
-        bsr     pal_dark
-        bne.s   3f
-        cmpi.b  #30,rt_pal_held
-        bcc.s   4f                      /* held long enough: shown as it is (the count restarts only once */
-        addq.b  #1,rt_pal_held          /* the drawing stops or the screen is lit) */
-        rts
-3:      clr.b   rt_pal_held
-4:      move.w  rt_backdrop,PALETTES+255*32+30
+        move.w  rt_backdrop,PALETTES+255*32+30
         tst.b   rt_diag_on              /* diagnostic overlay: white text */
         beq.s   1f
         move.l  #0x00007FFF,PALETTES+PAL_FIX*32
@@ -293,24 +281,6 @@ video_vblank:
 7:      move.w  (a1)+,(a0)+
         dbra    d2,7b
 8:      rts
-
-* pal_dark: Z set when the screen shows (nearly) only black: fewer than 32 of the 1024 colours of the
-* arcade palettes in palette RAM, and the backdrop, are lit.  Trashes d0-d2/a0.
-pal_dark:
-        lea     PALETTES+PAL_ARC_BASE*32,a0
-        move.w  #64*16-1,d1
-        moveq   #32,d2
-1:      move.w  (a0)+,d0
-        and.w   #0x7FFF,d0
-        beq.s   2f
-        subq.w  #1,d2
-        beq.s   8f
-2:      dbra    d1,1b
-        move.w  PALETTES+255*32+30,d0
-        and.w   #0x7FFF,d0
-        rts                             /* Z: backdrop black too */
-8:      moveq   #1,d0                   /* Z clear */
-        rts
 
 * ------------------------------------------------------------------------------------------
 * VRAM command buffer.  Everything the frame changes in VRAM is queued (vc_* helpers, a6 = write pointer
@@ -554,10 +524,7 @@ vf_pool:
 * frame's VRAM contents (queued for vram_flush).
 * ------------------------------------------------------------------------------------------
 video_frame:
-        cmpi.b  #255,rt_blk_age
-        beq.s   0f
-        addq.b  #1,rt_blk_age
-0:      movea.l rt_vcmd_ptr,a6
+        movea.l rt_vcmd_ptr,a6
         cmpa.l  #VCMD_BUF,a6
         bcc.s   1f
         lea     VCMD_BUF,a6
@@ -603,14 +570,6 @@ video_frame:
         bsr     cells_flush
         move.l  a6,rt_vcmd_ptr
         move.b  rt_cl_more,rt_col_inval /* columns left over: pass 1 checks them again next frame */
-        move.b  rt_cl_more,d0
-        move.b  d0,d1
-        or.b    rt_cl_prev,d1
-        move.b  d1,rt_cl_hid            /* the layers were hidden in this frame (frame_seal: its sprites too) */
-        cmp.b   rt_cl_prev,d0
-        beq.s   1f
-        move.w  #0xFFFF,rt_lu_force     /* loading finished: both layers shown again next frame */
-1:      move.b  d0,rt_cl_prev
         clr.b   rt_cl_more
         move.b  #CL_BUDGET,rt_cl_budget
         move.w  REG_LSPCMODE,rt_dbg+10  /* profiling */
@@ -695,7 +654,6 @@ lu_chk:
         bra.s   1f
 3:      clr.b   rt_cl_budget            /* over this frame's budget: the next frame loads it */
         st      rt_cl_more
-        move.w  #0xFFFF,rt_lu_force     /* (the layers are hidden meanwhile: lu_hidden) */
 1:      addq.w  #1,d1
         addq.w  #1,d0
         cmpi.w  #NCOLSPR,d0
@@ -819,10 +777,7 @@ lu_scb3:
         cmpi.w  #SPR_LAYER0,d7
         beq.s   1f
         lea     24(a0),a0
-1:      bsr     lu_hidden
-        beq.s   2f
-        lea     zero_cols,a0            /* a new screen still loading: both layers hidden until it is whole */
-2:      move.w  d6,d1
+1:      move.w  d6,d1
         and.w   #0xFF80,d1
         moveq   #NCOLSPR-1,d5
 4:      moveq   #0,d2
@@ -845,10 +800,7 @@ lu_scb3:
         lea     rt_bg_cnt,a0
         lea     CMP_BG_R0,a1
         lea     CMP_BG_H,a4
-1:      bsr     lu_hidden
-        beq.s   2f
-        lea     zero_cols,a0
-2:      move.w  d6,d1
+1:      move.w  d6,d1
         and.w   #0xFF80,d1              /* y of row 0 | height 0 */
         moveq   #NCOLSPR-1,d5
 5:      tst.b   (a0)+
@@ -876,20 +828,6 @@ lu_p2end:
 lu_done:
         lea     tile_attr_table,a1
         rts
-
-* lu_hidden: Z clear while map columns wait to be loaded (more changed than CL_BUDGET per frame: a whole
-* new screen) - in this frame or at the end of the last one.  Its columns would otherwise show it sweeping
-* in, mixed with the old screen.  Keeps every register.
-lu_hidden:
-        tst.b   rt_cl_more
-        bne.s   1f
-        tst.b   rt_cl_prev
-1:      rts
-zero_cols:
-        .rept   NCOLSPR
-        .byte   0
-        .endr
-        .even
 
 * col_load: d0 = s, d3 = map column: queue the column for sprite d7+s and refresh its companion (HI/BG)
 * column (count + upload when it has something to show).  Preserves d0-d6/a0/a2 (a1 = tile_attr_table,

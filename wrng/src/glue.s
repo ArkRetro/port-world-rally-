@@ -414,14 +414,9 @@ frame_seal:
         move.w  d0,d1
         lsl.w   #3,d1
         adda.w  d1,a0
-        tst.b   rt_cl_hid               /* a new screen still loading (its layers hidden): no sprites either */
-        bne.s   2f
         move.w  rt_spr_n0,(a0)+
         move.w  rt_spr_n1,(a0)+
         move.w  rt_eff_n,(a0)
-        bra.s   1f
-2:      clr.l   (a0)+
-        clr.w   (a0)
 1:      moveq   #0,d1
         move.b  rt_pend_n,d1            /* 0 or 1 (frame_begin) */
         lea     rt_pend_s,a0
@@ -655,9 +650,8 @@ trap_error_pc:
 
 * palette_sync: arcade palette RAM shadow (xBRG444, entries 0..1023) -> ARC_PAL (Neo Geo format) for
 * the 16-colour palettes whose raw words changed since the last call.  A quarter of the 64 palettes is
-* checked per call (they hardly change during a race); when two of them changed, the other three
-* quarters are checked too in the same call (a fade changes them all at once).  While a screen is being
-* drawn all of them are checked every time: a new screen gets all its colours in the same frame.
+* checked per call (the palettes hardly change during a race); when one of them changed, the other
+* three quarters are checked too in the same call (a fade or a new screen changes them all at once).
 * The compare is 8 cmpm.l per palette with an early exit on the first difference.
 palette_sync:
         lea     pal_table,a4
@@ -669,9 +663,7 @@ palette_sync:
         moveq   #0,d5                   /* palettes converted */
         bsr.s   ps_quarter
         cmpi.w  #2,d5
-        bcc.s   1f
-        cmpi.b  #8,rt_blk_age           /* a screen being drawn (blocks in the last 8 frames): all of them, */
-        bcc.s   9f                      /* or its colours would come on a quarter at a time */
+        bcs.s   9f
 1:      addq.b  #1,d0                   /* several changed (a fade): the other quarters as well (a single
                                            palette changing, a colour cycle, does not need the full scan) */
         and.b   #3,d0
@@ -841,7 +833,6 @@ blk_col:
 blk_done:
         tst.l   d4
         beq.s   6f                      /* the block was already there: nothing to reload */
-        clr.b   rt_blk_age              /* a screen is being drawn (video_vblank holds its colours back) */
         move.w  d6,d5
         moveq   #NCOLSPR-1,d2
 4:      move.b  (a0),d3
@@ -1116,9 +1107,9 @@ nat_v6:                                 /* 0x9CC0 */
 
 * nat_obj (jmp at 0x4708): the builder of the arcade's sprite list 2 (text and HUD objects, from the
 * object list at a0 into a3, count at FEC280).  An object one tile high (most of them: the characters
-* of the strings) takes a direct path; any other one runs the arcade's code, which returns to no_next.  Same memory
+* of the strings) takes a direct path; any other one runs the original code (transcribed below).  Same memory
 * effects; a0/a3/a4/a6 as the original leaves them.
-        .global nat_obj, no_next
+        .global nat_obj
 nat_obj:
         lea     ARC_WRAM+0x280,a4
         clr.w   (a4)
@@ -1184,10 +1175,136 @@ no_loop:
         dbra    d2,1b
         addq.l  #6,a0
         bra     no_loop
-no_gen:                                 /* any other object: the arcade's own code for it, whose two */
-        jmp     0x471C                  /* ends (0x47F8 / 0x4888, patched by mkrom) come back to no_next */
-no_next:
+no_gen:                                 /* 0x471C */
+        lea     0xD07D6,a1
+        movea.l ARC_WRAM+0x15FC,a2
+        clr.l   d0
+        move.w  (a0),d0
+        andi.w  #0x3FF,d0
+        clr.w   d5
+        move.b  (a0),d5
+        andi.b  #0x3C,d5
+        lsr.w   #2,d5
+        move.b  d5,ARC_WRAM+0x288
+        add.w   d0,d0
+        add.w   d0,d0
+        adda.l  d0,a1
+        clr.l   d1
+        move.w  (a1)+,d1
+        adda.l  d1,a2
+        move.w  2(a0),d4
+        move.w  4(a0),d5
+        subi.w  #69,d4
+        addi.w  #13,d5
+        clr.l   d2
+        move.w  (a1),d2
+        clr.w   d3
+        move.b  d2,d3
+        lsr.w   #8,d2
+        move.w  d2,d1
+        add.w   d1,d1
+        add.w   d1,d1
+        subq.w  #1,d3
+        subq.w  #1,d2
+        tst.w   ARC_WRAM+0x3824
+        bne     no_flip
+        move.w  #-14,d0
+        sub.w   d4,d0
+        neg.w   d0
+        andi.w  #0x1FF,d0
+        move.w  ARC_WRAM+0x28E8,d4
+        swap    d4
+        move.b  ARC_WRAM+0x288,d4
+1:      movea.l a2,a5
+        movea.w d3,a1
+        swap    d4
+        move.w  d4,d6
+        swap    d4
+        sub.w   d5,d6
+        andi.w  #0xFF,d6
+2:      tst.w   2(a2)
+        beq.s   4f
+        move.w  (a2),d7
+        andi.w  #0xFF00,d7
+        or.w    d6,d7
+        move.w  d7,(a3)
+        addq.l  #4,a3
+        move.l  (a2),d7
+        swap    d7
+        btst    #6,(a0)
+        beq.s   3f
+        lsr.b   #2,d7
+        andi.b  #0x30,d7
+        or.b    d4,d7
+        add.b   d7,d7
+        add.b   d7,d7
+3:      eori.w  #0x20,d7
+        lsl.w   #8,d7
+        or.w    d0,d7
+        swap    d7
+        addi.w  #0x2E00,d7
+        move.l  d7,(a3)+
+        addq.w  #1,(a4)
+4:      adda.l  d1,a2
+        subi.w  #16,d6
+        dbra    d3,2b
+        move.w  a1,d3
+        movea.l a5,a2
+        addq.l  #4,a2
+        addi.w  #16,d0
+        dbra    d2,1b
         addq.l  #6,a0
+        bra     no_loop
+no_flip:                                /* 0x47FE */
+        move.w  #-14,d0
+        sub.w   d4,d0
+        addi.w  #396,d0
+        andi.w  #0x1FF,d0
+        move.w  ARC_WRAM+0x28E8,d4
+        swap    d4
+        move.b  ARC_WRAM+0x288,d4
+1:      movea.l a2,a5
+        movea.w d3,a1
+        swap    d4
+        move.w  d4,d6
+        swap    d4
+        sub.w   d5,d6
+        subi.w  #234,d6
+        neg.w   d6
+        andi.w  #0xFF,d6
+2:      tst.w   2(a2)
+        beq.s   4f
+        move.w  (a2),d7
+        andi.w  #0xFF00,d7
+        or.w    d6,d7
+        eori.w  #0xC000,d7
+        move.w  d7,(a3)
+        addq.w  #4,a3
+        move.l  (a2),d7
+        swap    d7
+        btst    #6,(a0)
+        beq.s   3f
+        lsr.b   #2,d7
+        andi.b  #0x30,d7
+        or.b    d4,d7
+        add.b   d7,d7
+        add.b   d7,d7
+3:      eori.w  #0x20,d7
+        lsl.w   #8,d7
+        or.w    d0,d7
+        swap    d7
+        addi.w  #0x2E00,d7
+        move.l  d7,(a3)+
+        addq.w  #1,(a4)
+4:      adda.l  d1,a2
+        addi.w  #16,d6
+        dbra    d3,2b
+        move.w  a1,d3
+        movea.l a5,a2
+        addq.l  #4,a2
+        subi.w  #16,d0
+        dbra    d2,1b
+        addq.w  #6,a0
         bra     no_loop
 
 * nat_txt (jmp at 0x12172): the arcade's string printer, which appends one sprite-list entry per
@@ -1408,7 +1525,6 @@ clear_l0:
         bsr     clear_fill
         lea     rt_col_loaded,a0
 clear_inval:
-        clr.b   rt_blk_age
         st      rt_col_inval
         moveq   #NCOLSPR-1,d0
 1:      move.b  #0xFF,(a0)+             /* column sprites reload at the next frame */
