@@ -82,6 +82,23 @@ def main():
     region[0x100000:0x200000:2] = open(i9, 'rb').read()
     region[0x100001:0x200000:2] = open(i7, 'rb').read()
     tiles = decode_arcade(region)
+    if '--rescue' in a:
+        # the runtime shows the tiles 14 pixels wide (SCB2 horizontal shrink 0xD), which drops source columns
+        # 5 and 11 (MAME zoom_x_tables[13]): a one-pixel stroke there (unlike both neighbours) is moved onto the neighbour that belongs
+        # to a wider run, so that thin letters and outlines keep it
+        out = []
+        for n, t in enumerate(tiles):
+            m = bytearray(t)
+            for y in range(16):
+                r = y * 16
+                for c, d in ((5, 1), (11, 1)):
+                    p = m[r + c]
+                    if p == 0 or p == m[r + c - 1] or p == m[r + c + 1]:
+                        continue
+                    if m[r + c + d] == m[r + c + 2 * d]:
+                        m[r + c + d] = p
+            out.append(bytes(m))
+        tiles = out
     if '--shadow' in a:
         shadow = []
         for t in tiles:

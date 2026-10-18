@@ -183,6 +183,24 @@ vram_mark_dirty:
 * video_vblank: called from the VBlank handler - flush dirty palettes to palette RAM.
 * ------------------------------------------------------------------------------------------
 video_vblank:
+        /* the 14-pixel shrink of 24 sprites (all of them every 16 frames): the MVS BIOS sets every SCB2
+           back to 0x0FFF when a coin goes in, and 16-pixel columns 14 pixels apart cover the edges of
+           their neighbours */
+        moveq   #0,d0
+        move.b  rt_scb2_rot,d0
+        addq.b  #1,rt_scb2_rot
+        and.w   #15,d0
+        move.w  d0,d1
+        lsl.w   #4,d0
+        lsl.w   #3,d1
+        add.w   d1,d0                   /* 24 * group */
+        add.w   #VRAM_SCB2+1,d0
+        move.w  #1,REG_VRAMMOD
+        move.w  d0,REG_VRAMADDR
+        moveq   #23,d0
+1:      move.w  #SCB2_SHRINK,REG_VRAMRW
+        nop
+        dbra    d0,1b
         move.w  rt_backdrop,PALETTES+255*32+30
         tst.b   rt_diag_on              /* diagnostic overlay: white text */
         beq.s   1f

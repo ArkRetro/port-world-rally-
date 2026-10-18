@@ -62,6 +62,7 @@
         .equ    rt_cl_more,     RT_VARS+0x33D   /* .b some were left for the next frame */
         .equ    CL_BUDGET,      5               /* about 2.3 lines of VBlank each: a whole-screen redraw spreads
                                                    over a few frames instead of writing into the visible lines */
+        .equ    rt_scb2_rot,    RT_VARS+0x363   /* .b video_vblank: next group of 24 sprites whose SCB2 shrink is rewritten */
         .equ    rt_backdrop,    RT_VARS+0x332   /* .w Neo Geo backdrop colour for the next VBlank (colour 0 of the central layer-1 cell) */
         .equ    rt_dbg,         RT_VARS+0x340   /* 8 words: raster counter (REG_LSPCMODE) at frame_hook milestones (profiling) */
 * presentation queue: frame_hook seals each frame it prepares (end of its VRAM commands in the ring, the
