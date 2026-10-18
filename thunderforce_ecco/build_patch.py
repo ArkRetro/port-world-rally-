@@ -1,8 +1,10 @@
 """Lightening Force (USA): replace the player ship with Ecco's dolphin, demo mode only.
 
-Usage: python3 build_patch.py <tf4.bin> <ecco frames dir | frame png> <out.bin> [out.ips] [--everywhere] [--intro DIR]
+Usage: python3 build_patch.py <tf4.bin> <ecco frames dir | frame png> <out.bin> [out.ips] [--everywhere] [--intro DIR] [--pixels]
 --everywhere: use the dolphin in the whole game, not only the first demo.
---intro DIR: play the transformation intro (intro-transformacion folder) before the game.
+--pixels: the SEGA logo at power-on reads PIXELS (same style and animation).
+--intro DIR: when the game's intro shows the Rynex, play the human-to-dolphin transformation
+  (intro-transformacion folder) over it; the game waits and the music keeps playing.
 - Ship tiles: ROM archive 0x90000 entry 3, unpacked to RAM FF0800; bytes 0x000-0x6FF
   (FF0800-FF0EFF) are the 7 ship frames (4x2 tiles each, full up to full down),
   DMA'd to VRAM tiles 0x440-0x477.
@@ -18,6 +20,8 @@ import os
 import subprocess
 import sys
 import tempfile
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image
 
 HOOK = 0xB72
@@ -105,6 +109,8 @@ def routine(data_addr, everywhere=False):
     return bytes(c)
 
 INTRO = 0x101000
+INTRO_HOOK = 0xC572  # intro frame loop: move.w #$8144,$C00004 (display on, after the SAT DMA)
+LOGO = 0x1F0000    # PIXELS logo stream; archive 0x90000 entry 0 is the SEGA logo
 FACE_TICKS = 60   # close-up of the face shown before the bust
 
 def intro_steps(intro_dir):
@@ -115,48 +121,53 @@ def intro_steps(intro_dir):
     steps += [(st['tiles_de'], 20, 20, pal(st['fotograma']), st['ticks_60hz']) for st in seq]
     return steps
 
-def build_intro(intro_dir, orig_reset):
+def sprite_set(raw, n):
+    """n x n tiles (row order) -> 2x2 sprites: (tile data, [(y, x, first tile)]), empty sprites dropped."""
+    t = lambda r, c: raw[(r*n + c)*32:(r*n + c + 1)*32]
+    ox, oy = X0 + (160 - n*8) // 2, Y0 + (160 - n*8) // 2   # centre in the 160x160 picture
+    data, sprites = b'', []
+    for r in range(0, n, 2):
+        for c in range(0, n, 2):
+            cells = [t(r, c), t(r+1, c), t(r, c+1), t(r+1, c+1)]   # sprite tiles go column by column
+            if all(x == bytes(32) for x in cells):
+                continue
+            sprites.append((oy + r*8, ox + c*8, len(data) // 32))
+            data += b''.join(cells)
+    return data, sprites
+
+X0, Y0 = 128 + 80, 128 + 32
+
+def build_intro(intro_dir):
     """Assemble intro.s plus its data at INTRO; needs binutils-m68k-linux-gnu."""
     here = os.path.dirname(os.path.abspath(__file__))
     with tempfile.TemporaryDirectory() as tmp:
         lines = ['        .section .rodata', '        .globl intro_steps', '        .even']
-        sets = {}
-        recs = []
+        sets, recs = [], []
         for k, (name, cols, rows, palette, ticks) in enumerate(intro_steps(intro_dir)):
-            if name not in sets:                       # dedupe tiles; map 0 = empty tile
+            if name not in sets:
                 raw = open(os.path.join(intro_dir, 'tiles', name + '.bin'), 'rb').read()
-                uniq, cells = [], []
-                for i in range(cols * rows):
-                    t = raw[i*32:(i+1)*32]
-                    if t == bytes(32):
-                        cells.append(0); continue
-                    if t not in uniq:
-                        uniq.append(t)
-                    cells.append(uniq.index(t) + 1)
-                open(os.path.join(tmp, name + '.til'), 'wb').write(b''.join(uniq))
-                open(os.path.join(tmp, name + '.map'), 'wb').write(b''.join(c.to_bytes(2, 'big') for c in cells))
-                sets[name] = len(uniq)
+                data, sprites = sprite_set(raw, cols)
+                assert len(data) // 32 <= 232 and len(sprites) <= 80
+                body = (len(data) // 32).to_bytes(2, 'big') + len(sprites).to_bytes(2, 'big') + data
+                body += b''.join(v.to_bytes(2, 'big') for s in sprites for v in s)
+                open(os.path.join(tmp, name + '.set'), 'wb').write(body)
+                sets.append(name)
             open(os.path.join(tmp, 'pal%d.bin' % k), 'wb').write(palette)
-            nt = 0xC000 + (((28 - rows) // 2) * 64 + (40 - cols) // 2) * 2
-            recs.append('        .long t_%s\n        .word %d\n        .long m_%s\n        .word %d, %d\n'
-                        '        .long p_%d\n        .word %d, 0x%04X' % (name, sets[name], name, cols, rows, k, ticks, nt))
+            recs.append('        .long s_%s, p_%d\n        .word %d' % (name, k, ticks))
         lines.append('intro_steps:')
         lines += recs + ['        .long 0']
-        for name in sets:
-            lines += ['t_%s: .incbin "%s.til"' % (name, name), 'm_%s: .incbin "%s.map"' % (name, name)]
-        for k in range(len(recs)):
-            lines.append('p_%d: .incbin "pal%d.bin"' % (k, k))
+        lines += ['s_%s: .incbin "%s.set"' % (name, name) for name in sets]
+        lines += ['p_%d: .incbin "pal%d.bin"' % (k, k) for k in range(len(recs))]
         open(os.path.join(tmp, 'intro_data.s'), 'w').write('\n'.join(lines) + '\n')
         asm = ['m68k-linux-gnu-as', '-m68000', '--register-prefix-optional', '-I', tmp]
-        subprocess.run(asm + ['--defsym', 'ORIG_RESET=0x%X' % orig_reset,
-                              '-o', os.path.join(tmp, 'intro.o'), os.path.join(here, 'intro.s')], check=True)
+        subprocess.run(asm + ['-o', os.path.join(tmp, 'intro.o'), os.path.join(here, 'intro.s')], check=True)
         subprocess.run(asm + ['-o', os.path.join(tmp, 'data.o'), os.path.join(tmp, 'intro_data.s')], check=True)
-        subprocess.run(['m68k-linux-gnu-ld', '-Ttext=0x%X' % INTRO, '-e', 'intro', '--oformat', 'binary',
+        subprocess.run(['m68k-linux-gnu-ld', '-Ttext=0x%X' % INTRO, '-e', 'intro_hook', '--oformat', 'binary',
                         '-o', os.path.join(tmp, 'intro.bin'), os.path.join(tmp, 'intro.o'), os.path.join(tmp, 'data.o')],
                        check=True)
         return open(os.path.join(tmp, 'intro.bin'), 'rb').read()
 
-def main(rom_path, png, out_path, everywhere=False, intro_dir=None):
+def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False):
     rom = bytearray(open(rom_path, 'rb').read())
     assert len(rom) == 0x100000 and rom[HOOK:HOOK+6] == bytes.fromhex('41F900090000'), 'unexpected ROM'
     if os.path.isdir(png):                          # Ecco frames folder: one pose per ship frame
@@ -168,11 +179,19 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None):
     rom[NEW:NEW+len(code)] = code
     rom[NEW+0x100:NEW+0x100+len(data)] = data
     rom[HOOK:HOOK+6] = bytes.fromhex('4EB9') + NEW.to_bytes(4, 'big')  # jsr $100000.l
-    if intro_dir:                                   # reset vector -> intro -> game's reset code
-        intro = build_intro(intro_dir, int.from_bytes(rom[4:8], 'big'))
-        assert INTRO + len(intro) <= len(rom)
+    if intro_dir:                                   # intro frame loop: 'display on' -> jsr intro_hook
+        intro = build_intro(intro_dir)
+        assert INTRO + len(intro) <= LOGO
         rom[INTRO:INTRO+len(intro)] = intro
-        rom[4:8] = INTRO.to_bytes(4, 'big')
+        assert rom[INTRO_HOOK:INTRO_HOOK+8] == bytes.fromhex('33FC814400C00004')
+        rom[INTRO_HOOK:INTRO_HOOK+8] = bytes.fromhex('4EB9') + INTRO.to_bytes(4, 'big') + bytes.fromhex('4E71')
+    if pixels:                                      # SEGA logo -> PIXELS, same palette animation
+        import pixels_logo
+        stream = pixels_logo.literal_stream(pixels_logo.tiles(pixels_logo.logo()))
+        rom[LOGO:LOGO+len(stream)] = stream
+        rom[0x90002:0x90006] = (LOGO - 0x90000).to_bytes(4, 'big')
+        assert rom[0x8E4:0x8E8] == bytes.fromhex('00001111')
+        rom[0x8E4:0x924] = bytes(0x40)                 # blank the 'TM' sprite (2 tiles, raw)
     rom[0x1A4:0x1A8] = (len(rom) - 1).to_bytes(4, 'big')               # ROM end
     # The game's own check (ROM 0x34C) sums words from 0x200 up to (ROM end & ~1), last word excluded
     cs = sum(int.from_bytes(rom[i:i+2], 'big') for i in range(0x200, (len(rom) - 1) & ~1, 2)) & 0xFFFF
@@ -205,8 +224,8 @@ if __name__ == '__main__':
     intro_dir = None
     if '--intro' in argv:
         i = argv.index('--intro'); intro_dir = argv[i + 1]; del argv[i:i + 2]
-    args = [a for a in argv if a != '--everywhere']
-    patched = main(*args[:3], everywhere='--everywhere' in argv, intro_dir=intro_dir)
+    args = [a for a in argv if a not in ('--everywhere', '--pixels')]
+    patched = main(*args[:3], everywhere='--everywhere' in argv, intro_dir=intro_dir, pixels='--pixels' in argv)
     if len(args) > 3:
         # IPS only describes changes, so the file must grow: the 2 MB tail is written as 0xFF runs
         open(args[3], 'wb').write(make_ips(open(args[0], 'rb').read(), patched))
