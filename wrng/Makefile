@@ -91,8 +91,10 @@ neo: game
 
 # ---- distributable kit: the port without any arcade data + the tool that rebuilds wrng.neo from the user's ROMs ----
 kit: neo
+	python3 -I tools/mkrom.py sizes $(BUILD)/wr_cpu.bin analysis/absrefs.csv $(BUILD)/stub_sizes.json
 	python3 -I tools/mkkit.py $(BUILD) $(BUILD)/release/wrng-kit.zip
 	cp tools/wrng_build.py $(BUILD)/release/
+	python3 -I tools/mkweb.py $(BUILD)/release/wrng-kit.zip tools/wrng_build.py $(BUILD)/release/wrng.html
 
 clean:
 	rm -rf $(BUILD)

@@ -18,6 +18,7 @@ What it does (see analysis/INFORME_68K.md for the addresses):
      anti-tamper constant.
 """
 import csv
+import json
 import os
 import struct
 import sys
@@ -222,7 +223,16 @@ def load_syms(path):
     return syms
 
 
-def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
+def stub_sizes(rom, refs, sizes_path=None):
+    """pc -> size of the instruction at each stub site."""
+    if sizes_path:
+        return {int(k, 16): v for k, v in json.load(open(sizes_path)).items()}
+    from capstone import Cs, CS_ARCH_M68K, CS_MODE_M68K_000
+    md = Cs(CS_ARCH_M68K, CS_MODE_M68K_000)
+    return {pc: decode_site(md, rom, pc).size for pc in stub_sites(rom, refs)}
+
+
+def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False, sizes_path=None):
     orig = open(rom_path, 'rb').read()
     assert len(orig) == 0x100000
     rom = bytearray(orig)
@@ -280,12 +290,8 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
             raise SystemExit('unexpected operand kind %s at %s' % (kind, r['pc']))
     print('relocated operands:', nrel)
 
-    # 4. oracle stubs
-    from capstone import Cs, CS_ARCH_M68K, CS_MODE_M68K_000
-    md = Cs(CS_ARCH_M68K, CS_MODE_M68K_000)
-    for pc in stub_sites(orig, refs):
-        insn = decode_site(md, orig, pc)
-        size = insn.size
+    # 4. oracle stubs (instruction sizes from capstone, or from the table the kit carries: stub_sizes.json)
+    for pc, size in stub_sizes(orig, refs, sizes_path).items():
         if size >= 6:
             addr = syms['stub_%06X' % pc]
             patch = bytes.fromhex('4EB9') + struct.pack('>I', addr) + b'\x4E\x71' * ((size - 6) // 2)
@@ -444,7 +450,12 @@ def main():
         rom = open(a[1], 'rb').read()
         gen_stubs(rom, load_absrefs(a[2]), a[3])
     elif a and a[0] == 'build':
-        build(a[1], a[2], a[3], a[4], a[5], p1only='--p1only' in a)
+        build(a[1], a[2], a[3], a[4], a[5], p1only='--p1only' in a,
+              sizes_path=a[a.index('--sizes') + 1] if '--sizes' in a else None)
+    elif a and a[0] == 'sizes':
+        rom = open(a[1], 'rb').read()
+        sizes = stub_sizes(rom, load_absrefs(a[2]))
+        open(a[3], 'w').write(json.dumps({'%06X' % pc: n for pc, n in sorted(sizes.items())}))
     else:
         print(__doc__)
         sys.exit(1)

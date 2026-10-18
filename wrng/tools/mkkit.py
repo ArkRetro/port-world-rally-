@@ -74,6 +74,7 @@ def main(build, out):
         z.writestr('game.sym', rd('game.sym'))
         z.writestr('wrng-m1.m1', bytes(m1))
         z.writestr('wrng-s1.s1', rd('wrng-s1.s1'))
+        z.writestr('stub_sizes.json', rd('stub_sizes.json'))
         for dst, src in SCRIPTS.items():
             z.write(os.path.join(root, src), dst)
     print('wrote %s (%d regions rebuilt from the user ROMs)' % (out, len(regions)))

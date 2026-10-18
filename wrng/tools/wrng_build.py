@@ -88,6 +88,18 @@ def find_roms(paths):
 
 
 def run(tool, *args):
+    if sys.platform == 'emscripten':        # in the browser (wrng.html, Pyodide): no processes, run it in place
+        import runpy
+        saved = sys.argv, list(sys.path)
+        sys.argv = [tool] + [str(a) for a in args]
+        try:
+            runpy.run_path(tool, run_name='__main__')
+        except SystemExit as e:
+            if e.code not in (None, 0):
+                sys.exit('error in %s: %s' % (os.path.basename(tool), e.code))
+        finally:
+            sys.argv, sys.path[:] = saved
+        return
     r = subprocess.run([sys.executable, '-I', tool] + [str(a) for a in args], capture_output=True, text=True)
     if r.returncode:
         sys.exit('error in %s:\n%s%s' % (os.path.basename(tool), r.stdout, r.stderr))
@@ -146,7 +158,7 @@ def main():
 
         print('program...')
         run(T('tools', 'mkrom.py'), 'build', T('wr_cpu.bin'), T('analysis', 'absrefs.csv'), T('game.bin'),
-            T('game.sym'), T('wrng-p1.p1'))
+            T('game.sym'), T('wrng-p1.p1'), '--sizes', T('stub_sizes.json'))
 
         # MAME on-disk convention (P ROM word-swapped), then the .neo
         stage = T('roms', 'wrng')

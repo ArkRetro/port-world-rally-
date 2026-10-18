@@ -33,6 +33,7 @@ Encoding
   increments -1,-1,-1,-1,2,5,7,9).
 """
 import json
+import math
 import os
 import struct
 import sys
@@ -131,33 +132,33 @@ class OkiRom:
 # ---------------------------------------------------------------- resampling
 
 def resample(pcm, src_rate, dst_rate, method="cubic"):
-    """Resample a list/array of samples with linear or Catmull-Rom cubic interpolation."""
+    """Resample a list of samples with linear or Catmull-Rom cubic interpolation.  Plain Python on purpose: the
+    result must not depend on numpy being there (tools/wrng_build.py runs this in the browser too)."""
     n = len(pcm)
     if n == 0:
         return []
     ratio = src_rate / dst_rate
     m = int(n / ratio)
-    if np is not None:
-        x = np.arange(m, dtype=np.float64) * ratio
-        src = np.asarray(pcm, dtype=np.float64)
-        if method == "linear":
-            return np.interp(x, np.arange(n), src)
-        i = np.floor(x).astype(np.int64)
-        t = x - i
-        pad = np.concatenate(([src[0]], src, [src[-1], src[-1]]))
-        p0, p1, p2, p3 = pad[i], pad[i + 1], pad[i + 2], pad[i + 3]
-        t2 = t * t
-        t3 = t2 * t
-        y = 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
-        return y
     out = []
+    if method == "linear":
+        for k in range(m):
+            x = k * ratio
+            i = int(x)
+            t = x - i
+            a = pcm[i]
+            b = pcm[i + 1] if i + 1 < n else pcm[-1]
+            out.append(a + (b - a) * t)
+        return out
+    pad = [float(pcm[0])] + [float(v) for v in pcm] + [float(pcm[-1]), float(pcm[-1])]
     for k in range(m):
         x = k * ratio
         i = int(x)
         t = x - i
-        a = pcm[i]
-        b = pcm[i + 1] if i + 1 < n else pcm[-1]
-        out.append(a + (b - a) * t)
+        p0, p1, p2, p3 = pad[i], pad[i + 1], pad[i + 2], pad[i + 3]
+        t2 = t * t
+        t3 = t2 * t
+        out.append(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2
+                          + (-p0 + 3 * p1 - 3 * p2 + p3) * t3))
     return out
 
 
@@ -427,7 +428,7 @@ def main(argv):
         res16 = resample(pcm16, OKI_RATE, ADPCMA_RATE, interp)
         # +8.3 dB with a soft limiter (tanh; the arkretro port uses +3.5 dB): the ADPCM-A mix is quieter than the
         # OKI's at the same level and the arcade samples rarely reach full scale
-        res16 = [32767.0 * float(np.tanh(s * 2.6 / 32767.0)) if np is not None else float(s) for s in res16]
+        res16 = [32767.0 * math.tanh(s * 2.6 / 32767.0) for s in res16]
         nsamp_ym = len(res16)
         # pad with silence to a whole number of 256-byte blocks (512 samples)
         padded = res16 + [0.0] * ((-nsamp_ym) % (BLOCK * 2))

@@ -64,7 +64,16 @@ El `.neo` se copia tal cual a la tarjeta del NeoSD. Para Darksoft/BackBit puede 
 
 ### Kit para distribuir (sin datos del arcade)
 
-`make kit ARCADE=...` deja en `build/release/` el kit `wrng-kit.zip` y la herramienta `wrng_build.py`. El kit
+`make kit ARCADE=...` deja en `build/release/` el kit `wrng-kit.zip`, la herramienta `wrng_build.py` y
+`wrng.html`.
+
+**Para quien no use Python:** `wrng.html` es una página web con el kit y la herramienta dentro. Basta con
+abrirla en el navegador, soltar `wrally.zip` (y `wrallyd.zip` si se tiene aparte) y pulsar «Generar wrng.neo».
+Python se ejecuta en el propio navegador con Pyodide, que se descarga una vez de cdn.jsdelivr.net (unos
+15 MB). Las ROMs no salen del ordenador. Tarda menos de un minuto y el resultado es idéntico al de la línea de
+comandos.
+
+**Línea de comandos:** El kit
 lleva sólo el trabajo del port: el binario del runtime y el driver Z80 con a cero todas las zonas que salen de
 las ROMs del arcade, la fuente del fix, los scripts de conversión y un manifiesto con el SHA-1 que cada zona
 debe tener al reconstruirla. El usuario pone su propio set de MAME y obtiene el `.neo`:
