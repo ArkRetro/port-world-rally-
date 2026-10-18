@@ -1,7 +1,8 @@
 """Lightening Force (USA): replace the player ship with Ecco's dolphin, demo mode only.
 
-Usage: python3 build_patch.py <tf4.bin> <ecco frames dir | frame png> <out.bin> [out.ips] [--everywhere] [--intro DIR] [--pixels]
+Usage: python3 build_patch.py <tf4.bin> <ecco frames dir | frame png> <out.bin> [out.ips] [--everywhere] [--intro DIR] [--pixels] [--bosses DIR]
 --everywhere: use the dolphin in the whole game, not only the first demo.
+--bosses DIR: the final bosses of stages 1 and 2 become the two characters of DIR (jefes-finales).
 --pixels: the SEGA logo at power-on reads PIXELS (same style and animation).
 --intro DIR: when the game's intro shows the Rynex, play the human-to-dolphin transformation
   (intro-transformacion folder) over it; the game waits and the music keeps playing.
@@ -17,6 +18,7 @@ Usage: python3 build_patch.py <tf4.bin> <ecco frames dir | frame png> <out.bin> 
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -117,6 +119,11 @@ INTRO_HOOK = 0xC572  # intro frame loop: move.w #$8144,$C00004 (display on, afte
 LOGO = 0x1F0000    # PIXELS logo stream; archive 0x90000 entry 0 is the SEGA logo
 ROLL_DATA = 0x1F1000   # archive 0x19000 entry 2 (intro: Rynex roll), as a literal stream
 BRAND_DATA = 0x1F5000  # archive 0x19000 entry 3 (intro: Technosoft logo)
+BOSS_CODE = 0x1A0000   # bosses.s + data
+BOSS_BANKS = [0x1B0000, 0x1B8000, 0x1D0000, 0x1D8000]   # boss graphics banks of stages 0-3
+BOSS_DMA = 0x1C0000    # Bart's frames, copied to VRAM by DMA (within one 128 KB block)
+BOSS_VBLANK = 0x1DBE   # per-frame DMA code: move.l #$7FCE00,d0 (SAT source) -> jsr boss_vblank
+BOSS_HOOK = 0x7190     # end of the sprite-list builder: clr.b -5(a0); rts
 FACE_TICKS = 60   # close-up of the face shown before the bust
 
 def intro_steps(intro_dir):
@@ -173,7 +180,41 @@ def build_intro(intro_dir):
                        check=True)
         return open(os.path.join(tmp, 'intro.bin'), 'rb').read()
 
-def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False):
+def build_bosses(rom, boss_dir):
+    """New final bosses of stages 0 to 3 (bosses.py, bosses.s)."""
+    import bosses
+    here = os.path.dirname(os.path.abspath(__file__))
+    lines = ['        .section .rodata', '        .globl boss0, boss1, boss2, boss3', '        .even']
+    for stage in range(4):
+        stream, normal, data, dma, pa = bosses.build(rom, stage, boss_dir, BOSS_DMA)
+        at = BOSS_BANKS[stage]
+        assert len(stream) <= 0x8000
+        rom[at:at+len(stream)] = stream
+        p = bosses.BANK_ARCHIVE + 2 + 4*stage
+        rom[p:p+4] = (at - bosses.BANK_ARCHIVE).to_bytes(4, 'big')
+        rom[pa:pa+32] = b''.join(c.to_bytes(2, 'big') for c in normal)
+        if dma:
+            assert BOSS_DMA + len(dma) <= BOSS_BANKS[2]
+            rom[BOSS_DMA:BOSS_DMA+len(dma)] = dma
+        lines += data
+    with tempfile.TemporaryDirectory() as tmp:
+        open(os.path.join(tmp, 'bosses_data.s'), 'w').write('\n'.join(lines) + '\n')
+        asm = ['m68k-linux-gnu-as', '-m68000', '--register-prefix-optional']
+        subprocess.run(asm + ['-o', os.path.join(tmp, 'b.o'), os.path.join(here, 'bosses.s')], check=True)
+        subprocess.run(asm + ['-o', os.path.join(tmp, 'd.o'), os.path.join(tmp, 'bosses_data.s')], check=True)
+        subprocess.run(['m68k-linux-gnu-ld', '-Ttext=0x%X' % BOSS_CODE, '-e', 'boss_hook', '--oformat', 'binary',
+                        '-Map', os.path.join(tmp, 'b.map'),
+                        '-o', os.path.join(tmp, 'b.bin'), os.path.join(tmp, 'b.o'), os.path.join(tmp, 'd.o')], check=True)
+        code = open(os.path.join(tmp, 'b.bin'), 'rb').read()
+        vblank = int(re.search(r'0x0*([0-9a-f]+)\s+boss_vblank', open(os.path.join(tmp, 'b.map')).read()).group(1), 16)
+    assert BOSS_CODE + len(code) <= BOSS_BANKS[0]
+    rom[BOSS_CODE:BOSS_CODE+len(code)] = code
+    assert rom[BOSS_HOOK:BOSS_HOOK+6] == bytes.fromhex('4228FFFB4E75')
+    rom[BOSS_HOOK:BOSS_HOOK+6] = bytes.fromhex('4EF9') + BOSS_CODE.to_bytes(4, 'big')   # jmp boss_hook
+    assert rom[BOSS_VBLANK:BOSS_VBLANK+6] == bytes.fromhex('203C007FCE00')
+    rom[BOSS_VBLANK:BOSS_VBLANK+6] = bytes.fromhex('4EB9') + vblank.to_bytes(4, 'big')  # jsr boss_vblank
+
+def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False, boss_dir=None):
     rom = bytearray(open(rom_path, 'rb').read())
     assert len(rom) == 0x100000 and rom[HOOK:HOOK+6] == bytes.fromhex('41F900090000'), 'unexpected ROM'
     if os.path.isdir(png):                          # Ecco frames folder: one pose per ship frame
@@ -187,7 +228,7 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False
     rom[HOOK:HOOK+6] = bytes.fromhex('4EB9') + NEW.to_bytes(4, 'big')  # jsr $100000.l
     if intro_dir:                                   # intro frame loop: 'display on' -> jsr intro_hook
         intro = build_intro(intro_dir)
-        assert INTRO + len(intro) <= LOGO
+        assert INTRO + len(intro) <= BOSS_CODE
         rom[INTRO:INTRO+len(intro)] = intro
         assert rom[INTRO_HOOK:INTRO_HOOK+8] == bytes.fromhex('33FC814400C00004')
         rom[INTRO_HOOK:INTRO_HOOK+8] = bytes.fromhex('4EB9') + INTRO.to_bytes(4, 'big') + bytes.fromhex('4E71')
@@ -201,6 +242,8 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False
             rom[at:at+len(stream)] = stream
             p = intro_gfx.ARCHIVE + 2 + idx*4
             rom[p:p+4] = (at - intro_gfx.ARCHIVE).to_bytes(4, 'big')
+    if boss_dir:
+        build_bosses(rom, boss_dir)
     if pixels:                                      # SEGA logo -> PIXELS, same palette animation
         import pixels_logo
         stream = pixels_logo.literal_stream(pixels_logo.tiles(pixels_logo.logo()))
@@ -208,6 +251,11 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False
         rom[0x90002:0x90006] = (LOGO - 0x90000).to_bytes(4, 'big')
         assert rom[0x8E4:0x8E8] == bytes.fromhex('00001111')
         rom[0x8E4:0x924] = bytes(0x40)                 # blank the 'TM' sprite (2 tiles, raw)
+    # Copy protection (ROM 0x5CAE, run between stages): the longs at 0x200-0xAFFF summed and
+    # xored with 'DEMO' must match 0x15FF8, or the game stops. The hooks at 0x7190 and the
+    # SEGA logo change are in that range.
+    demo = sum(int.from_bytes(rom[i:i+4], 'big') for i in range(0x200, 0xB000, 4)) & 0xFFFFFFFF
+    rom[0x15FF8:0x15FFC] = (demo ^ 0x44454D4F).to_bytes(4, 'big')
     rom[0x1A4:0x1A8] = (len(rom) - 1).to_bytes(4, 'big')               # ROM end
     # The game's own check (ROM 0x34C) sums words from 0x200 up to (ROM end & ~1), last word excluded
     cs = sum(int.from_bytes(rom[i:i+2], 'big') for i in range(0x200, (len(rom) - 1) & ~1, 2)) & 0xFFFF
@@ -240,8 +288,12 @@ if __name__ == '__main__':
     intro_dir = None
     if '--intro' in argv:
         i = argv.index('--intro'); intro_dir = argv[i + 1]; del argv[i:i + 2]
+    boss_dir = None
+    if '--bosses' in argv:
+        i = argv.index('--bosses'); boss_dir = argv[i + 1]; del argv[i:i + 2]
     args = [a for a in argv if a not in ('--everywhere', '--pixels')]
-    patched = main(*args[:3], everywhere='--everywhere' in argv, intro_dir=intro_dir, pixels='--pixels' in argv)
+    patched = main(*args[:3], everywhere='--everywhere' in argv, intro_dir=intro_dir, pixels='--pixels' in argv,
+                   boss_dir=boss_dir)
     if len(args) > 3:
         # IPS only describes changes, so the file must grow: the 2 MB tail is written as 0xFF runs
         open(args[3], 'wb').write(make_ips(open(args[0], 'rb').read(), patched))

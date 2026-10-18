@@ -7,7 +7,7 @@ No se incluyen ROMs.
 ```
 python3 -I build_patch.py "Lightening Force (USA).bin" frame_000.png tf4_ecco.bin tf4_ecco.ips
 ```
-Opciones: `--everywhere`, `--pixels`, `--intro DIR` (ver abajo).
+Opciones: `--everywhere`, `--pixels`, `--intro DIR`, `--bosses DIR` (ver abajo).
 Con `--everywhere` el delfín sale en todo el juego (demos y partida normal), no solo en el primer demo.
 
 El segundo argumento es la carpeta `frames/` del delfín extraído de Ecco (fotogramas mirando a la derecha). Se usa una pose para cada fotograma de la nave (`FRAMES` en el script: 5, 4, 1, 0, 3, 27, 24, de morro arriba a morro abajo), reducida para caber en 32×16, ampliada un 3% (`SCALE`, lo que sobra se recorta) y ajustada a la paleta de la nave. Después se le dibujan dos cañones pequeños hacia delante, uno en el lomo y otro en la tripa (`add_cannons`). Si se pasa un solo PNG, se usa para los 7 fotogramas.
@@ -42,3 +42,26 @@ Con `--intro DIR` (la carpeta `intro-transformacion`: `secuencia.json`, `tiles/`
   - Cada entrada se guarda sin comprimir (flujo literal) en `0x1F1000` y `0x1F5000`, y la tabla del archivo apunta allí.
 - La transformación se pinta con sprites de 2×2 tiles encima del fondo de estrellas, con la paleta 3, que se guarda y se restaura al final. Los tiles van a dos bancos de VRAM libres durante la intro (tiles 792 y 1026), así el paso siguiente se carga sin que se vea a medias.
 - El script quita los bloques vacíos, genera la tabla de pasos y ensambla con `m68k-linux-gnu-as`/`ld` (paquete `binutils-m68k-linux-gnu`).
+
+## Jefes finales nuevos
+Con `--bosses DIR` (la carpeta `jefes-finales`: `jefes.json`, `jefeN/tiles`, `jefeN/paletas`), los jefes de las cuatro primeras fases son los personajes nuevos:
+
+| Fase | Jefe original | Personaje | Línea de paleta |
+|---|---|---|---|
+| 0 Strite | caballito de mar | hombre de gafas (`jefe1`) | 1 |
+| 1 Ruin | máquina de pinzas | Bruno con la taza (`jefe2`) | 1 |
+| 2 Air Raid | nave dorada | Bart bailando (`jefe3`) | 1 |
+| 3 Daser | criatura de brazos de bolas | Mickey aprendiz de brujo (`jefe4`) | 3 |
+
+El jefe original sigue moviéndose, recibiendo disparos y atacando igual; solo cambia lo que se ve (`bosses.s`, configuración en `bosses.py`):
+- `0x007190` (fin del constructor de la lista de sprites, `clr.b -5(a0); rts`) pasa a ser `jmp $1A0000`. Durante el combate (objetos con rutina `$30`, banco del jefe ya cargado) la rutina quita de la lista las piezas del jefe, dibuja el personaje anclado a una pieza (la cabeza de Strite, el centro de Ruin, el casco de Air Raid, el cuerpo de Daser) y cambia sus disparos por el proyectil del personaje (gafas, taza, disco de vinilo, corchea), que gira.
+- Pose y paleta según lo que hace el jefe: reposo (con parpadeos, brillos, el baile de Bart), ataque mientras hay disparos suyos en pantalla, destello al bajar la energía y derrota cuando se queda sin energía o se rompe; después se hunde poco a poco mientras explota.
+- Los gráficos van en el banco de cada fase (archivo `0x94000`, comprimido "nibble RLE", tiles de VRAM 0x000–0x1FF). Se rehace el banco: las piezas del jefe se cambian por el personaje, los efectos se conservan y lo que queda en pantalla con la línea de paleta del personaje (la cola de Strite, los brazos de Daser) se recolorea. Los bancos nuevos van en `0x1B0000`, `0x1B8000`, `0x1D0000` y `0x1D8000`.
+- Bart tiene 10 dibujos de baile que no caben en un banco: están sin comprimir en `0x1C0000` y el que toca se copia por DMA a uno de dos huecos de VRAM (tiles 0x018 y 0x0AB), en dos mitades en dos fotogramas, y se enseña cuando está entero. La copia la hace el código del juego que manda la lista de sprites cada fotograma: en `0x001DBE`, `move.l #$7FCE00,d0` pasa a ser `jsr boss_vblank`.
+- En Mickey, «respira» redibuja todo el cuerpo y «derrota» tiene otra disposición: no caben junto a la pose base (196 tiles), así que la derrota es la pose base con la paleta de derrota.
+- RAM usada: `$FFF0C2`–`$FFF0E7` (sin usar por el juego).
+
+**Protección anticopia**: entre fases (`0x005CAE`) el juego suma los longs de `0x200` a `0xAFFF`, hace XOR con `'DEMO'` y lo compara con `0x15FF8`; si no coincide se para. Los cambios en esa zona (el del delfín en `0xB72`, el logo PIXELS, los jefes) lo activaban, así que el script recalcula ese valor.
+
+Comprobado en Genesis Plus GX con los estados de `jefes-finales/originales/estados`: los cuatro jefes aparecen con la carga de banco del propio juego, atacan, mueren y se pasa a la fase siguiente.
+
