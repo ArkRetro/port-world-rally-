@@ -7,7 +7,7 @@ No se incluyen ROMs.
 ```
 python3 -I build_patch.py "Lightening Force (USA).bin" frame_000.png tf4_ecco.bin tf4_ecco.ips
 ```
-Opciones: `--everywhere`, `--pixels`, `--intro DIR`, `--bosses DIR` (ver abajo).
+Opciones: `--everywhere`, `--pixels`, `--intro DIR`, `--bosses DIR`, `--invincible` (ver abajo).
 Con `--everywhere` el delfín sale en todo el juego (demos y partida normal), no solo en el primer demo.
 
 El segundo argumento es la carpeta `frames/` del delfín extraído de Ecco (fotogramas mirando a la derecha). Se usa una pose para cada fotograma de la nave (`FRAMES` en el script: 5, 4, 1, 0, 3, 27, 24, de morro arriba a morro abajo), reducida para caber en 32×16, ampliada un 3% (`SCALE`, lo que sobra se recorta) y ajustada a la paleta de la nave. Después se le dibujan dos cañones pequeños hacia delante, uno en el lomo y otro en la tripa (`add_cannons`). Si se pasa un solo PNG, se usa para los 7 fotogramas.
@@ -64,4 +64,7 @@ El jefe original sigue moviéndose, recibiendo disparos y atacando igual; solo c
 **Protección anticopia**: entre fases (`0x005CAE`) el juego suma los longs de `0x200` a `0xAFFF`, hace XOR con `'DEMO'` y lo compara con `0x15FF8`; si no coincide se para. Los cambios en esa zona (el del delfín en `0xB72`, el logo PIXELS, los jefes) lo activaban, así que el script recalcula ese valor.
 
 Comprobado en Genesis Plus GX con los estados de `jefes-finales/originales/estados`: los cuatro jefes aparecen con la carga de banco del propio juego, atacan, mueren y se pasa a la fase siguiente.
+
+## Invulnerable
+Con `--invincible` la nave no muere nunca: ni con disparos, ni con enemigos, ni con el escenario. El juego se salta los choques del jugador mientras corre su temporizador de invulnerabilidad (`$FF8014`, el de después de reaparecer); los dos `tst.w $14(a6)` de la rutina de choques (`0x006302` y `0x006426`) pasan a ser saltos fijos. Los ítems de arma se siguen cogiendo. Las ROMs entregadas llevan esta opción.
 

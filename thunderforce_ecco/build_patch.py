@@ -214,7 +214,8 @@ def build_bosses(rom, boss_dir):
     assert rom[BOSS_VBLANK:BOSS_VBLANK+6] == bytes.fromhex('203C007FCE00')
     rom[BOSS_VBLANK:BOSS_VBLANK+6] = bytes.fromhex('4EB9') + vblank.to_bytes(4, 'big')  # jsr boss_vblank
 
-def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False, boss_dir=None):
+def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False, boss_dir=None,
+         invincible=False):
     rom = bytearray(open(rom_path, 'rb').read())
     assert len(rom) == 0x100000 and rom[HOOK:HOOK+6] == bytes.fromhex('41F900090000'), 'unexpected ROM'
     if os.path.isdir(png):                          # Ecco frames folder: one pose per ship frame
@@ -251,6 +252,13 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False
         rom[0x90002:0x90006] = (LOGO - 0x90000).to_bytes(4, 'big')
         assert rom[0x8E4:0x8E8] == bytes.fromhex('00001111')
         rom[0x8E4:0x924] = bytes(0x40)                 # blank the 'TM' sprite (2 tiles, raw)
+    if invincible:
+        # Player collisions (ROM 0x62FE) are skipped while the invulnerability timer $FF8014 runs:
+        # skip them always. Power-up pickups are checked before the second test and still work.
+        assert rom[0x6302:0x630A] == bytes.fromhex('4A6E0014660000C2')   # tst.w $14(a6); bne.w $63CA
+        rom[0x6302:0x630A] = bytes.fromhex('600000C64E714E71')           # bra.w $63CA (scenery, shots)
+        assert rom[0x6426:0x642C] == bytes.fromhex('4A6E00146606')       # tst.w $14(a6); bne.b $6432
+        rom[0x6426:0x642C] = bytes.fromhex('600A4E714E71')               # bra.b $6432 (enemies)
     # Copy protection (ROM 0x5CAE, run between stages): the longs at 0x200-0xAFFF summed and
     # xored with 'DEMO' must match 0x15FF8, or the game stops. The hooks at 0x7190 and the
     # SEGA logo change are in that range.
@@ -291,9 +299,9 @@ if __name__ == '__main__':
     boss_dir = None
     if '--bosses' in argv:
         i = argv.index('--bosses'); boss_dir = argv[i + 1]; del argv[i:i + 2]
-    args = [a for a in argv if a not in ('--everywhere', '--pixels')]
+    args = [a for a in argv if a not in ('--everywhere', '--pixels', '--invincible')]
     patched = main(*args[:3], everywhere='--everywhere' in argv, intro_dir=intro_dir, pixels='--pixels' in argv,
-                   boss_dir=boss_dir)
+                   boss_dir=boss_dir, invincible='--invincible' in argv)
     if len(args) > 3:
         # IPS only describes changes, so the file must grow: the 2 MB tail is written as 0xFF runs
         open(args[3], 'wb').write(make_ips(open(args[0], 'rb').read(), patched))
