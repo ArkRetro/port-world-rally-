@@ -175,17 +175,23 @@ def preview(px, path, zoom=3):
     im.resize((W*zoom, H*zoom), Image.NEAREST).save(path)
 
 
-def install(rom, at, frames_dir):
-    """Write a copy of the archive header whose entry 4 is the new picture (uncompressed
-    stream right after it), and point every load of the archive at it."""
-    s = pixels_logo.literal_stream(tiles(build(rom, frames_dir)))
+def install(rom, at, frames_dir, more=None):
+    """Write a copy of the archive header whose entry 4 is the new picture, and the entries
+    in more ({index: data}) also replaced (uncompressed streams right after it), and point
+    every load of the archive at it."""
+    new = dict(more or {})
+    new[ENTRY] = tiles(build(rom, frames_dir))
     n = rom[ARCHIVE + 1]
     head = bytearray(rom[ARCHIVE:ARCHIVE + 2 + 4*n])
+    blob = bytearray()
     for i in range(n):
-        o = int.from_bytes(rom[ARCHIVE + 2 + 4*i:ARCHIVE + 6 + 4*i], 'big')
-        o = len(head) if i == ENTRY else ARCHIVE + o - at
+        if i in new:
+            o = len(head) + len(blob)
+            blob += pixels_logo.literal_stream(new[i])
+        else:
+            o = ARCHIVE + int.from_bytes(rom[ARCHIVE + 2 + 4*i:ARCHIVE + 6 + 4*i], 'big') - at
         head[2 + 4*i:6 + 4*i] = o.to_bytes(4, 'big', signed=True)
-    blob = bytes(head) + s
+    blob = bytes(head) + blob
     rom[at:at + len(blob)] = blob
     for r in REFS:
         assert rom[r:r + 6] == bytes.fromhex('41F90001C100'), hex(r)

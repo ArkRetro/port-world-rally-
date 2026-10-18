@@ -44,10 +44,13 @@ Con `--intro DIR` (la carpeta `intro-transformacion`: `secuencia.json`, `tiles/`
   - Salen de las entradas 0 y 1 del archivo `0x19000`: la entrada 0 tiene 256 bloques de 4×4 tiles y, en `+0x3058`, la tira de letras (8 bloques por cada columna de 32 píxeles) que el código de `0xCA4C` manda al plano A; la entrada 1 son los tiles (VRAM `0xA000`).
   - H, E, C, O, N y L son las letras originales píxel a píxel; P sale de la R, la i de la I con un punto, y la X y la S se dibujan con el mismo borde (7 colores hacia dentro).
   - La pantalla de título también usa esas entradas, así que no se tocan: la intro (`0x00C828`) lee una copia de la cabecera del archivo en `0x1F8000` cuyas entradas 0 y 1 son las nuevas, sin comprimir. Se respetan los tiles y el bloque vacío (0) que el juego usa fuera de las letras.
+- El logo LIGHTENING FORCE pasa a decir **HECHO CON AMOR** (`title_logo.py`) en toda su animación (se estira, sale con la estela de colores y se queda en el título con el cromado).
+  - Archivo `0x1C100`: entradas 0 y 2 (mapa en bloques de 4×4 y 128 tiles del logo, plano A) y entradas 1 y 3 (la estela, plano B, 512 tiles).
+  - H, E, N, R y C son las letras originales; A, O y M se hacen con los palos de la T unidos por barras. La estela se vuelve a calcular con el texto nuevo: cada capa es el logo ampliado desde el punto de fuga, con el color 15−k.
 - En la imagen del título, la nave pasa a ser **Ecco saltando** (`title_dolphin.py`).
   - La imagen es la entrada 4 del archivo `0x1C100`: 1120 tiles (40×28) en el plano B con la paleta 3, cargada en `0x00CFDC` (y en `0x001122` y `0x00F898`).
   - Se borra la nave (los píxeles no negros unidos a ella, con sus huecos) y se pinta el fotograma 23 de Ecco ampliado 4 veces: el contorno con EPX y el sombreado suavizado y pasado a la escala de azules de la imagen con un tramado ordenado. La luna, los rayos y las estrellas se quedan.
-  - Se guarda sin comprimir en `0x140000`, con una copia de la cabecera del archivo, y las cinco lecturas del archivo apuntan a esa copia.
+  - Las entradas 0–4 nuevas se guardan sin comprimir en `0x140000`, con una copia de la cabecera del archivo, y las cinco lecturas del archivo apuntan a esa copia.
 - La transformación se pinta con sprites de 2×2 tiles encima del fondo de estrellas, con la paleta 3, que se guarda y se restaura al final. Los tiles van a dos bancos de VRAM libres durante la intro (tiles 792 y 1026), así el paso siguiente se carga sin que se vea a medias.
 - El script quita los bloques vacíos, genera la tabla de pasos y ensambla con `m68k-linux-gnu-as`/`ld` (paquete `binutils-m68k-linux-gnu`).
 
