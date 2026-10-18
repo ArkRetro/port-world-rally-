@@ -1,7 +1,8 @@
 """Lightening Force (USA): replace the player ship with Ecco's dolphin, demo mode only.
 
-Usage: python3 build_patch.py <tf4.bin> <ecco frames dir | frame png> <out.bin> [out.ips] [--everywhere]
+Usage: python3 build_patch.py <tf4.bin> <ecco frames dir | frame png> <out.bin> [out.ips] [--everywhere] [--intro DIR]
 --everywhere: use the dolphin in the whole game, not only the first demo.
+--intro DIR: play the transformation intro (intro-transformacion folder) before the game.
 - Ship tiles: ROM archive 0x90000 entry 3, unpacked to RAM FF0800; bytes 0x000-0x6FF
   (FF0800-FF0EFF) are the 7 ship frames (4x2 tiles each, full up to full down),
   DMA'd to VRAM tiles 0x440-0x477.
@@ -12,8 +13,11 @@ Usage: python3 build_patch.py <tf4.bin> <ecco frames dir | frame png> <out.bin> 
   'jsr $100000.l'; the new routine overwrites FF0800.. with the dolphin when the
   demo flag is set and the stage is 0, then redoes the lea and returns.
 """
+import json
 import os
+import subprocess
 import sys
+import tempfile
 from PIL import Image
 
 HOOK = 0xB72
@@ -100,7 +104,59 @@ def routine(data_addr, everywhere=False):
     c += bytes.fromhex('4E75')                      # rts
     return bytes(c)
 
-def main(rom_path, png, out_path, everywhere=False):
+INTRO = 0x101000
+FACE_TICKS = 60   # close-up of the face shown before the bust
+
+def intro_steps(intro_dir):
+    """Steps of the transformation intro: (tileset name, cols, rows, palette bytes, ticks)."""
+    seq = json.load(open(os.path.join(intro_dir, 'secuencia.json')))['secuencia']
+    pal = lambda n: open(os.path.join(intro_dir, 'paletas', n + '.pal'), 'rb').read()
+    steps = [('cara_primer_plano', 10, 10, pal(seq[0]['fotograma']), FACE_TICKS)]
+    steps += [(st['tiles_de'], 20, 20, pal(st['fotograma']), st['ticks_60hz']) for st in seq]
+    return steps
+
+def build_intro(intro_dir, orig_reset):
+    """Assemble intro.s plus its data at INTRO; needs binutils-m68k-linux-gnu."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    with tempfile.TemporaryDirectory() as tmp:
+        lines = ['        .section .rodata', '        .globl intro_steps', '        .even']
+        sets = {}
+        recs = []
+        for k, (name, cols, rows, palette, ticks) in enumerate(intro_steps(intro_dir)):
+            if name not in sets:                       # dedupe tiles; map 0 = empty tile
+                raw = open(os.path.join(intro_dir, 'tiles', name + '.bin'), 'rb').read()
+                uniq, cells = [], []
+                for i in range(cols * rows):
+                    t = raw[i*32:(i+1)*32]
+                    if t == bytes(32):
+                        cells.append(0); continue
+                    if t not in uniq:
+                        uniq.append(t)
+                    cells.append(uniq.index(t) + 1)
+                open(os.path.join(tmp, name + '.til'), 'wb').write(b''.join(uniq))
+                open(os.path.join(tmp, name + '.map'), 'wb').write(b''.join(c.to_bytes(2, 'big') for c in cells))
+                sets[name] = len(uniq)
+            open(os.path.join(tmp, 'pal%d.bin' % k), 'wb').write(palette)
+            nt = 0xC000 + (((28 - rows) // 2) * 64 + (40 - cols) // 2) * 2
+            recs.append('        .long t_%s\n        .word %d\n        .long m_%s\n        .word %d, %d\n'
+                        '        .long p_%d\n        .word %d, 0x%04X' % (name, sets[name], name, cols, rows, k, ticks, nt))
+        lines.append('intro_steps:')
+        lines += recs + ['        .long 0']
+        for name in sets:
+            lines += ['t_%s: .incbin "%s.til"' % (name, name), 'm_%s: .incbin "%s.map"' % (name, name)]
+        for k in range(len(recs)):
+            lines.append('p_%d: .incbin "pal%d.bin"' % (k, k))
+        open(os.path.join(tmp, 'intro_data.s'), 'w').write('\n'.join(lines) + '\n')
+        asm = ['m68k-linux-gnu-as', '-m68000', '--register-prefix-optional', '-I', tmp]
+        subprocess.run(asm + ['--defsym', 'ORIG_RESET=0x%X' % orig_reset,
+                              '-o', os.path.join(tmp, 'intro.o'), os.path.join(here, 'intro.s')], check=True)
+        subprocess.run(asm + ['-o', os.path.join(tmp, 'data.o'), os.path.join(tmp, 'intro_data.s')], check=True)
+        subprocess.run(['m68k-linux-gnu-ld', '-Ttext=0x%X' % INTRO, '-e', 'intro', '--oformat', 'binary',
+                        '-o', os.path.join(tmp, 'intro.bin'), os.path.join(tmp, 'intro.o'), os.path.join(tmp, 'data.o')],
+                       check=True)
+        return open(os.path.join(tmp, 'intro.bin'), 'rb').read()
+
+def main(rom_path, png, out_path, everywhere=False, intro_dir=None):
     rom = bytearray(open(rom_path, 'rb').read())
     assert len(rom) == 0x100000 and rom[HOOK:HOOK+6] == bytes.fromhex('41F900090000'), 'unexpected ROM'
     if os.path.isdir(png):                          # Ecco frames folder: one pose per ship frame
@@ -112,6 +168,11 @@ def main(rom_path, png, out_path, everywhere=False):
     rom[NEW:NEW+len(code)] = code
     rom[NEW+0x100:NEW+0x100+len(data)] = data
     rom[HOOK:HOOK+6] = bytes.fromhex('4EB9') + NEW.to_bytes(4, 'big')  # jsr $100000.l
+    if intro_dir:                                   # reset vector -> intro -> game's reset code
+        intro = build_intro(intro_dir, int.from_bytes(rom[4:8], 'big'))
+        assert INTRO + len(intro) <= len(rom)
+        rom[INTRO:INTRO+len(intro)] = intro
+        rom[4:8] = INTRO.to_bytes(4, 'big')
     rom[0x1A4:0x1A8] = (len(rom) - 1).to_bytes(4, 'big')               # ROM end
     # The game's own check (ROM 0x34C) sums words from 0x200 up to (ROM end & ~1), last word excluded
     cs = sum(int.from_bytes(rom[i:i+2], 'big') for i in range(0x200, (len(rom) - 1) & ~1, 2)) & 0xFFFF
@@ -140,8 +201,12 @@ def make_ips(orig, patched):
     return bytes(out + b'EOF')
 
 if __name__ == '__main__':
-    args = [a for a in sys.argv[1:] if a != '--everywhere']
-    patched = main(*args[:3], everywhere='--everywhere' in sys.argv)
+    argv = sys.argv[1:]
+    intro_dir = None
+    if '--intro' in argv:
+        i = argv.index('--intro'); intro_dir = argv[i + 1]; del argv[i:i + 2]
+    args = [a for a in argv if a != '--everywhere']
+    patched = main(*args[:3], everywhere='--everywhere' in argv, intro_dir=intro_dir)
     if len(args) > 3:
         # IPS only describes changes, so the file must grow: the 2 MB tail is written as 0xFF runs
         open(args[3], 'wb').write(make_ips(open(args[0], 'rb').read(), patched))

@@ -23,3 +23,11 @@ El segundo argumento es la carpeta `frames/` del delfín extraído de Ecco (foto
 
 ## Comprobado
 En Genesis Plus GX: el delfín aparece en el primer demo (Strite), el segundo demo (Ruin) lleva la nave normal, y una partida empezada con Start en Strite también. Con `--everywhere`, el delfín aparece en los dos demos y en la partida.
+
+## Intro: el humano se convierte en delfín
+Con `--intro DIR` (la carpeta `intro-transformacion`: `secuencia.json`, `tiles/`, `paletas/`), al encender se ve una intro de unos 6 s antes de los logos del juego. Primero sale el primer plano de la cara y luego los 21 pasos de la transformación. Pulsando Start en el mando 1 se salta.
+
+- El vector de reset (`0x000004`) apunta a la intro en `0x101000`. Al acabar, apaga la pantalla, deja el puerto del mando como al encender y salta al reset original (`0x200`), que inicializa todo de nuevo.
+- `intro.s` es la rutina: sin interrupciones, espera el VBlank leyendo el VDP y pinta cada paso en el plano A centrado, con la paleta 0. Los tiles van a dos bancos de VRAM alternos (tile 1 y tile 512), así el paso siguiente se carga sin que se vea a medias.
+- El script quita los tiles vacíos y repetidos, genera la tabla de pasos y ensambla con `m68k-linux-gnu-as`/`ld` (paquete `binutils-m68k-linux-gnu`).
+- La intro no tiene sonido.
