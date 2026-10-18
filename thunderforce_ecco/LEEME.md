@@ -7,7 +7,7 @@ No se incluyen ROMs.
 ```
 python3 -I build_patch.py "Lightening Force (USA).bin" frame_000.png tf4_ecco.bin tf4_ecco.ips
 ```
-Opciones: `--everywhere`, `--pixels`, `--intro DIR`, `--bosses DIR`, `--invincible` (ver abajo).
+Opciones: `--everywhere`, `--pixels`, `--intro DIR`, `--bosses DIR`, `--invincible`, `--easy-bosses` (ver abajo).
 Con `--everywhere` el delfín sale en todo el juego (demos y partida normal), no solo en el primer demo.
 
 El segundo argumento es la carpeta `frames/` del delfín extraído de Ecco (fotogramas mirando a la derecha). Se usa una pose para cada fotograma de la nave (`FRAMES` en el script: 5, 4, 1, 0, 3, 27, 24, de morro arriba a morro abajo), reducida para caber en 32×16, ampliada un 3% (`SCALE`, lo que sobra se recorta) y ajustada a la paleta de la nave. Después se le dibujan dos cañones pequeños hacia delante, uno en el lomo y otro en la tripa (`add_cannons`). Si se pasa un solo PNG, se usa para los 7 fotogramas.
@@ -79,3 +79,8 @@ Comprobado en Genesis Plus GX con los estados de `jefes-finales/originales/estad
 ## Invulnerable
 Con `--invincible` la nave no muere nunca: ni con disparos, ni con enemigos, ni con el escenario. El juego se salta los choques del jugador mientras corre su temporizador de invulnerabilidad (`$FF8014`, el de después de reaparecer); los dos `tst.w $14(a6)` de la rutina de choques (`0x006302` y `0x006426`) pasan a ser saltos fijos. Los ítems de arma se siguen cogiendo. Las ROMs entregadas llevan esta opción.
 
+
+## Jefes más fáciles
+Con `--easy-bosses` los disparos hacen el doble de daño a los jefes, así que caen en la mitad de tiempo (comprobado con el primero: 4490 → 2314 fotogramas disparando). El resto de enemigos no cambia.
+- La rutina de impactos (`0x006A4A`) resta la fuerza del disparo (`4(a0)`) a la vida del objeto que la guarda (`4(a2)`). En `0x006A74` el `move.w 4(a0),d1; sub.w d1,4(a2)` pasa a ser `jsr $1AF000.l` + `nop`, que dobla `d1` si el objeto es de la clase de los jefes (`$30` en `2(a2)`) y hace la resta; el `bcc` de después sigue viendo su resultado.
+- Las ROMs entregadas llevan esta opción.

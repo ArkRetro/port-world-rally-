@@ -123,6 +123,7 @@ LETTERS_DATA = 0x1F8000   # intro letters: archive header + entries 0 and 1 (int
 TITLE_DATA = 0x140000  # archive 0x1C100 copy: header + entries 0-3 (title_logo.py) and 4 (title_dolphin.py)
 BOSS_CODE = 0x1A0000   # bosses.s + data
 BOSS_BANKS = [0x1B0000, 0x1B8000, 0x1D0000, 0x1D8000]   # boss graphics banks of stages 0-3
+EASY = 0x1AF000        # --easy-bosses: damage hook
 BOSS_DMA = 0x1C0000    # Bart's frames, copied to VRAM by DMA (within one 128 KB block)
 BOSS_VBLANK = 0x1DBE   # per-frame DMA code: move.l #$7FCE00,d0 (SAT source) -> jsr boss_vblank
 BOSS_HOOK = 0x7190     # end of the sprite-list builder: clr.b -5(a0); rts
@@ -217,7 +218,7 @@ def build_bosses(rom, boss_dir):
     rom[BOSS_VBLANK:BOSS_VBLANK+6] = bytes.fromhex('4EB9') + vblank.to_bytes(4, 'big')  # jsr boss_vblank
 
 def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False, boss_dir=None,
-         invincible=False):
+         invincible=False, easy_bosses=False):
     rom = bytearray(open(rom_path, 'rb').read())
     assert len(rom) == 0x100000 and rom[HOOK:HOOK+6] == bytes.fromhex('41F900090000'), 'unexpected ROM'
     if os.path.isdir(png):                          # Ecco frames folder: one pose per ship frame
@@ -273,6 +274,21 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False
         rom[0x6302:0x630A] = bytes.fromhex('600000C64E714E71')           # bra.w $63CA (scenery, shots)
         assert rom[0x6426:0x642C] == bytes.fromhex('4A6E00146606')       # tst.w $14(a6); bne.b $6432
         rom[0x6426:0x642C] = bytes.fromhex('600A4E714E71')               # bra.b $6432 (enemies)
+    if easy_bosses:
+        # Shots hurt the bosses twice as much (half their life). The hit routine (ROM 0x6A4A)
+        # takes the shot's power from 4(a0) off the target's life at 4(a2) (a2 = the part that
+        # holds the life); boss parts are class $30 in 2(a2). The bcc after it still sees the sub.
+        assert rom[0x6A74:0x6A7C] == bytes.fromhex('32280004936A0004')  # move.w 4(a0),d1; sub.w d1,4(a2)
+        assert all(b == 0xFF for b in rom[EASY:EASY+32])
+        rom[0x6A74:0x6A7C] = bytes.fromhex('4EB9') + EASY.to_bytes(4, 'big') + bytes.fromhex('4E71')
+        hook = bytes.fromhex(
+            '32280004'        # move.w 4(a0),d1
+            '0C6A00300002'    # cmpi.w #$30,2(a2)
+            '6602'            # bne.s  +2
+            'D241'            # add.w  d1,d1
+            '936A0004'        # sub.w  d1,4(a2)
+            '4E75')           # rts
+        rom[EASY:EASY+len(hook)] = hook
     # Copy protection (ROM 0x5CAE, run between stages): the longs at 0x200-0xAFFF summed and
     # xored with 'DEMO' must match 0x15FF8, or the game stops. The hooks at 0x7190 and the
     # SEGA logo change are in that range.
@@ -282,6 +298,7 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False
     # The game's own check (ROM 0x34C) sums words from 0x200 up to (ROM end & ~1), last word excluded
     cs = sum(int.from_bytes(rom[i:i+2], 'big') for i in range(0x200, (len(rom) - 1) & ~1, 2)) & 0xFFFF
     rom[0x18E:0x190] = cs.to_bytes(2, 'big')
+    assert len(rom) == 0x200000
     open(out_path, 'wb').write(rom)
     return bytes(rom)
 
@@ -313,9 +330,10 @@ if __name__ == '__main__':
     boss_dir = None
     if '--bosses' in argv:
         i = argv.index('--bosses'); boss_dir = argv[i + 1]; del argv[i:i + 2]
-    args = [a for a in argv if a not in ('--everywhere', '--pixels', '--invincible')]
+    args = [a for a in argv if a not in ('--everywhere', '--pixels', '--invincible', '--easy-bosses')]
     patched = main(*args[:3], everywhere='--everywhere' in argv, intro_dir=intro_dir, pixels='--pixels' in argv,
-                   boss_dir=boss_dir, invincible='--invincible' in argv)
+                   boss_dir=boss_dir, invincible='--invincible' in argv,
+                   easy_bosses='--easy-bosses' in argv)
     if len(args) > 3:
         # IPS only describes changes, so the file must grow: the 2 MB tail is written as 0xFF runs
         open(args[3], 'wb').write(make_ips(open(args[0], 'rb').read(), patched))
