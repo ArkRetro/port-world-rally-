@@ -201,7 +201,19 @@ video_vblank:
 1:      move.w  #SCB2_SHRINK,REG_VRAMRW
         nop
         dbra    d0,1b
-        move.w  rt_backdrop,PALETTES+255*32+30
+        /* a new screen still being drawn on a black one (blocks copied in the last two frames): its colours
+           wait until it is complete - the arcade draws it during the black frames, the port's slower
+           main loop would show it coming together piece by piece.  At most 30 VBlanks */
+        cmpi.b  #2,rt_blk_age
+        bcc.s   3f
+        bsr     pal_dark
+        bne.s   3f
+        cmpi.b  #30,rt_pal_held
+        bcc.s   4f                      /* held long enough: shown as it is (the count restarts only once */
+        addq.b  #1,rt_pal_held          /* the drawing stops or the screen is lit) */
+        rts
+3:      clr.b   rt_pal_held
+4:      move.w  rt_backdrop,PALETTES+255*32+30
         tst.b   rt_diag_on              /* diagnostic overlay: white text */
         beq.s   1f
         move.l  #0x00007FFF,PALETTES+PAL_FIX*32
@@ -281,6 +293,24 @@ video_vblank:
 7:      move.w  (a1)+,(a0)+
         dbra    d2,7b
 8:      rts
+
+* pal_dark: Z set when the screen shows (nearly) only black: fewer than 32 of the 1024 colours of the
+* arcade palettes in palette RAM, and the backdrop, are lit.  Trashes d0-d2/a0.
+pal_dark:
+        lea     PALETTES+PAL_ARC_BASE*32,a0
+        move.w  #64*16-1,d1
+        moveq   #32,d2
+1:      move.w  (a0)+,d0
+        and.w   #0x7FFF,d0
+        beq.s   2f
+        subq.w  #1,d2
+        beq.s   8f
+2:      dbra    d1,1b
+        move.w  PALETTES+255*32+30,d0
+        and.w   #0x7FFF,d0
+        rts                             /* Z: backdrop black too */
+8:      moveq   #1,d0                   /* Z clear */
+        rts
 
 * ------------------------------------------------------------------------------------------
 * VRAM command buffer.  Everything the frame changes in VRAM is queued (vc_* helpers, a6 = write pointer
@@ -524,7 +554,10 @@ vf_pool:
 * frame's VRAM contents (queued for vram_flush).
 * ------------------------------------------------------------------------------------------
 video_frame:
-        movea.l rt_vcmd_ptr,a6
+        cmpi.b  #255,rt_blk_age
+        beq.s   0f
+        addq.b  #1,rt_blk_age
+0:      movea.l rt_vcmd_ptr,a6
         cmpa.l  #VCMD_BUF,a6
         bcc.s   1f
         lea     VCMD_BUF,a6

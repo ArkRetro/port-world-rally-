@@ -650,8 +650,9 @@ trap_error_pc:
 
 * palette_sync: arcade palette RAM shadow (xBRG444, entries 0..1023) -> ARC_PAL (Neo Geo format) for
 * the 16-colour palettes whose raw words changed since the last call.  A quarter of the 64 palettes is
-* checked per call (the palettes hardly change during a race); when one of them changed, the other
-* three quarters are checked too in the same call (a fade or a new screen changes them all at once).
+* checked per call (they hardly change during a race); when two of them changed, the other three
+* quarters are checked too in the same call (a fade changes them all at once).  While a screen is being
+* drawn all of them are checked every time: a new screen gets all its colours in the same frame.
 * The compare is 8 cmpm.l per palette with an early exit on the first difference.
 palette_sync:
         lea     pal_table,a4
@@ -663,7 +664,9 @@ palette_sync:
         moveq   #0,d5                   /* palettes converted */
         bsr.s   ps_quarter
         cmpi.w  #2,d5
-        bcs.s   9f
+        bcc.s   1f
+        cmpi.b  #8,rt_blk_age           /* a screen being drawn (blocks in the last 8 frames): all of them, */
+        bcc.s   9f                      /* or its colours would come on a quarter at a time */
 1:      addq.b  #1,d0                   /* several changed (a fade): the other quarters as well (a single
                                            palette changing, a colour cycle, does not need the full scan) */
         and.b   #3,d0
@@ -833,6 +836,7 @@ blk_col:
 blk_done:
         tst.l   d4
         beq.s   6f                      /* the block was already there: nothing to reload */
+        clr.b   rt_blk_age              /* a screen is being drawn (video_vblank holds its colours back) */
         move.w  d6,d5
         moveq   #NCOLSPR-1,d2
 4:      move.b  (a0),d3
@@ -1399,6 +1403,7 @@ clear_l0:
         bsr     clear_fill
         lea     rt_col_loaded,a0
 clear_inval:
+        clr.b   rt_blk_age
         st      rt_col_inval
         moveq   #NCOLSPR-1,d0
 1:      move.b  #0xFF,(a0)+             /* column sprites reload at the next frame */
