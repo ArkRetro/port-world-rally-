@@ -838,6 +838,9 @@ blk_col:
 blk_done:
         tst.l   d4
         beq.s   6f                      /* the block was already there: nothing to reload */
+        move.b  #2*NCOLSPR,rt_cl_budget /* the arcade drew a picture: its columns all go in the next frame, */
+                                        /* with its palette (spread over frames, the old picture showed */
+                                        /* with the new colours: the intro photos flickered) */
         move.w  d6,d5
         moveq   #NCOLSPR-1,d2
 4:      move.b  (a0),d3
@@ -1530,6 +1533,7 @@ clear_l0:
         bsr     clear_fill
         lea     rt_col_loaded,a0
 clear_inval:
+        move.b  #2*NCOLSPR,rt_cl_budget
         st      rt_col_inval
         moveq   #NCOLSPR-1,d0
 1:      move.b  #0xFF,(a0)+             /* column sprites reload at the next frame */
