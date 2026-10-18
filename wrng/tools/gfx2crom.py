@@ -110,7 +110,11 @@ def main():
             shadow.append(bytes(m))
         tiles = tiles + shadow
     if '--light' in a:
-        bayer = (0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
+        # 8x8 ordered dither (the 4x4 pattern refined: same look, finer steps): 1..5 lit pixels in 16 become
+        # 4, 8, 11, 15, 19 in 64 - 5 % fewer lit pixels than the 4x4 pattern had
+        b4 = (0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)
+        bayer = [4 * b4[(y & 3) * 4 + (x & 3)] + (0, 2, 3, 1)[((y >> 2) & 1) * 2 + ((x >> 2) & 1)]
+                 for y in range(8) for x in range(8)]
         light = []
         for t in tiles[:16384]:
             m = bytearray(256)
@@ -118,7 +122,7 @@ def main():
                 p = t[i]
                 if p >= 9:
                     lit = ((p - 8) * 5 + 3) // 7                                # 1..5 of 16
-                    if bayer[((i >> 4) & 3) * 4 + (i & 3)] < lit:
+                    if bayer[((i >> 4) & 7) * 8 + (i & 7)] < round(lit * 4 * 0.95):
                         m[i] = p
             light.append(bytes(m))
         tiles = tiles + light
