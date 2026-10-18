@@ -414,9 +414,14 @@ frame_seal:
         move.w  d0,d1
         lsl.w   #3,d1
         adda.w  d1,a0
+        tst.b   rt_cl_hid               /* a new screen still loading (its layers hidden): no sprites either */
+        bne.s   2f
         move.w  rt_spr_n0,(a0)+
         move.w  rt_spr_n1,(a0)+
         move.w  rt_eff_n,(a0)
+        bra.s   1f
+2:      clr.l   (a0)+
+        clr.w   (a0)
 1:      moveq   #0,d1
         move.b  rt_pend_n,d1            /* 0 or 1 (frame_begin) */
         lea     rt_pend_s,a0

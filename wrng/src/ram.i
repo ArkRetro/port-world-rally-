@@ -60,10 +60,13 @@
         .equ    rt_eff_tp,      RT_VARS+0x338   /* .l sl_eff: next free tile slot */
         .equ    rt_cl_budget,   RT_VARS+0x33C   /* .b column loads left this frame (layer_update pass 1) */
         .equ    rt_cl_more,     RT_VARS+0x33D   /* .b some were left for the next frame */
-        .equ    CL_BUDGET,      48              /* both whole layers: a new screen appears in one frame (with
-                                                   fewer per frame it swept in column by column) */
+        .equ    CL_BUDGET,      5               /* about 2.3 lines of VBlank each: a whole new screen loads over a
+                                                   few frames (video_vblank keeps it dark meanwhile) instead of
+                                                   writing VRAM into the visible lines */
         .equ    rt_blk_age,     RT_VARS+0x364   /* .b frames since the arcade last drew a block / cleared a layer (saturates) */
         .equ    rt_pal_held,    RT_VARS+0x365   /* .b VBlanks the palettes have been held back (video_vblank, at most 30) */
+        .equ    rt_cl_prev,     RT_VARS+0x366   /* .b map columns were left over at the end of the last frame (lu_hidden) */
+        .equ    rt_cl_hid,      RT_VARS+0x367   /* .b the layers were hidden in the frame just prepared (frame_seal) */
         .equ    rt_scb2_rot,    RT_VARS+0x363   /* .b video_vblank: next group of 24 sprites whose SCB2 shrink is rewritten */
         .equ    rt_backdrop,    RT_VARS+0x332   /* .w Neo Geo backdrop colour for the next VBlank (colour 0 of the central layer-1 cell) */
         .equ    rt_dbg,         RT_VARS+0x340   /* 8 words: raster counter (REG_LSPCMODE) at frame_hook milestones (profiling) */
