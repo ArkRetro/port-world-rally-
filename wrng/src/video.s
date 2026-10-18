@@ -1538,46 +1538,58 @@ sl_eff:
         swap    d2
         or.w    d0,d2                   /* attribute */
         move.l  a1,-(sp)
-        cmpi.w  #EFF_TILES_MAX,rt_eff_nt
+        lea     RT_VARS,a1              /* the variables below, addressed off a1 (shorter than absolute) */
+        .equ    E_CP,   rt_eff_cp-RT_VARS
+        .equ    E_TP,   rt_eff_tp-RT_VARS
+        .equ    E_BASE, rt_eff_base-RT_VARS
+        .equ    E_N,    rt_eff_n-RT_VARS
+        .equ    E_NT,   rt_eff_nt-RT_VARS
+        .equ    E_LAST, rt_eff_last-RT_VARS
+        cmpi.w  #EFF_TILES_MAX,E_NT(a1)
         bcc     9f                      /* no room left: dropped */
-        tst.w   rt_eff_n
+        tst.w   E_N(a1)
         beq.s   4f                      /* first column of the frame */
-        cmp.w   rt_eff_last,d5          /* same x */
+        cmp.w   E_LAST(a1),d5           /* same x */
         bne.s   2f
-        cmp.w   rt_eff_last+2,d2        /* same attribute */
+        cmp.w   E_LAST+2(a1),d2         /* same attribute */
         bne.s   2f
-        move.w  rt_eff_last+4,d0
+        move.w  E_LAST+4(a1),d0
         sub.w   #0x800,d0               /* 16 lines lower */
         cmp.w   d0,d4
         bne.s   2f
-        movea.l rt_eff_cp,a1            /* current column */
+        movea.l E_CP(a1),a1             /* current column */
         cmpi.w  #16,6(a1)
-        bcc.s   2f
+        bcc.s   1f
         addq.w  #1,6(a1)
         addq.w  #1,(a1)                 /* height + 1 */
-        bra.s   3f
-4:      movea.l rt_eff_base,a1
-        move.l  a1,rt_eff_tp
-        addi.l  #EFF_TILES_OFS,rt_eff_tp
+        lea     RT_VARS,a1
+        move.w  d4,E_LAST+4(a1)
+        bra.s   6f
+4:      move.l  E_BASE(a1),d0
+        move.l  d0,E_CP(a1)
+        addi.l  #EFF_TILES_OFS,d0
+        move.l  d0,E_TP(a1)
         bra.s   5f
-2:      cmpi.w  #EFF_MAX,rt_eff_n       /* a new column */
+1:      lea     RT_VARS,a1              /* column full (16 tiles): a new one */
+2:      cmpi.w  #EFF_MAX,E_N(a1)        /* a new column */
         bcc.s   9f
-        movea.l rt_eff_cp,a1
-        addq.l  #8,a1
-5:      move.l  a1,rt_eff_cp
+        addq.l  #8,E_CP(a1)
+5:      move.w  E_NT(a1),d0
+        movea.l E_CP(a1),a1
         move.w  d4,(a1)+
         move.w  d5,(a1)+
-        move.w  rt_eff_nt,(a1)+
+        move.w  d0,(a1)+
         move.w  #1,(a1)
-        addq.w  #1,rt_eff_n
-        move.w  d5,rt_eff_last
-        move.w  d2,rt_eff_last+2
-3:      move.w  d4,rt_eff_last+4
-        movea.l rt_eff_tp,a1
-        move.w  d3,(a1)+
-        move.w  d2,(a1)+
-        move.l  a1,rt_eff_tp
-        addq.w  #1,rt_eff_nt
+        lea     RT_VARS,a1
+        addq.w  #1,E_N(a1)
+        move.w  d5,E_LAST(a1)
+        move.w  d2,E_LAST+2(a1)
+        move.w  d4,E_LAST+4(a1)
+6:      addq.w  #1,E_NT(a1)             /* the tile */
+        addq.l  #4,E_TP(a1)
+        movea.l E_TP(a1),a1
+        move.w  d3,-4(a1)
+        move.w  d2,-2(a1)
 9:      movea.l (sp)+,a1
         bra     sl_next
 
