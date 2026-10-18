@@ -62,6 +62,28 @@ mame aes    wrng -rompath "/ruta/bios;$(pwd)/build/roms" -hashpath $(pwd)/build/
 El `.neo` se copia tal cual a la tarjeta del NeoSD. Para Darksoft/BackBit puede usarse
 `../tools/builds/pack_formats.py build/release/wrng.neo <dir> wrng "World Rally NG"`.
 
+### Kit para distribuir (sin datos del arcade)
+
+`make kit ARCADE=...` deja en `build/release/` el kit `wrng-kit.zip` y la herramienta `wrng_build.py`. El kit
+lleva sólo el trabajo del port: el binario del runtime y el driver Z80 con a cero todas las zonas que salen de
+las ROMs del arcade, la fuente del fix, los scripts de conversión y un manifiesto con el SHA-1 que cada zona
+debe tener al reconstruirla. El usuario pone su propio set de MAME y obtiene el `.neo`:
+
+```sh
+python3 wrng_build.py wrng-kit.zip wrally.zip [wrallyd.zip] -o wrng.neo [--mame wrng.zip]
+```
+
+* Sólo necesita Python 3.8 o posterior, sin paquetes extra. Tarda unos 25 s.
+* Vale el set `wrally` fusionado (un `wrally.zip` que incluye `wrallyd/`) o dividido (`wrally.zip` +
+  `wrallyd.zip`). También valen carpetas. Los ficheros se buscan por CRC32, se llamen como se llamen.
+* Las zonas reconstruidas se comprueban con el manifiesto. Si el set no es el esperado, la herramienta lo dice
+  y no genera nada. Si todo cuadra, el `.neo` sale idéntico byte a byte al oficial, y la herramienta lo
+  indica.
+* `--mame` escribe además el set de MAME (`wrng.zip`) y su `neogeo.xml` al lado
+  (`mame neogeo wrng -rompath <carpeta> -hashpath <carpeta>`).
+* No hace falta la BIOS de Neo Geo: el `.neo` es sólo el cartucho. El NeoSD usa la BIOS de la consola, y
+  MAME, su `neogeo.zip`.
+
 ## Estructura
 
 ```

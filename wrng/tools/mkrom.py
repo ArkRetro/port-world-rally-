@@ -331,6 +331,10 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False):
     #  sprite list 2 builder -> native (src/glue.s nat_obj); its loop ends with bra 0x4710 / 0x4710
     assert orig[0x4708:0x470E] == bytes.fromhex('49F900FEC280') and orig[0x47FA:0x47FE] == bytes.fromhex('6000FF14')
     rom[0x4708:0x470E] = bytes.fromhex('4EF9') + struct.pack('>I', syms['nat_obj'])
+    #  ... whose generic path runs the original object code: its two ends (addq #6,a0 ; bra 0x4710) go back to it
+    for pc, expect in ((0x47F8, '5C886000FF14'), (0x4888, '5C486000FE84')):
+        assert orig[pc:pc + 6] == bytes.fromhex(expect), hex(pc)
+        rom[pc:pc + 6] = bytes.fromhex('4EF9') + struct.pack('>I', syms['no_next'])
     #  string printer -> native (src/glue.s nat_txt)
     assert orig[0x12172:0x12178] == bytes.fromhex('303900FEF4F4') and orig[0x12390:0x12392] == bytes.fromhex('FDE2')
     rom[0x12172:0x12178] = bytes.fromhex('4EF9') + struct.pack('>I', syms['nat_txt'])
