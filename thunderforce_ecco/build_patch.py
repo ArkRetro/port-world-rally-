@@ -119,6 +119,8 @@ INTRO_HOOK = 0xC572  # intro frame loop: move.w #$8144,$C00004 (display on, afte
 LOGO = 0x1F0000    # PIXELS logo stream; archive 0x90000 entry 0 is the SEGA logo
 ROLL_DATA = 0x1F1000   # archive 0x19000 entry 2 (intro: Rynex roll), as a literal stream
 BRAND_DATA = 0x1F5000  # archive 0x19000 entry 3 (intro: Technosoft logo)
+LETTERS_DATA = 0x1F8000   # intro letters: archive header + entries 0 and 1 (intro_letters.py)
+TITLE_DATA = 0x140000  # title picture: archive header + entry 4 (title_dolphin.py)
 BOSS_CODE = 0x1A0000   # bosses.s + data
 BOSS_BANKS = [0x1B0000, 0x1B8000, 0x1D0000, 0x1D8000]   # boss graphics banks of stages 0-3
 BOSS_DMA = 0x1C0000    # Bart's frames, copied to VRAM by DMA (within one 128 KB block)
@@ -243,6 +245,15 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False
             rom[at:at+len(stream)] = stream
             p = intro_gfx.ARCHIVE + 2 + idx*4
             rom[p:p+4] = (at - intro_gfx.ARCHIVE).to_bytes(4, 'big')
+        # the giant LIGHTENING FORCE letters at the start -> HECHO CON PiXELS
+        import intro_letters
+        n = intro_letters.install(rom, LETTERS_DATA)
+        assert LETTERS_DATA + n <= len(rom) and all(b == 0xFF for b in rom[LETTERS_DATA+n:LETTERS_DATA+n+16])
+        # the title picture: the Rynex -> Ecco leaping (needs the Ecco frames folder)
+        if os.path.isdir(png):
+            import title_dolphin
+            n = title_dolphin.install(rom, TITLE_DATA, png)
+            assert TITLE_DATA + n <= BOSS_CODE and all(b == 0xFF for b in rom[TITLE_DATA+n:TITLE_DATA+n+16])
     if boss_dir:
         build_bosses(rom, boss_dir)
     if pixels:                                      # SEGA logo -> PIXELS, same palette animation
