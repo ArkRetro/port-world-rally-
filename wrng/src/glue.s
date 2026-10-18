@@ -663,9 +663,14 @@ palette_sync:
         moveq   #0,d5                   /* palettes converted */
         bsr.s   ps_quarter
         cmpi.w  #2,d5
-        bcs.s   9f
-1:      addq.b  #1,d0                   /* several changed (a fade): the other quarters as well (a single
-                                           palette changing, a colour cycle, does not need the full scan) */
+        bcc.s   1f
+        tst.w   d5
+        beq.s   9f
+        cmpi.b  #1,ARC_WRAM+0x1B3       /* in a race (a colour cycle changes one palette every frame) only */
+        beq.s   9f                      /* when two changed; elsewhere one is enough */
+1:      addq.b  #1,d0                   /* one changed: the other quarters as well - a fade then darkens the
+                                           whole screen at once (with ">= 2 changed" a quarter holding a
+                                           single palette of the fade left the others up to 3 frames behind) */
         and.b   #3,d0
         cmp.b   rt_pal_half,d0
         beq.s   9f
