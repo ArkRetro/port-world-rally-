@@ -22,6 +22,8 @@ SHIP_RAM = 0xFF0800   # ship frames: 7 x (4x2 tiles), VRAM tiles 0x440-0x477
 NTILES = 56
 # Ecco frame used for each ship frame, from full up (0x440) to full down (0x470)
 FRAMES = [5, 4, 1, 0, 3, 27, 24]
+# Extra scale over 'fits the 32x16 box'; anything past the box is clipped
+SCALE = 1.03
 # Palette line 0 of the stage (CRAM, 0000BBB0GGG0RRR0 -> 3-bit channels)
 PAL0 = [(4,7,6),(0,0,0),(0,1,5),(2,3,7),(5,5,7),(6,6,7),(4,0,0),(7,0,0),
         (7,4,1),(7,7,1),(5,5,0),(0,0,0),(0,1,2),(1,2,3),(3,4,5),(7,7,7)]
@@ -33,11 +35,11 @@ def nearest(rgb):
 
 def frame_tiles(png):
     src = Image.open(png).convert('RGBA')
-    k = min(32 / src.width, 16 / src.height)
+    k = min(32 / src.width, 16 / src.height) * SCALE
     w = max(1, round(src.width * k)); h = max(1, round(src.height * k))
     small = src.resize((w, h), Image.LANCZOS)
     canvas = Image.new('RGBA', (32, 16), (0, 0, 0, 0))
-    canvas.paste(small, ((32 - w) // 2, (16 - h) // 2))
+    canvas.paste(small, ((32 - w) // 2, (16 - h) // 2))  # negative offsets clip evenly
     px = [[0]*32 for _ in range(16)]
     for y in range(16):
         for x in range(32):

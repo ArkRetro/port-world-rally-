@@ -9,7 +9,7 @@ python3 -I build_patch.py "Lightening Force (USA).bin" frame_000.png tf4_ecco.bi
 ```
 Con `--everywhere` el delfín sale en todo el juego (demos y partida normal), no solo en el primer demo.
 
-El segundo argumento es la carpeta `frames/` del delfín extraído de Ecco (fotogramas mirando a la derecha). Se usa una pose para cada fotograma de la nave (`FRAMES` en el script: 5, 4, 1, 0, 3, 27, 24, de morro arriba a morro abajo), reducida a 32×16 y ajustada a la paleta de la nave. Si se pasa un solo PNG, se usa para los 7 fotogramas.
+El segundo argumento es la carpeta `frames/` del delfín extraído de Ecco (fotogramas mirando a la derecha). Se usa una pose para cada fotograma de la nave (`FRAMES` en el script: 5, 4, 1, 0, 3, 27, 24, de morro arriba a morro abajo), reducida para caber en 32×16, ampliada un 3% (`SCALE`, lo que sobra se recorta) y ajustada a la paleta de la nave. Si se pasa un solo PNG, se usa para los 7 fotogramas.
 
 ## Cómo funciona
 - La nave son 7 fotogramas de 4×2 tiles (32×16), paleta 0, tiles de VRAM 0x440–0x477, desde inclinada hacia arriba del todo (0x440) hasta hacia abajo del todo (0x470).
