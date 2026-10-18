@@ -105,8 +105,8 @@ same_set:
         subq.w  #1, d3
 5:      move.w  (a0)+, (a6)             | y
         move.w  d2, d0
-        cmp.w   d3, d2
-        bls.s   6f
+        tst.w   d3
+        bne.s   6f
         moveq   #0, d0                  | last sprite ends the list
 6:      ori.w   #0x0500, d0             | 2x2
         move.w  d0, (a6)

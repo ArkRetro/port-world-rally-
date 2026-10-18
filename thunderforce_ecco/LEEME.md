@@ -36,5 +36,9 @@ Con `--intro DIR` (la carpeta `intro-transformacion`: `secuencia.json`, `tiles/`
 
 - En el bucle de la intro, `0x00C572` (`move.w #$8144,$C00004`, encender la pantalla tras mandar los sprites) pasa a ser `jsr $101000.l` + `nop`.
 - `intro.s` repite esa instrucción y mira la lista de sprites de la intro (`FFEC00`): cuando el sprite 2 es de 4×4 con el tile 0x1D0 o 0x1E0 (la nave), arranca la transformación una vez por intro (marca en `$FFF0C0`, RAM que el juego solo borra al encender; se rearma al principio de cada intro con el contador `$FF8C80`).
+- Con `--intro` también cambian dos gráficos de la intro (`intro_gfx.py`, archivo de ROM `0x19000`):
+  - Entrada 2: la nave girando sobre sí misma mientras pasan las letras LIGHTENING FORCE pasa a ser el delfín girando (con sus cañones). Son 7 fotogramas de 64×32 con la paleta 2; cada uno es el delfín aplastado en vertical según el ángulo del giro (tabla de la intro en `0xD670`).
+  - Entrada 3: el logo «Techno soft» pasa a «Blostesoft», con el mismo degradado por filas y la misma sombra. La «®» y «PRESENTED BY» se quedan.
+  - Cada entrada se guarda sin comprimir (flujo literal) en `0x1F1000` y `0x1F5000`, y la tabla del archivo apunta allí.
 - La transformación se pinta con sprites de 2×2 tiles encima del fondo de estrellas, con la paleta 3, que se guarda y se restaura al final. Los tiles van a dos bancos de VRAM libres durante la intro (tiles 792 y 1026), así el paso siguiente se carga sin que se vea a medias.
 - El script quita los bloques vacíos, genera la tabla de pasos y ensambla con `m68k-linux-gnu-as`/`ld` (paquete `binutils-m68k-linux-gnu`).

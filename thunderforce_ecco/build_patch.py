@@ -65,22 +65,26 @@ def frame_tiles(png):
 
 def add_cannons(px):
     """Two small forward-facing guns: one on the back, one under the belly."""
-    cols = [x for x in range(32) if any(px[y][x] for y in range(16))]
+    W, H = len(px[0]), len(px)
+    k = W // 32                                              # 1 for the ship, 2 for the intro roll
+    cols = [x for x in range(W) if any(px[y][x] for y in range(H))]
     if not cols:
         return
     left, width = cols[0], cols[-1] - cols[0] + 1
     def gun(x, under):
-        rows = [y for y in range(16) if px[y][x]]
+        rows = [y for y in range(H) if px[y][x]]
         if not rows:
             return
-        y = min(rows[-1] + 1, 15) if under else max(rows[0] - 1, 0)
         mount = rows[-1] if under else rows[0]
-        px[mount][x] = px[mount][x + 1] = 1                  # mount, black
-        for bx in range(x, min(x + 6, 32)):
-            px[y][bx] = 15                                   # barrel, bright steel
-        px[y][x] = 1
-        if x + 6 < 32:
-            px[y][x + 6] = 1                                 # muzzle
+        for t in range(k):                                   # barrel rows, outward from the body
+            y = min(rows[-1] + 1 + t, H - 1) if under else max(rows[0] - 1 - t, 0)
+            for bx in range(x, min(x + 6*k, W)):
+                px[y][bx] = 15                               # barrel, bright steel
+            px[y][x] = 1
+            if x + 6*k < W:
+                px[y][x + 6*k] = 1                           # muzzle
+        for mx in range(x, x + 2*k):
+            px[mount][mx] = 1                                # mount, black
     gun(left + width * 55 // 100, under=False)
     gun(left + width * 35 // 100, under=True)
 
@@ -111,6 +115,8 @@ def routine(data_addr, everywhere=False):
 INTRO = 0x101000
 INTRO_HOOK = 0xC572  # intro frame loop: move.w #$8144,$C00004 (display on, after the SAT DMA)
 LOGO = 0x1F0000    # PIXELS logo stream; archive 0x90000 entry 0 is the SEGA logo
+ROLL_DATA = 0x1F1000   # archive 0x19000 entry 2 (intro: Rynex roll), as a literal stream
+BRAND_DATA = 0x1F5000  # archive 0x19000 entry 3 (intro: Technosoft logo)
 FACE_TICKS = 60   # close-up of the face shown before the bust
 
 def intro_steps(intro_dir):
@@ -185,6 +191,16 @@ def main(rom_path, png, out_path, everywhere=False, intro_dir=None, pixels=False
         rom[INTRO:INTRO+len(intro)] = intro
         assert rom[INTRO_HOOK:INTRO_HOOK+8] == bytes.fromhex('33FC814400C00004')
         rom[INTRO_HOOK:INTRO_HOOK+8] = bytes.fromhex('4EB9') + INTRO.to_bytes(4, 'big') + bytes.fromhex('4E71')
+        # the Rynex rolling in the intro -> the dolphin rolling; 'Techno soft' -> 'Blostesoft'
+        import intro_gfx, pixels_logo
+        ecco = os.path.join(png, 'frame_000.png') if os.path.isdir(png) else png
+        for idx, data, at in ((intro_gfx.ROLL_ENTRY, intro_gfx.dolphin_roll(rom, ecco, add_cannons), ROLL_DATA),
+                              (intro_gfx.LOGO_ENTRY, intro_gfx.logo(rom), BRAND_DATA)):
+            stream = pixels_logo.literal_stream(data)
+            assert at + len(stream) <= len(rom)
+            rom[at:at+len(stream)] = stream
+            p = intro_gfx.ARCHIVE + 2 + idx*4
+            rom[p:p+4] = (at - intro_gfx.ARCHIVE).to_bytes(4, 'big')
     if pixels:                                      # SEGA logo -> PIXELS, same palette animation
         import pixels_logo
         stream = pixels_logo.literal_stream(pixels_logo.tiles(pixels_logo.logo()))
