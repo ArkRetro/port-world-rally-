@@ -551,7 +551,9 @@ video_frame:
         bsr     layer_update
         bsr     cells_flush
         move.l  a6,rt_vcmd_ptr
-        clr.b   rt_col_inval
+        move.b  rt_cl_more,rt_col_inval /* columns left over: pass 1 checks them again next frame */
+        clr.b   rt_cl_more
+        move.b  #CL_BUDGET,rt_cl_budget
         move.w  REG_LSPCMODE,rt_dbg+10  /* profiling */
         /* the sprites were converted by spr_lists inside the arcade interrupt, unless the lists had more
            high-priority sprites than pool 1 holds */
@@ -628,7 +630,12 @@ lu_chk:
         and.w   #63,d3
         cmp.b   (a5,d0.w),d3
         beq.s   1f
+        subq.b  #1,rt_cl_budget
+        bcs.s   3f
         bsr     col_load                /* d0 = s, d3 = map column */
+        bra.s   1f
+3:      clr.b   rt_cl_budget            /* over this frame's budget: the next frame loads it */
+        st      rt_cl_more
 1:      addq.w  #1,d1
         addq.w  #1,d0
         cmpi.w  #NCOLSPR,d0

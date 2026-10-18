@@ -58,6 +58,10 @@
         .equ    rt_bg_recount,  RT_VARS+0x330   /* .b a tile palette changed: recount rt_bg_cnt next frame */
         .equ    rt_eff_cp,      RT_VARS+0x334   /* .l sl_eff: EFF_DESC entry of the current headlight column */
         .equ    rt_eff_tp,      RT_VARS+0x338   /* .l sl_eff: next free tile slot */
+        .equ    rt_cl_budget,   RT_VARS+0x33C   /* .b column loads left this frame (layer_update pass 1) */
+        .equ    rt_cl_more,     RT_VARS+0x33D   /* .b some were left for the next frame */
+        .equ    CL_BUDGET,      5               /* about 2.3 lines of VBlank each: a whole-screen redraw spreads
+                                                   over a few frames instead of writing into the visible lines */
         .equ    rt_backdrop,    RT_VARS+0x332   /* .w Neo Geo backdrop colour for the next VBlank (colour 0 of the central layer-1 cell) */
         .equ    rt_dbg,         RT_VARS+0x340   /* 8 words: raster counter (REG_LSPCMODE) at frame_hook milestones (profiling) */
 * presentation queue: frame_hook seals each frame it prepares (end of its VRAM commands in the ring, the
