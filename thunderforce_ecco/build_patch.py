@@ -45,6 +45,7 @@ def frame_tiles(png):
         for x in range(32):
             r, g, b, a = canvas.getpixel((x, y))
             px[y][x] = nearest((r, g, b)) if a >= 128 else 0
+    add_cannons(px)
     out = bytearray()
     for cx in range(4):            # VDP sprite tiles go column by column
         for cy in range(2):
@@ -53,6 +54,27 @@ def frame_tiles(png):
                 for x in range(0, 8, 2):
                     out.append((row[x] << 4) | row[x+1])
     return bytes(out), px
+
+def add_cannons(px):
+    """Two small forward-facing guns: one on the back, one under the belly."""
+    cols = [x for x in range(32) if any(px[y][x] for y in range(16))]
+    if not cols:
+        return
+    left, width = cols[0], cols[-1] - cols[0] + 1
+    def gun(x, under):
+        rows = [y for y in range(16) if px[y][x]]
+        if not rows:
+            return
+        y = min(rows[-1] + 1, 15) if under else max(rows[0] - 1, 0)
+        mount = rows[-1] if under else rows[0]
+        px[mount][x] = px[mount][x + 1] = 1                  # mount, black
+        for bx in range(x, min(x + 6, 32)):
+            px[y][bx] = 15                                   # barrel, bright steel
+        px[y][x] = 1
+        if x + 6 < 32:
+            px[y][x + 6] = 1                                 # muzzle
+    gun(left + width * 55 // 100, under=False)
+    gun(left + width * 35 // 100, under=True)
 
 def routine(data_addr, everywhere=False):
     c = bytearray()
