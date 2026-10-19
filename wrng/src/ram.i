@@ -22,6 +22,8 @@
         .equ    rt_start_req,   RT_VARS+0x05    /* .b PLAYER_START seen */
         .equ    rt_pal_dirty,   RT_VARS+0x08    /* 64 bytes: one flag per 16-colour palette (0..63) */
         .equ    rt_pal_any,     RT_VARS+0x48    /* .b any palette dirty */
+        .equ    rt_hi_pend,     RT_VARS+0x4C    /* .b HI columns left to re-range after the window moved (hi_vt_moved) */
+        .equ    rt_hi_vt,       RT_VARS+0x4B    /* .b map row at the top of the screen (layer 0): the HI window starts there */
         .equ    rt_pal_ahead,   RT_VARS+0x49    /* .b the running tick converted its palettes (ARC_PAL ahead of the screen) */
         .equ    rt_col_dirty,   RT_VARS+0x50    /* 2 x 64 bytes: dirty flag per (layer, map column) */
         .equ    rt_col_loaded,  RT_VARS+0xD0    /* 2 x 24 bytes: map column currently loaded in column sprite s (0xFF none) */
@@ -136,10 +138,11 @@
 * frame preparation and by vram_store, replayed by vram_flush at the start of the next VBlank so that the
 * screen never changes while it is being drawn
         .equ    VCMD_BUF,       SPR_SET1+SPR_SET_SZ     /* a ring: a block that would not fit before VCMD_END */
-        .equ    VCMD_END,       CELL_ROWS               /* leaves the word 0xFFFF and starts again at VCMD_BUF */
+        .equ    VCMD_END,       HI_MASK                 /* leaves the word 0xFFFF and starts again at VCMD_BUF */
 * map cells changed in the shown columns (vram_store): one bit per column sprite s, per map row and layer;
 * video_frame (cells_flush) writes each row as runs of consecutive sprites (VRAMMOD 64: one block per
 * run instead of one per cell)
+        .equ    HI_MASK,        0x10E598        /* NCOLSPR x .l: rows (bit r) of the layer-0 column of sprite s with category-1 cells */
         .equ    CELL_ROWS,      0x10E5F8        /* 2 x .l rows with marked cells (layer 0, layer 1) */
         .equ    CELL_MASK,      0x10E600        /* 2 x 32 x .l sprites marked per row */
         .equ    CELL_END,       0x10E700

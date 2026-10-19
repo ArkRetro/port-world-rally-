@@ -10,6 +10,7 @@
 
         .section .rodata
         .include "logo.inc"             /* first: its sizes are used in expressions below */
+        .include "version.inc"          /* ver_str: "V<version>" (Makefile, from VERSION) */
         .text
 
         .global eye_main
@@ -77,6 +78,10 @@ eye_main:
         moveq   #15,d4
         bsr     eye_chain
 
+        lea     ver_str,a0                      /* the port's version, bottom right, in the logo's white */
+        moveq   #34,d0
+        moveq   #27,d1
+        jsr     fix_print
         moveq   #0,d7                           /* frame */
 eye_loop:
         bsr     eye_wait_vbl
@@ -104,6 +109,7 @@ eye_loop:
         lsr.w   #1,d0
         bsr     eye_level
         bsr     eye_pal_logo
+        move.w  PALETTES+PAL_EYE_LOGO*32+2*3,PALETTES+PAL_FIX*32+2
         move.w  d7,d0
         subi.w  #T_MAX,d0
         bsr     eye_level
@@ -119,6 +125,13 @@ eye_loop:
 3:      move.w  #0,REG_VRAMRW
         nop
         dbra    d0,3b
+        moveq   #34,d0                          /* and the version text */
+        moveq   #27,d1
+        jsr     fix_addr
+        moveq   #7,d0
+4:      move.w  #0x00FF,REG_VRAMRW
+        nop
+        dbra    d0,4b
         move.w  (sp)+,sr
         rts
 

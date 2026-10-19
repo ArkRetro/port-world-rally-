@@ -3,7 +3,7 @@
 user's World Rally ROMs into wrng.neo in the browser (Python runs there through Pyodide, loaded from its CDN;
 the ROMs never leave the computer).  Open the file, drop wrally.zip on it, press the button.
 
-usage: mkweb.py <wrng-kit.zip> <wrng_build.py> <out.html>
+usage: mkweb.py <wrng-kit.zip> <wrng_build.py> <out.html> [version]
 """
 import base64
 import sys
@@ -25,7 +25,7 @@ PAGE = r'''<!doctype html>
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, sans-serif; }
 main { max-width:640px; margin:0 auto; padding:32px 16px 48px; }
-h1 { font-size:28px; margin:0 0 4px; } h1 span { color:var(--accent); }
+h1 { font-size:28px; margin:0 0 4px; } h1 span { color:var(--accent); } h1 small { font-size:16px; color:var(--muted); }
 .sub { color:var(--muted); margin:0 0 24px; }
 .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:16px; }
 .step { font-weight:600; margin:0 0 8px; }
@@ -49,7 +49,7 @@ button:disabled { opacity:.45; cursor:default; }
 </head>
 <body>
 <main>
-<h1>World Rally <span>NG</span></h1>
+<h1>World Rally <span>NG</span> <small>v@VER@</small></h1>
 <p class="sub">Genera el archivo <b>wrng.neo</b> para NeoSD a partir de tu ROM de World Rally de MAME.</p>
 
 <div class="card">
@@ -178,8 +178,9 @@ $('go').onclick = async () => {
 '''
 
 
-def main(kit, tool, out):
+def main(kit, tool, out, ver=''):
     html = (PAGE.replace('@KIT@', base64.b64encode(open(kit, 'rb').read()).decode())
+                .replace('@VER@', ver)
                 .replace('@TOOL@', open(tool).read().replace('</script', '<\\/script'))
                 .replace('@PYODIDE@', PYODIDE))
     open(out, 'w', encoding='utf-8').write(html)
@@ -187,4 +188,4 @@ def main(kit, tool, out):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:4])
+    main(*sys.argv[1:5])

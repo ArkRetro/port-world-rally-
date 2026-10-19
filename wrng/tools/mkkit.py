@@ -66,7 +66,7 @@ def main(build, out):
         'gfx2crom_flags': ['--rescue', '--shadow', '--light', '--extra', 'logo.bin'],
         'regions': regions,
         'neo_sha1': sha1(neo),
-        'neo_name': 'World Rally NG',
+        'neo_name': 'World Rally NG v' + open('VERSION').read().strip(),
     }
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
         z.writestr('manifest.json', json.dumps(manifest, indent=1))

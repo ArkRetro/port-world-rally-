@@ -49,7 +49,7 @@ user_init:
 
 user_eyecatcher:
         /* request 1: we draw the eyecatcher ourselves (header 0x114 = 1): GAELCO / PRO-BLOSTE SPEC (eye.s) */
-        bsr     eye_main
+        jsr     eye_main
         jmp     SYSTEM_RETURN
 
 user_demo:
@@ -58,7 +58,7 @@ user_title:
            first if the BIOS did not ask for it (MVS, Universe BIOS): once after power-on */
         cmpi.l  #EYE_MAGIC,EYE_SHOWN
         beq.s   1f
-        bsr     eye_main
+        jsr     eye_main
 1:      move.b  #1,BIOS_USER_MODE
         bsr     rt_clear_ram
         bsr     video_init

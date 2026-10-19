@@ -208,8 +208,37 @@ video_vblank:
         move.l  #0x7FFF7FFF,PALETTES+PAL_FIX*32+4
         move.l  #0x7FFF7FFF,PALETTES+PAL_FIX*32+8
         move.l  #0x00000000,PALETTES+PAL_FIX*32+12
-1:      bsr     pal_flush
+1:      cmpi.w  #0x0123,PALETTES+254*32+2       /* a mark in an unused palette: gone when the MVS BIOS */
+        beq.s   2f                              /* took the screen (a coin during the demo) */
+        bsr     bios_wiped
+2:      bsr     pal_flush
         bra     9f
+* bios_wiped: the MVS BIOS cleared the palette RAM, every sprite height and shrink and filled the fix layer
+* when a coin went in: all of it again at once (the 4 palettes and 24 shrinks per frame of the rotations
+* faded the screen back in slowly, in odd colours, and the layers stayed hidden until the next picture)
+bios_wiped:
+        move.w  #0x0123,PALETTES+254*32+2
+        lea     rt_pal_dirty,a0
+        moveq   #64/4-1,d0
+1:      move.l  #0x01010101,(a0)+
+        dbra    d0,1b
+        st      rt_pal_any
+        move.w  #1,REG_VRAMMOD
+        move.w  #VRAM_SCB2+1,REG_VRAMADDR
+        move.w  #16*24-1,d0
+2:      move.w  #SCB2_SHRINK,REG_VRAMRW
+        dbra    d0,2b
+        VRAM_GAP
+        move.w  #VRAM_FIX,REG_VRAMADDR
+        move.w  #40*32-1,d0
+3:      move.w  #0x00FF,REG_VRAMRW
+        dbra    d0,3b
+        move.w  #0xFFFF,rt_lu_force     /* the layers' positions and heights again (SCB3 / SCB4) */
+        moveq   #-1,d0
+        move.l  d0,rt_lu_sig
+        move.l  d0,rt_lu_sig+4
+        rts
+
 * pal_flush: the dirty palettes (ARC_PAL) to palette RAM
 pal_flush:
         tst.b   rt_pal_any
@@ -594,7 +623,24 @@ layer_update:
         add.w   #CROP_X,d0
         and.w   #0x3FF,d0
         add.w   #CROP_Y,d1
-        add.w   #496,d1
+        cmpi.w  #SPR_LAYER0,d7
+        bne.s   8f
+        move.w  d1,d2                   /* map row at the top of the screen: the HI columns only hold the */
+        lsr.w   #4,d2                   /* rows on the screen, from one above it (a range over all 32 covered */
+        subq.w  #1,d2                   /* the HUD lines with blank tiles and pushed its sprites past 96 per */
+        and.w   #31,d2                  /* line).  18 rows: the window follows two rows late */
+        sub.b   rt_hi_vt,d2
+        addq.b  #1,d2
+        cmpi.b  #2,d2
+        bls.s   8f
+        subq.b  #1,d2
+        add.b   d2,rt_hi_vt
+        andi.b  #31,rt_hi_vt
+        move.b  #NCOLSPR,rt_hi_pend     /* re-range every HI column, a quarter of them per frame */
+8:      tst.b   rt_hi_pend
+        beq.s   9f
+        bsr     hi_vt_moved
+9:        add.w   #496,d1
         and.w   #0x1FF,d1
         lsl.w   #7,d1
         or.w    #0x20,d1                /* SCB3 value: y | height 32 */
@@ -676,7 +722,7 @@ lu_p1done:
         beq     lu_p2
         clr.b   (a4)
         moveq   #0,d0
-2:      tst.b   (a0,d0.w)
+2:      move.b  (a0,d0.w),d2
         beq.s   4f
         clr.b   (a0,d0.w)
         moveq   #0,d1
@@ -882,65 +928,159 @@ col_load:
 2:      movem.l (sp)+,d0-d6/a0/a2
         rts
 
-* hi_count: d0 = s, d1 = map column (layer 0): rt_hi_cnt[s] = category-1 cells, CMP_HI_R0/H[s] = their row
-* range; queues the HI column (those rows only) when it has some.  Forces the positions to be queued again.
-* Preserves registers except a6.
+* hi_count: d0 = s, d1 = map column (layer 0): HI_MASK[s] = the rows with category-1 cells, then hi_range.
+* Forces the positions to be queued again.  Preserves registers except a6.
 hi_count:
-        movem.l d0-d5/a0-a1,-(sp)
+        movem.l d0-d7/a0-a1,-(sp)
         move.w  d1,d2
         lsl.w   #2,d2
-        lea     ARC_VRAM,a0
-        adda.w  d2,a0
-        moveq   #0,d3                   /* count */
-        moveq   #-1,d4                  /* first row */
-        moveq   #0,d5                   /* last row */
-        moveq   #0,d2                   /* row */
-1:      btst    #5,3(a0)
+        lea     ARC_VRAM+31*256,a1
+        adda.w  d2,a1                   /* the column, row 31 */
+        moveq   #0,d3                   /* mask */
+        moveq   #31,d2
+1:      add.l   d3,d3
+        btst    #5,3(a1)
         beq.s   2f
         addq.w  #1,d3
-        tst.w   d4
-        bpl.s   3f
-        move.w  d2,d4
-3:      move.w  d2,d5
-2:      lea     256(a0),a0
-        addq.w  #1,d2
-        cmpi.w  #32,d2
-        bcs.s   1b
-        lea     rt_hi_cnt,a0
-        move.b  d3,(a0,d0.w)
+2:      lea     -256(a1),a1
+        dbra    d2,1b
+        move.w  d0,d2
+        lsl.w   #2,d2
+        lea     HI_MASK,a0
+        move.l  d3,(a0,d2.w)
         st      rt_lu_force
-        tst.w   d3
-        beq.s   4f
+        moveq   #1,d7                   /* queue the column even with the same rows (its cells changed) */
+        bsr.s   hi_range
+        movem.l (sp)+,d0-d7/a0-a1
+        rts
+
+* hi_range: d0 = s, d1 = map column, d7 = 1 to queue the column whatever its rows: the HI column holds the
+* category-1 rows among the 18 from rt_hi_vt (the screen and a row above it; a range over all 32 rows covered the
+* HUD lines with blank tiles and pushed its sprites past 96 per line).  rt_hi_cnt[s] = its height (0: none),
+* CMP_HI_R0/H[s] = its rows (they may wrap past row 31); queued when they changed.  Trashes d2-d6/a0.
+hi_range:
+        move.w  d0,d2
+        lsl.w   #2,d2
+        lea     HI_MASK,a0
+        move.l  (a0,d2.w),d3
+        moveq   #0,d6
+        move.b  rt_hi_vt,d6
+        ror.l   d6,d3                   /* bit i = row vt + i */
+        and.l   #0x3FFFF,d3             /* 18 rows */
+        moveq   #0,d4                   /* first */
+        moveq   #0,d5                   /* height */
+        tst.l   d3
+        beq.s   3f
+1:      lsr.l   #1,d3
+        bcs.s   2f
+        addq.w  #1,d4
+        bra.s   1b
+2:      moveq   #1,d5                   /* rows first .. last */
+        bra.s   5f
+4:      addq.w  #1,d2
+        lsr.l   #1,d3
+        bcc.s   4b
+        add.w   d2,d5
+5:      moveq   #0,d2
+        tst.l   d3
+        bne.s   4b
+        add.w   d6,d4
+        and.w   #31,d4                  /* first row */
+3:      lea     rt_hi_cnt,a0
+        move.b  (a0,d0.w),d2            /* previous height */
+        move.b  d5,(a0,d0.w)
+        tst.w   d7
+        bne.s   6f
+        tst.w   d5
+        bne.s   7f
+        tst.b   d2
+        beq.s   9f                      /* still empty */
+        st      rt_lu_force             /* hidden */
+        rts
+7:      tst.b   d2
+        beq.s   6f                      /* shown again */
+        lea     CMP_HI_R0,a0
+        cmp.b   (a0,d0.w),d4
+        bne.s   6f
+        lea     CMP_HI_H,a0
+        moveq   #0,d2
+        move.b  (a0,d0.w),d2
+        cmp.w   d2,d5
+        beq.s   9f                      /* same rows */
+        st      rt_lu_force
+        move.b  d5,(a0,d0.w)
+        sub.w   d2,d5
+        bls.s   9f                      /* fewer rows: the height alone */
+        move.w  d2,d4                   /* more rows below: only the new slots */
+        bra     hi_upload_part
+6:      st      rt_lu_force
+        tst.w   d5
+        beq.s   9f
         lea     CMP_HI_R0,a0
         move.b  d4,(a0,d0.w)
-        sub.w   d4,d5
-        addq.w  #1,d5
         lea     CMP_HI_H,a0
         move.b  d5,(a0,d0.w)
         bsr     hi_upload
-4:      movem.l (sp)+,d0-d5/a0-a1
+9:      rts
+
+* hi_vt_moved: the window moved (a5 = loaded-column table): the next 6 HI columns of the rt_hi_pend left are
+* re-ranged and queued again when their rows change.  Preserves d0/d1/d7.
+hi_vt_moved:
+        movem.l d0-d1/d7,-(sp)
+        moveq   #0,d7
+        moveq   #NCOLSPR,d0
+        sub.b   rt_hi_pend,d0
+        subq.b  #6,rt_hi_pend
+        bcc.s   1f
+        clr.b   rt_hi_pend
+1:      moveq   #0,d1
+        move.b  (a5,d0.w),d1
+        cmpi.b  #0xFF,d1
+        beq.s   2f
+        bsr     hi_range
+2:      addq.w  #1,d0
+        cmpi.w  #NCOLSPR,d0
+        bcc.s   3f
+        moveq   #NCOLSPR,d1
+        sub.b   rt_hi_pend,d1
+        cmp.w   d1,d0
+        bcs.s   1b
+3:      movem.l (sp)+,d0-d1/d7
         rts
 
 * hi_upload: d0 = s, d1 = map column: queue SCB1 of HI sprite SPR_HI+s = rows r0..r0+h-1 of the column
-* (category-1 tiles, HI_BLANK for the others).  Preserves registers except a6.
+* (category-1 tiles, HI_BLANK for the others).  hi_upload_part: only slots d4 .. d4+d5-1.
+* Preserves registers except a6.
 hi_upload:
+        movem.l d4-d5,-(sp)
+        moveq   #0,d4
+        lea     CMP_HI_H,a0
+        moveq   #0,d5
+        move.b  (a0,d0.w),d5
+        bsr.s   hi_upload_part
+        movem.l (sp)+,d4-d5
+        rts
+hi_upload_part:
         movem.l d0-d4/a0-a1,-(sp)
         bsr     vc_room
         lea     CMP_HI_R0,a0
         moveq   #0,d3
         move.b  (a0,d0.w),d3
-        lea     CMP_HI_H,a0
-        moveq   #0,d2
-        move.b  (a0,d0.w),d2
-        move.w  d1,d4
-        lsl.w   #2,d4
+        add.w   d4,d3
+        and.w   #31,d3                  /* first row (the range may wrap past row 31) */
+        move.w  d5,d2
+        move.w  d1,d1
+        lsl.w   #2,d1
         lea     ARC_VRAM,a0
-        adda.w  d4,a0
+        adda.w  d1,a0
+        move.w  d3,d1                   /* row */
         lsl.w   #8,d3
-        adda.w  d3,a0                   /* first row */
+        adda.w  d3,a0
         lea     tile_attr_table,a1
         add.w   #SPR_HI,d0
         lsl.w   #6,d0
+        add.w   d4,d0
+        add.w   d4,d0
         move.w  d0,(a6)+
         move.w  #1,(a6)+
         move.w  d2,d4
@@ -961,7 +1101,12 @@ hi_upload:
         add.w   d4,d4
         move.w  (a1,d4.w),(a6)+
         lea     256(a0),a0
-        dbra    d2,1b
+        addq.w  #1,d1
+        cmpi.w  #32,d1
+        bcs.s   4f
+        moveq   #0,d1
+        lea     -32*256(a0),a0
+4:      dbra    d2,1b
         movem.l (sp)+,d0-d4/a0-a1
         rts
 
@@ -1291,7 +1436,7 @@ vs_slow:                                /* (sr saved at 18(sp), interrupts maske
         lsr.w   #6,d1                   /* row */
         lea     CMP_HI_R0,a2
         sub.b   (a2,d2.w),d1
-        bcs.s   vs_hi_dirty
+        and.b   #31,d1                  /* the range may wrap past row 31 */
         lea     CMP_HI_H,a2
         cmp.b   (a2,d2.w),d1
         bcc.s   vs_hi_dirty

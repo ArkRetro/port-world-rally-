@@ -14,6 +14,7 @@ DUMPS  ?= src/dumps
 BUILD  ?= build
 
 RT_SRCS = src/header.s src/main.s src/video.s src/fix.s
+VERSION := $(shell cat VERSION)
 GAME_SRCS = src/glue.s src/mcu.s src/decrypt.s src/sound.s src/eye.s
 OKI_HI ?= $(ARCADE)/worldr14.c01
 OKI_LO ?= $(ARCADE)/worldr15.c03
@@ -38,6 +39,10 @@ $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/sample_dur.inc $(BUILD)/okimap
 	python3 -I tools/oki2adpcma.py $(OKI_HI) $(OKI_LO) $(BUILD)/wr_cpu.bin $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/okimap.csv
 
 # ---- graphics (C ROMs) and fix (S ROM) ----
+$(BUILD)/version.inc: VERSION
+	mkdir -p $(BUILD)
+	printf 'ver_str: .asciz "V%s"\n        .even\n' $(VERSION) > $@
+
 $(BUILD)/logo.bin $(BUILD)/logo.inc: tools/mklogo.py
 	mkdir -p $(BUILD)
 	python3 -I tools/mklogo.py $(BUILD)/logo.bin $(BUILD)/logo.inc
@@ -73,7 +78,7 @@ $(BUILD)/stubs.s: tools/mkrom.py analysis/absrefs.csv $(BUILD)/wr_cpu.bin
 $(BUILD)/srch_idx.inc: tools/mksrch.py $(BUILD)/wr_cpu.bin
 	python3 -I tools/mksrch.py $(BUILD)/wr_cpu.bin $@
 
-$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin $(BUILD)/sample_dur.inc $(BUILD)/srch_idx.inc $(BUILD)/logo.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
+$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin $(BUILD)/sample_dur.inc $(BUILD)/srch_idx.inc $(BUILD)/logo.inc $(BUILD)/version.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
 	for f in $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(dir $(WRDALLAS)) -I $(BUILD) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
 	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_sound.o $(BUILD)/g_eye.o $(BUILD)/g_stubs.o
 
@@ -86,19 +91,20 @@ $(BUILD)/wrng-p1.p1.game: $(BUILD)/game.bin $(BUILD)/game.sym $(BUILD)/wr_cpu.bi
 
 game: $(BUILD)/wrng-p1.p1.game $(BUILD)/wrng-s1.s1 $(BUILD)/wrng-m1.m1 $(BUILD)/wrng-v1.v1 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2
 	cp $(BUILD)/wrng-p1.p1.game $(BUILD)/wrng-p1.p1
-	python3 -I tools/mksoftlist.py $(BUILD) wrng "World Rally NG" $(BUILD)/hash/neogeo.xml
+	python3 -I tools/mksoftlist.py $(BUILD) wrng "World Rally NG v$(VERSION)" $(BUILD)/hash/neogeo.xml
 
 # ---- release files: NeoSD .neo + zip of the MAME set (build/roms/wrng) ----
 neo: game
 	mkdir -p $(BUILD)/release
-	python3 -I tools/mkneo.py $(BUILD)/roms/wrng wrng $(BUILD)/release/wrng.neo --zip $(BUILD)/release/wrng.zip
+	python3 -I tools/mkneo.py $(BUILD)/roms/wrng wrng $(BUILD)/release/wrng.neo -n "World Rally NG v$(VERSION)" --zip $(BUILD)/release/wrng.zip
+	cp $(BUILD)/release/wrng.neo $(BUILD)/release/wrng_v$(VERSION).neo
 
 # ---- distributable kit: the port without any arcade data + the tool that rebuilds wrng.neo from the user's ROMs ----
 kit: neo
 	python3 -I tools/mkrom.py sizes $(BUILD)/wr_cpu.bin analysis/absrefs.csv $(BUILD)/stub_sizes.json
 	python3 -I tools/mkkit.py $(BUILD) $(BUILD)/release/wrng-kit.zip
 	cp tools/wrng_build.py $(BUILD)/release/
-	python3 -I tools/mkweb.py $(BUILD)/release/wrng-kit.zip tools/wrng_build.py $(BUILD)/release/wrng.html
+	python3 -I tools/mkweb.py $(BUILD)/release/wrng-kit.zip tools/wrng_build.py $(BUILD)/release/wrng.html $(VERSION)
 
 clean:
 	rm -rf $(BUILD)
