@@ -357,12 +357,14 @@ frame_hook:
         jmp     ARC_IRQ6
 arc_irq_done:
         move.w  REG_LSPCMODE,rt_dbg+2
+        st      rt_pal_ahead            /* from here ARC_PAL is this tick's: a VBlank meanwhile keeps it back */
         bsr     palette_sync
         move.w  REG_LSPCMODE,rt_dbg+4
         bsr     video_frame
         move.w  REG_LSPCMODE,rt_dbg+6
         bsr     diag_frame
         bsr     frame_seal
+        clr.b   rt_pal_ahead
 1:      tst.b   rt_snd_owed             /* sequencer runs held back during this tick */
         beq.s   2f
         subq.b  #1,rt_snd_owed

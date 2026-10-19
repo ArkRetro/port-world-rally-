@@ -16,7 +16,7 @@
 
         .text
         .global vc_room, video_init, video_init_min, video_vblank, video_frame
-        .global pal_write, vram_mark_dirty, video_mark_all_dirty, pal_table, vram_store, vram_flush
+        .global pal_flush, pal_write, vram_mark_dirty, video_mark_all_dirty, pal_table, vram_store, vram_flush
 
 * ------------------------------------------------------------------------------------------
 * Minimal video init (used by the error screen too): LSPC mode, all sprites off, fix cleared.
@@ -208,9 +208,12 @@ video_vblank:
         move.l  #0x7FFF7FFF,PALETTES+PAL_FIX*32+4
         move.l  #0x7FFF7FFF,PALETTES+PAL_FIX*32+8
         move.l  #0x00000000,PALETTES+PAL_FIX*32+12
-1:
+1:      bsr     pal_flush
+        bra     9f
+* pal_flush: the dirty palettes (ARC_PAL) to palette RAM
+pal_flush:
         tst.b   rt_pal_any
-        beq.s   9f
+        beq.s   8f
         clr.b   rt_pal_any
         lea     rt_pal_dirty,a0
         lea     ARC_PAL,a1
@@ -241,6 +244,7 @@ video_vblank:
         lea     32(a2),a2
         lea     32(a4),a4
         dbra    d0,1b
+8:      rts
 9:      /* rewrite 4 palettes per VBlank (all of them every 16 frames) and the shadow / light palettes:
            the BIOS clears the palette RAM when a coin goes in on MVS, and the converted palettes are
            otherwise only written when the game changes them */

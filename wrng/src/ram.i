@@ -22,6 +22,7 @@
         .equ    rt_start_req,   RT_VARS+0x05    /* .b PLAYER_START seen */
         .equ    rt_pal_dirty,   RT_VARS+0x08    /* 64 bytes: one flag per 16-colour palette (0..63) */
         .equ    rt_pal_any,     RT_VARS+0x48    /* .b any palette dirty */
+        .equ    rt_pal_ahead,   RT_VARS+0x49    /* .b the running tick converted its palettes (ARC_PAL ahead of the screen) */
         .equ    rt_col_dirty,   RT_VARS+0x50    /* 2 x 64 bytes: dirty flag per (layer, map column) */
         .equ    rt_col_loaded,  RT_VARS+0xD0    /* 2 x 24 bytes: map column currently loaded in column sprite s (0xFF none) */
         .equ    rt_err_regs,    RT_VARS+0x100   /* 16 longs */

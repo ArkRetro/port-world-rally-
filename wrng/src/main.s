@@ -101,6 +101,10 @@ irq_vblank:
            sealed before it (if any) is */
         addq.w  #1,rt_skip
         bsr     vram_flush
+        tst.b   rt_pal_ahead            /* and its palettes, unless the running tick already converted its own */
+        bne.s   4f                      /* (otherwise a sprite switching palette showed it black until the */
+        bsr     pal_flush               /* long tick ended: the WORLD RALLY logo in the intro) */
+4:
         bsr     tick_bonus
         cmpi.b  #4,rt_mw_age            /* the VBlank's tick is owed to the main loop all the same */
         bcc.s   3f
