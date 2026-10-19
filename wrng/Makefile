@@ -14,7 +14,7 @@ DUMPS  ?= src/dumps
 BUILD  ?= build
 
 RT_SRCS = src/header.s src/main.s src/video.s src/fix.s
-GAME_SRCS = src/glue.s src/mcu.s src/decrypt.s src/sound.s
+GAME_SRCS = src/glue.s src/mcu.s src/decrypt.s src/sound.s src/eye.s
 OKI_HI ?= $(ARCADE)/worldr14.c01
 OKI_LO ?= $(ARCADE)/worldr15.c03
 WRPROG_HI ?= $(ARCADE)/wrallyd/worldr17.c23
@@ -38,9 +38,13 @@ $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/sample_dur.inc $(BUILD)/okimap
 	python3 -I tools/oki2adpcma.py $(OKI_HI) $(OKI_LO) $(BUILD)/wr_cpu.bin $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/okimap.csv
 
 # ---- graphics (C ROMs) and fix (S ROM) ----
-$(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 $(BUILD)/pen0.bin: tools/gfx2crom.py
+$(BUILD)/logo.bin $(BUILD)/logo.inc: tools/mklogo.py
 	mkdir -p $(BUILD)
-	python3 -I tools/gfx2crom.py $(ARCADE)/worldr21.i13 $(ARCADE)/worldr20.i11 $(ARCADE)/worldr19.i09 $(ARCADE)/worldr18.i07 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 --rescue --shadow --light --pen0 $(BUILD)/pen0.bin
+	python3 -I tools/mklogo.py $(BUILD)/logo.bin $(BUILD)/logo.inc
+
+$(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 $(BUILD)/pen0.bin: tools/gfx2crom.py $(BUILD)/logo.bin
+	mkdir -p $(BUILD)
+	python3 -I tools/gfx2crom.py $(ARCADE)/worldr21.i13 $(ARCADE)/worldr20.i11 $(ARCADE)/worldr19.i09 $(ARCADE)/worldr18.i07 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 --rescue --shadow --light --extra $(BUILD)/logo.bin --pen0 $(BUILD)/pen0.bin
 
 $(BUILD)/wrng-s1.s1: tools/mkfont.py
 	mkdir -p $(BUILD)
@@ -69,9 +73,9 @@ $(BUILD)/stubs.s: tools/mkrom.py analysis/absrefs.csv $(BUILD)/wr_cpu.bin
 $(BUILD)/srch_idx.inc: tools/mksrch.py $(BUILD)/wr_cpu.bin
 	python3 -I tools/mksrch.py $(BUILD)/wr_cpu.bin $@
 
-$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin $(BUILD)/sample_dur.inc $(BUILD)/srch_idx.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
+$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin $(BUILD)/sample_dur.inc $(BUILD)/srch_idx.inc $(BUILD)/logo.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
 	for f in $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(dir $(WRDALLAS)) -I $(BUILD) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
-	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_sound.o $(BUILD)/g_stubs.o
+	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_sound.o $(BUILD)/g_eye.o $(BUILD)/g_stubs.o
 
 $(BUILD)/game.bin $(BUILD)/game.sym: $(BUILD)/game.elf
 	$(OBJCOPY) -O binary --gap-fill=0 $< $(BUILD)/game.bin

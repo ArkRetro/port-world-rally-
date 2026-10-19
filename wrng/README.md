@@ -104,10 +104,11 @@ src/mcu.s      reimplementación del DS5002FP (scripts de carrera, autopiloto)
 src/decrypt.s  descifrado Gaelco de las palabras de tile escritas en VRAM
 src/sound.s    hooks del secuenciador OKI del arcade → órdenes al Z80
 src/fix.s      texto en la capa fix (depuración)
+src/eye.s      pantalla de arranque (eyecatcher de la BIOS): logo GAELCO, MAX 330 MEGA / PRO-BLOSTE SPEC
 src/viewer.s   programa de pruebas (visor de volcados)
 z80/driver.s   driver de sonido Z80 (ADPCM-A, protocolo con ack, canal + volumen)
 tools/mkrom.py parcheador del programa del arcade y ensamblado de la P-ROM de 2 MB
-tools/gfx2crom.py, mkfont.py, oki2adpcma.py, mksoftlist.py, mkneo.py
+tools/gfx2crom.py, mkfont.py, mklogo.py, oki2adpcma.py, mksoftlist.py, mkneo.py
 analysis/      informes y tablas del análisis estático del 68k y del MCU
 ```
 

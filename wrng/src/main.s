@@ -48,7 +48,8 @@ user_init:
         jmp     SYSTEM_RETURN
 
 user_eyecatcher:
-        /* request 1: we claimed to draw the eyecatcher ourselves (header 0x114 = 1) - skip it */
+        /* request 1: we draw the eyecatcher ourselves (header 0x114 = 1): GAELCO / PRO-BLOSTE SPEC (eye.s) */
+        bsr     eye_main
         jmp     SYSTEM_RETURN
 
 user_demo:

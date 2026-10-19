@@ -134,7 +134,7 @@ def main():
 
         print('graphics...')
         run(T('tools', 'gfx2crom.py'), T('worldr21.i13'), T('worldr20.i11'), T('worldr19.i09'), T('worldr18.i07'),
-            T('wrng-c1.c1'), T('wrng-c2.c2'), *man['gfx2crom_flags'], '--pen0', T('pen0.bin'))
+            T('wrng-c1.c1'), T('wrng-c2.c2'), *[T(f) if f.endswith('.bin') else f for f in man['gfx2crom_flags']], '--pen0', T('pen0.bin'))
         print('sound...')
         run(T('tools', 'oki2adpcma.py'), T('worldr14.c01'), T('worldr15.c03'), T('wr_cpu.bin'), T('wrng-v1.v1'),
             T('samples.inc'), T('okimap.csv'))

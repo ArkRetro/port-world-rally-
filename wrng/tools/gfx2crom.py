@@ -22,6 +22,7 @@ cannot recolour what is below, so the beam is an open dither of light pixels: pe
 steps brighter) lights 1 to 5 pixels in 16 (ordered 4x4 pattern; 5 in 16 in the middle of the beam, which
 is pen 15), keeping the pen so
 that the runtime's light palette can give each step its own brightness.  The roads stay visible below.
+--extra FILE appends the port's own tiles (256 bytes of pens each) from 0xC000.
 The C ROMs are padded to a power of two.
 """
 import sys
@@ -126,8 +127,13 @@ def main():
                         m[i] = p
             light.append(bytes(m))
         tiles = tiles + light
-        while len(tiles) & (len(tiles) - 1):
-            tiles.append(bytes(256))
+    if '--extra' in a:
+        # the port's own pictures (tools/mklogo.py: the start-up screen), from tile 0xC000
+        assert len(tiles) == 0xC000, len(tiles)
+        x = open(a[a.index('--extra') + 1], 'rb').read()
+        tiles = tiles + [x[i:i + 256] for i in range(0, len(x), 256)]
+    while len(tiles) & (len(tiles) - 1):
+        tiles.append(bytes(256))
     c1, c2 = encode_neogeo(tiles)
     open(oc1, 'wb').write(c1)
     open(oc2, 'wb').write(c2)

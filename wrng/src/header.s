@@ -46,7 +46,7 @@ _start:
         .long   0x100000                /* 0x10A program size                                          */
         .long   backup_area             /* 0x10E backup RAM work area pointer                         */
         .word   0x0100                  /* 0x112 backup RAM size (bytes)                              */
-        .byte   1                       /* 0x114 eyecatcher: 1 = game handles it (we simply return)   */
+        .byte   1                       /* 0x114 eyecatcher: 1 = game draws it (eye.s)                */
         .byte   0                       /* 0x115 */
         .long   softdips_jp             /* 0x116 */
         .long   softdips_us             /* 0x11A */

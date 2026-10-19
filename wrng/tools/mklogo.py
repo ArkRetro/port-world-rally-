@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""Graphics of the port's start-up screen (the Neo Geo "eye-catcher" slot, header 0x114 = 1): a metallic
+GAELCO logo and the lines "MAX 330 MEGA" / "PRO-BLOSTE SPEC", drawn here from a system font - nothing taken
+from the Neo Geo BIOS or from the arcade.
+
+Writes <out.bin>: 4bpp tiles (256 bytes of pens each, row-major, as gfx2crom.decode_arcade gives them), placed
+by gfx2crom --extra at tile EXTRA_BASE; and <out.inc>: the layout (columns / rows of each picture, its first
+tile) and the palettes, with 16 fade steps each (step 0 black .. 15 full).
+
+usage: mklogo.py <out.bin> <out.inc> [--png preview.png]
+"""
+import sys
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+EXTRA_BASE = 0xC000
+FONTS = ('/usr/share/fonts/opentype/inter/Inter-ExtraBold.otf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf')
+FONTS_IT = ('/usr/share/fonts/truetype/freefont/FreeSansBoldOblique.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf')
+
+
+def font(paths, size):
+    for p in paths:
+        try:
+            return ImageFont.truetype(p, size)
+        except OSError:
+            pass
+    raise SystemExit('no font found: ' + ', '.join(paths))
+
+
+def picture(text, fnt, height, rows, spacing=0):
+    """Pens of `text` (rows x 16 pixels tall, width a multiple of 16, centred): pen 1 the outline, pens 2..15
+    a vertical gradient (2 at the top: the gradient table decides the colours)."""
+    big = 4
+    f = font(fnt, height * big)
+    l, t, r, b = f.getbbox(text)
+    w = r - l + 2 * big * 3 + spacing * big * (len(text) - 1)
+    h = b - t + 2 * big * 3
+    im = Image.new('L', (w, h), 0)
+    d = ImageDraw.Draw(im)
+    x = big * 3 - l
+    for ch in text:                                         # letter by letter: extra spacing if asked
+        d.text((x, big * 3 - t), ch, fill=255, font=f)
+        x += f.getlength(ch) + spacing * big
+    mask = im.resize((w // big, h // big), Image.LANCZOS).point(lambda v: 255 if v >= 110 else 0)
+    l, t, r, b = mask.getbbox()                             # the letters' own extent (spacing, kerning)
+    mask = mask.crop((l - 2, t - 2, r + 2, b + 2))          # + the 2-pixel outline: centred exactly below
+    outline = mask.filter(ImageFilter.MaxFilter(5))
+    W = (mask.width + 15) // 16 * 16
+    H = rows * 16
+    assert mask.height <= H and W <= 304, (text, mask.size)
+    ox, oy = (W - mask.width) // 2, (H - mask.height) // 2
+    pens = [[0] * W for _ in range(H)]
+    top, bot = oy + 2, oy + mask.height - 2                 # glyph rows (for the gradient)
+    for y in range(mask.height):
+        for x in range(mask.width):
+            if mask.getpixel((x, y)):
+                g = (y + oy - top) / max(1, bot - top)
+                pens[y + oy][x + ox] = 2 + max(0, min(13, int(g * 13.99)))
+            elif outline.getpixel((x, y)):
+                pens[y + oy][x + ox] = 1
+    return pens, W // 16, rows
+
+
+def tiles(pens, cols, rows):
+    """Tiles column by column (a sprite is a column: rows tiles from the top)."""
+    out = []
+    for c in range(cols):
+        for r in range(rows):
+            out.append(bytes(pens[r * 16 + y][c * 16 + x] for y in range(16) for x in range(16)))
+    return out
+
+
+def ngcolor(r, g, b):
+    """Neo Geo colour word from 8-bit RGB (5 bits per channel: the low bit in 12-14)."""
+    r, g, b = (min(31, v * 31 // 255) for v in (r, g, b))
+    return ((r & 1) << 14) | ((g & 1) << 13) | ((b & 1) << 12) | ((r >> 1) << 8) | ((g >> 1) << 4) | (b >> 1)
+
+
+def lerp(a, b, t):
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def palette(outline, stops):
+    """16 colours: 0 transparent, 1 outline, 2..15 along the gradient stops."""
+    cols = [(0, 0, 0), outline]
+    for i in range(14):
+        t = i / 13 * (len(stops) - 1)
+        k = min(int(t), len(stops) - 2)
+        cols.append(lerp(stops[k], stops[k + 1], t - k))
+    return cols
+
+
+def main(a):
+    out_bin, out_inc = a[0], a[1]
+    logo = picture('GAELCO', FONTS, 54, 4, spacing=2)
+    max_ = picture('MAX 330 MEGA', FONTS_IT, 20, 2, spacing=1)
+    spec = picture('PRO-BLOSTE SPEC', FONTS_IT, 20, 2, spacing=1)
+    # metallic logo: white top, steel blue, a bright band, deep blue base; warm red/yellow lettering below
+    pal_logo = palette((8, 16, 72), [(255, 255, 255), (150, 190, 255), (40, 90, 220), (210, 230, 255),
+                                     (60, 110, 230), (16, 40, 150)])
+    pal_text = palette((70, 0, 0), [(255, 250, 170), (255, 210, 40), (255, 120, 0), (220, 30, 0)])
+    allt, base, lines = [], EXTRA_BASE, []
+    for name, (pens, cols, rows) in (('LOGO', logo), ('MAXT', max_), ('SPEC', spec)):
+        lines.append('        .equ    %s_TILE, 0x%X' % (name, base + len(allt)))
+        lines.append('        .equ    %s_COLS, %d' % (name, cols))
+        lines.append('        .equ    %s_ROWS, %d' % (name, rows))
+        allt += tiles(pens, cols, rows)
+    open(out_bin, 'wb').write(b''.join(allt))
+    inc = ['* generated by tools/mklogo.py - start-up screen layout and palettes'] + lines
+    for name, pal in (('pal_logo', pal_logo), ('pal_text', pal_text)):
+        inc.append('%s:                      /* 16 fade steps (0 black .. 15 full) x 16 colours */' % name)
+        for step in range(16):
+            row = [0 if i == 0 else ngcolor(*lerp((0, 0, 0), c, step / 15)) for i, c in enumerate(pal)]
+            inc.append('        .word   ' + ','.join('0x%04X' % v for v in row))
+    open(out_inc, 'w').write('\n'.join(inc) + '\n')
+    print('logo tiles:', len(allt), 'GAELCO %dx%d, MAX %dx%d, SPEC %dx%d' % (logo[1], logo[2], max_[1], max_[2],
+                                                                           spec[1], spec[2]))
+    if '--png' in a:
+        rgb = {}
+        sheet = Image.new('RGB', (320, 224), (0, 0, 0))
+        y = 40
+        for (pens, cols, rows), pal in ((logo, pal_logo), (max_, pal_text), (spec, pal_text)):
+            x0 = (320 - cols * 16) // 2
+            for yy in range(rows * 16):
+                for xx in range(cols * 16):
+                    p = pens[yy][xx]
+                    if p:
+                        sheet.putpixel((x0 + xx, y + yy), pal[p])
+            y += rows * 16 + 12
+        sheet.resize((960, 672), Image.NEAREST).save(a[a.index('--png') + 1])
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

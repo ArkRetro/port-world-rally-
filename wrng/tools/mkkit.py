@@ -63,7 +63,7 @@ def main(build, out):
     manifest = {
         'version': 1,
         'roms': {k: v for k, v in ROMS.items()},
-        'gfx2crom_flags': ['--rescue', '--shadow', '--light'],
+        'gfx2crom_flags': ['--rescue', '--shadow', '--light', '--extra', 'logo.bin'],
         'regions': regions,
         'neo_sha1': sha1(neo),
         'neo_name': 'World Rally NG',
@@ -74,6 +74,7 @@ def main(build, out):
         z.writestr('game.sym', rd('game.sym'))
         z.writestr('wrng-m1.m1', bytes(m1))
         z.writestr('wrng-s1.s1', rd('wrng-s1.s1'))
+        z.writestr('logo.bin', rd('logo.bin'))           # the start-up screen (tools/mklogo.py)
         z.writestr('stub_sizes.json', rd('stub_sizes.json'))
         for dst, src in SCRIPTS.items():
             z.write(os.path.join(root, src), dst)
