@@ -86,7 +86,7 @@ def main():
     if '--rescue' in a:
         # the runtime shows the tiles 14 pixels wide (SCB2 horizontal shrink 0xD), which drops source columns
         # 5 and 11 (MAME zoom_x_tables[13]): a one-pixel stroke there (unlike both neighbours) is moved onto the neighbour that belongs
-        # to a wider run, so that thin letters and outlines keep it
+        # to a wider run (right, else left), else onto a background neighbour, so that thin letters and outlines keep it
         out = []
         for n, t in enumerate(tiles):
             m = bytearray(t)
@@ -98,6 +98,10 @@ def main():
                         continue
                     if m[r + c + d] == m[r + c + 2 * d]:
                         m[r + c + d] = p
+                    elif m[r + c - d] == m[r + c - 2 * d]:                 # or the left one
+                        m[r + c - d] = p
+                    elif m[r + c + d] == 0 or m[r + c - d] == 0:           # or onto the background
+                        m[r + c + (d if m[r + c + d] == 0 else -d)] = p
             out.append(bytes(m))
         tiles = out
     if '--shadow' in a:
