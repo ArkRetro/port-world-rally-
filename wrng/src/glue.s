@@ -664,13 +664,11 @@ palette_sync:
         move.b  d0,rt_pal_half          /* quarter checked by this call */
         moveq   #0,d5                   /* palettes converted */
         bsr.s   ps_quarter
-        cmpi.w  #2,d5
-        bcc.s   1f
-        tst.w   d5
-        beq.s   9f
-        cmpi.b  #1,ARC_WRAM+0x1B3       /* in a race (a colour cycle changes one palette every frame) only */
-        beq.s   9f                      /* when two changed; elsewhere one is enough */
-1:      addq.b  #1,d0                   /* one changed: the other quarters as well - a fade then darkens the
+        cmpi.b  #1,ARC_WRAM+0x1B3       /* outside a race: every quarter, every frame (a palette written in */
+        bne.s   1f                      /* another quarter showed its new sprites black for up to 3 frames) */
+        cmpi.w  #2,d5                   /* in a race (a colour cycle changes one palette every frame): the */
+        bcs.s   9f                      /* others only when two changed */
+1:      addq.b  #1,d0                   /* the other quarters as well - a fade then darkens the
                                            whole screen at once (with ">= 2 changed" a quarter holding a
                                            single palette of the fade left the others up to 3 frames behind) */
         and.b   #3,d0
