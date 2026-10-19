@@ -1979,9 +1979,9 @@ spr_col_table_night:
         .set    i,i+1
         .endr
 
-* light_pal: palette PAL_LIGHT, pen p = p-8 steps brighter (lit ground: warm sand, brighter for higher pens)
+* light_pal: palette PAL_LIGHT, pen p = p-8 steps brighter (lit ground: a soft beige, brighter for higher pens)
 light_pal:
-        .word   0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x0863,0x0974,0x0A85,0x0B96,0x0CA6,0x0EC7,0x0FD9
+        .word   0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x0764,0x0875,0x0986,0x0A97,0x0BA8,0x0DC9,0x0EDB
 
 * pen0_table: one byte per arcade tile, 1 if it has at least 64 pen-0 pixels (gfx2crom.py --pen0)
 pen0_table:
