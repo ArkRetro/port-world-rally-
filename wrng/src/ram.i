@@ -23,6 +23,8 @@
         .equ    rt_pal_dirty,   RT_VARS+0x08    /* 64 bytes: one flag per 16-colour palette (0..63) */
         .equ    rt_pal_any,     RT_VARS+0x48    /* .b any palette dirty */
         .equ    rt_hi_pend,     RT_VARS+0x4C    /* .b HI columns left to re-range after the window moved (hi_vt_moved) */
+        .equ    HI_TOP,         48              /* HI columns: only from this screen line down (below the HUD) */
+        .equ    HI_ROWS,        13              /* map rows covering lines HI_TOP..223 */
         .equ    rt_hi_vt,       RT_VARS+0x4B    /* .b map row at the top of the screen (layer 0): the HI window starts there */
         .equ    rt_pal_ahead,   RT_VARS+0x49    /* .b the running tick converted its palettes (ARC_PAL ahead of the screen) */
         .equ    rt_col_dirty,   RT_VARS+0x50    /* 2 x 64 bytes: dirty flag per (layer, map column) */

@@ -625,17 +625,13 @@ layer_update:
         add.w   #CROP_Y,d1
         cmpi.w  #SPR_LAYER0,d7
         bne.s   8f
-        move.w  d1,d2                   /* map row at the top of the screen: the HI columns only hold the */
-        lsr.w   #4,d2                   /* rows on the screen, from one above it (a range over all 32 covered */
-        subq.w  #1,d2                   /* the HUD lines with blank tiles and pushed its sprites past 96 per */
-        and.w   #31,d2                  /* line).  18 rows: the window follows two rows late */
-        sub.b   rt_hi_vt,d2
-        addq.b  #1,d2
-        cmpi.b  #2,d2
-        bls.s   8f
-        subq.b  #1,d2
-        add.b   d2,rt_hi_vt
-        andi.b  #31,rt_hi_vt
+        move.w  d1,d2                   /* the HI columns only hold the rows from screen line HI_TOP down: */
+        add.w   #HI_TOP,d2              /* the HUD lines carry 48 layer sprites and up to 30 HUD ones, and */
+        lsr.w   #4,d2                   /* HI columns there (cells above the sprites: trees, the finish */
+        and.w   #31,d2                  /* banner) pushed them past 96 per line - letters lost */
+        cmp.b   rt_hi_vt,d2
+        beq.s   8f
+        move.b  d2,rt_hi_vt
         move.b  #NCOLSPR,rt_hi_pend     /* re-range every HI column, a quarter of them per frame */
 8:      tst.b   rt_hi_pend
         beq.s   9f
@@ -955,7 +951,7 @@ hi_count:
         rts
 
 * hi_range: d0 = s, d1 = map column, d7 = 1 to queue the column whatever its rows: the HI column holds the
-* category-1 rows among the 18 from rt_hi_vt (the screen and a row above it; a range over all 32 rows covered the
+* category-1 rows among the HI_ROWS from rt_hi_vt (the screen below line HI_TOP; a range over all 32 rows covered the
 * HUD lines with blank tiles and pushed its sprites past 96 per line).  rt_hi_cnt[s] = its height (0: none),
 * CMP_HI_R0/H[s] = its rows (they may wrap past row 31); queued when they changed.  Trashes d2-d6/a0.
 hi_range:
@@ -966,7 +962,7 @@ hi_range:
         moveq   #0,d6
         move.b  rt_hi_vt,d6
         ror.l   d6,d3                   /* bit i = row vt + i */
-        and.l   #0x3FFFF,d3             /* 18 rows */
+        and.l   #(1<<HI_ROWS)-1,d3
         moveq   #0,d4                   /* first */
         moveq   #0,d5                   /* height */
         tst.l   d3
