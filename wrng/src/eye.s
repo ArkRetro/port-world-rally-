@@ -35,6 +35,9 @@
         .endm
 
 eye_main:
+        move.l  #EYE_MAGIC,EYE_SHOWN
+        move.w  sr,-(sp)
+        ori.w   #0x0700,sr                      /* no interrupts (the BIOS's request 1 has them off too) */
         bsr     video_init_min                  /* sprites off, fix cleared, black backdrop */
         moveq   #0,d0
         bsr     eye_pal_logo
@@ -116,6 +119,7 @@ eye_loop:
 3:      move.w  #0,REG_VRAMRW
         nop
         dbra    d0,3b
+        move.w  (sp)+,sr
         rts
 
 * eye_level: d0 = frames since the fade-in began (negative: not yet) -> d0 = palette step 0..15, ramped

@@ -54,8 +54,12 @@ user_eyecatcher:
 
 user_demo:
 user_title:
-        /* requests 2 (demo) and 3 (title after a coin, MVS): run the game from the top */
-        move.b  #1,BIOS_USER_MODE
+        /* requests 2 (demo) and 3 (title after a coin, MVS): run the game from the top.  The start-up screen
+           first if the BIOS did not ask for it (MVS, Universe BIOS): once after power-on */
+        cmpi.l  #EYE_MAGIC,EYE_SHOWN
+        beq.s   1f
+        bsr     eye_main
+1:      move.b  #1,BIOS_USER_MODE
         bsr     rt_clear_ram
         bsr     video_init
         bsr     sound_init

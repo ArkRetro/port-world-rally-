@@ -156,7 +156,9 @@
         .equ    CMP_BG_DIRTY,   0x10EF78
         .equ    LAY_H,          0x10EF90        /* 2 x 24 bytes: tiles shown by layer column s (layer 0, then layer 1): past its last non-empty row, 0 = empty */
 
-        .equ    RT_CLEAR_END,   0x10F000        /* RAM cleared at start; 0x10F000-0x10F2FF = runtime stack */
+        .equ    EYE_SHOWN,      0x10EFFC        /* .l EYE_MAGIC once the start-up screen was shown (not cleared) */
+        .equ    EYE_MAGIC,      0x47414531      /* "GAE1" */
+        .equ    RT_CLEAR_END,   0x10EFFC        /* RAM cleared at start; 0x10F000-0x10F2FF = runtime stack */
         .equ    RT_STACK,       BIOS_RAM        /* runtime stack top */
 
 * ---- arcade I/O shadow offsets (arcade address - 0x700000) ----
