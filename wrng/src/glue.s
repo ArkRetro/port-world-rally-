@@ -58,7 +58,8 @@ io_init:
 * 4 A,5 B,6 C,7 D, active high after SYSTEM_IO).  A = accelerate, B = gear toggle, C = accelerate too.
 io_update:
         move.w  #0xFFFF,d0              /* idle (the gear bit 4 is set below) */
-        move.b  BIOS_P1CURRENT,d1
+        move.b  REG_P1CNT,d1            /* the joystick as it is now (BIOS_P1CURRENT is the VBlank's copy: */
+        not.b   d1                      /* a tick run later in the frame saw the press a frame late) */
         btst    #0,d1
         beq.s   1f
         bclr    #ARC_P1_UP,d0
