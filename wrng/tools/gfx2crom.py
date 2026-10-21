@@ -101,6 +101,25 @@ def main():
                     row.insert(drop_at - h, row[drop_at - h - 1])
                     m[y * 16 + h:y * 16 + h + 8] = bytes(row)
             tiles[n] = bytes(m)
+    if '--font' in a:
+        # the big italic font (EXTENDED PLAY, Ready ?, Time Exceeded: --font first-last): in each tile the two
+        # inner columns that lose least go instead of 5 and 11 (the edges stay, so that letters spanning two
+        # tiles still meet), the rest shifted so that the shrink drops a filler there
+        lo, hi = (int(v) for v in a[a.index('--font') + 1].split('-'))
+        for n in range(lo, hi + 1):
+            t = tiles[n]
+            def loss(c):
+                return sum(1 for y in range(16) if t[y * 16 + c] != t[y * 16 + c - 1])
+            l = [0] + [loss(c) for c in range(1, 16)]
+            best = min((l[i] + l[j], (i, j) != (5, 11), i, j) for i in range(1, 15) for j in range(i + 1, 15))
+            i, j = best[2], best[3]
+            m = bytearray(256)
+            for y in range(16):
+                row = [t[y * 16 + c] for c in range(16) if c not in (i, j)]
+                row.insert(5, row[4])
+                row.insert(11, row[10])
+                m[y * 16:y * 16 + 16] = bytes(row)
+            tiles[n] = bytes(m)
     if '--rescue' in a:
         # the runtime shows the tiles 14 pixels wide (SCB2 horizontal shrink 0xD), which drops source columns
         # 5 and 11 (MAME zoom_x_tables[13]): a one-pixel stroke there (unlike both neighbours) is moved onto the neighbour that belongs

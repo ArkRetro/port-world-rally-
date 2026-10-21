@@ -49,7 +49,7 @@ $(BUILD)/logo.bin $(BUILD)/logo.inc: tools/mklogo.py
 
 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 $(BUILD)/pen0.bin: tools/gfx2crom.py $(BUILD)/logo.bin
 	mkdir -p $(BUILD)
-	python3 -I tools/gfx2crom.py $(ARCADE)/worldr21.i13 $(ARCADE)/worldr20.i11 $(ARCADE)/worldr19.i09 $(ARCADE)/worldr18.i07 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 --text 4639-4651 --rescue --shadow --light --extra $(BUILD)/logo.bin --pen0 $(BUILD)/pen0.bin
+	python3 -I tools/gfx2crom.py $(ARCADE)/worldr21.i13 $(ARCADE)/worldr20.i11 $(ARCADE)/worldr19.i09 $(ARCADE)/worldr18.i07 $(BUILD)/wrng-c1.c1 $(BUILD)/wrng-c2.c2 --text 4639-4651 --font 14711-14809 --rescue --shadow --light --extra $(BUILD)/logo.bin --pen0 $(BUILD)/pen0.bin
 
 $(BUILD)/wrng-s1.s1: tools/mkfont.py
 	mkdir -p $(BUILD)
