@@ -657,7 +657,15 @@ trap_error_pc:
 * three quarters are checked too in the same call (a fade or a new screen changes them all at once).
 * The compare is 8 cmpm.l per palette with an early exit on the first difference.
 palette_sync:
-        lea     pal_table,a4
+        moveq   #2,d0                   /* backdrop columns: behind every layer-1 cell with pen-0 pixels, */
+        cmpi.b  #1,ARC_WRAM+0x1B3       /* in a race only behind those with many (sprites per scanline) */
+        bne.s   1f
+        moveq   #0,d0
+1:      cmp.b   rt_bg_bit,d0
+        beq.s   2f
+        move.b  d0,rt_bg_bit
+        st      rt_bg_recount
+2:      lea     pal_table,a4
         moveq   #0,d0
         move.b  rt_pal_half,d0
         addq.b  #1,d0

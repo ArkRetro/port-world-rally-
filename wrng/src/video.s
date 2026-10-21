@@ -1139,8 +1139,9 @@ bg_count:
         beq.s   2f                      /* colour 0 black */
         swap    d0
         and.w   #0x3FFF,d0
-        btst    #0,(a2,d0.w)
-        beq.s   2f                      /* no pen-0 pixels */
+        move.b  rt_bg_bit,d1
+        btst    d1,(a2,d0.w)
+        beq.s   2f                      /* no (or, in a race, few) pen-0 pixels */
         addq.w  #1,d3
         tst.w   d4
         bpl.s   3f
@@ -1530,7 +1531,9 @@ bg_sig:
         swap    d0
         and.w   #0x3FFF,d0
         lea     pen0_table,a1
-        move.b  (a1,d0.w),d0
+        move.b  rt_bg_bit,d1
+        btst    d1,(a1,d0.w)
+        sne     d0
         and.w   #1,d0
         movea.l (sp)+,a1
         rts
@@ -1992,7 +1995,8 @@ spr_col_table_night:
 light_pal:
         .word   0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x0553,0x0654,0x0764,0x0875,0x0986,0x0A97,0x0BA8
 
-* pen0_table: one byte per arcade tile, 1 if it has at least 64 pen-0 pixels (gfx2crom.py --pen0)
+* pen0_table: one byte per arcade tile (gfx2crom.py --pen0): bit 0 >= 64 pen-0 pixels, bit 1 all pen 0,
+* bit 2 some pen 0 (the backdrop columns test bit rt_bg_bit: 0 in a race, 2 elsewhere)
 pen0_table:
         .incbin "pen0.bin"
 
