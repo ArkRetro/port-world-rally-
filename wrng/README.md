@@ -59,6 +59,11 @@ mame neogeo wrng -rompath "/ruta/bios;$(pwd)/build/roms" -hashpath $(pwd)/build/
 mame aes    wrng -rompath "/ruta/bios;$(pwd)/build/roms" -hashpath $(pwd)/build/hash
 ```
 
+Jingle opcional en la pantalla de arranque (GAELCO / PRO-BLOSTE SPEC): `make neo ARCADE=... JINGLE=audio.mp3`
+(cualquier formato que lea ffmpeg; hacen falta numpy y scipy). `tools/mkjingle.py` lo remezcla con sonido de consola
+de 16 bits (filtro, saturación suave, eco), lo codifica en ADPCM-A en un hueco de la V ROM y la pantalla dura lo que
+el jingle. El audio no va nunca en el kit: sin `JINGLE` la pantalla es muda y el `.neo` es el mismo que da el kit.
+
 El `.neo` se copia tal cual a la tarjeta del NeoSD. Para Darksoft/BackBit puede usarse
 `../tools/builds/pack_formats.py build/release/wrng.neo <dir> wrng "World Rally NG"`.
 

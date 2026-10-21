@@ -1,4 +1,4 @@
-build/
+build*/
 src/dumps
 z80/samples.inc
 __pycache__/

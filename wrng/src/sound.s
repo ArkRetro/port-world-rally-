@@ -21,7 +21,7 @@
 
         .text
         .global snd_hook_stopall, snd_hook_stop0, snd_hook_stop1, snd_hook_bank, snd_hook_phrase, snd_hook_play
-        .global snd_vblank, snd_init
+        .global snd_vblank, snd_init, snd_send
 
         .equ    Z80_STOPALL,    0x08
         .equ    Z80_STOPCH,     0x0C

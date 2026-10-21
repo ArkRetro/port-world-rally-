@@ -11,6 +11,7 @@
         .section .rodata
         .include "logo.inc"             /* first: its sizes are used in expressions below */
         .include "version.inc"          /* ver_str: "V<version>" (Makefile, from VERSION) */
+        .include "jingle.inc"           /* JINGLE_FRAMES: 0, or the length of the optional jingle (mkjingle.py) */
         .text
 
         .global eye_main
@@ -28,7 +29,11 @@
         .equ    T_LOGO, 0                       /* frame the logo starts opening (32 frames) */
         .equ    T_MAX,  40                      /* frames the lines start fading in (16 frames) */
         .equ    T_SPEC, 56
-        .equ    T_OUT,  200                     /* fade out (16 frames), then back to the BIOS */
+        .if     JINGLE_FRAMES > 216             /* fade out (16 frames), then back to the BIOS */
+        .equ    T_OUT,  JINGLE_FRAMES-16        /* (with a jingle: when it ends) */
+        .else
+        .equ    T_OUT,  200
+        .endif
         .equ    T_END,  T_OUT+16
 
         .macro  SCB3Y yline, rows
@@ -82,6 +87,9 @@ eye_main:
         moveq   #34,d0
         moveq   #27,d1
         jsr     fix_print
+        .if     JINGLE_FRAMES
+        bsr     eye_jingle
+        .endif
         moveq   #0,d7                           /* frame */
 eye_loop:
         bsr     eye_wait_vbl
@@ -134,6 +142,20 @@ eye_loop:
         dbra    d0,4b
         move.w  (sp)+,sr
         rts
+
+        .if     JINGLE_FRAMES
+* eye_jingle: our Z80 program (the cartridge's since video_init_min) restarted, then the jingle on channel 0
+eye_jingle:
+        move.b  #3,REG_SOUND                    /* soft reset: our driver from address 0 */
+        move.w  #20000,d0
+1:      move.b  d0,REG_WATCHDOG
+        dbra    d0,1b
+        move.b  #0x80,d0                        /* channel 0, full volume */
+        jsr     snd_send
+        move.b  #0xC0+0x6F-0x40,d0              /* play slot 0x6F */
+        jsr     snd_send
+        rts
+        .endif
 
 * eye_level: d0 = frames since the fade-in began (negative: not yet) -> d0 = palette step 0..15, ramped
 * down again over the last 16 frames (T_OUT..T_END).  Uses d7 (frame).

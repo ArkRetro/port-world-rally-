@@ -34,9 +34,13 @@ $(BUILD)/wrng-m1.m1: z80/driver.s $(BUILD)/samples.inc
 	makebin -p -s 65536 $(BUILD)/driver.ihx $@
 	python3 -I -c "import sys; d=open('$@','rb').read(); open('$@','wb').write(d+bytes(0x10000-len(d)))"
 
-$(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/sample_dur.inc $(BUILD)/okimap.csv: tools/oki2adpcma.py $(BUILD)/wr_cpu.bin
+$(BUILD)/vrom_oki.v1 $(BUILD)/samples_oki.inc $(BUILD)/sample_dur.inc $(BUILD)/okimap.csv: tools/oki2adpcma.py $(BUILD)/wr_cpu.bin
 	mkdir -p $(BUILD)
-	python3 -I tools/oki2adpcma.py $(OKI_HI) $(OKI_LO) $(BUILD)/wr_cpu.bin $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/okimap.csv
+	python3 -I tools/oki2adpcma.py $(OKI_HI) $(OKI_LO) $(BUILD)/wr_cpu.bin $(BUILD)/vrom_oki.v1 $(BUILD)/samples_oki.inc $(BUILD)/okimap.csv
+
+# optional jingle of your own for the start-up screen (make ... JINGLE=file.mp3; never in the kit)
+$(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/jingle.inc: tools/mkjingle.py $(BUILD)/vrom_oki.v1 $(BUILD)/samples_oki.inc $(JINGLE)
+	python3 -I tools/mkjingle.py $(BUILD)/vrom_oki.v1 $(BUILD)/samples_oki.inc $(BUILD)/wrng-v1.v1 $(BUILD)/samples.inc $(BUILD)/jingle.inc $(JINGLE)
 
 # ---- graphics (C ROMs) and fix (S ROM) ----
 $(BUILD)/version.inc: VERSION
@@ -78,7 +82,7 @@ $(BUILD)/stubs.s: tools/mkrom.py analysis/absrefs.csv $(BUILD)/wr_cpu.bin
 $(BUILD)/srch_idx.inc: tools/mksrch.py $(BUILD)/wr_cpu.bin
 	python3 -I tools/mksrch.py $(BUILD)/wr_cpu.bin $@
 
-$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin $(BUILD)/sample_dur.inc $(BUILD)/srch_idx.inc $(BUILD)/logo.inc $(BUILD)/version.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
+$(BUILD)/game.elf: $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s $(BUILD)/pen0.bin $(BUILD)/sample_dur.inc $(BUILD)/srch_idx.inc $(BUILD)/logo.inc $(BUILD)/version.inc $(BUILD)/jingle.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
 	for f in $(RT_SRCS) $(GAME_SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(dir $(WRDALLAS)) -I $(BUILD) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
 	$(LD) -T game.ld -o $@ $(BUILD)/g_header.o $(BUILD)/g_main.o $(BUILD)/g_video.o $(BUILD)/g_fix.o $(BUILD)/g_glue.o $(BUILD)/g_mcu.o $(BUILD)/g_decrypt.o $(BUILD)/g_sound.o $(BUILD)/g_eye.o $(BUILD)/g_stubs.o
 
