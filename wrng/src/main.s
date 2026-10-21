@@ -117,7 +117,10 @@ irq_vblank:
         rte
 1:      /* first of all, while the beam is in the vertical blank: palettes and the VRAM queue of the last
            tick (and the map changes the main loop made since) */
-        bsr     vram_flush
+        cmpi.w  #0x0123,PALETTES+254*32+2       /* the BIOS took the screen (coin, MVS): a black backdrop */
+        beq.s   2f                              /* before the long flush (video_vblank restores the rest) */
+        move.w  #0x8000,PALETTES+255*32+30
+2:      bsr     vram_flush
         move.w  REG_LSPCMODE,rt_dbg+12  /* profiling: raster line at the end of the VRAM flush */
         bsr     video_vblank
         bsr     tick_bonus

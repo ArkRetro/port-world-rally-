@@ -22,6 +22,7 @@
         .equ    rt_start_req,   RT_VARS+0x05    /* .b PLAYER_START seen */
         .equ    rt_pal_dirty,   RT_VARS+0x08    /* 64 bytes: one flag per 16-colour palette (0..63) */
         .equ    rt_pal_any,     RT_VARS+0x48    /* .b any palette dirty */
+        .equ    rt_bios_hold,   RT_VARS+0x4D    /* .b VBlanks left keeping the screen black after the BIOS took it (bios_wiped) */
         .equ    rt_hi_pend,     RT_VARS+0x4C    /* .b HI columns left to re-range after the window moved (hi_vt_moved) */
         .equ    HI_TOP,         48              /* HI columns: only from this screen line down (below the HUD) */
         .equ    HI_ROWS,        13              /* map rows covering lines HI_TOP..223 */

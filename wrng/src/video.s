@@ -211,19 +211,28 @@ video_vblank:
 1:      cmpi.w  #0x0123,PALETTES+254*32+2       /* a mark in an unused palette: gone when the MVS BIOS */
         beq.s   2f                              /* took the screen (a coin during the demo) */
         bsr     bios_wiped
-2:      bsr     pal_flush
+2:      tst.b   rt_bios_hold                    /* the screen stays black until the layers are back */
+        beq.s   3f
+        move.w  #0x8000,PALETTES+255*32+30
+        subq.b  #1,rt_bios_hold
+        beq.s   5f
+        rts                                     /* nothing else this VBlank */
+5:
+        lea     rt_pal_dirty,a0                 /* then every palette at once */
+        moveq   #64/4-1,d0
+4:      move.l  #0x01010101,(a0)+
+        dbra    d0,4b
+        st      rt_pal_any
+3:      bsr     pal_flush
         bra     9f
 * bios_wiped: the MVS BIOS cleared the palette RAM, every sprite height and shrink and filled the fix layer
-* when a coin went in: all of it again at once (the 4 palettes and 24 shrinks per frame of the rotations
-* faded the screen back in slowly, in odd colours, and the layers stayed hidden until the next picture)
+* when a coin went in: all of it again at once, the palettes after rt_bios_hold black VBlanks (the 4 palettes
+* and 24 shrinks per frame of the rotations faded the screen back in slowly, in odd colours, and the layers
+* stayed hidden until the next picture)
 bios_wiped:
         move.w  #0x0123,PALETTES+254*32+2
-        lea     rt_pal_dirty,a0
-        moveq   #64/4-1,d0
-1:      move.l  #0x01010101,(a0)+
-        dbra    d0,1b
-        st      rt_pal_any
-        move.w  #1,REG_VRAMMOD
+        move.b  #3,rt_bios_hold         /* black for 3 VBlanks: the layers' heights come back with the next */
+        move.w  #1,REG_VRAMMOD          /* frame (the BIOS's olive backdrop and fix dots showed meanwhile) */
         move.w  #VRAM_SCB2+1,REG_VRAMADDR
         move.w  #16*24-1,d0
 2:      move.w  #SCB2_SHRINK,REG_VRAMRW
