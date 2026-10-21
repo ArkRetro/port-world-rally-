@@ -83,6 +83,24 @@ def main():
     region[0x100000:0x200000:2] = open(i9, 'rb').read()
     region[0x100001:0x200000:2] = open(i7, 'rb').read()
     tiles = decode_arcade(region)
+    if '--text' in a:
+        # tiles of small 8-pixel text (the copyright line of the intro photos: --text first-last): in each
+        # half (one letter) the column that loses least goes instead of 5 / 11, the rest shifted so that the
+        # shrink drops a filler there - whole letters, a pixel less of spacing
+        lo, hi = (int(v) for v in a[a.index('--text') + 1].split('-'))
+        for n in range(lo, hi + 1):
+            t = tiles[n]
+            m = bytearray(256)
+            for h, drop_at in ((0, 5), (8, 11)):
+                def loss(c):
+                    p = c - 1 if c > h else c + 1
+                    return sum(1 for y in range(16) if t[y * 16 + c] != t[y * 16 + p])
+                d = min(range(h, h + 8), key=lambda c: (loss(c), c != drop_at))
+                for y in range(16):
+                    row = [t[y * 16 + c] for c in range(h, h + 8) if c != d]
+                    row.insert(drop_at - h, row[drop_at - h - 1])
+                    m[y * 16 + h:y * 16 + h + 8] = bytes(row)
+            tiles[n] = bytes(m)
     if '--rescue' in a:
         # the runtime shows the tiles 14 pixels wide (SCB2 horizontal shrink 0xD), which drops source columns
         # 5 and 11 (MAME zoom_x_tables[13]): a one-pixel stroke there (unlike both neighbours) is moved onto the neighbour that belongs

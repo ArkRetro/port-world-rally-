@@ -63,7 +63,7 @@ def main(build, out):
     manifest = {
         'version': 1,
         'roms': {k: v for k, v in ROMS.items()},
-        'gfx2crom_flags': ['--rescue', '--shadow', '--light', '--extra', 'logo.bin'],
+        'gfx2crom_flags': ['--text', '4639-4651', '--rescue', '--shadow', '--light', '--extra', 'logo.bin'],
         'regions': regions,
         'neo_sha1': sha1(neo),
         'neo_name': 'World Rally NG v' + open('VERSION').read().strip(),
