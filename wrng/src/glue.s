@@ -657,10 +657,12 @@ trap_error_pc:
 * three quarters are checked too in the same call (a fade or a new screen changes them all at once).
 * The compare is 8 cmpm.l per palette with an early exit on the first difference.
 palette_sync:
-        moveq   #2,d0                   /* backdrop columns: behind every layer-1 cell with pen-0 pixels, */
-        cmpi.b  #1,ARC_WRAM+0x1B3       /* in a race only behind those with many (sprites per scanline) */
-        bne.s   1f
-        moveq   #0,d0
+        moveq   #0,d0                   /* backdrop columns: behind the layer-1 cells with many pen-0 pixels; */
+        cmpi.b  #2,BIOS_USER_MODE       /* behind every one with some in the attract screens only (the intro */
+        beq.s   1f                      /* photos) - not in a game: at the end of a stage (race flag off) the */
+        cmpi.b  #1,ARC_WRAM+0x1B3       /* extra 24 sprites per line pushed EXTENDED PLAY past the 96 */
+        beq.s   1f
+        moveq   #2,d0
 1:      cmp.b   rt_bg_bit,d0
         beq.s   2f
         move.b  d0,rt_bg_bit

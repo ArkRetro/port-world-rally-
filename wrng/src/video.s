@@ -1582,7 +1582,37 @@ spr_lists:
         move.w  #SPR_OBJ_MAX,d7         /* free slots, pool 0 */
         moveq   #SPR_PRI1_MAX,d1        /* free slots, pool 1 */
         movea.w #(0x1000-6)/8,a4        /* entries the sprite RAM holds */
-        lea     ARC_WRAM+0x1600,a0
+        /* more high-priority sprites than pool 1 holds (the title logo: up to 190): the first of them go to
+           pool 0 after its own sprites, as sprites_slow does - counted first, so that the lists are still
+           converted in one pass (the multi-pass fallback took the whole frame: the title screen ran slow
+           and so did the fade after a coin) */
+        clr.w   rt_spill
+        clr.l   rt_spill_ptr
+        move.w  ARC_WRAM+0x27E,d0
+        add.w   ARC_WRAM+0x280,d0
+        add.w   ARC_WRAM+0x282,d0
+        add.w   ARC_WRAM+0x284,d0
+        cmpi.w  #SPR_PRI1_MAX,d0
+        bls.s   2f
+        cmpa.l  #spr_col_table,a3
+        bne.s   2f                      /* (not in the night stages: their headlight tiles go elsewhere) */
+        bsr     sl_precount
+        sub.w   #SPR_PRI1_MAX,d3
+        bls.s   2f
+        cmpi.w  #SPR_OBJ_MAX,d3
+        bls.s   1f
+        move.w  #SPR_OBJ_MAX,d3
+1:      move.w  d3,rt_spill
+        add.w   d3,d2                   /* own + spilled within the pool: */
+        cmpi.w  #SPR_OBJ_MAX,d2         /* the spilled ones start at OBJ_MAX - spilled at the latest */
+        bls.s   1f
+        move.w  #SPR_OBJ_MAX,d2
+1:      sub.w   d3,d2
+        add.w   d2,d2
+        lea     (a1,d2.w),a0
+        move.l  a0,rt_spill_ptr
+        move.l  a0,rt_spill_gap
+2:      lea     ARC_WRAM+0x1600,a0
         move.w  ARC_WRAM+0x27E,d6
         bsr     sl_seg
         bne     sl_slow
@@ -1597,6 +1627,18 @@ spr_lists:
         bne     sl_slow
         move.w  #SPR_OBJ_MAX,d0
         sub.w   d7,d0
+        tst.l   rt_spill_ptr
+        beq.s   3f
+        move.l  rt_spill_ptr,d0         /* spilled sprites: pool 0 runs to the last of them */
+        sub.l   rt_set_base,d0
+        lsr.w   #1,d0
+        movea.l rt_spill_gap,a0         /* the gap the off-screen own sprites left: hidden */
+2:      cmpa.l  a1,a0
+        bls.s   3f
+        subq.l  #2,a0
+        clr.w   2*SPR_F0_SZ(a0)
+        bra.s   2b
+3:      clr.l   rt_spill_ptr
         move.w  d0,rt_spr_n0
         moveq   #SPR_PRI1_MAX,d0
         sub.w   d1,d0
@@ -1674,6 +1716,8 @@ sl_hi:
         or.w    d2,d3
         swap    d2
         or.w    d0,d2
+        tst.w   rt_spill
+        bne.s   sl_spill
         subq.w  #1,d1
         bmi.s   1f
         move.w  d3,(a2)
@@ -1684,6 +1728,61 @@ sl_hi:
         bra.s   sl_next
 1:      moveq   #1,d0                   /* Z clear: pool 1 overflow */
         rts
+sl_spill:
+        subq.w  #1,rt_spill             /* one of the first high-priority sprites: to pool 0, after its own */
+        subq.w  #1,d7
+        bmi     sl_full0
+        move.l  a1,-(sp)
+        movea.l rt_spill_ptr,a1
+        move.w  d3,(a1)
+        move.w  d2,SPR_F0_SZ(a1)
+        move.w  d4,2*SPR_F0_SZ(a1)
+        move.w  d5,3*SPR_F0_SZ(a1)
+        addq.l  #2,a1
+        move.l  a1,rt_spill_ptr
+        movea.l (sp)+,a1
+        bra     sl_next
+
+* sl_precount: the entries of the three lists that sl_seg reads (the sprite RAM's size): d2 = pool-0 ones,
+* d3 = high-priority ones (codes >= 0x3700), on screen or not (testing that cost as much as the pass).
+* sl_seg may then leave a gap between pool 0's own sprites and the spilled ones: spr_lists hides it.
+sl_precount:
+        movem.l d4-d6/a0/a4,-(sp)
+        moveq   #0,d2
+        moveq   #0,d3
+        lea     ARC_WRAM+0x1600,a0
+        move.w  ARC_WRAM+0x27E,d6
+        bsr.s   pc_seg
+        lea     ARC_WRAM+0x1DF8,a0
+        move.w  ARC_WRAM+0x280,d6
+        bsr.s   pc_seg
+        lea     ARC_WRAM+0x25C8,a0
+        move.w  ARC_WRAM+0x282,d6
+        add.w   ARC_WRAM+0x284,d6
+        bsr.s   pc_seg
+        movem.l (sp)+,d4-d6/a0/a4
+        rts
+pc_seg:
+        move.w  a4,d0
+        cmp.w   d0,d6
+        bls.s   1f
+        move.w  d0,d6
+1:      suba.w  d6,a4
+        subq.w  #1,d6
+        bmi.s   9f
+        move.w  #0x3700,d5
+2:      move.w  6(a0),d4
+        and.w   #0x3FFF,d4
+        cmp.w   d5,d4
+        bcc.s   4f
+        addq.w  #1,d2
+        addq.l  #8,a0
+        dbra    d6,2b
+        rts
+4:      addq.w  #1,d3
+        addq.l  #8,a0
+        dbra    d6,2b
+9:      rts
 
 * sl_eff: a headlight tile of a night stage (d3 code, d2 = palette<<8 : 0x8000, d0 flips, d4 SCB3 with
 * height 1, d5 SCB4).  The arcade draws its beams as grids of 16x16 tiles, column by column, downwards:
