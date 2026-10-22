@@ -64,7 +64,10 @@ Jingle opcional en la pantalla de arranque (GAELCO / PRO-BLOSTE SPEC): `make neo
 de 16 bits (filtro, saturación suave, eco), lo codifica en ADPCM-A en un hueco de la V ROM y la pantalla dura lo que
 el jingle. El audio no va nunca en el kit: sin `JINGLE` la pantalla es muda y el `.neo` es el mismo que da el kit.
 
-El `.neo` se copia tal cual a la tarjeta del NeoSD. Para Darksoft/BackBit puede usarse
+El `.neo` se copia tal cual a la tarjeta del NeoSD. También vale para **Geolith** (núcleo de libretro, RetroArch en
+Android/PC): poner `aes.zip` o `neogeo.zip` de MAME en la carpeta *system* y elegir AES o MVS en las opciones del
+núcleo. El NGH del cartucho es 0x1993: con el 0x999 de antes Geolith lo tomaba por V-Liner y le ponía su placa (la
+zona 0x200000, donde están los datos de los circuitos, leía 0xFF). Para Darksoft/BackBit puede usarse
 `../tools/builds/pack_formats.py build/release/wrng.neo <dir> wrng "World Rally NG"`.
 
 ### Kit para distribuir (sin datos del arcade)

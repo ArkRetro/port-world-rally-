@@ -42,7 +42,7 @@ _start:
 * ---- Program header (0x100) ----
         .ascii  "NEO-GEO"
         .byte   0
-        .word   0x0999                  /* 0x108 NGH number                                            */
+        .word   0x1993                  /* 0x108 NGH number (0x999 is V-Liner's: Geolith gives it its board) */
         .long   0x100000                /* 0x10A program size                                          */
         .long   backup_area             /* 0x10E backup RAM work area pointer                         */
         .word   0x0100                  /* 0x112 backup RAM size (bytes)                              */
