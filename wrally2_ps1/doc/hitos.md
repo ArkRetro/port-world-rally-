@@ -193,6 +193,18 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   juego en carrera (modo 1)
 - [~] Carga de fondo del mapa a 2x con puntos de sondeo; `CARGA_1X`; CARGANDO solo si falta
 - [ ] Politica de carrera: prelectura por avance, muerte por avance, victimas con copia en L2 primero
+- [x] Vuelcos: las poses de choque y vuelco del coche N (codigos 0x2000-0x23FF y su efecto 0x7A00, 948 tiles) salen en
+  pocos tramos y pocos cuadros: ni estaban en los fijos ni en la L2 de los tramos en que ninguna corrida volco, y el
+  coche volcado salia en cuadrados mientras llegaban por emergencia (~100 ms de busqueda cada una). Van en una L2 del
+  coche N en `GAMEN.PAK` (como la de L y R): 54 sectores siempre y el resto si cabe (menos en ST04). Con las 4 partidas
+  de `nuevas/0-3` (piloto, 42 000 cuadros de carrera) en `psxprof2`: faltas de sprites de 1 309 a 663, cuadros saltados
+  igual (185 -> 189, ruido). Medido sin quedarse: tope de CLUT por cuadro (los destellos de algunos tramos cambian
+  paletas enteras cada 2 cuadros: hasta 500 CLUT), CLUT dentro de la lista y el plano a la GPU antes de los sprites:
+  ninguno baja los saltos (los cuadros lentos son de GPU + 68000, no de la CPU del dibujo; lo segundo los sube mucho)
+- [x] Puerta G-RAM sin azar: la reserva del codigo que falta (RES_CODIGO) va en los datos de la imagen y no en la BSS,
+  donde ira ese codigo; antes el relleno de la imagen a 2 KB cambiaba el area hasta 2 KB con unos bytes de codigo. Con
+  la cuenta buena faltaban 1,2 KB: hojas de la tabla de codigos 272 -> 264 (peor tramo 246, medido 218) y el histograma
+  de victimas a 8 bits
 - [ ] Proxies y lecturas de emergencia; pantalla de cifras L2
 - [~] Cargas de §7.2 en todos los menus; pausa con START. Elegir coche: corridas `menus0-2` en `construir_cd.sh` (los
   tres coches y los cuatro rallies; la seccion 8000C pasa de ~825 a 2 140 tiles) y al empezar una carga bloqueante lo

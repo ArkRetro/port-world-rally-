@@ -41,7 +41,7 @@ static int lba_dm[5] = {-1, -1, -1, -1, -1};   /* DEMO0-3.PAK y (4) el STkk.PAK 
 static u32 dmi[5][4][3];                        /* paquete, clave - 1 (mapa, VO, L2, ROM): sector, sectores, registros */
 static int st_k = -1;                           /* tramo cuyo indice esta en dmi[4] */
 static int lba_g[3] = {-1, -1, -1}; static u32 gi[3][3];   /* GAMEN/L/R.PAK: los 1 024 fijos de carrera de cada coche (VO, clave 2) */
-static u32 ge[3][3], *gl = ge[0];             /* y la L2 del coche (clave 3: L y R, sus poses que no caben en los fijos) */
+static u32 ge[3][3], *gl = ge[0];             /* y la L2 del coche (clave 3: L y R, sus poses que no caben en los fijos; N, las de choque y vuelco) */
 static int lba_gn = -1; static u32 *gn = gi[0];  /* el del coche de la partida (FE8124; si falta su paquete, N) */
 static int k_tit = -1;                          /* seccion del titulo (3/16) en MENUS.PAK */
 static u8 *area, *area_l2; static int l2_cap;   /* area de tramo; sectores que caben detras de las recetas */

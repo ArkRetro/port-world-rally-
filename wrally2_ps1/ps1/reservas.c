@@ -7,8 +7,13 @@ typedef unsigned char u8;
    el sonido tambien (snd.c y la tabla de trozos) */
 static struct {
     u8 proxies[4096];       /* pen medio por grupo de 8 codigos */
-#ifdef R1
-    u8 codigo[RES_CODIGO];  /* rc_run hasta 417 792 B y el C del port hasta 81 920 B */
-#endif
 } res __attribute__((aligned(4)));
+#ifdef R1
+/* rc_run hasta 417 792 B y el C del port hasta 81 920 B: en la imagen (datos iniciados), donde ira ese codigo, y no en
+   la BSS; asi el relleno de la imagen a 2 KB es el del EXE con todo el codigo y no depende de cuanto haya hoy (antes el
+   area cambiaba hasta 2 KB con unos bytes de codigo de mas o de menos) */
+static u8 codigo[RES_CODIGO] __attribute__((aligned(4), section(".data.res_codigo")));
+void reservas(void) { *(volatile u8 *)res.proxies = 0; *(volatile u8 *)codigo = 0; }
+#else
 void reservas(void) { *(volatile u8 *)res.proxies = 0; }   /* referencia: --gc-sections no la quita */
+#endif

@@ -135,14 +135,16 @@ static void upload(int x, int y, int w, int h, const void *d)
 #define BLK_Y(b) (256 * ((b) / 10))
 #define E1_B(b) (0xE1000400u | (u32)(BLK_X(b) >> 6) | (u32)((BLK_Y(b) >> 8) << 4))
 
-/* codigo -> hueco (0xFFFF: no esta) en dos niveles (diseno 2.1): raiz de 512 grupos de 64 codigos y 272 hojas que se
+/* codigo -> hueco (0xFFFF: no esta) en dos niveles (diseno 2.1): raiz de 512 grupos de 64 codigos y 264 hojas que se
    dan al vuelo y se devuelven cuando se vacian; si no quedan, el tile no se registra (vid_sin_hoja). Hojas de 64 y no
    de 256 como dice el diseno: los codigos de una demo estan dispersos (DEMO3: 70 grupos de 256 pero 175 de 64) y asi
    ocupan 23 KB en vez de 36. En carrera hacen falta mas: GAMEc + STkk llegan a 244 grupos, mas las emergencias (con
-   184 se acababan en todas las carreras: tiles subidos sin registrar, que faltaban y se volvian a pedir sin parar) */
+   184 se acababan en todas las carreras: tiles subidos sin registrar, que faltaban y se volvian a pedir sin parar).
+   Con la L2 del coche N (choques y vuelcos) el peor tramo da 220 grupos con N y 246 con R (paquetes enteros); medido
+   en carrera, 218 como mucho */
 #define TSB 6
 #define TSM ((1 << TSB) - 1)
-#define NHOJA 272
+#define NHOJA 264
 static u16 ts_raiz[32768 >> TSB];          /* hoja + 1 del grupo (0: ninguna) */
 static u16 ts_hoja[NHOJA][1 << TSB]; static u8 ts_n[NHOJA];   /* huecos del grupo y cuantos codigos tiene */
 static int ts_libres, vp_n;                     /* vp_n: victimas en la reserva (b_barre) */
@@ -583,7 +585,7 @@ static int b_victima(int propia)
 #define NCAND 96
 #define NREC 2
 static u16 cand[2][NCAND], cand_now[2]; static u8 cand_n[2], cand_i[2], cand_ok[2], cand_rec[2];
-static u16 cand_hist[60 + 256];
+static u8 cand_hist[60 + 256];             /* cuentas hasta 255 (basta para pasar de NCAND) */
 static int b_victima_exacta(int propia)
 {
     int k, h, n = 0, lim = propia ? NBCL : NB, dem = *(const u16 *)(rc_ram + 0xC298) == 5 || *(const u16 *)(rc_ram + 0xC298) == 1;
@@ -616,7 +618,7 @@ static int b_victima_exacta(int propia)
             if (age >= 60) { b_quita(h); return h; }
             key = age;
         }
-        cand_hist[key]++;
+        if (cand_hist[key] < 255) cand_hist[key]++;
     }
     cand_rec[propia]++;
     /* umbral: las NCAND de clave mas alta (VO nuevo que mas tarde muere; si no, el rotativo mas viejo) */
