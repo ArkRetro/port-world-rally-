@@ -28,6 +28,7 @@
         .equ    IO_DSW1,        ARC_IO+2
         .equ    IO_P1,          ARC_IO+4
         .equ    IO_P2,          ARC_IO+6
+        .equ    IO_OKI,         ARC_IO+0x0F     /* .b emulated OKI status: bit n = channel n busy */
 
 * runtime variables
         .equ    rt_frame,       RT_VARS+0x00    /* .l VBlanks */
@@ -39,6 +40,9 @@
         .equ    rt_fid,         RT_VARS+0x42    /* .b fix frame id (1..255) */
         .equ    rt_sprdirty,    RT_VARS+0x43    /* .b the arcade updated its sprite list */
         .equ    rt_sprprev,     RT_VARS+0x44    /* .w entries scanned last time */
+        .equ    rt_okibank,     RT_VARS+0x50    /* .b last OKI bank written */
+        .equ    rt_okiphrase,   RT_VARS+0x51    /* .b last OKI phrase byte (0x80 | phrase) */
+        .equ    rt_oki_cnt,     RT_VARS+0x54    /* 4 .w frames left of the phrase on each OKI channel */
         .equ    rt_prof,        RT_VARS+0x48    /* 5 .w raster lines (profiling) */
         .equ    rt_err_pc,      RT_VARS+0x80    /* .l trap_error */
         .equ    rt_err_sr,      RT_VARS+0x84    /* .w */

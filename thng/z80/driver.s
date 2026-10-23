@@ -10,7 +10,7 @@
 ;     0x0C+ch (0x0C-0x0F)       stop channel ch
 ;     0x40 + slot (0x40-0x7F)   play OKI phrase slot 0x00-0x3F (= phrase 0x00-0x3F) on the selected
 ;                               channel/volume (table at samples:)
-;     0xC0 + n (0xC0-0xEF)      play slot 0x40 + n (= phrase 0x50 + n)
+;     0xC0 + n (0xC0-0xEF)      play slot 0x40 + n
 ;     0x80 | ch<<4 | vol        select channel ch (0..3) and OKI volume vol (0..15) for the next play
 ;   reply byte (read by the 68k at 0x320000): 0x80 | ack; bit 6 (ack) toggles every time the NMI takes a
 ;   command into the queue, so the 68k can wait before sending the next one (the latch holds a single

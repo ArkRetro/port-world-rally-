@@ -1,7 +1,7 @@
 # Thunder Hoop NG — port de Thunder Hoop (Gaelco, 1992) a Neo Geo
 
-Estado: **v0.2** — en MAME (`aes`) arranca, pasa los tests del arcade, muestra la intro completa con sus
-textos, el título y el modo demo, y se puede jugar (START, sin monedas: free play). Sin sonido todavía.
+Estado: **v0.3** — en MAME (`aes`) arranca, pasa los tests del arcade, muestra la intro completa con sus
+textos, el título y el modo demo, y se puede jugar (START, sin monedas: free play), con música y efectos.
 
 ## Cómo funciona
 
@@ -23,6 +23,9 @@ textos, el título y el modo demo, y se puede jugar (START, sin monedas: free pl
 * Vídeo (`src/video.s`): los dos tilemaps de 32x32 celdas de 16x16 son 21 sprites-columna cada uno; los
   sprites del arcade (511 entradas) van a sprites Neo Geo con asignación fija (solo se reescriben las
   entradas que cambian); el texto (fuente 8x8, códigos 0xF400-0xFFFF) va a la capa fix.
+* Sonido: el secuenciador del arcade (el mismo de Gaelco que World Rally) sigue intacto; sus seis escrituras
+  al OKI6295 se enganchan (`src/sound.s`, de World Rally NG) y van al Z80 (`z80/driver.s`), que toca las
+  fases convertidas a ADPCM-A (`tools/oki2adpcma.py`: 109 fases, V ROM de 4 MB).
 * Gráficos: `tools/gfx2crom.py` (C ROM 2 x 8 MB + tabla de tiles 8x8 + S ROM con la fuente).
 
 ## Compilar
@@ -34,5 +37,5 @@ textos, el título y el modo demo, y se puede jugar (START, sin monedas: free pl
 
 * Encuadre vertical: el arcade usa 240 líneas (HUD arriba y abajo), Neo Geo 224; ahora se recortan las 16 de
   arriba (`CROP_Y`), lo que oculta el marcador superior en partida.
-* Sonido (OKI → ADPCM-A, como en World Rally NG), prioridades sprites/tiles, monedas/créditos del BIOS,
+* Prioridades sprites/tiles, monedas/créditos del BIOS,
   MVS, hardware real.

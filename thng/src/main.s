@@ -35,6 +35,7 @@ user_game:
         bsr     rt_clear_ram
         bsr     arc_clear_ram
         jsr     video_init
+        jsr     snd_init
         bsr     io_init
         st      rt_started
         jmp     0x400                   /* arcade reset (prologue patched: rt_reset) */
@@ -115,6 +116,7 @@ irq_vblank:
         jsr     SYSTEM_IO
         move.w  REG_LSPCMODE,rt_prof+4
         bsr     io_update
+        jsr     snd_vblank
         movem.l (sp)+,d0-d7/a0-a6
         jmp     ARC_IRQ6                /* the arcade handler, ends with its rte */
 

@@ -12,7 +12,7 @@ ARCADE ?= ../lab/thoop
 BUILD  ?= build
 VERSION := $(shell cat VERSION)
 
-SRCS = src/header.s src/main.s src/crypt.s src/video.s src/fix.s src/tables.s
+SRCS = src/header.s src/main.s src/crypt.s src/video.s src/fix.s src/sound.s src/tables.s
 ANALYSIS = analysis/absrefs.csv analysis/trap_tables.csv analysis/code_ranges.csv analysis/vram_sites.txt
 
 .PHONY: game clean
@@ -32,14 +32,9 @@ $(BUILD)/font.s1: tools/mkfont.py
 $(BUILD)/thng-c1.c1 $(BUILD)/thng-c2.c2 $(BUILD)/map8.bin $(BUILD)/thng-s1.s1: tools/gfx2crom.py $(BUILD)/font.s1
 	python3 -I tools/gfx2crom.py $(ARCADE)/c09 $(ARCADE)/c10 $(ARCADE)/c11 $(ARCADE)/c12 $(BUILD)/thng-c1.c1 $(BUILD)/thng-c2.c2 $(BUILD)/map8.bin --fix $(BUILD)/font.s1 $(BUILD)/thng-s1.s1
 
-# sound: silent for now (empty sample table, blank V ROM)
-$(BUILD)/samples.inc:
-	mkdir -p $(BUILD)
-	python3 -I -c "open('$@','w').write('; no samples yet\n' + '        .db 0,0,0,0\n' * 112)"
-
-$(BUILD)/thng-v1.v1:
-	mkdir -p $(BUILD)
-	python3 -I -c "open('$@','wb').write(bytes(0x100000))"
+# sound: the OKI phrases converted to ADPCM-A (V ROM), their slots for the Z80 and their lengths for the 68k
+$(BUILD)/thng-v1.v1 $(BUILD)/samples.inc $(BUILD)/sample_dur.inc $(BUILD)/okimap.csv: tools/oki2adpcma.py $(BUILD)/th_cpu.bin
+	python3 -I tools/oki2adpcma.py $(ARCADE)/sound $(BUILD)/th_cpu.bin $(BUILD)/thng-v1.v1 $(BUILD)/samples.inc $(BUILD)/okimap.csv
 
 $(BUILD)/thng-m1.m1: z80/driver.s $(BUILD)/samples.inc
 	sdasz80 -I$(BUILD) -o $(BUILD)/driver.rel z80/driver.s
@@ -50,7 +45,7 @@ $(BUILD)/thng-m1.m1: z80/driver.s $(BUILD)/samples.inc
 $(BUILD)/stubs.s: tools/mkrom.py analysis/vram_sites.txt $(BUILD)/th_cpu.bin
 	python3 -I tools/mkrom.py stubs $(BUILD)/th_cpu.bin analysis/vram_sites.txt $@
 
-$(BUILD)/game.elf: $(SRCS) $(BUILD)/stubs.s $(BUILD)/crypt.bin $(BUILD)/map8.bin src/neogeo.i src/ram.i src/seccode.bin game.ld
+$(BUILD)/game.elf: $(SRCS) $(BUILD)/stubs.s $(BUILD)/crypt.bin $(BUILD)/map8.bin $(BUILD)/sample_dur.inc src/neogeo.i src/ram.i src/seccode.bin game.ld
 	for f in $(SRCS) $(BUILD)/stubs.s; do $(AS) $(ASFLAGS) -I $(BUILD) -o $(BUILD)/g_$$(basename $$f .s).o $$f || exit 1; done
 	$(LD) -T game.ld -o $@ $(patsubst %,$(BUILD)/g_%.o,$(basename $(notdir $(SRCS)))) $(BUILD)/g_stubs.o
 

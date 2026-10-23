@@ -292,6 +292,15 @@ def cmd_build(a):
     assert orig[0x106D2:0x106D8] == bytes.fromhex('363900FFD2D8'), 'sprite list update'
     rom[0x106D2:0x106D8] = b'\x4E\xB9' + struct.pack('>I', syms['rt_sprdone'])
 
+    # the OKI register writes of the sound sequencer -> Z80 commands (src/sound.s)
+    for pc, op, hook in ((0x23448, '13FC0078', 'snd_hook_stopall'), (0x23626, '13C1', 'snd_hook_stop1'),
+                         (0x23700, '13C0', 'snd_hook_stop0'), (0x2370C, '13C4', 'snd_hook_bank'),
+                         (0x2371A, '13C1', 'snd_hook_phrase'), (0x2372E, '13C1', 'snd_hook_play')):
+        op = bytes.fromhex(op)
+        n = len(op) + 4
+        assert orig[pc:pc + len(op)] == op and be32(orig, pc + len(op)) in (0x70000F, 0x70000D), hex(pc)
+        rom[pc:pc + n] = b'\x4E\xB9' + struct.pack('>I', syms[hook]) + b'\x4E\x71' * ((n - 6) // 2)
+
     # the script interpreter's 24-bit pointers: andi.l #$FFFFFF,dn -> jsr rt_m24_dn (masks and relocates)
     nm = 0
     for o in range(0x400, CODE_HI, 2):
