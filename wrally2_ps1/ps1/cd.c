@@ -359,17 +359,32 @@ int cd_init(void)
 /* ---- directorio raiz ISO9660: se guarda su primer sector en sbuf mientras no se lea otra cosa (al arrancar) */
 static int dir_n = -1, dir_lba;
 static unsigned int le32(const u8 *p) { return p[0] | (p[1] << 8) | (p[2] << 16) | ((unsigned)p[3] << 24); }
-/* busca NOMBRE (sin ";1") en el directorio raiz; devuelve lba y tamano */
+/* la carpeta WR2 de la raiz, si la hay (disco con los dos World Rally, recopilatorio/: alli van los ficheros del WR2,
+   que no caben con los del WR1 en la raiz y TILES.BIN se llama igual en los dos); 0 si no */
+static int dir_wr2(int *lba, int *n)
+{
+    int off;
+    for (off = 0; off < 2048 && sbuf[off]; off += sbuf[off])
+        if ((sbuf[off + 25] & 2) && sbuf[off + 32] == 3 && sbuf[off + 33] == 'W' && sbuf[off + 34] == 'R' && sbuf[off + 35] == '2') {
+            *lba = le32(sbuf + off + 2); *n = (le32(sbuf + off + 10) + 2047) / 2048; return 1;
+        }
+    return 0;
+}
+/* busca NOMBRE (sin ";1") en el directorio raiz (o en WR2, si esta); devuelve lba y tamano */
 int cd_find(const char *name, int *lba, int *size)
 {
     int off, s;
     for (s = 0; dir_n < 0 || s < dir_n; s++) {
         const u8 *sec = sbuf;
-        if (dir_n < 0 || s || sbuf_dir != dir_lba) {
-            if (dir_n < 0) {
-                if (cd_read(16, 1, sbuf, 1)) return -1;
-                dir_lba = le32(sbuf + 156 + 2); dir_n = (le32(sbuf + 156 + 10) + 2047) / 2048;
-            }
+        if (dir_n < 0) {                         /* las mismas lecturas que sin la carpeta: la raiz se queda en sbuf */
+            int l, n;
+            if (cd_read(16, 1, sbuf, 1)) return -1;
+            dir_lba = le32(sbuf + 156 + 2); dir_n = (le32(sbuf + 156 + 10) + 2047) / 2048;
+            if (cd_read(dir_lba, 1, sbuf, 1)) { dir_n = -1; return -1; }
+            sbuf_dir = dir_lba;
+            if (dir_wr2(&l, &n)) { dir_lba = l; dir_n = n; sbuf_dir = -1; }
+        }
+        if (s || sbuf_dir != dir_lba) {
             if (cd_read(dir_lba + s, 1, sbuf, 1)) { dir_n = -1; return -1; }
             sbuf_dir = s ? -1 : dir_lba;
         }

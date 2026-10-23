@@ -32,6 +32,8 @@ Diseno y plan: `doc/diseno.md` y `doc/hitos.md`.
 - Con L2 + R2 salen las cifras; la tercera fila: sectores de `SPU.BIN` que llegaron mal, perdidos (sin leer bien en 4
   intentos), escrituras a la SPU que no salieron, errores del controlador del CD y errores de los paquetes. Si en la
   consola algo suena o se ve mal, esas cifras dicen si es el disco.
+- Disco con los dos World Rally y un menu para elegir: `recopilatorio/` (su LEEME). Alli los ficheros del WR2 van en
+  la carpeta `WR2`; `cd.c` los busca en ella si esta y si no en la raiz (este disco), con las mismas lecturas.
 
 ## Banco de pruebas
 
