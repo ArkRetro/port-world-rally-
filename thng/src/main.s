@@ -7,7 +7,7 @@
 
         .text
         .global USER, PLAYER_START, DEMO_END, COIN_SOUND
-        .global irq_vblank, irq_timer, trap_error, group0_error, rt_reset, rt_fixcal, rt_cksum, rt_sprdone, rt_m24_d0, rt_m24_d1, rt_trap1, rt_palcopy
+        .global irq_vblank, irq_timer, trap_error, group0_error, rt_reset, rt_fixcal, rt_cksum, rt_sprdone, rt_m24_d0, rt_m24_d1, rt_trap1, rt_palcopy, rt_pal_fade, rt_pal_load
         .global rt_pal_a0, rt_pal_a1, rt_pal_a2, rt_pal_a3, rt_pal_a4, rt_pal_a5, rt_pal_a6
 
 * USER: called by the BIOS with SR=2700, BIOS_USER_REQUEST = request
@@ -125,10 +125,25 @@ rt_pal_a\n:
         rts
         .endr
 
+* lea $200000,a0 in the fade loop (0xA39C): palette d4 changes
+rt_pal_fade:
+        cmpi.w  #64,d4
+        bcc.s   1f
+        lea     RT_PALMARK,a0
+        st      (a0,d4.w)
+1:      lea     ARC_PAL,a0
+        rts
+
 * the game's palette copy (0x9188: palettes d0 .. d0+d2-1 from its RAM copy; lea $ffa5c0,a2 patched):
 * mark them for pal_sync
 rt_palcopy:
         lea     ARC_WRAM+0xA5C0-0x8000,a2
+        bra.s   rt_palmark
+
+* lea $200000,a4 in the palette load (0x91E0: palettes d0 .. d0+d2-1 from the ROM): mark them
+rt_pal_load:
+        lea     ARC_PAL,a4
+rt_palmark:
         movem.l d0/d2/a0,-(sp)
         andi.w  #0xFF,d0
         lea     RT_PALMARK,a0

@@ -40,6 +40,7 @@ VRAM_LO, VRAM_HI = 0x100000, 0x104000
 SHADOW = 0x280000                               # P2: decrypted shadow of the code area (src/ram.i CT_SHADOW)
 HI0 = 0x2D0000                                  # P2: decrypt_long(0000:e2) low words (CT_HI0)
 assert SHADOW + 2 * CODE_HI <= HI0
+MOVEP, MOVEP_LO, MOVEP_N = 0x2F0000, 0x80000, 0x8000   # P2: decrypted movep.l longs of the map data (CT_MOVEP)
 
 
 def be32(b, o): return struct.unpack('>I', bytes(b[o:o + 4]))[0]
@@ -111,8 +112,14 @@ FAST = {
     0x1ABDA: ('23C000102C00', 6, None),     # script dispatch: reads the shadow, stores a plain value
     0x004FE: ('23D600102810', 6, 'fast_cnt'),
     0x16FD4: ('28DE', 2, None),             # covered by fast_copy16 at 0x16FD0
+    0x11C4A: ('21835000', 4, None),         # covered by fast_movep at 0x11C46
+    0x008B4: ('20C1', 2, None),             # covered by fast_fill at 0x8B0
+    0x008D0: ('20C1', 2, None),             # covered by fast_fill at 0x8CC
 }
-FAST_PATCH = [(0x16FD0, '303C000F28DE51C8FFFC', 'fast_copy16')]
+FAST_PATCH = [(0x16FD0, '303C000F28DE51C8FFFC', 'fast_copy16'),
+              (0x11C46, '0749000021835000', 'fast_movep'),
+              (0x008B0, '303C03FF20C151C8FFFC', 'fast_fill'),
+              (0x008CC, '303C03FF20C151C8FFFC', 'fast_fill')]
 
 
 def sites(rom, path):
@@ -345,12 +352,18 @@ def cmd_build(a):
     rom[0x9188:0x918E] = b'\x4E\xB9' + struct.pack('>I', syms['rt_palcopy'])     # marks its palettes
     npal = 0
     for o in range(0x400, CODE_HI, 2):
-        if o == 0x918E:
-            continue                    # (its routine is rt_palcopy's)
+        if o in (0x918E, 0x91E0, 0xA39C):
+            continue                    # (rt_palcopy, rt_pal_load, rt_pal_fade below)
         if o in code and orig[o + 2:o + 6] == bytes.fromhex('00200000') and orig[o] & 0xF1 == 0x41 and orig[o + 1] == 0xF9:
             n = (orig[o] >> 1) & 7
             rom[o:o + 6] = b'\x4E\xB9' + struct.pack('>I', syms['rt_pal_a%d' % n])
             npal += 1
+    # the fade loop (0xA39C, every frame of a fade: palette d4 from its ROM data into the RAM copy, which
+    # the copy routine above then marks): no full compare
+    assert orig[0x91E0:0x91E6] == bytes.fromhex('49F900200000'), 'palette load'
+    rom[0x91E0:0x91E6] = b'\x4E\xB9' + struct.pack('>I', syms['rt_pal_load'])
+    assert orig[0xA39C:0xA3A2] == bytes.fromhex('41F900200000'), 'palette fade'
+    rom[0xA39C:0xA3A2] = b'\x4E\xB9' + struct.pack('>I', syms['rt_pal_fade'])
     print('palette base loads hooked: %d' % npal)
 
     # the script interpreter's 24-bit pointers: andi.l #$FFFFFF,dn -> jsr rt_m24_dn (masks and relocates)
@@ -387,6 +400,11 @@ def cmd_build(a):
     d0 = gaelcrypt.decrypt(0, 0, 0)
     for e2 in range(0x10000):
         put16(p2, HI0 - 0x200000 + 2 * e2, gaelcrypt.decrypt(0, d0, e2))
+    # the map block copy (0x11C46: movep.l (a1),d3 from the map data in ROM, move.l d3,(a0,d5.w)):
+    # the decrypted long for every a1 = MOVEP_LO + 4k
+    for k in range(0, MOVEP_N, 4):
+        a = MOVEP_LO + k
+        put32(p2, MOVEP - 0x200000 + k, gaelcrypt.decrypt_long(rom[a] << 24 | rom[a + 2] << 16 | rom[a + 4] << 8 | rom[a + 6]))
     print('runtime: %X-%X (%d bytes), P2 tables %d bytes' % (tlo, thi, thi - tlo, len(rt) - 0x200000))
     put32(rom, 0x10A, 0x200000)
     open(out, 'wb').write(bytes(rom) + bytes(p2))

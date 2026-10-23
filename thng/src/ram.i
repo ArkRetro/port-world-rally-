@@ -59,14 +59,17 @@
         .equ    rt_coins_due,   RT_VARS+0xE5    /* .b coin pulses still to give the arcade */
         .equ    rt_coin_seq,    RT_VARS+0xE6    /* .b frame of the current coin pulse */
         .equ    rt_prev_sel,    RT_VARS+0xE7    /* .b SELECT last frame */
-        .equ    rt_reinit,      RT_VARS+0xE8    /* .b the BIOS took the screen: rebuild the video */
+        .equ    rt_reinit,      RT_VARS+0xE8
+        .equ    rt_ytabkey,     RT_VARS+0xEA    /* .w rt_mode / rt_pcrop YTAB was built for (0xFFFF: none) */    /* .b the BIOS took the screen: rebuild the video */
         .equ    RT_CLEAR_END,   RT_VARS+0x100
         .equ    backup_area,    RT_VARS+0x700   /* 256 bytes the BIOS saves to backup RAM (MVS) */
 
 * runtime buffers
-        .equ    ENT_SH,         RT_BUF          /* 511 x 3 words: w0, w2, w3 of each arcade sprite entry last frame */
-        .equ    ENT_FIX,        ENT_SH+511*6    /* 511 words: fix VRAM address the entry's text is in, 0 = none */
+        .equ    ENT_SH,         RT_BUF          /* 511 x 4 words: each arcade sprite entry last frame */
+        .equ    ENT_FIX,        ENT_SH+511*8    /* 511 words: fix VRAM address the entry's text is in, 0 = none */
         .equ    FIX_CLRQ,       ENT_FIX+511*2   /* fix addresses to blank at the end of the frame (511 words) */
+        .equ    YTAB,           FIX_CLRQ+511*2  /* 256 words: SCB3 word of each arcade y byte (video.s ytab_sync) */
+        .equ    RT_BUF_END,     YTAB+512        /* < BIOS_RAM */
         .equ    FIX_STAMP,      RT_VARS+0x100   /* 1280 bytes: frame id of the last text written (by fix offset) */
         .equ    RT_COLSLOT,     RT_VARS+0x600   /* 2 x 32 bytes: column sprite of each map column (0xFF none) */
         .equ    RT_PALMARK,     RT_VARS+0x640   /* 64 bytes: palettes the game's copy routine wrote (rt_palcopy) */
@@ -103,6 +106,9 @@
         .equ    CT_PAL,         0x241600
         .equ    CT_MAP8,        0x251600        /* 8x8 sprite code -> Neo Geo tile - 0x8000 (tools/gfx2crom.py) */
         .equ    CT_SHADOW,      0x280000        /* + 2 x: decrypt_long of the ROM long at x (code area, mkrom.py) */
+        .equ    CT_MOVEP,       0x2F0000        /* [a1 - 0x80000]: decrypted movep.l (a1) of the map data (mkrom.py) */
+        .equ    MOVEP_LO,       0x80000
+        .equ    MOVEP_N,        0x8000
         .equ    CT_HI0,         0x2D0000        /* [e2]: low word of decrypt_long(0000:e2) (mkrom.py) */
 
 * arcade program

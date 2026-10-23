@@ -13,7 +13,7 @@
 
         .text
         .global decrypt_long, decrypt_word, linea_handler, linea_done, vstore
-        .global fast_t1, fast_script, fast_cnt, fast_copy16
+        .global fast_t1, fast_script, fast_cnt, fast_copy16, fast_movep, fast_fill
 
 * decrypt_long: d0.l = encrypted pair (high word = first written) -> d0.l decrypted.  Others preserved.
 decrypt_long:
@@ -215,4 +215,42 @@ fast_copy16:
         dbra    d0,1b
         movea.l (sp)+,a5
         lea     64(a6),a6
+        rts
+
+* 0x11C46-0x11C4D (map block copy, once per cell): movep.l 0(a1),d3 / move.l d3,0(a0,d5.w).  a1 is in the
+* map data in ROM: the decrypted long comes from CT_MOVEP (else decrypt_long); stored as vstore does
+fast_movep:
+        movep.l 0(a1),d3
+        movem.l d0-d2/a0-a1,-(sp)
+        move.l  a1,d0
+        lea     (a0,d5.w),a1            /* destination */
+        subi.l  #MOVEP_LO,d0
+        cmpi.l  #MOVEP_N,d0
+        bcc.s   1f
+        lea     CT_MOVEP,a0
+        move.l  (a0,d0.l),d0
+        bra.s   2f
+1:      move.l  d3,d0
+        bsr     decrypt_long
+2:      bsr     vstore
+        movem.l (sp)+,d0-d2/a0-a1
+        rts
+
+* 0x8B0 / 0x8CC (a tilemap cleared): move.w #1023,d0 / 1: move.l d1,(a0)+ / dbra d0,1b.  d1 decrypted once;
+* the columns that changed are marked (vstore)
+fast_fill:
+        movem.l d1-d3/a1,-(sp)
+        move.l  d1,d0
+        bsr     decrypt_long
+        move.w  #1023,d3
+1:      cmp.l   (a0),d0
+        beq.s   2f
+        movea.l a0,a1
+        movem.l d0/a0,-(sp)
+        bsr     vstore
+        movem.l (sp)+,d0/a0
+2:      addq.l  #4,a0
+        dbra    d3,1b
+        move.w  #0xFFFF,d0              /* as the dbra leaves it */
+        movem.l (sp)+,d1-d3/a1
         rts

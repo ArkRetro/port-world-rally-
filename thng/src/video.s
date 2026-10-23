@@ -89,6 +89,7 @@ video_init:
         lea     ENT_SH,a0
         move.w  #510,d0
 3:      move.w  #0x00F0,(a0)+
+        clr.w   (a0)+
         clr.l   (a0)+
         dbra    d0,3b
         lea     ENT_FIX,a0
@@ -410,6 +411,8 @@ spr_sync:
         tst.b   rt_sprdirty
         beq     32f
         clr.b   rt_sprdirty
+        bsr     ytab_sync
+        lea     YTAB,a3
         /* entries 0..n-1, n = max(used now (FFD2D8), scanned last time): the game sets the ones it no
            longer uses to y = 0xF0 */
         move.w  ARC_WRAM+0xD2D8-0x8000,d7
@@ -431,28 +434,26 @@ spr_sync:
         add.w   d0,d0
         lea     ENT_FIX,a6
         adda.w  d0,a6
-        move.w  d0,d1
-        add.w   d0,d0
-        add.w   d1,d0
+        lsl.w   #2,d0
         lea     ENT_SH,a1
         adda.w  d0,a1
         lea     FIX_CLRQ,a5
         move.w  #SPR_MAX,d6
         sub.w   d7,d6                   /* Neo Geo sprite of entry k = SPR_MAX-1-k (< SPR_ARC: none) */
         subq.w  #1,d7
-0:      subq.l  #8,a0
-        subq.l  #6,a1
-        subq.l  #2,a6
-        move.w  (a0),d0
-        cmp.w   (a1),d0
-        bne.s   2f
-        move.w  4(a0),d2
-        cmp.w   2(a1),d2
-        bne.s   2f
-        move.w  6(a0),d4
-        cmp.w   4(a1),d4
+0:      subq.l  #2,a6
+        move.l  -(a0),d0                /* w2 w3 */
+        cmp.l   -(a1),d0
+        bne.s   1f
+        move.l  -(a0),d0                /* w0 w1 */
+        cmp.l   -(a1),d0
         beq     8f                      /* unchanged */
-2:      move.w  (a1),d5                 /* entries in the top HUD band: y byte 0xD1-0xE0 (rows 16-31) */
+        bra.s   2f
+1:      subq.l  #4,a0
+        subq.l  #4,a1
+2:      move.w  (a0),d0
+        move.w  2(a0),2(a1)
+        move.w  (a1),d5                 /* entries in the top HUD band: y byte 0xD1-0xE0 (rows 16-31) */
         cmpi.b  #0xD1,d5
         bcs.s   4f
         cmpi.b  #0xE0,d5
@@ -469,19 +470,19 @@ spr_sync:
         andi.w  #0xFF00,d5
         bne.s   6f
         move.w  6(a0),d4
-        cmp.w   4(a1),d4
+        cmp.w   6(a1),d4
         bne.s   6f
         move.w  4(a0),d2
-        move.w  2(a1),d3
+        move.w  4(a1),d3
         eor.w   d2,d3
         andi.w  #0xFE00,d3
         bne.s   6f
         move.w  d0,(a1)
-        move.w  d2,2(a1)
+        move.w  d2,4(a1)
         bra     26f
 6:      move.w  d0,(a1)
-        move.w  4(a0),2(a1)
-        move.w  6(a0),4(a1)
+        move.w  4(a0),4(a1)
+        move.w  6(a0),6(a1)
         cmpi.w  #1,(a6)
         bls.s   7f                      /* 0: nothing, 1: a sprite */
         move.w  (a6),(a5)+              /* it had a character there */
@@ -541,35 +542,26 @@ spr_sync:
         move.w  d0,REG_VRAMADDR
         move.w  #0,REG_VRAMRW
         bra     8f
-20:     /* a sprite: d1 = sy */
+20:     /* a sprite.  d0 = SCB3 word (y | 1 tile, 0: off screen), d3 = SCB4 word, from the tables */
         cmpi.w  #SPR_ARC,d6
         blt     8f                      /* past the Neo Geo sprites */
         moveq   #0,d1
         move.b  1(a0),d1
-        neg.w   d1
-        addi.w  #240,d1
-        andi.w  #0xFF,d1
-        bsr     get_crop
-        sub.w   d5,d1                   /* Neo Geo line */
-        cmpi.w  #224,d1
-        bge     40b
-        cmpi.w  #-16,d1
-        ble     40b
+        add.w   d1,d1
+        move.w  (a3,d1.w),d0
+        beq     40b
         move.w  4(a0),d2                /* colour | x */
         move.w  d2,d3
         andi.w  #0x1FF,d3
-        subi.w  #15,d3                  /* screen x */
+        add.w   d3,d3
+        lea     spr_xt,a4
+        move.w  (a4,d3.w),d3
         moveq   #0,d4
         move.w  6(a0),d4                /* code */
-        move.w  (a0),d0
-        moveq   #0,d5                   /* flips */
-        btst    #14,d0
-        beq.s   21f
-        moveq   #1,d5
-21:     btst    #15,d0
-        beq.s   22f
-        addq.w  #2,d5
-22:     btst    #11,d0
+        move.w  (a0),d5
+        rol.w   #2,d5
+        andi.w  #3,d5                   /* flips: w0 bit 14 = x, 15 = y */
+        btst    #3,(a0)                 /* w0 bit 11: 8x8 */
         bne.s   23f
         lsr.w   #2,d4                   /* 16x16: Neo Geo tile = code >> 2 */
         bra.s   25f
@@ -580,70 +572,56 @@ spr_sync:
         cmpi.w  #0xFFFF,d4
         beq     40b
         addi.l  #0x8000,d4
-        btst    #0,d5
+        btst    #0,d5                   /* flipped: the tile is in the top left of its 16x16 one */
         beq.s   24f
-        subq.w  #8,d3
+        subi.w  #8<<7,d3
 24:     btst    #1,d5
         beq.s   25f
-        subq.w  #8,d1
-25:     /* SCB1 */
-        move.w  d6,d0
-        lsl.w   #6,d0
-        VRAM_GAP
-        move.w  d0,REG_VRAMADDR
+        addi.w  #8<<7,d0
+25:     /* SCB1 (the last VRAM write is at least a loop turn back) */
+        move.w  d6,d1
+        lsl.w   #6,d1
+        move.w  d1,REG_VRAMADDR
         move.w  d4,REG_VRAMRW
         swap    d4
         lsl.w   #4,d4                   /* tile bits 16-19 */
         or.w    d4,d5
-        lsr.w   #8,d2
+        andi.w  #0x7E00,d2
         lsr.w   #1,d2
-        andi.w  #0x3F,d2
-        addi.w  #PAL_ARC,d2
-        lsl.w   #8,d2
+        addi.w  #PAL_ARC<<8,d2          /* palette = colour + PAL_ARC */
         or.w    d2,d5
         move.w  d5,REG_VRAMRW
-27:     /* SCB3: y | 1 tile; SCB4: x */
+27:     /* SCB3 = d0, SCB4 = d3 (16+ cycles between a data write and the next address write) */
         move.w  #1,(a6)                 /* shown as a sprite */
-        move.w  #496,d0
-        sub.w   d1,d0
-        andi.w  #0x1FF,d0
-        lsl.w   #7,d0
-        addq.w  #1,d0
         move.w  #VRAM_SCB3,d1
         add.w   d6,d1
-        VRAM_GAP
         move.w  d1,REG_VRAMADDR
         move.w  d0,REG_VRAMRW
-        andi.w  #0x1FF,d3
-        lsl.w   #7,d3
         addi.w  #VRAM_SCB4-VRAM_SCB3,d1
-        VRAM_GAP
+        nop
         move.w  d1,REG_VRAMADDR
         move.w  d3,REG_VRAMRW
         bra.s   8f
 26:     /* position only: d0 = w0, d2 = w2 */
         moveq   #0,d1
         move.b  d0,d1
-        neg.w   d1
-        addi.w  #240,d1
-        andi.w  #0xFF,d1
-        bsr     get_crop
-        sub.w   d5,d1                   /* Neo Geo line */
-        cmpi.w  #224,d1
-        bge.s   28f
-        cmpi.w  #-16,d1
-        ble.s   28f
+        add.w   d1,d1
+        move.w  (a3,d1.w),d1
+        beq.s   28f
         move.w  d2,d3
         andi.w  #0x1FF,d3
-        subi.w  #15,d3
+        add.w   d3,d3
+        lea     spr_xt,a4
+        move.w  (a4,d3.w),d3
         btst    #11,d0
-        beq     27b
-        btst    #14,d0                  /* 8x8: the tile is in the top left of its 16x16 one */
         beq.s   29f
-        subq.w  #8,d3
-29:     btst    #15,d0
-        beq     27b
-        subq.w  #8,d1
+        btst    #14,d0                  /* 8x8: the tile is in the top left of its 16x16 one */
+        beq.s   30f
+        subi.w  #8<<7,d3
+30:     btst    #15,d0
+        beq.s   29f
+        addi.w  #8<<7,d1
+29:     move.w  d1,d0
         bra     27b
 28:     clr.w   (a6)
         bra     40b
@@ -680,12 +658,52 @@ spr_sync:
 35:     lea     ENT_SH,a0
         move.w  #510,d0
 36:     move.w  #0xFFFF,(a0)
-        addq.l  #6,a0
+        addq.l  #8,a0
         dbra    d0,36b
         clr.w   rt_topcnt
         move.w  #511,rt_sprprev
         st      rt_sprdirty
 32:     rts
+
+* ytab_sync: YTAB[arcade y byte] = SCB3 word (Neo Geo line from get_crop, 1 tile) or 0 if off screen;
+* rebuilt when the layout (rt_mode, rt_pcrop) changed
+ytab_sync:
+        move.b  rt_mode,d0
+        lsl.w   #8,d0
+        or.b    rt_pcrop+1,d0
+        cmp.w   rt_ytabkey,d0
+        beq.s   9f
+        move.w  d0,rt_ytabkey
+        lea     YTAB,a4
+        moveq   #0,d4                   /* y byte */
+1:      move.w  #240,d1
+        sub.w   d4,d1
+        andi.w  #0xFF,d1                /* sy */
+        bsr     get_crop
+        sub.w   d5,d1                   /* Neo Geo line */
+        moveq   #0,d0
+        cmpi.w  #224,d1
+        bge.s   2f
+        cmpi.w  #-16,d1
+        ble.s   2f
+        move.w  #496,d0
+        sub.w   d1,d0
+        andi.w  #0x1FF,d0
+        lsl.w   #7,d0
+        addq.w  #1,d0
+2:      move.w  d0,(a4)+
+        addq.w  #1,d4
+        cmpi.w  #256,d4
+        bne.s   1b
+9:      rts
+
+* spr_xt: arcade x (9 bits) -> SCB4 word (screen x = x - 15)
+spr_xt:
+        .set    i,0
+        .rept   512
+        .word   ((i-15)&0x1FF)<<7
+        .set    i,i+1
+        .endr
 
 * get_crop: d1.w = sy -> d5.w = arcade row on Neo Geo line 0 for it (see ram.i)
 get_crop:
@@ -713,3 +731,7 @@ fix_xt:
         .set    i,i+1
         .endr
 
+
+        .if     RT_BUF_END > BIOS_RAM
+        .error  "runtime buffers over the BIOS RAM"
+        .endif
