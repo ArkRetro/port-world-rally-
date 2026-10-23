@@ -35,6 +35,7 @@
         .equ    rt_dirty0,      RT_VARS+0x04    /* .l tilemap 0 columns written since the last upload */
         .equ    rt_dirty1,      RT_VARS+0x08    /* .l tilemap 1 */
         .equ    rt_slotcol,     RT_VARS+0x10    /* 2 x 21 bytes: tilemap column held by each column sprite */
+        .equ    rt_hion,        RT_VARS+0x6A    /* 21 bytes: the HI column sprite has priority-1 cells */
         .equ    rt_vblank,      RT_VARS+0x40    /* .b set by the VBlank handler */
         .equ    rt_started,     RT_VARS+0x41    /* .b the arcade program runs */
         .equ    rt_fid,         RT_VARS+0x42    /* .b fix frame id (1..255) */
@@ -63,8 +64,11 @@
 * Neo Geo sprite allocation (= priority, higher on top)
         .equ    SPR_TM1,        1               /* 21 column sprites: tilemap 1 (back) */
         .equ    SPR_TM0,        22              /* 21 column sprites: tilemap 0 */
-        .equ    SPR_ARC,        43              /* arcade sprites, up to 380 */
-        .equ    SPR_MAX,        381
+        .equ    SPR_ARC,        43              /* arcade sprites: entry k = SPR_MAX-1-k */
+        .equ    SPR_MAX,        360
+        .equ    SPR_HI,         360             /* 21 column sprites above them: tilemap 0's priority-1 cells */
+        .equ    HI_TILES,       0x14000         /* + code: the tilemap tile with pens 1-7 only (gfx2crom.py) */
+        .equ    HI_BLANK,       0x18000
         .equ    NCOL,           21
 
 * Neo Geo palettes: 16..79 = arcade palettes 0..63; 0..15 = copies of arcade 48..63 for the text on the

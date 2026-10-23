@@ -13,6 +13,9 @@ non-blank 8x8 sprite tile of the sprite half, padded into the top left quadrant 
 runtime moves a flipped one by 8 pixels); map8.bin gives, for each of the 65536 8x8 codes, the Neo Geo
 tile number minus 0x8000 (word, big endian; 0xFFFF = blank tile: the runtime hides the sprite).
 
+Tiles 0x14000-0x17FFF: the tilemap tiles (0x4000 + code) with pens 8-15 made transparent, for the
+"HI" columns (a priority-1 cell's pens 1-7 are above the sprites); tile 0x18000 is blank.
+
 The text font (8x8 sprite codes 0xF400-0xFFFF, always on the 8-pixel grid) also goes to the fix layer:
 --fix in.s1 out.s1 copies the S ROM (the port's own font in tiles 0x000-0x3FF) and puts code 0xF000 + t in
 fix tile t for t >= 0x400.
@@ -92,6 +95,17 @@ def main(a):
             c2 += x2
             nxt += 1
         m8[2 * n:2 * n + 2] = (seen[t] - 0x8000).to_bytes(2, 'big')
+    # HI tiles: pens 1-7 of the tilemap tiles, then a blank tile
+    assert len(c1) <= 0x14000 * 64
+    c1 += bytes(0x14000 * 64 - len(c1))
+    c2 += bytes(0x14000 * 64 - len(c2))
+    for m in range(0x4000, 0x8000):
+        t = join16(t8[4 * m:4 * m + 4])
+        x1, x2 = encode(bytes(p if p < 8 else 0 for p in t))
+        c1 += x1
+        c2 += x2
+    c1 += bytes(64)
+    c2 += bytes(64)
     size = 1
     while size < len(c1):
         size *= 2

@@ -177,7 +177,20 @@ layer_sync:
         moveq   #NCOL-1,d2
 4:      move.w  d1,REG_VRAMRW
         dbra    d2,4b
-        /* x: for k = 0..20, the column on screen j with (first + j) mod 21 == k... computed by
+        cmpi.w  #SPR_TM0,d6
+        bne.s   41f
+        /* tilemap 0: its HI column sprites, the same y, 32 tiles if the column has priority-1 cells */
+        VRAM_GAP
+        move.w  #VRAM_SCB3+SPR_HI,REG_VRAMADDR
+        lea     rt_hion,a0
+        moveq   #NCOL-1,d2
+42:     moveq   #0,d3
+        tst.b   (a0)+
+        beq.s   43f
+        move.w  d1,d3
+43:     move.w  d3,REG_VRAMRW
+        dbra    d2,42b
+41:     /* x: for k = 0..20, the column on screen j with (first + j) mod 21 == k... computed by
            walking j and writing at the sprite's own address */
         moveq   #15,d2
         and.w   d5,d2                   /* fine scroll */
@@ -196,7 +209,13 @@ layer_sync:
         andi.w  #0x1FF,d1
         lsl.w   #7,d1
         move.w  d1,REG_VRAMRW
-        addi.w  #16,d2
+        cmpi.w  #SPR_TM0,d6
+        bne.s   51f
+        addi.w  #SPR_HI-SPR_TM0,d3
+        VRAM_GAP
+        move.w  d3,REG_VRAMADDR
+        move.w  d1,REG_VRAMRW
+51:     addi.w  #16,d2
         addq.w  #1,d7
         cmpi.w  #NCOL,d7
         bne.s   5b
@@ -207,8 +226,9 @@ mod21:
         .byte   0,1,2,3,4,5,6,7,8,9,10
         .align  2
 
-* col_upload: map column d1 of map a4 -> column sprite d6 + d2
+* col_upload: map column d1 of map a4 -> column sprite d6 + d2 (tilemap 0: also its HI sprite)
 col_upload:
+        move.w  d2,d4                   /* k */
         add.w   d6,d2
         lsl.w   #6,d2
         VRAM_GAP
@@ -231,7 +251,47 @@ col_upload:
         move.w  d2,REG_VRAMRW
         lea     128(a0),a0
         dbra    d7,1b
-        rts
+        cmpi.w  #SPR_TM0,d6
+        bne     9f
+        /* HI: the priority-1 cells (their pens 1-7 are above the sprites, MAME squash_state), blank
+           elsewhere; the sprite is shown only if there is one */
+        lea     -128*32(a0),a0
+        move.w  d4,d2
+        addi.w  #SPR_HI,d2
+        lsl.w   #6,d2
+        VRAM_GAP
+        move.w  d2,REG_VRAMADDR
+        moveq   #0,d5                   /* priority-1 cells */
+        moveq   #31,d7
+2:      move.w  2(a0),d2
+        move.w  d2,d3
+        andi.w  #0xC0,d3
+        cmpi.w  #0x40,d3
+        bne.s   3f
+        move.w  (a0),d0
+        move.w  d0,d1
+        lsr.w   #2,d0
+        ori.w   #HI_TILES&0xFFFF,d0
+        move.w  d0,REG_VRAMRW
+        andi.w  #0x3F,d2
+        addi.w  #PAL_ARC,d2
+        lsl.w   #8,d2
+        andi.w  #3,d1
+        or.w    d1,d2
+        ori.w   #(HI_TILES>>16)<<4,d2
+        move.w  d2,REG_VRAMRW
+        addq.w  #1,d5
+        bra.s   4f
+3:      move.w  #HI_BLANK&0xFFFF,REG_VRAMRW
+        nop
+        nop
+        move.w  #(HI_BLANK>>16)<<4,REG_VRAMRW
+4:      lea     128(a0),a0
+        dbra    d7,2b
+        lea     rt_hion,a0
+        tst.w   d5
+        sne     (a0,d4.w)
+9:      rts
 
 * ------------------------------------------------------------------------------------------
 * spr_sync: arcade sprite list -> Neo Geo sprites.  Entry k (0..NSLOT-1) always uses Neo Geo sprite
