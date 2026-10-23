@@ -48,6 +48,7 @@
         .equ    rt_okiphrase,   RT_VARS+0x51    /* .b last OKI phrase byte (0x80 | phrase) */
         .equ    rt_oki_cnt,     RT_VARS+0x54    /* 4 .w frames left of the phrase on each OKI channel */
         .equ    rt_prof,        RT_VARS+0x60    /* 5 .w raster lines (profiling) */
+        .equ    rt_boot,        RT_VARS+0x7F    /* .b start-up progress (debugging) */
         .equ    rt_err_pc,      RT_VARS+0x80    /* .l trap_error */
         .equ    rt_err_sr,      RT_VARS+0x84    /* .w */
         .equ    rt_err_regs,    RT_VARS+0x88    /* 16 .l */

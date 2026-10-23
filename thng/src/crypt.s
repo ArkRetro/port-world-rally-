@@ -127,6 +127,7 @@ linea_handler:
         jmp     (a0)
 
 linea_done:
+        move.b  d0,REG_WATCHDOG         /* (the start-up VRAM tests run with the interrupts off) */
         add.l   d6,62(sp)               /* skip the replaced instruction */
         tst.l   d7                      /* move / clr: N and Z from the value, V = C = 0, X kept */
         move    sr,d6

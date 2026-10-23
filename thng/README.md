@@ -1,6 +1,6 @@
 # Thunder Hoop NG — port de Thunder Hoop (Gaelco, 1992) a Neo Geo
 
-Estado: **v0.5** — en MAME (`aes`) arranca, pasa los tests del arcade, muestra la intro completa con sus
+Estado: **v0.6** — en MAME (`aes` y `neogeo`) y en Geolith arranca, pasa los tests del arcade, muestra la intro completa con sus
 textos, el título y el modo demo, y se puede jugar (START, sin monedas: free play), con música y efectos.
 
 ## Cómo funciona
@@ -17,6 +17,10 @@ textos, el título y el modo demo, y se puede jugar (START, sin monedas: free pl
 * Los sitios de escritura en VRAM salen del análisis estático más un "tap" de MAME sobre el port que avisa
   de cualquier escritura en 0x100000-0x103FFF hecha por código arcade sin stub (`analysis/vram_sites.txt`).
   Los inmediatos no se parchean: el juego comprueba algunos en ROM (antimanipulación); solo cambia el opcode.
+* Watchdog: el arcade hace sus tests de arranque con las interrupciones cortadas (3,5 s); MAME `aes` no
+  emula el watchdog de Neo Geo pero Geolith y el hardware sí reinician.  Se salta la suma de 512 KB de ROM
+  (su resultado se fija), el test de RAM usa 1 patrón en vez de 16 y cada escritura en VRAM pasa el
+  watchdog.
 * Protecciones: la calibración de velocidad (bucle 0x49E, comprobada en el jefe 2) se fija a 0xDC1; la suma
   de la ROM que calcula al arrancar se fija a la original; el byte 0xC0 de la tabla de vectores (región) se
   conserva (0xFB = Europa).
@@ -42,6 +46,7 @@ textos, el título y el modo demo, y se puede jugar (START, sin monedas: free pl
 ## Compilar
 
     make game ARCADE=<carpeta con el set thoop de MAME>
+    make neo  ARCADE=...      # build/release/thng.neo (NeoSD, MiSTer, Geolith)
     mame aes -cart thng -hashpath build/hash -rompath "build/roms;<bios>"
 
 ## Pendiente

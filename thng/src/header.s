@@ -10,9 +10,9 @@
 _start:
         .long   ARC_STACK               /* 0  initial SSP                                             */
         .long   0x00C00402              /* 1  reset -> BIOS                                           */
-        .long   0x00C00408              /* 2  bus error                                               */
-        .long   0x00C0040E              /* 3  address error                                           */
-        .long   0x00C00414              /* 4  illegal instruction                                     */
+        .long   group0_error            /* 2  bus error: the error screen (main.s)                    */
+        .long   group0_error            /* 3  address error                                           */
+        .long   trap_error              /* 4  illegal instruction                                     */
         .long   0x00C00426              /* 5  divide by zero                                          */
         .long   0x00C00426              /* 6  chk                                                     */
         .long   0x00C00426              /* 7  trapv                                                   */
@@ -48,7 +48,7 @@ _start:
         .long   0x100000                /* 0x10A program size                                          */
         .long   backup_area             /* 0x10E backup RAM work area pointer                         */
         .word   0x0100                  /* 0x112 backup RAM size (bytes)                              */
-        .byte   0                       /* 0x114 eyecatcher: 0 = the BIOS draws its own                */
+        .byte   1                       /* 0x114 eyecatcher: 1 = the game (none: the BIOS logo needs SNK tiles in the C ROM) */
         .byte   0                       /* 0x115 */
         .long   softdips                /* 0x116 */
         .long   softdips                /* 0x11A */

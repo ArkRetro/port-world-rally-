@@ -15,7 +15,7 @@ VERSION := $(shell cat VERSION)
 SRCS = src/header.s src/main.s src/crypt.s src/video.s src/fix.s src/sound.s src/tables.s
 ANALYSIS = analysis/absrefs.csv analysis/trap_tables.csv analysis/code_ranges.csv analysis/vram_sites.txt
 
-.PHONY: game clean
+.PHONY: game neo clean
 
 $(BUILD)/th_cpu.bin: $(ARCADE)/th18dea1.040 $(ARCADE)/th161eb4.020
 	mkdir -p $(BUILD)
@@ -61,3 +61,9 @@ game: $(BUILD)/thng-p1.p1 $(BUILD)/thng-s1.s1 $(BUILD)/thng-m1.m1 $(BUILD)/thng-
 
 clean:
 	rm -rf $(BUILD)
+
+# ---- release: NeoSD / MiSTer / Geolith .neo + zip of the MAME set ----
+neo: game
+	mkdir -p $(BUILD)/release
+	python3 -I tools/mkneo.py $(BUILD)/roms/thng thng $(BUILD)/release/thng.neo -n "Thunder Hoop NG v$(VERSION)" --zip $(BUILD)/release/thng.zip
+	cp $(BUILD)/release/thng.neo $(BUILD)/release/thng_v$(VERSION).neo

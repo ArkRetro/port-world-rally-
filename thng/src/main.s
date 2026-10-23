@@ -7,7 +7,7 @@
 
         .text
         .global USER, PLAYER_START, DEMO_END, COIN_SOUND
-        .global irq_vblank, irq_timer, trap_error, rt_reset, rt_fixcal, rt_cksum, rt_sprdone, rt_m24_d0, rt_m24_d1
+        .global irq_vblank, irq_timer, trap_error, group0_error, rt_reset, rt_fixcal, rt_cksum, rt_sprdone, rt_m24_d0, rt_m24_d1
 
 * USER: called by the BIOS with SR=2700, BIOS_USER_REQUEST = request
 USER:
@@ -34,8 +34,11 @@ user_game:
         move.b  #1,BIOS_USER_MODE
         bsr     rt_clear_ram
         bsr     arc_clear_ram
+        move.b  #1,rt_boot
         jsr     video_init
+        move.b  #2,rt_boot
         jsr     snd_init
+        move.b  #3,rt_boot
         bsr     io_init
         st      rt_started
         jmp     0x400                   /* arcade reset (prologue patched: rt_reset) */
@@ -50,6 +53,7 @@ user_resume:
 * arcade reset prologue (0x406, patched): SR, stack in the relocated work RAM, then 0x40E
 rt_reset:
         move    #0x2700,sr
+        move.b  #4,rt_boot
         lea     ARC_STACK,sp
         move.l  d0,-(sp)
         jmp     ARC_RESUME
@@ -106,6 +110,7 @@ irq_vblank:
         bne.s   1f
         jmp     SYSTEM_INT1
 1:      movem.l d0-d7/a0-a6,-(sp)
+        move.b  #5,rt_boot
         move.w  #4,REG_IRQACK
         move.b  d0,REG_WATCHDOG
         addq.l  #1,rt_frame
@@ -179,6 +184,11 @@ joy_conv:
 6:      rts
 
 * ------------------------------------------------------------------------------------------
+* bus / address error: 8 more bytes on the stack (access type, address, instruction); shown in d0-d1 rows
+group0_error:
+        move    #0x2700,sr
+        move.l  2(sp),rt_err_regs+64    /* fault address */
+        addq.l  #8,sp
 trap_error:
         move    #0x2700,sr
         movem.l d0-d7/a0-a7,rt_err_regs
@@ -200,7 +210,7 @@ trap_error:
         jsr     fix_hex16
         lea     rt_err_regs,a1
         moveq   #7,d1
-        moveq   #15,d3
+        moveq   #16,d3                  /* d0-d7, a0-a7, fault address */
 2:      moveq   #2,d0
         move.l  (a1)+,d2
         movem.l d1/d3/a1,-(sp)
