@@ -42,3 +42,13 @@
 023456
 0234B6
 0234DE
+02336E   # map column copy when scrolling up (found by the unpatched-write tap, demo 3)
+00A70E   # protection checks (absolute writes found in the swept / later code)
+00BA50
+00C012
+00C03C
+01742E
+017A12
+017EC2
+020630
+020FE6

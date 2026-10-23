@@ -113,11 +113,9 @@ def sites(rom, path):
         pc = int(line.split()[0], 16)
         i = dis(rom, pc)
         ops = split_ops(i.op_str)
-        if i.mnemonic in ('move.l', 'move.w') and ops[0].startswith('#') and parse(ops[1])[0] == 'abs':
-            res.append((pc, i, ('imm',)))
-        else:
-            res.append((pc, i, ('stub', n)))
-            n += 1
+        # (constants are decrypted at run time too: the game checks some of these immediates in ROM)
+        res.append((pc, i, ('stub', n)))
+        n += 1
     return res
 
 
@@ -133,7 +131,7 @@ def gen_stub(pc, i):
         out.append('        move.l  #0x%04X%04X,d0' % (z, z))
         out.append('        moveq   #0,d7')
     else:
-        assert m == 'move.l', (hex(pc), m)
+        assert m in ('move.l', 'move.w'), (hex(pc), m)
         src, dst = parse(ops[0]), parse(ops[1])
         k, r, x = src
         if k == 'reg':
@@ -150,6 +148,17 @@ def gen_stub(pc, i):
                 out.append('        addq.l  #4,%d(sp)' % frame(r))
         else:
             raise ValueError('%06X src %s' % (pc, ops[0]))
+    if m == 'move.w':
+        # a lone word: always a first word for the hardware
+        assert src[0] == 'imm' and dst[0] == 'abs', hex(pc)
+        out.append('        move.w  #0x%04X,d0' % gaelcrypt.decrypt(0, 0, src[1]))
+        out.append('        moveq   #0,d7')
+        out.append('        move.w  #0x%04X,d7' % src[1])
+        out.append('        lea     0x%X,a1' % src[1] if False else '        lea     0x%X,a1' % dst[1])
+        out.append('        move.w  d0,(a1)')
+        out.append('        moveq   #%d,d6' % i.size)
+        out.append('        jmp     linea_done')
+        return out
     if m != 'clr.l':
         out.append('        move.l  d0,d7')
         out.append('        jsr     decrypt_long')

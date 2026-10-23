@@ -1,7 +1,7 @@
 # Thunder Hoop NG — port de Thunder Hoop (Gaelco, 1992) a Neo Geo
 
-Estado: **v0.1, hito 1** — en MAME (`aes`) arranca, pasa los tests del arcade y muestra la intro completa
-con todos sus textos, el título y el modo demo. Sin sonido todavía.
+Estado: **v0.2** — en MAME (`aes`) arranca, pasa los tests del arcade, muestra la intro completa con sus
+textos, el título y el modo demo, y se puede jugar (START, sin monedas: free play). Sin sonido todavía.
 
 ## Cómo funciona
 
@@ -14,6 +14,9 @@ con todos sus textos, el título y el modo demo. Sin sonido todavía.
   (generado) descifra por software con tablas (`src/crypt.s`, `tools/mkcrypt.py`, verificado contra el
   algoritmo de MAME). Detalle importante del 68000: `clr.l` escribe primero la palabra baja, así que el
   hardware ve dos "primeras palabras", no un par.
+* Los sitios de escritura en VRAM salen del análisis estático más un "tap" de MAME sobre el port que avisa
+  de cualquier escritura en 0x100000-0x103FFF hecha por código arcade sin stub (`analysis/vram_sites.txt`).
+  Los inmediatos no se parchean: el juego comprueba algunos en ROM (antimanipulación); solo cambia el opcode.
 * Protecciones: la calibración de velocidad (bucle 0x49E, comprobada en el jefe 2) se fija a 0xDC1; la suma
   de la ROM que calcula al arrancar se fija a la original; el byte 0xC0 de la tabla de vectores (región) se
   conserva (0xFB = Europa).
@@ -29,7 +32,6 @@ con todos sus textos, el título y el modo demo. Sin sonido todavía.
 
 ## Pendiente
 
-* Cuelgue en la tercera demo del attract (índice de `trap #1` fuera de tabla en 0xCAB8).
 * Encuadre vertical: el arcade usa 240 líneas (HUD arriba y abajo), Neo Geo 224; ahora se recortan las 16 de
   arriba (`CROP_Y`), lo que oculta el marcador superior en partida.
 * Sonido (OKI → ADPCM-A, como en World Rally NG), prioridades sprites/tiles, monedas/créditos del BIOS,
