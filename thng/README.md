@@ -1,6 +1,6 @@
 # Thunder Hoop NG — port de Thunder Hoop (Gaelco, 1992) a Neo Geo
 
-Estado: **v0.7** — en MAME (`aes` y `neogeo`) y en Geolith arranca, pasa los tests del arcade, muestra la intro completa con sus
+Estado: **v0.8** — en MAME (`aes` y `neogeo`) y en Geolith arranca, pasa los tests del arcade, muestra la intro completa con sus
 textos, el título y el modo demo, y se puede jugar (START, sin monedas: free play), con música y efectos.
 
 ## Cómo funciona

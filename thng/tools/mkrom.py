@@ -320,11 +320,13 @@ def cmd_build(a):
     cksum = sum(orig[0x400:0x7FFFF]) & 0xFFFFFFFF
     # start-up tests run with the interrupts off: the Neo Geo watchdog (about 8 frames, not emulated by
     # MAME's aes driver; Geolith and the hardware reset) must not run out.  The ROM sum (512 KB byte by
-    # byte, its result is stored by rt_cksum) is skipped; the RAM test writes one pattern instead of 16
+    # byte, its result is stored by rt_cksum) is skipped; the RAM test only clears (its 1-pattern write and
+    # check still took 0.134 s on the work RAM: over the limit on the hardware)
     assert orig[0x1EB4A:0x1EB4E] == bytes.fromhex('41F80400'), 'ROM sum loop'
     rom[0x1EB4A:0x1EB4E] = bytes.fromhex('7800') + bytes([0x60, 0x1EB60 - 0x1EB4E])   # moveq #0,d4; bra.s 1EB60
-    assert orig[0x1EC1E:0x1EC22] == bytes.fromhex('343C0001'), 'RAM test patterns'
-    put16(rom, 0x1EC20, 0x8000)
+    assert orig[0x1EC1E:0x1EC24] == bytes.fromhex('343C00014280'), 'RAM test patterns'
+    assert orig[0x1EC48:0x1EC4A] == bytes.fromhex('204A'), 'RAM test clear pass'
+    rom[0x1EC1E:0x1EC22] = bytes.fromhex('7000') + bytes([0x60, 0x1EC48 - 0x1EC22])   # moveq #0,d0; bra.s 1EC48
     assert orig[0x106D2:0x106D8] == bytes.fromhex('363900FFD2D8'), 'sprite list update'
     rom[0x106D2:0x106D8] = b'\x4E\xB9' + struct.pack('>I', syms['rt_sprdone'])
 
