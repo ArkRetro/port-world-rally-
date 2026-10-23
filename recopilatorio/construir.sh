@@ -4,7 +4,7 @@
 #   NUGGET   ruta de nugget (pcsx-redux/src/mips), para el enlazado (ps-exe.ld)
 #   MKPSXISO ejecutable de mkpsxiso (por defecto el del PATH)
 #   LICENCIA tu BIOS (o LICENSEA.DAT): logo de PlayStation del arranque (wrally_ps1/ps1/licencia.py)
-#   SD_NOMBRE, REGIONES, PSIO: ver mkiso.py
+#   SD_NOMBRE, REGIONES, XSTATION, PSIO: ver mkiso.py
 # Las portadas del menu (work/portada1.ppm y portada2.ppm) las saca captura.sh del titulo de cada port si no estan
 # (se pueden poner otras: capturas de 368 x 240 en ppm o png); SIN_PORTADAS=1: el menu con un 1 y un 2 en su lugar.
 set -e

@@ -396,16 +396,18 @@ void carga_atiende(void)
     }
 }
 
-/* ---- pantalla de carga de al menos CARGA_MIN lineas (3 s) en los negros entre pantallas, como los juegos de la
-   PS1: el juego esta congelado y mientras se ve CARGANDO el CD sigue trayendo lo que viene (las demas secciones de
-   MENUS del modo, el mapa/VO/L2/ROM de la demo o del tramo, las emergencias) sin competir con el dibujo. hechas:
-   lineas que ya llevaba el negro (las cargas bloqueantes de antes). La barra va por tiempo */
+/* ---- pantalla de carga de al menos CARGA_MIN lineas (3 s; en XStation, hasta que no queda nada que traer) en los
+   negros entre pantallas, como los juegos de la PS1: el juego esta congelado y mientras se ve CARGANDO el CD sigue
+   trayendo lo que viene (las demas secciones de MENUS del modo, el mapa/VO/L2/ROM de la demo o del tramo, las
+   emergencias) sin competir con el dibujo. hechas: lineas que ya llevaba el negro (las cargas bloqueantes de antes).
+   La barra va por tiempo */
 #ifndef CARGA_MIN
 #define CARGA_MIN (3 * 15734)
 #endif
+extern volatile const char ode_cfg[];            /* cd.c: '1' en la imagen de XStation */
 void carga_relleno(int fb, u32 hechas)
-{
-    u32 l = hechas, k = 0; u16 t = T1;
+{   /* en XStation (sin errores de lectura que absorber) acaba en cuanto no queda nada que traer */
+    u32 l = hechas, k = 0; u16 t = T1; int xs = ode_cfg[11] == '1';
     if (l >= CARGA_MIN) return;
     if (!bloq_vis || bloq_fb != fb) vid_cargando(fb);
     bloq_vis = 0;
@@ -413,6 +415,7 @@ void carga_relleno(int fb, u32 hechas)
     while (l < CARGA_MIN) {
         u16 n;
         carga_atiende();
+        if (xs && !em_on && !bg_on) break;
         if (!(++k & 255)) vid_cargando_barra(fb, (int)(l >> 8), CARGA_MIN >> 8);
         n = T1; l += (u16)(n - t); t = n;
     }

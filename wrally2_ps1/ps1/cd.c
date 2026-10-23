@@ -33,6 +33,9 @@ typedef unsigned char u8; typedef unsigned short u16;
 
 int cd_dbg[8];                              /* 0 sectores, 1 perdidos, 2 errores, 3 vigilancia, 4 modo, 5 ultimo codigo de error,
                                                6 Pause rechazadas, 7 sectores con el EDC mal */
+/* XStation (el lector es una SD: no hay sectores mal leidos): sin el EDC de cada sector, que es CPU en carrera cuando el
+   CD trae de fondo. El EXE lleva '0'; la imagen de XStation (recopilatorio/mkiso.py, XSTATION) lo cambia a '1' */
+volatile const char ode_cfg[] = "WR2PS1-ODE:0";
 static const unsigned edc16[16] = {        /* EDC (polinomio 0xD8018001, reflejado) de 4 bits */
     0x00000000, 0x99011001, 0x82012001, 0x1B003000, 0xB4014001, 0x2D005000, 0x36006000, 0xAF017001,
     0xD8018001, 0x41009000, 0x5A00A000, 0xC301B001, 0x6C00C000, 0xF501D001, 0xEE01E001, 0x7700F000};
@@ -108,7 +111,7 @@ static u8 *sector(int *idx)
 #else
     if (w) {
         unsigned c = 0, e; u8 b;
-        if (h[6] & 0x20) {                  /* Form 2 (sin EDC de 2 048): como antes */
+        if ((h[6] & 0x20) || ode_cfg[11] == '1') {   /* Form 2 (sin EDC de 2 048) o XStation: copia sin mas */
             for (k = 0; k < 2048; k += 4) { w[k] = CD2; w[k + 1] = CD2; w[k + 2] = CD2; w[k + 3] = CD2; }
         } else {
             for (k = 4; k < 12; k++) { b = h[k]; c = (c >> 4) ^ edc16[(c ^ b) & 15]; c = (c >> 4) ^ edc16[(c ^ (b >> 4)) & 15]; }

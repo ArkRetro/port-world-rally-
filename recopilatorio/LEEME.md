@@ -41,6 +41,19 @@ Los pasos que hace:
 2. `pantalla.py`: dibuja la pantalla en `work/pantalla.bin`, con una vista previa en `work/vista.png`.
 3. Compila `cd/INICIO.EXE`.
 4. `mkiso.py`: crea `wr12ps1_USA.bin/.cue` y `wr12ps1_EUR.bin/.cue`.
-   - Además crea las variantes `_psio`, con el EXE del WR1 para PSIO.
-   - Y las carpetas de `sd/` para la tarjeta (XStation: .bin y .cue; PSIO: .bin y .cu2).
-   - Variables: `REGIONES='USA EUR'`, `PSIO=0` (sin las de PSIO) y `SD_NOMBRE` (por defecto `World Rally 1 y 2 PS1`).
+   - Además crea las variantes `_xs`, con el EXE del WR2 para XStation, y `_psio`, con el EXE del WR1 para PSIO.
+   - Y las carpetas de `sd/` para la tarjeta: `(USA)` (CD grabado, MiSTer: .bin y .cue), `(USA) XStation` (.bin y .cue)
+     y `(USA) PSIO` (.bin y .cu2).
+   - Variables: `REGIONES='USA EUR'`, `XSTATION=0` y `PSIO=0` (sin esas variantes) y `SD_NOMBRE` (por defecto
+     `World Rally 1 y 2 PS1`).
+
+## Variante XStation
+
+El lector de la XStation es una tarjeta SD: no hay sectores mal leídos. En el WR2 sobran entonces dos cosas que están
+para los CD grabados:
+
+- **El EDC de cada sector.** Es CPU en cada sector que llega, también los que se leen de fondo en carrera.
+- **Los 3 s mínimos de CARGANDO antes de cada tramo.** En XStation la pantalla acaba en cuanto no queda nada que traer.
+
+El EXE del WR2 lleva la marca `WR2PS1-ODE:0` (en `cd.c`) y `mkiso.py` la cambia a `1` en la imagen de XStation. El WR1
+va igual en todas: su lector no tiene esos márgenes.

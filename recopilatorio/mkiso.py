@@ -9,9 +9,11 @@ de cada port tal como los dejan sus build.sh (wrally_ps1/ps1/cd y wrally2_ps1/ps
  - Las pistas de CD-DA del WR1 detras de la de datos. TRACKS.BIN (principio y final de cada una) se rehace para este
    disco como en el mkiso.py del WR1: se construye, se lee la disposicion del .cue, se escribe la tabla y se vuelve a
    construir (TRACKS.BIN no cambia de tamano).
-Para la tarjeta de un emulador de lector deja en sd/ '<nombre> (USA)' con .bin y .cue (XStation; tambien CD grabado,
-MiSTer) y '<nombre> (USA) PSIO' con otra imagen (el EXE del WR1 para PSIO, WRPS1_PSIO.EXE) y su .cu2 (SD_NOMBRE, por
-defecto 'World Rally 1 y 2 PS1'; REGIONES='USA EUR' por defecto; PSIO=0: sin la de PSIO). Los sectores de licencia
+Para la tarjeta de un emulador de lector deja en sd/ '<nombre> (USA)' con .bin y .cue (CD grabado, MiSTer),
+'<nombre> (USA) XStation' con otra imagen (el EXE del WR2 con WR2PS1-ODE:1: sin el EDC de cada sector ni los 3 s
+minimos de la pantalla de carga de antes de cada tramo, que son para los errores de lectura de un CD) y '<nombre> (USA)
+PSIO' con otra (el EXE del WR1 para PSIO, WRPS1_PSIO.EXE) y su .cu2 (SD_NOMBRE, por defecto 'World Rally 1 y 2 PS1';
+REGIONES='USA EUR' por defecto; PSIO=0 / XSTATION=0: sin esas). Los sectores de licencia
 salen de licencia.py del WR1 (LICENCIA_USA / LICENCIA_EUR o LICENCIA). Uso personal."""
 import os, re, sys, struct, shutil, subprocess
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -39,7 +41,8 @@ assert ('WRPS1.EXE' in dict(f1)) and ('WR2PS1.EXE' in dict(f2)), 'los EXE de los
 def ruta(base, f): return os.path.normpath(os.path.join(base, f))
 
 
-def build(reg, img, psio):
+def build(reg, img, var):
+    """var: '' (CD), '_psio' (EXE del WR1 para PSIO) o '_xs' (EXE del WR2 para XStation)"""
     open('cd_lic_%s.dat' % reg, 'wb').write(lic[reg])        # sectores 0-11: licencia y logo (licencia.py)
     x = ['<?xml version="1.0" encoding="UTF-8"?>',
          '<iso_project image_name="%s.bin" cue_sheet="%s.cue">' % (img, img),
@@ -52,11 +55,12 @@ def build(reg, img, psio):
     for n, s in f1:
         if n == 'SYSTEM.CNF': continue
         if n == 'TRACKS.BIN': s = 'cd/TRACKS.BIN'
-        elif n == 'WRPS1.EXE': s = ruta(WR1, 'cd/WRPS1_PSIO.EXE' if psio else 'cd/WRPS1.EXE')
+        elif n == 'WRPS1.EXE': s = ruta(WR1, 'cd/WRPS1_PSIO.EXE' if var == '_psio' else 'cd/WRPS1.EXE')
         else: s = ruta(WR1, s)
         x.append('      <file name="%s" type="data" source="%s"/>' % (n, s))
     x.append('      <dir name="WR2">')
-    x += ['        <file name="%s" type="data" source="%s"/>' % (n, ruta(WR2, s)) for n, s in f2 if n != 'SYSTEM.CNF']
+    x += ['        <file name="%s" type="data" source="%s"/>' % (n, 'cd/WR2PS1_XS.EXE' if var == '_xs' and n == 'WR2PS1.EXE'
+                                                                 else ruta(WR2, s)) for n, s in f2 if n != 'SYSTEM.CNF']
     x += ['      </dir>', '      <dummy sectors="1024"/>', '    </directory_tree>', '  </track>']
     x += ['  <track type="audio" source="%s"/>' % ruta(WR1, a) for a in audio]
     x += ['</iso_project>']
@@ -145,13 +149,18 @@ def put(src, dst):
     if os.path.exists(dst): os.remove(dst)
     try: os.link(src, dst)
     except OSError: shutil.copyfile(src, dst)
-def sd(reg, psio):
-    img = IMG % reg; n = '%s (%s)' % (SD, reg); d = sd_dir(n)
+def bin_cue(img, n):
+    """carpeta n con la imagen img (.bin y .cue con la linea FILE a ese nombre, CRLF)"""
+    d = sd_dir(n)
     put(img + '.bin', os.path.join(d, n + '.bin'))
     cue = open(img + '.cue').read()
     assert cue.count('"%s.bin"' % img) == 1, 'el .cue debe tener una sola linea FILE'
     cue = cue.replace('"%s.bin"' % img, '"%s.bin"' % n).replace('\r\n', '\n').replace('\n', '\r\n')
     open(os.path.join(d, n + '.cue'), 'wb').write(cue.encode('ascii'))
+def sd(reg, psio, xs):
+    img = IMG % reg; n = '%s (%s)' % (SD, reg)
+    bin_cue(img, n)
+    if xs: bin_cue(img + '_xs', n + ' XStation')
     if psio:
         n += ' PSIO'; d = sd_dir(n); img += '_psio'
         put(img + '.bin', os.path.join(d, n + '.bin'))
@@ -160,18 +169,23 @@ def sd(reg, psio):
 
 REG = [r for r in licencia.TXT if r in os.environ.get('REGIONES', ' '.join(licencia.TXT)).split()]
 PSIO = os.environ.get('PSIO', '1') != '0'
+XS = os.environ.get('XSTATION', '1') != '0'
 lic = {reg: licencia.datos(reg) for reg in REG}
 os.makedirs('cd', exist_ok=True)
+if XS:   # el EXE del WR2 para XStation (cd.c: ode_cfg)
+    e = open(ruta(WR2, 'cd/WR2PS1.EXE'), 'rb').read()
+    assert e.count(b'WR2PS1-ODE:0') == 1, 'ode_cfg no esta (o esta dos veces) en WR2PS1.EXE'
+    open('cd/WR2PS1_XS.EXE', 'wb').write(e.replace(b'WR2PS1-ODE:0', b'WR2PS1-ODE:1'))
 write_tracks({})
-build(REG[0], IMG % REG[0], False)
+build(REG[0], IMG % REG[0], '')
 tab = layout(IMG % REG[0])
 write_tracks(tab)
 for reg in REG:
-    for psio in (False, True) if PSIO else (False,):
-        img = IMG % reg + ('_psio' if psio else '')
-        build(reg, img, psio)
+    for var in [''] + ['_psio'] * PSIO + ['_xs'] * XS:
+        img = IMG % reg + var
+        build(reg, img, var)
         assert layout(img) == tab, 'disposicion distinta en %s' % img
         check_dir(img)
-    sd(reg, PSIO)
+    sd(reg, PSIO, XS)
     print(reg, 'ok', '%s.bin %d KB' % (IMG % reg, os.path.getsize('%s.bin' % (IMG % reg)) >> 10))
 print('pistas', ' '.join('%d:%d-%d' % (t, a, b) for t, (a, b) in sorted(tab.items()) if t >= 2))
