@@ -1,6 +1,6 @@
 # Thunder Hoop NG — port de Thunder Hoop (Gaelco, 1992) a Neo Geo
 
-Estado: **v0.3** — en MAME (`aes`) arranca, pasa los tests del arcade, muestra la intro completa con sus
+Estado: **v0.4** — en MAME (`aes`) arranca, pasa los tests del arcade, muestra la intro completa con sus
 textos, el título y el modo demo, y se puede jugar (START, sin monedas: free play), con música y efectos.
 
 ## Cómo funciona
@@ -26,6 +26,10 @@ textos, el título y el modo demo, y se puede jugar (START, sin monedas: free pl
 * Sonido: el secuenciador del arcade (el mismo de Gaelco que World Rally) sigue intacto; sus seis escrituras
   al OKI6295 se enganchan (`src/sound.s`, de World Rally NG) y van al Z80 (`z80/driver.s`), que toca las
   fases convertidas a ADPCM-A (`tools/oki2adpcma.py`: 109 fases, V ROM de 4 MB).
+* Encuadre: el arcade muestra 240 líneas y Neo Geo 224, a tamaño real (escalar no sirve: los tilemaps son
+  sprites de 512 líneas que dan la vuelta y la capa fix no escala).  En intro / título / menús se ven las
+  filas 32-255; en partida (hay algo en la franja del marcador superior) el área de juego muestra las filas
+  24-247 y los marcadores se acercan 8 líneas cada uno: se ven enteros arriba y abajo.
 * Gráficos: `tools/gfx2crom.py` (C ROM 2 x 8 MB + tabla de tiles 8x8 + S ROM con la fuente).
 
 ## Compilar
@@ -35,7 +39,5 @@ textos, el título y el modo demo, y se puede jugar (START, sin monedas: free pl
 
 ## Pendiente
 
-* Encuadre vertical: el arcade usa 240 líneas (HUD arriba y abajo), Neo Geo 224; ahora se recortan las 16 de
-  arriba (`CROP_Y`), lo que oculta el marcador superior en partida.
 * Prioridades sprites/tiles, monedas/créditos del BIOS,
   MVS, hardware real.

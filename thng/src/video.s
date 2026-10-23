@@ -60,6 +60,7 @@ video_init:
         moveq   #2*NCOL-1,d0
 2:      st      (a0)+
         dbra    d0,2b
+        move.w  #CROP_Y,rt_pcrop
         /* sprite entries: all unused, no text on the fix layer */
         lea     ENT_SH,a0
         move.w  #510,d0
@@ -168,7 +169,8 @@ layer_sync:
         move.w  d1,REG_VRAMADDR
         move.w  #1,REG_VRAMMOD
         move.w  d4,d1
-        addi.w  #496+CROP_Y,d1          /* 496 - (-y - CROP_Y) */
+        add.w   rt_pcrop,d1
+        addi.w  #496,d1                 /* 496 - (-y - crop) */
         andi.w  #0x1FF,d1
         lsl.w   #7,d1
         ori.w   #32,d1
@@ -283,7 +285,18 @@ spr_sync:
         move.w  6(a0),d4
         cmp.w   4(a1),d4
         beq     8f                      /* unchanged */
-2:      move.w  d0,(a1)
+2:      move.w  (a1),d5                 /* entries in the top HUD band: y byte 0xD1-0xE0 (rows 16-31) */
+        cmpi.b  #0xD1,d5
+        bcs.s   4f
+        cmpi.b  #0xE0,d5
+        bhi.s   4f
+        subq.w  #1,rt_topcnt
+4:      cmpi.b  #0xD1,d0
+        bcs.s   5f
+        cmpi.b  #0xE0,d0
+        bhi.s   5f
+        addq.w  #1,rt_topcnt
+5:      move.w  d0,(a1)
         move.w  4(a0),2(a1)
         move.w  6(a0),4(a1)
         tst.w   (a6)
@@ -310,13 +323,21 @@ spr_sync:
         lea     fix_xt,a4
         move.w  (a4,d0.w),d3            /* column * 32, or < 0 off the grid */
         bmi     20f
-        moveq   #0,d0
-        move.b  1(a0),d0
-        add.w   d0,d0
-        lea     fix_yt,a4
-        move.w  (a4,d0.w),d0            /* row, or < 0 */
+        moveq   #0,d1
+        move.b  1(a0),d1
+        neg.w   d1
+        addi.w  #240,d1
+        andi.w  #0xFF,d1                /* sy */
+        moveq   #7,d0
+        and.w   d1,d0
+        bne     20f
+        bsr     get_crop
+        sub.w   d5,d1
         bmi     20f
-        add.w   d0,d3
+        cmpi.w  #224,d1
+        bcc     20f
+        lsr.w   #3,d1                   /* row */
+        add.w   d1,d3
         addi.w  #VRAM_FIX+2,d3          /* fix rows 2-29 are the visible 224 lines */
         lsl.w   #3,d2
         andi.w  #0xF000,d2
@@ -345,10 +366,12 @@ spr_sync:
         neg.w   d1
         addi.w  #240,d1
         andi.w  #0xFF,d1
-        cmpi.w  #CROP_Y+224,d1
-        bcc     40b
-        cmpi.w  #CROP_Y-16,d1
-        bls     40b
+        bsr     get_crop
+        sub.w   d5,d1                   /* Neo Geo line */
+        cmpi.w  #224,d1
+        bge     40b
+        cmpi.w  #-16,d1
+        ble     40b
         move.w  4(a0),d2                /* colour | x */
         move.w  d2,d3
         andi.w  #0x1FF,d3
@@ -397,7 +420,7 @@ spr_sync:
         or.w    d2,d5
         move.w  d5,REG_VRAMRW
         /* SCB3: y | 1 tile; SCB4: x */
-        move.w  #CROP_Y+496,d0
+        move.w  #496,d0
         sub.w   d1,d0
         andi.w  #0x1FF,d0
         lsl.w   #7,d0
@@ -429,9 +452,43 @@ spr_sync:
 31:     cmpa.l  a5,a1
         bcs.s   30b
         addq.b  #1,rt_fid
-        bne.s   32f
+        bne.s   33f
         bsr     fix_clear_stamps
+33:     /* layout: game when something is in the top HUD band.  On a change every entry is redone */
+        moveq   #0,d0
+        tst.w   rt_topcnt
+        beq.s   34f
+        moveq   #1,d0
+34:     cmp.b   rt_mode,d0
+        beq.s   32f
+        move.b  d0,rt_mode
+        move.w  #CROP_Y,rt_pcrop
+        tst.b   d0
+        beq.s   35f
+        move.w  #24,rt_pcrop
+35:     lea     ENT_SH,a0
+        move.w  #510,d0
+36:     move.w  #0xFFFF,(a0)
+        addq.l  #6,a0
+        dbra    d0,36b
+        clr.w   rt_topcnt
+        move.w  #511,rt_sprprev
+        st      rt_sprdirty
 32:     rts
+
+* get_crop: d1.w = sy -> d5.w = arcade row on Neo Geo line 0 for it (see ram.i)
+get_crop:
+        move.w  rt_pcrop,d5
+        tst.b   rt_mode
+        beq.s   9f
+        cmpi.w  #32,d1
+        bcc.s   1f
+        moveq   #16,d5                  /* top HUD */
+        rts
+1:      cmpi.w  #232,d1
+        bcs.s   9f
+        moveq   #32,d5                  /* bottom HUD */
+9:      rts
 
 * fix_xt: arcade x (9 bits) -> column * 32 (fix VRAM is column major), -1 off the grid
 fix_xt:
@@ -439,18 +496,6 @@ fix_xt:
         .rept   512
         .if     ((i-15)&7) == 0 && i >= 15 && i < 15+320
         .word   ((i-15)/8)*32
-        .else
-        .word   -1
-        .endif
-        .set    i,i+1
-        .endr
-* fix_yt: arcade y byte -> row, -1 off the grid (sy = (240 - y) & 0xFF, rows from CROP_Y)
-fix_yt:
-        .set    i,0
-        .rept   256
-        .set    sy,(240-i)&0xFF
-        .if     ((sy-CROP_Y)&7) == 0 && sy >= CROP_Y && sy < CROP_Y+224
-        .word   (sy-CROP_Y)/8
         .else
         .word   -1
         .endif

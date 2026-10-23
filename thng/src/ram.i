@@ -40,10 +40,13 @@
         .equ    rt_fid,         RT_VARS+0x42    /* .b fix frame id (1..255) */
         .equ    rt_sprdirty,    RT_VARS+0x43    /* .b the arcade updated its sprite list */
         .equ    rt_sprprev,     RT_VARS+0x44    /* .w entries scanned last time */
+        .equ    rt_mode,        RT_VARS+0x46    /* .b 1: game layout (something in the top HUD band) */
+        .equ    rt_topcnt,      RT_VARS+0x48    /* .w sprite entries in the top HUD band (arcade rows 16-31) */
+        .equ    rt_pcrop,       RT_VARS+0x4A    /* .w first arcade row of the playfield on Neo Geo line 0 */
         .equ    rt_okibank,     RT_VARS+0x50    /* .b last OKI bank written */
         .equ    rt_okiphrase,   RT_VARS+0x51    /* .b last OKI phrase byte (0x80 | phrase) */
         .equ    rt_oki_cnt,     RT_VARS+0x54    /* 4 .w frames left of the phrase on each OKI channel */
-        .equ    rt_prof,        RT_VARS+0x48    /* 5 .w raster lines (profiling) */
+        .equ    rt_prof,        RT_VARS+0x60    /* 5 .w raster lines (profiling) */
         .equ    rt_err_pc,      RT_VARS+0x80    /* .l trap_error */
         .equ    rt_err_sr,      RT_VARS+0x84    /* .w */
         .equ    rt_err_regs,    RT_VARS+0x88    /* 16 .l */
@@ -70,8 +73,10 @@
         .equ    PAL_ARC,        16
         .equ    PAL_TEXT,       48
 
-* screen: the arcade shows 320x240 (rows 16-255); the Neo Geo 320x224: arcade rows 32-255 (the intro's
-* last line of text is at 240-255; the game's top HUD at 16-31 needs another layout: to do)
+* screen: the arcade shows 320x240 (rows 16-255), the Neo Geo 320x224.  Intro / title / menus: arcade rows
+* 32-255 (the intro's last line of text is at 240-255).  Game (something in the top HUD band, rows 16-31):
+* the playfield shows rows 24-247, the top HUD (rows 16-31) comes down 8 lines and the bottom HUD (rows
+* 232-255) goes up 8, both at 1:1 over the edges of the playfield
         .equ    CROP_Y,         32
 
 * P2 ROM (bank 0, 0x200000): decryption tables (tools/mkcrypt.py)
