@@ -13,9 +13,26 @@
 
         .text
         .global decrypt_long, decrypt_word, linea_handler, linea_done, vstore
+        .global fast_t1, fast_script, fast_cnt, fast_copy16
 
 * decrypt_long: d0.l = encrypted pair (high word = first written) -> d0.l decrypted.  Others preserved.
 decrypt_long:
+        swap    d0
+        tst.w   d0
+        bne.s   1f
+        /* high word 0 (counters, small values): the second word from a table (tools/mkrom.py CT_HI0) */
+        swap    d0
+        move.l  a0,-(sp)
+        andi.l  #0xFFFF,d0
+        add.l   d0,d0
+        lea     CT_HI0,a0
+        move.w  (a0,d0.l),d0
+        swap    d0
+        move.w  CT_T0,d0                /* first word: decrypt(0, 0, 0) */
+        swap    d0
+        movea.l (sp)+,a0
+        rts
+1:      swap    d0
         movem.l d1-d3/a0,-(sp)
         moveq   #0,d1
         swap    d0
@@ -157,3 +174,45 @@ vstore:
         bset    d2,d1
         move.l  d1,(a0)
 9:      rts
+
+* ------------------------------------------------------------------------------------------
+* Fast paths for the hottest write sites (jsr patched in by tools/mkrom.py instead of an A-line opcode:
+* no exception, no register frame).  All write screen RAM (no tilemap column to mark).
+
+* 0x512 (trap #1, once per task and frame): move.l a0,$102040.l.  d0 is free there (reloaded at 0x524)
+fast_t1:
+        move.l  a0,d0
+        bsr     decrypt_long
+        move.l  d0,ARC_SCREEN+0x040
+        rts
+
+* 0x1ABDA (script interpreter, once per opcode): move.l d0,$102c00.l (d0 is restored at 0x1ABE8)
+fast_script:
+        bsr     decrypt_long
+        move.l  d0,ARC_SCREEN+0xC00
+        rts
+
+* 0x4FE (main loop): move.l (a6),$102810.l (followed by bra: the flags are not used)
+fast_cnt:
+        move.l  d0,-(sp)
+        move.l  (a6),d0
+        bsr     decrypt_long
+        move.l  d0,ARC_SCREEN+0x810
+        move.l  (sp)+,d0
+        rts
+
+* 0x16FD0-0x16FD9: move.w #$f,d0 / 1: move.l (a6)+,(a4)+ / dbra d0,1b  (16 longs ROM -> screen RAM)
+* (the source is the ROM table at 0x19038: read from the decrypted shadow)
+fast_copy16:
+        move.l  a6,d0
+        add.l   d0,d0
+        addi.l  #CT_SHADOW,d0
+        move.l  a5,-(sp)
+        movea.l d0,a5
+        moveq   #15,d0
+1:      move.l  (a5),(a4)+
+        addq.l  #8,a5
+        dbra    d0,1b
+        movea.l (sp)+,a5
+        lea     64(a6),a6
+        rts

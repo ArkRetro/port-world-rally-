@@ -37,6 +37,9 @@ RELOC = [  # (lo, hi, new lo)
     (0x108000, 0x108010, 0x10D860),             # video registers / IRQ ack
 ]
 VRAM_LO, VRAM_HI = 0x100000, 0x104000
+SHADOW = 0x280000                               # P2: decrypted shadow of the code area (src/ram.i CT_SHADOW)
+HI0 = 0x2D0000                                  # P2: decrypt_long(0000:e2) low words (CT_HI0)
+assert SHADOW + 2 * CODE_HI <= HI0
 
 
 def be32(b, o): return struct.unpack('>I', bytes(b[o:o + 4]))[0]
@@ -102,6 +105,16 @@ def split_ops(s):
     return [x.strip() for x in out if x.strip()]
 
 
+# the hottest write sites get a direct jsr fast path instead (src/crypt.s): pc -> (expected bytes, length, symbol)
+FAST = {
+    0x00512: ('23C800102040', 6, None),     # trap #1: the runtime's own handler (rt_trap1) reads the shadow
+    0x1ABDA: ('23C000102C00', 6, None),     # script dispatch: reads the shadow, stores a plain value
+    0x004FE: ('23D600102810', 6, 'fast_cnt'),
+    0x16FD4: ('28DE', 2, None),             # covered by fast_copy16 at 0x16FD0
+}
+FAST_PATCH = [(0x16FD0, '303C000F28DE51C8FFFC', 'fast_copy16')]
+
+
 def sites(rom, path):
     """[(pc, insn, action)] action = ('imm', new bytes offset, value) or ('stub', n)"""
     res = []
@@ -111,6 +124,8 @@ def sites(rom, path):
         if not line:
             continue
         pc = int(line.split()[0], 16)
+        if pc in FAST:
+            continue
         i = dis(rom, pc)
         ops = split_ops(i.op_str)
         # (constants are decrypted at run time too: the game checks some of these immediates in ROM)
@@ -273,6 +288,20 @@ def cmd_build(a):
             put16(rom, pc, 0xA000 | act[1])
     print('VRAM sites: %d (%d A-line stubs)' % (len(lst), sum(1 for x in lst if x[1] and x[2][0] == 'stub')))
 
+    for pc, (op, n, sym) in FAST.items():
+        assert orig[pc:pc + n] == bytes.fromhex(op), hex(pc)
+        if sym:
+            rom[pc:pc + n] = b'\x4E\xB9' + struct.pack('>I', syms[sym])
+    for pc, op, sym in FAST_PATCH:
+        n = len(op) // 2
+        assert orig[pc:pc + n] == bytes.fromhex(op), hex(pc)
+        rom[pc:pc + n] = b'\x4E\xB9' + struct.pack('>I', syms[sym]) + b'\x4E\x71' * ((n - 6) // 2)
+
+    # the script interpreter's handler table (0x1AC88, encrypted pointers) is read from the shadow
+    assert orig[0x1ABC0:0x1ABCA] == bytes.fromhex('45F90001AC88C0FC0004'), 'script dispatch'
+    put32(rom, 0x1ABC2, SHADOW + 2 * 0x1AC88)
+    put16(rom, 0x1ABC8, 8)
+
     # 3. patches
     assert orig[0x400:0x410] == bytes.fromhex('203C00000000 46FC2700 4FF80000 2F00'.replace(' ', '')), 'reset'
     rom[0x400:0x410] = bytes.fromhex('7000 4E71 4E71 4EF9'.replace(' ', '')) + struct.pack('>I', syms['rt_reset']) + \
@@ -308,6 +337,20 @@ def cmd_build(a):
         assert orig[pc:pc + len(op)] == op and be32(orig, pc + len(op)) in (0x70000F, 0x70000D), hex(pc)
         rom[pc:pc + n] = b'\x4E\xB9' + struct.pack('>I', syms[hook]) + b'\x4E\x71' * ((n - 6) // 2)
 
+    # every lea $200000.l,an (palette base, relocated) -> jsr rt_pal_an: sets an and marks the palette
+    # dirty, so the runtime compares palette RAM only after the game touched it
+    assert orig[0x9188:0x9194] == bytes.fromhex('45F900FFA5C049F900200000'), 'palette copy'
+    rom[0x9188:0x918E] = b'\x4E\xB9' + struct.pack('>I', syms['rt_palcopy'])     # marks its palettes
+    npal = 0
+    for o in range(0x400, CODE_HI, 2):
+        if o == 0x918E:
+            continue                    # (its routine is rt_palcopy's)
+        if o in code and orig[o + 2:o + 6] == bytes.fromhex('00200000') and orig[o] & 0xF1 == 0x41 and orig[o + 1] == 0xF9:
+            n = (orig[o] >> 1) & 7
+            rom[o:o + 6] = b'\x4E\xB9' + struct.pack('>I', syms['rt_pal_a%d' % n])
+            npal += 1
+    print('palette base loads hooked: %d' % npal)
+
     # the script interpreter's 24-bit pointers: andi.l #$FFFFFF,dn -> jsr rt_m24_dn (masks and relocates)
     nm = 0
     for o in range(0x400, CODE_HI, 2):
@@ -331,7 +374,17 @@ def cmd_build(a):
     assert rom[syms['rt_cksum']:syms['rt_cksum'] + 6] == bytes.fromhex('283C12345678'), 'rt_cksum'
     put32(rom, syms['rt_cksum'] + 2, cksum)
     p2 = bytearray(rt[0x200000:]) if len(rt) > 0x200000 else bytearray()
+    assert len(p2) <= SHADOW - 0x200000, 'P2 tables overlap the shadow'
     p2 += bytes(0x100000 - len(p2))
+    # decrypted shadow of the code area: the long at x decrypted, at SHADOW + 2x (every even x), for the
+    # encrypted pointer tables (trap #1 inline tables, the script handlers) the game decrypts through
+    # screen RAM over and over
+    for x in range(0, CODE_HI, 2):
+        put32(p2, SHADOW - 0x200000 + 2 * x, gaelcrypt.decrypt_long(be32(orig, x)))
+    # low word of decrypt_long(0000:e2), for values with a zero high word (decrypt_long's fast path)
+    d0 = gaelcrypt.decrypt(0, 0, 0)
+    for e2 in range(0x10000):
+        put16(p2, HI0 - 0x200000 + 2 * e2, gaelcrypt.decrypt(0, d0, e2))
     print('runtime: %X-%X (%d bytes), P2 tables %d bytes' % (tlo, thi, thi - tlo, len(rt) - 0x200000))
     put32(rom, 0x10A, 0x200000)
     open(out, 'wb').write(bytes(rom) + bytes(p2))

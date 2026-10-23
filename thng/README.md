@@ -1,6 +1,6 @@
 # Thunder Hoop NG — port de Thunder Hoop (Gaelco, 1992) a Neo Geo
 
-Estado: **v0.6** — en MAME (`aes` y `neogeo`) y en Geolith arranca, pasa los tests del arcade, muestra la intro completa con sus
+Estado: **v0.7** — en MAME (`aes` y `neogeo`) y en Geolith arranca, pasa los tests del arcade, muestra la intro completa con sus
 textos, el título y el modo demo, y se puede jugar (START, sin monedas: free play), con música y efectos.
 
 ## Cómo funciona
@@ -41,6 +41,10 @@ textos, el título y el modo demo, y se puede jugar (START, sin monedas: free pl
   así tiene altura 0 y no gasta del límite de 96 sprites por línea.
 * Sprites por línea: medido en el arcade, como mucho 33 objetos por línea (logo del título); con las 42
   columnas de los fondos, 75 (+ las HI que haya), por debajo de 96.  El texto va a la capa fix y no cuenta.
+* Velocidad (v0.7): el código cifrado del arcade se lee de una copia descifrada en P2 (shadow) en lugar
+  de descifrar cada long; trap #1, el intérprete de scripts y la copia de bloques usan esa copia; las
+  columnas de los fondos tienen asignación dinámica de sprite (el mapa de 32 columnas da la vuelta) y sólo
+  se suben las que cambian; las paletas sólo se comparan si la rutina de copia del juego las marca.
 * Gráficos: `tools/gfx2crom.py` (C ROM 2 x 8 MB + tabla de tiles 8x8 + S ROM con la fuente).
 
 ## Compilar

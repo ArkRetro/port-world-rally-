@@ -40,6 +40,7 @@
         .equ    rt_started,     RT_VARS+0x41    /* .b the arcade program runs */
         .equ    rt_fid,         RT_VARS+0x42    /* .b fix frame id (1..255) */
         .equ    rt_sprdirty,    RT_VARS+0x43    /* .b the arcade updated its sprite list */
+        .equ    rt_paldirty,    RT_VARS+0x47    /* .b the game loaded the palette base (rt_pal_an) */
         .equ    rt_sprprev,     RT_VARS+0x44    /* .w entries scanned last time */
         .equ    rt_mode,        RT_VARS+0x46    /* .b 1: game layout (something in the top HUD band) */
         .equ    rt_topcnt,      RT_VARS+0x48    /* .w sprite entries in the top HUD band (arcade rows 16-31) */
@@ -48,6 +49,7 @@
         .equ    rt_okiphrase,   RT_VARS+0x51    /* .b last OKI phrase byte (0x80 | phrase) */
         .equ    rt_oki_cnt,     RT_VARS+0x54    /* 4 .w frames left of the phrase on each OKI channel */
         .equ    rt_prof,        RT_VARS+0x60    /* 5 .w raster lines (profiling) */
+        .equ    rt_lcache,      RT_VARS+0xD0    /* 2 x (.w x, .w y, .w crop, .w -): last positions written per layer */
         .equ    rt_boot,        RT_VARS+0x7F    /* .b start-up progress (debugging) */
         .equ    rt_err_pc,      RT_VARS+0x80    /* .l trap_error */
         .equ    rt_err_sr,      RT_VARS+0x84    /* .w */
@@ -60,6 +62,8 @@
         .equ    ENT_FIX,        ENT_SH+511*6    /* 511 words: fix VRAM address the entry's text is in, 0 = none */
         .equ    FIX_CLRQ,       ENT_FIX+511*2   /* fix addresses to blank at the end of the frame (511 words) */
         .equ    FIX_STAMP,      RT_VARS+0x100   /* 1280 bytes: frame id of the last text written (by fix offset) */
+        .equ    RT_COLSLOT,     RT_VARS+0x600   /* 2 x 32 bytes: column sprite of each map column (0xFF none) */
+        .equ    RT_PALMARK,     RT_VARS+0x640   /* 64 bytes: palettes the game's copy routine wrote (rt_palcopy) */
         .equ    FIX_BLANK,      0x00FF
 
 * Neo Geo sprite allocation (= priority, higher on top)
@@ -92,6 +96,8 @@
         .equ    CT_BF,          0x241200
         .equ    CT_PAL,         0x241600
         .equ    CT_MAP8,        0x251600        /* 8x8 sprite code -> Neo Geo tile - 0x8000 (tools/gfx2crom.py) */
+        .equ    CT_SHADOW,      0x280000        /* + 2 x: decrypt_long of the ROM long at x (code area, mkrom.py) */
+        .equ    CT_HI0,         0x2D0000        /* [e2]: low word of decrypt_long(0000:e2) (mkrom.py) */
 
 * arcade program
         .equ    ARC_IRQ6,       0x010CFA        /* arcade VBlank handler (vector 30) */

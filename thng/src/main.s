@@ -7,7 +7,8 @@
 
         .text
         .global USER, PLAYER_START, DEMO_END, COIN_SOUND
-        .global irq_vblank, irq_timer, trap_error, group0_error, rt_reset, rt_fixcal, rt_cksum, rt_sprdone, rt_m24_d0, rt_m24_d1
+        .global irq_vblank, irq_timer, trap_error, group0_error, rt_reset, rt_fixcal, rt_cksum, rt_sprdone, rt_m24_d0, rt_m24_d1, rt_trap1, rt_palcopy
+        .global rt_pal_a0, rt_pal_a1, rt_pal_a2, rt_pal_a3, rt_pal_a4, rt_pal_a5, rt_pal_a6
 
 * USER: called by the BIOS with SR=2700, BIOS_USER_REQUEST = request
 USER:
@@ -94,6 +95,50 @@ rt_m24_d1:
         bcs.s   1f
         subi.l  #0xFF8000-ARC_WRAM,d1
 1:      tst.l   d1
+        rts
+
+* TRAP #1: the arcade's switch (0x506) over the inline table of encrypted code pointers after the trap,
+* index d0.  The arcade writes the entry to screen RAM and reads it back decrypted; here it comes from the
+* decrypted shadow (the screen RAM word is still written, decrypted, as the game may look at it)
+rt_trap1:
+        move.l  a0,-(sp)
+        lsl.w   #2,d0
+        movea.l 6(sp),a0                /* table = the return address */
+        adda.w  d0,a0
+        adda.l  a0,a0
+        adda.l  #CT_SHADOW,a0
+        movea.l (a0),a0
+        move.l  a0,ARC_SCREEN+0x040
+        clr.l   d0                      /* 0x522: what the arcade leaves in d0 */
+        move.l  d3,d0
+        addi.w  #0xF00,d0
+        asr.l   #6,d0
+        move.l  a0,6(sp)
+        movea.l (sp)+,a0
+        rte
+
+* lea $200000.l,an (the palette base, patched): the game is about to change palettes
+        .irp    n,0,1,2,3,4,5,6
+rt_pal_a\n:
+        lea     ARC_PAL,a\n
+        st      rt_paldirty
+        rts
+        .endr
+
+* the game's palette copy (0x9188: palettes d0 .. d0+d2-1 from its RAM copy; lea $ffa5c0,a2 patched):
+* mark them for pal_sync
+rt_palcopy:
+        lea     ARC_WRAM+0xA5C0-0x8000,a2
+        movem.l d0/d2/a0,-(sp)
+        andi.w  #0xFF,d0
+        lea     RT_PALMARK,a0
+        bra.s   2f
+1:      cmpi.w  #64,d0
+        bcc.s   3f
+        st      (a0,d0.w)
+        addq.w  #1,d0
+2:      dbra    d2,1b
+3:      movem.l (sp)+,d0/d2/a0
         rts
 
 PLAYER_START:

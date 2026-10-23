@@ -32,7 +32,7 @@ _start:
         /* 32-47: TRAP #0..#15, the arcade's vectors (#1 = switch over an encrypted inline table, #3 / #5
            take an inline word, #0, #6 and #8-#13 are its error stops; its #0 handler at 0x27C is under the
            header now) */
-        .long   trap_error, 0x00000506, 0x00000534, 0x000005AA
+        .long   trap_error, rt_trap1, 0x00000534, 0x000005AA
         .long   0x0000062A, 0x00000646, trap_error, 0x000006AE
         .long   trap_error, trap_error, trap_error, trap_error
         .long   trap_error, trap_error, 0x0001A8C6, 0x0001A692

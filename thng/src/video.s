@@ -60,6 +60,10 @@ video_init:
         moveq   #2*NCOL-1,d0
 2:      st      (a0)+
         dbra    d0,2b
+        lea     RT_COLSLOT,a0
+        moveq   #63,d0
+5:      st      (a0)+
+        dbra    d0,5b
         move.w  #CROP_Y,rt_pcrop
         /* sprite entries: all unused, no text on the fix layer */
         lea     ENT_SH,a0
@@ -108,15 +112,52 @@ video_vblank:
 * pal_sync: arcade palette RAM (xBGR555) -> Neo Geo palettes PAL_ARC.., only the colours that changed
 * (compared two at a time with the shadow of the last converted values).  Backdrop = arcade colour 0.
 pal_sync:
+        /* all 64 palettes after the game loaded the palette base (rt_pal_an) and every 64 frames for
+           safety; otherwise only the palettes its usual copy routine marked (rt_palcopy) */
+        tst.b   rt_paldirty
+        bne   0f
+        moveq   #63,d0
+        and.w   rt_frame+2,d0
+        bne   20f
+0:      clr.b   rt_paldirty
+        lea     RT_PALMARK,a0
+        moveq   #15,d0
+21:     clr.l   (a0)+
+        dbra    d0,21b
         lea     ARC_PAL,a0
         lea     PAL_SHADOW,a1
         lea     CT_PAL,a3
         move.w  #511,d7
 1:      cmpm.l  (a0)+,(a1)+
-        bne.s   3f
+        bne   3f
 2:      dbra    d7,1b
-        move.w  PALETTES+PAL_ARC*32,PALETTES+255*32+30
-        rts
+8:      move.w  PALETTES+PAL_ARC*32,PALETTES+255*32+30
+9:      rts
+20:     /* marked palettes: compare their 8 longs */
+        lea     RT_PALMARK,a2
+        moveq   #0,d6                   /* palette */
+22:     tst.b   (a2,d6.w)
+        beq   24f
+        clr.b   (a2,d6.w)
+        move.w  d6,d0
+        lsl.w   #5,d0
+        lea     ARC_PAL,a0
+        adda.w  d0,a0
+        lea     PAL_SHADOW,a1
+        adda.w  d0,a1
+        lea     CT_PAL,a3
+        moveq   #7,d5
+23:     cmpm.l  (a0)+,(a1)+
+        beq   25f
+        movem.l d5-d6/a2,-(sp)
+        moveq   #0,d7
+        bsr   3f                      /* convert the pair (returns through 2: with d7 = 0) */
+        movem.l (sp)+,d5-d6/a2
+25:     dbra    d5,23b
+24:     addq.w  #1,d6
+        cmpi.w  #64,d6
+        bne   22b
+        bra   8b
 3:      move.l  -4(a0),d0
         move.l  d0,-4(a1)
         move.l  a0,d1
@@ -132,37 +173,80 @@ pal_sync:
         add.w   d0,d0
         move.w  (a3,d0.l),(a2)
         cmpi.w  #PAL_TEXT*32,d1         /* arcade palettes 48-63: also the fix palettes 0-15 */
-        bcs.s   2b
+        bcs   2b
         move.l  -2(a2),-2-(PAL_TEXT+PAL_ARC)*32(a2)
-        bra.s   2b
+        bra   2b
 
 * ------------------------------------------------------------------------------------------
 * layer_sync: a4 = map, d4 = scroll y, d5 = scroll x, d6 = first column sprite, a5 = its 21 slot
 * bytes, a6 = dirty mask of the map columns
 layer_sync:
-        lea     mod21(pc),a1
+        lea     RT_COLSLOT,a1           /* map column -> column sprite (0xFF: none) */
+        cmpi.w  #SPR_TM0,d6
+        bne.s   0f
+        lea     32(a1),a1
+0:      move.w  #0,-(sp)
         move.w  d5,d0
         lsr.w   #4,d0
         andi.w  #31,d0                  /* d0 = first map column on screen */
         move.l  (a6),d3                 /* dirty columns */
         clr.l   (a6)
+        /* free the column sprites whose map column left the screen (the 21 on screen are a window of
+           the 32-column map that wraps around: a fixed column -> sprite mapping cannot work) */
+        moveq   #NCOL-1,d7
+10:     moveq   #0,d1
+        move.b  (a5,d7.w),d1
+        bmi.s   11f
+        move.w  d1,d2
+        sub.w   d0,d2
+        andi.w  #31,d2
+        cmpi.w  #NCOL,d2
+        bcs.s   11f
+        st      (a5,d7.w)
+        st      (a1,d1.w)
+11:     dbra    d7,10b
         moveq   #0,d7                   /* j */
 1:      move.w  d0,d1
         add.w   d7,d1
         andi.w  #31,d1                  /* c */
         moveq   #0,d2
-        move.b  (a1,d1.w),d2       /* k */
-        cmp.b   (a5,d2.w),d1
-        bne.s   2f
-        btst    d1,d3
+        move.b  (a1,d1.w),d2            /* k */
+        bpl.s   4f
+        moveq   #NCOL-1,d2              /* a free column sprite for it */
+5:      tst.b   (a5,d2.w)
+        bmi.s   6f
+        dbra    d2,5b
+        bra.s   3f
+6:      move.b  d2,(a1,d1.w)
+        bra.s   2f
+4:      btst    d1,d3
         beq.s   3f
 2:      move.b  d1,(a5,d2.w)
-        movem.l d0/d3-d7,-(sp)
+        movem.l d0/d3-d7/a1,-(sp)
         bsr     col_upload
-        movem.l (sp)+,d0/d3-d7
+        movem.l (sp)+,d0/d3-d7/a1
+        st      (sp)
 3:      addq.w  #1,d7
         cmpi.w  #NCOL,d7
         bne.s   1b
+        /* positions: rewritten only if the scroll or the crop moved, or a column was reloaded */
+        lea     rt_lcache,a0
+        cmpi.w  #SPR_TM0,d6
+        bne.s   6f
+        addq.l  #8,a0
+6:      tst.b   (sp)+
+        bne.s   7f
+        cmp.w   (a0),d5
+        bne.s   7f
+        cmp.w   2(a0),d4
+        bne.s   7f
+        move.w  rt_pcrop,d1
+        cmp.w   4(a0),d1
+        bne.s   7f
+        rts
+7:      move.w  d5,(a0)
+        move.w  d4,2(a0)
+        move.w  rt_pcrop,4(a0)
         /* SCB3: every column sprite y | 32 tiles; SCB4: x of the sprite holding map column c */
         move.w  #VRAM_SCB3,d1
         add.w   d6,d1
@@ -221,10 +305,6 @@ layer_sync:
         bne.s   5b
         rts
 
-mod21:
-        .byte   0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
-        .byte   0,1,2,3,4,5,6,7,8,9,10
-        .align  2
 
 * col_upload: map column d1 of map a4 -> column sprite d6 + d2 (tilemap 0: also its HI sprite)
 col_upload:
@@ -356,13 +436,29 @@ spr_sync:
         cmpi.b  #0xE0,d0
         bhi.s   5f
         addq.w  #1,rt_topcnt
-5:      move.w  d0,(a1)
+5:      cmpi.w  #1,(a6)                 /* a sprite last frame with the same tile, size, flips and */
+        bne.s   6f                      /* colour: only its position moved (the usual case) */
+        eor.w   d0,d5
+        andi.w  #0xFF00,d5
+        bne.s   6f
+        move.w  6(a0),d4
+        cmp.w   4(a1),d4
+        bne.s   6f
+        move.w  4(a0),d2
+        move.w  2(a1),d3
+        eor.w   d2,d3
+        andi.w  #0xFE00,d3
+        bne.s   6f
+        move.w  d0,(a1)
+        move.w  d2,2(a1)
+        bra     26f
+6:      move.w  d0,(a1)
         move.w  4(a0),2(a1)
         move.w  6(a0),4(a1)
-        tst.w   (a6)
-        beq.s   3f
+        cmpi.w  #1,(a6)
+        bls.s   7f                      /* 0: nothing, 1: a sprite */
         move.w  (a6),(a5)+              /* it had a character there */
-        clr.w   (a6)
+7:      clr.w   (a6)
 3:      cmpi.b  #0xF0,d0
         beq     40f                     /* unused */
         /* text: 8x8, no flip, code >= 0xF400, colour >= 0x30, on the fix grid */
@@ -479,7 +575,8 @@ spr_sync:
         lsl.w   #8,d2
         or.w    d2,d5
         move.w  d5,REG_VRAMRW
-        /* SCB3: y | 1 tile; SCB4: x */
+27:     /* SCB3: y | 1 tile; SCB4: x */
+        move.w  #1,(a6)                 /* shown as a sprite */
         move.w  #496,d0
         sub.w   d1,d0
         andi.w  #0x1FF,d0
@@ -496,6 +593,33 @@ spr_sync:
         VRAM_GAP
         move.w  d1,REG_VRAMADDR
         move.w  d3,REG_VRAMRW
+        bra.s   8f
+26:     /* position only: d0 = w0, d2 = w2 */
+        moveq   #0,d1
+        move.b  d0,d1
+        neg.w   d1
+        addi.w  #240,d1
+        andi.w  #0xFF,d1
+        bsr     get_crop
+        sub.w   d5,d1                   /* Neo Geo line */
+        cmpi.w  #224,d1
+        bge.s   28f
+        cmpi.w  #-16,d1
+        ble.s   28f
+        move.w  d2,d3
+        andi.w  #0x1FF,d3
+        subi.w  #15,d3
+        btst    #11,d0
+        beq     27b
+        btst    #14,d0                  /* 8x8: the tile is in the top left of its 16x16 one */
+        beq.s   29f
+        subq.w  #8,d3
+29:     btst    #15,d0
+        beq     27b
+        subq.w  #8,d1
+        bra     27b
+28:     clr.w   (a6)
+        bra     40b
 8:      addq.w  #1,d6                   /* next entry: one sprite up */
         dbra    d7,0b
         /* blank the cells characters left (unless text came there this frame); next frame id */
