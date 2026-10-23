@@ -45,11 +45,11 @@ user_game:
         jmp     0x400                   /* arcade reset (prologue patched: rt_reset) */
 
 user_resume:
-        /* back from a BIOS screen: give the frame back to the game */
-        move.b  #1,BIOS_USER_MODE
-        lea     ARC_STACK-0x400,sp
-        move    #0x2000,sr
-3:      bra.s   3b
+        /* MVS: a coin during the demo makes the BIOS re-enter USER (request 3) from inside SYSTEM_IO; the
+           arcade program is intact: finish our VBlank handler where it was, rebuilding the screen */
+        move.l  rt_io_sp,sp
+        st      rt_reinit
+        bra     irq_after_io
 
 * arcade reset prologue (0x406, patched): SR, stack in the relocated work RAM, then 0x40E
 rt_reset:
@@ -161,9 +161,22 @@ irq_vblank:
         addq.l  #1,rt_frame
         st      rt_vblank
         move.w  REG_LSPCMODE,rt_prof    /* profiling: raster line at entry / after video / after IO */
-        jsr     video_vblank
+        /* the BIOS took the screen (a coin, MVS: it re-entered USER, or cleared the palette RAM and the
+           sentinel with it): rebuild the picture.  Here, in the VBlank (palette RAM accesses during the
+           picture show as dots on the hardware) */
+        PAL_LATE 1f                     /* this VBlank came late (the last one overran) */
+        cmpi.w  #0x0123,PALETTES+254*32+2
+        bne.s   2f
+        tst.b   rt_reinit
+        beq.s   1f
+2:      clr.b   rt_reinit
+        jsr     video_init
+        st      rt_paldirty
+1:      jsr     video_vblank
         move.w  REG_LSPCMODE,rt_prof+2
+        move.l  sp,rt_io_sp
         jsr     SYSTEM_IO
+irq_after_io:
         move.w  REG_LSPCMODE,rt_prof+4
         bsr     io_update
         jsr     snd_vblank
@@ -178,10 +191,10 @@ irq_timer:
         rte
 
 * ------------------------------------------------------------------------------------------
-* arcade inputs: DSW1 = free play (no coins on the Neo Geo side yet), DSW2 = defaults
+* arcade inputs: DSW1 = coinage defaults (coins: SELECT or the MVS slots), DSW2 = defaults
 io_init:
         move.w  #0xFFCF,IO_DSW2
-        move.w  #0xFF7F,IO_DSW1
+        move.w  #0xFFFF,IO_DSW1         /* 1 coin 1 credit (bit 7 low = free play) */
         move.w  #0xFFFF,IO_P1
         move.w  #0xFFFF,IO_P2
         rts
@@ -204,7 +217,41 @@ io_update:
         bne.s   2f
         bclr    #7,d1
 2:      move.w  d1,IO_P2
-        rts
+        /* MVS: the BIOS owns the credits (backup RAM 0xD00034, BCD); each new one is a coin pulse */
+        tst.b   BIOS_MVS_FLAG
+        beq.s   4f
+        move.b  0xD00034,d1
+        move.b  rt_bios_cred,d2
+        move.b  d1,rt_bios_cred
+        sub.b   d2,d1
+        ble.s   4f
+        add.b   d1,rt_coins_due
+4:      /* SELECT = coin (AES; on MVS too) */
+        move.b  BIOS_STATCURNT,d1
+        andi.b  #0x02,d1
+        move.b  rt_prev_sel,d2
+        move.b  d1,rt_prev_sel
+        tst.b   d2
+        bne.s   5f
+        tst.b   d1
+        beq.s   5f
+        addq.b  #1,rt_coins_due
+5:      /* coin pulse on arcade COIN1 (P1 bit 6): 3 frames pressed, 12 released */
+        move.b  rt_coin_seq,d1
+        bne.s   6f
+        tst.b   rt_coins_due
+        beq.s   9f
+        subq.b  #1,rt_coins_due
+        moveq   #1,d1
+6:      cmpi.b  #3,d1
+        bhi.s   7f
+        bclr    #6,IO_P1+1
+7:      addq.b  #1,d1
+        cmpi.b  #15,d1
+        bcs.s   8f
+        moveq   #0,d1
+8:      move.b  d1,rt_coin_seq
+9:      rts
 
 joy_conv:
         moveq   #-1,d1

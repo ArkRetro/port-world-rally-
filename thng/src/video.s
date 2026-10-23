@@ -68,6 +68,13 @@ video_init:
         move.w  #1023,d0
 1:      move.w  #0x8000,(a0)+
         dbra    d0,1b
+        lea     PAL_SHADOW,a0           /* and the shadow of the converted values black */
+        move.w  #511,d0
+3:      clr.l   (a0)+
+        dbra    d0,3b
+        /* sentinel: the MVS BIOS clears the palette RAM when a coin goes in (main.s rebuilds then) */
+        move.w  #0x0123,PALETTES+254*32+2
+        st      rt_sprdirty
         /* the column sprites: 32 tiles tall, reloaded on the first frame */
         lea     rt_slotcol,a0
         moveq   #2*NCOL-1,d0
@@ -121,6 +128,7 @@ video_vblank:
         move.w  REG_LSPCMODE,rt_prof+8
         bra     spr_sync
 
+
 * ------------------------------------------------------------------------------------------
 * pal_sync: arcade palette RAM (xBGR555) -> Neo Geo palettes PAL_ARC.., only the colours that changed
 * (compared two at a time with the shadow of the last converted values).  Backdrop = arcade colour 0.
@@ -144,7 +152,8 @@ pal_sync:
 1:      cmpm.l  (a0)+,(a1)+
         bne   3f
 2:      dbra    d7,1b
-8:      move.w  PALETTES+PAL_ARC*32,PALETTES+255*32+30
+8:      PAL_LATE 9f
+        move.w  PALETTES+PAL_ARC*32,PALETTES+255*32+30
 9:      rts
 20:     /* marked palettes: compare their 8 longs */
         lea     RT_PALMARK,a2
@@ -171,7 +180,8 @@ pal_sync:
         cmpi.w  #64,d6
         bne   22b
         bra   8b
-3:      move.l  -4(a0),d0
+3:      PAL_LATE 31f
+        move.l  -4(a0),d0
         move.l  d0,-4(a1)
         move.l  a0,d1
         subi.l  #ARC_PAL+4,d1           /* byte offset of the pair */
@@ -188,6 +198,10 @@ pal_sync:
         cmpi.w  #PAL_TEXT*32,d1         /* arcade palettes 48-63: also the fix palettes 0-15 */
         bcs   2b
         move.l  -2(a2),-2-(PAL_TEXT+PAL_ARC)*32(a2)
+        bra   2b
+31:     /* out of VBlank time: the rest next frame (a full pass, the converted ones compare equal) */
+        st      rt_paldirty
+        moveq   #0,d7
         bra   2b
 
 * ------------------------------------------------------------------------------------------

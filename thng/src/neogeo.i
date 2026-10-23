@@ -131,3 +131,16 @@
         .equ    BIOS_PLAYER_MOD2,  0x10FDB7
         .equ    BIOS_FRAME_COUNTER,0x10FE88     /* actually 0x10FE8A is the word the BIOS polls */
         .equ    BIOS_DEVMODE,      0x10FE80
+
+* PAL_LATE label: branch if the beam is past the VBlank.  The real hardware shows dots ("snow") where the
+* beam is when the palette RAM is accessed during the picture (MAME does not); the VBlank is raster lines
+* 496-511 and 248-271, keep 8 lines for the rest.  Trashes d0.
+        .macro  PAL_LATE label
+        move.w  REG_LSPCMODE,d0
+        lsr.w   #7,d0
+        cmpi.w  #496,d0
+        bcc.s   1000f
+        cmpi.w  #264,d0
+        bcc     \label
+1000:
+        .endm

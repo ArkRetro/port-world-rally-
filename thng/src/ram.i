@@ -54,6 +54,12 @@
         .equ    rt_err_pc,      RT_VARS+0x80    /* .l trap_error */
         .equ    rt_err_sr,      RT_VARS+0x84    /* .w */
         .equ    rt_err_regs,    RT_VARS+0x88    /* 16 .l */
+        .equ    rt_io_sp,       RT_VARS+0xE0    /* .l sp around SYSTEM_IO (MVS: the BIOS re-enters USER from it) */
+        .equ    rt_bios_cred,   RT_VARS+0xE4    /* .b MVS credits (BCD) last seen */
+        .equ    rt_coins_due,   RT_VARS+0xE5    /* .b coin pulses still to give the arcade */
+        .equ    rt_coin_seq,    RT_VARS+0xE6    /* .b frame of the current coin pulse */
+        .equ    rt_prev_sel,    RT_VARS+0xE7    /* .b SELECT last frame */
+        .equ    rt_reinit,      RT_VARS+0xE8    /* .b the BIOS took the screen: rebuild the video */
         .equ    RT_CLEAR_END,   RT_VARS+0x100
         .equ    backup_area,    RT_VARS+0x700   /* 256 bytes the BIOS saves to backup RAM (MVS) */
 
