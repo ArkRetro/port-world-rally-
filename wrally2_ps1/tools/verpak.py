@@ -64,7 +64,10 @@ def main():
                         if tipos == {2}:            # ROM: los registros son tramos (sectores seguidos con direccion contigua)
                             fin = -1; suma = 0
                             for j in range(s0, s0 + ns):
-                                dirr, nb = struct.unpack_from('<II', d, j * 2048 + 16); suma += dirr != fin; fin = dirr + nb
+                                o = j * 2048 + 32; dirr, nb = struct.unpack_from('<II', d, j * 2048 + 16)
+                                for k in range(d[j * 2048 + 5] + 1):   # trozos del sector (rombank.sectores_rom)
+                                    if k: dirr, nb = struct.unpack_from('<II', d, o); o += 8
+                                    suma += dirr != fin; fin = dirr + nb; o += nb
                         else: suma = sum(d[j * 2048 + 5] for j in range(s0, s0 + ns))
                         if len(tipos) > 1: falla('la seccion %08X mezcla tipos %s' % (cl, tipos))
                         if suma != nreg: falla('la seccion %08X dice %d registros y los sectores suman %d' % (cl, nreg, suma))
@@ -89,12 +92,15 @@ def main():
                         if pq >> 8 == 4 and struct.unpack_from('<H', r, 142)[0] != 0xFFFF: falla('GAME: registro %04X sin avance 0xFFFF' % t)
                         if pq == 0x0501 and t != idx * 14 + j: falla('TILES: sector %d registro %d es %04X' % (idx, j, t))
                         if tipo == 3 and av: falla('sector %d (mapa) con avance %d' % (i, av))
-            elif tipo == 2:
-                dirr, nb = struct.unpack_from('<II', s, 16)
-                if nb > 2016 or nr: falla('sector %d (ROM): %d bytes, %d registros' % (i, nb, nr))
-                if s[32:32 + nb] != rombank.prog()[dirr:dirr + nb]: falla('sector %d (ROM): los bytes de %06X no son los de prog.bin' % (i, dirr))
-                if any(s[32 + nb:]): falla('sector %d (ROM): resto no nulo' % i)
-                if verboso: print('  sector %d: ROM %06X-%06X (%d B), paquete %04X, idx %d' % (i, dirr, dirr + nb - 1, nb, pq, idx))
+            elif tipo == 2:                   # trozos: el primero en la cabecera, los nr de detras con 8 bytes delante
+                dirr, nb = struct.unpack_from('<II', s, 16); o = 32
+                for k in range(nr + 1):
+                    if k: dirr, nb = struct.unpack_from('<II', s, o); o += 8
+                    if nb & 3 or o + nb > 2048: falla('sector %d (ROM): trozo %d de %d bytes' % (i, k, nb)); break
+                    if s[o:o + nb] != rombank.prog()[dirr:dirr + nb]: falla('sector %d (ROM): los bytes de %06X no son los de prog.bin' % (i, dirr))
+                    if verboso: print('  sector %d: ROM %06X-%06X (%d B), paquete %04X, idx %d' % (i, dirr, dirr + nb - 1, nb, pq, idx))
+                    o += nb
+                if any(s[o:]): falla('sector %d (ROM): resto no nulo' % i)
             else: falla('sector %d: tipo %d' % (i, tipo))
         for (tipo, pq), l in sorted(secs.items()):
             print('  tipo %d (%s) paquete %04X: %d sectores' % (tipo, TIPO.get(tipo, '?'), pq, len(l)))

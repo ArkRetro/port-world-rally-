@@ -13,8 +13,8 @@ attract y de la partida (lo que sigue a la partida son ciclos con otra semilla).
 Carrera (--tramos: carpetas de work/tramos con blk.bin y dumps.bin; cada una, una partida con el piloto):
 - GAMEc.PAK (c = coche por FE8124 de los volcados: N, L, R): los --fijos tiles B de partida (VO, tipo 4, avance 0xFFFF):
   los codigos vistos en carrera (modo 1) en mas tramos y mas cuadros, de los vistos en >= 10 de los 12; y una L2 del
-  coche (3, tipo 1, al area delante de la del tramo, como mucho 54 sectores): en L y R sus poses que no caben en los
-  fijos; en N sus poses de choque y vuelco (EXT_N), que salen en pocos tramos y pocos cuadros.
+  coche (3, tipo 1, al area delante de la del tramo: 54 sectores siempre y el resto si cabe): sus poses que no caben
+  en los fijos (en N las de EXT_N: giros fuertes, choques y vuelcos, que salen en pocos tramos y pocos cuadros).
 - STkk.PAK (kk = FEFD0A 0-11): mapa (1, tipo 3: modo B con la clave FEC3C6/FEC3C8 del tramo), VO (2, tipo 4: por primer
   avance FEFD08 hasta 4 352 - fijos - --rot), L2 (3, tipo 1: el resto y el cierre: codigos del plano nunca visibles) y
   ROM (4, tipo 2: el banco de romres.txt). Union de las corridas que pasan por el tramo, sin los codigos fijos.
@@ -134,14 +134,13 @@ def escribe_pak(fn, paquete, secciones):
 
 COCHES = {0x0000: 'N', 0x04B0: 'L', 0x0320: 'R'}   # FE8124 -> coche; GAMEc.PAK es el paquete 0x0400 + 'NLR'.index(c)
 HUECOS = 4352                                       # huecos B en carrera (b0-b16)
-EXT_MAX = 54 * 14                                   # L2 de los coches L y R: como mucho 54 sectores (108 KB del area)
-EXT_N = ((0x2000, 0x2400), (0x7A00, 0x7B00))        # coche N: poses de choque y vuelco y sus efectos (sprites que solo salen
-                                                    # al chocar; medido con psxprof2: 2/3 de las faltas en carrera)
-EXT_PRIO = 54                                       # sectores de la L2 del coche que van siempre al area (EXT_PRIO de carga.c)
-EXT_N_MAX = 80 * 14                                 # la del coche N: los primeros EXT_PRIO sectores (las poses vistas en mas
-                                                    # tramos) siempre y el resto si cabe (todos los tramos menos ST04: con 68
-                                                    # siempre, en ST04 faltaba el mismo numero de tiles del decorado y habia
-                                                    # mas emergencias y cuadros saltados)
+EXT_N = ((0x0300, 0x0800), (0x2000, 0x2400), (0x7A00, 0x7B00))   # coche N: poses de conducir (giros y derrapes fuertes
+                                                    # salen en pocos tramos), de choque y vuelco y sus efectos (medido con
+                                                    # psxprof2: casi todas las faltas en carrera, mas en zigzag)
+EXT_PRIO = 120                                      # sectores de la L2 del coche que van siempre al area (EXT_PRIO de carga.c)
+EXT_COCHE_MAX = 120 * 14                            # L2 de un coche: entera siempre (en zigzag con los tres coches, con solo
+                                                    # 54 sectores seguros faltaban poses de todo el resto en ST04); la del
+                                                    # tramo cede su cola (los codigos menos vistos) en ST04 y ST03
 L2_CAP = 493                                        # sectores del area de tramo para L2 y ROM en la PS1 (carga_l2_cap 495 - 2)
 
 def rangos(st, ln):
@@ -243,15 +242,16 @@ def fijos_por_coche(cors, n=1024):
     return fc, set(fn)
 
 def ext_n(cc, fij):
-    """L2 del coche N: sus poses de choque y vuelco y sus efectos (EXT_N) que no van en los fijos, por tramos en que se ven y cuadros.
-    Salen pocos cuadros y en tramos sueltos (alli donde la corrida choco), asi que no llegan a los fijos ni estan en la
-    L2 de los tramos en que ninguna corrida volco: sin esto el coche salia en cuadrados mientras llegaban por emergencia"""
+    """L2 del coche N: sus poses (EXT_N: conducir, choque y vuelco y sus efectos) que no van en los fijos, por tramos en
+    que se ven y cuadros. Las de giros fuertes, choques y vuelcos salen pocos cuadros y en tramos sueltos, asi que no
+    llegan a los fijos ni estan en la L2 de los tramos en que ninguna corrida las vio: sin esto el coche salia en
+    cuadrados mientras llegaban por emergencia"""
     ks = defaultdict(set); fq = Counter()
     for co in cc:
         for k, t in co.tramos.items():
             for (c, col, cl), v in t['res'].items():
                 if cl == 1 and c not in fij and any(a <= c < b for a, b in EXT_N): ks[c].add(k); fq[c] += v[0]
-    return sorted(fq, key=lambda c: (-len(ks[c]), -fq[c], c))[:EXT_N_MAX], len(fq)
+    return sorted(fq, key=lambda c: (-len(ks[c]), -fq[c], c))[:EXT_COCHE_MAX], len(fq)
 
 def reparto(lineas, fj):
     """lineas [(corrida, tramo)] -> (por codigo, orden de VO + L2 sin los fijos, cierre): por primer avance FEFD08
@@ -283,11 +283,12 @@ def carrera(cors, out, margen, rot, nfij, romres, area):
         regs = [reg(t, pc[t], ivs, 'G' + c, 0xFFFF) for t in fc[c][0]]; sec = [(2, sectores_b(regs, 4, pq, 0, None), len(regs))]
         # L y R: los candidatos que no caben en los fijos (sus poses) en una L2 del coche (clave 3) que va al area delante
         # de la del tramo (los ST se hacen con las lineas de N y no las llevan: sin esto salian por emergencia). N: sus
-        # poses de choque y vuelco (ext_n). Los ST ya dejan sitio en el area para EXT_PRIO sectores
-        if c != 'N': ext = [t for t in fc[c][2] if t in pc][:EXT_MAX]       # (los de N no vistos con este coche, fuera)
+        # poses que no caben en los fijos (ext_n). Los ST ya dejan sitio en el area para EXT_PRIO sectores. Las corridas
+        # de L y R de todos los rallies salen de tools/corridas_coches.sh (work/coches)
+        if c != 'N': ext = [t for t in fc[c][2] if t in pc][:EXT_COCHE_MAX]   # (los de N no vistos con este coche, fuera)
         else:
             ext, nchoque = ext_n(cc, set(fc[c][0])); ext = [t for t in ext if t in pc]
-            print('GAMEN.PAK: poses de choque y vuelco fuera de los fijos %d, en la L2 del coche %d' % (nchoque, len(ext)))
+            print('GAMEN.PAK: poses fuera de los fijos %d, en la L2 del coche %d' % (nchoque, len(ext)))
         if ext: sec.append((3, sectores_b([reg(t, pc[t], ivs, 'G' + c, 0xFFFF) for t in ext], 1, pq, 0, None), len(ext)))
         fn = os.path.join(out, 'GAME%s.PAK' % c); escribe_pak(fn, pq, sec)
         print('GAME%s.PAK: %d B; %d fijos de %d candidatos, de %d corridas; L2 del coche %d (%d B en el area)'

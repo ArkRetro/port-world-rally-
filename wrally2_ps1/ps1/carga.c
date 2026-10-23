@@ -314,7 +314,9 @@ static int dm_rom_trae(int n, const u32 *o)
    necesarios: los nunca visibles y el final del tramo); la del coche solo con lo que sobre (va por frecuencia: lo que
    no quepa sale por emergencia). l2_ext: sectores de la del coche */
 #ifndef EXT_PRIO
-#define EXT_PRIO 54                             /* sectores de la L2 del coche que van aunque recorten la del tramo */
+#define EXT_PRIO 120                            /* sectores de la L2 del coche que van aunque recorten la del tramo: el
+                                                   coche entero (sus poses de giros fuertes, choques y vuelcos), que se
+                                                   ve siempre; en ST04 y ST03 cede la cola de la del tramo */
 #endif
 static int l2_ext(int r)
 {
@@ -459,13 +461,17 @@ static void rom_pon(u8 *b, int n)
     u8 *w = b; u32 fin = 0xFFFFFFFFu; int i;
     btr_n = 0;
     for (i = 0; i < n; i++) {
-        u8 *s = b + i * SEC; u32 a, m, j;
+        u8 *s = b + i * SEC, *q = s + 32; u32 a, m, j; int k, nk;
         if (!cab(s, 2)) { carga_err++; break; }
-        a = le32(s + 16); m = le32(s + 20);
-        if (m > SEC - 32 || (m & 3)) { carga_err++; break; }
-        if (a != fin) { if (btr_n == NTR) { carga_err++; break; } btr[btr_n].a0 = a; btr[btr_n].p = w; btr_n++; }
-        for (j = 0; j < m; j += 4) *(u32 *)(w + j) = *(const u32 *)(s + 32 + j);   /* hacia delante: w <= s */
-        w += m; fin = a + m; btr[btr_n - 1].a1 = fin - 4;
+        a = le32(s + 16); m = le32(s + 20); nk = s[5];   /* trozos: el primero en la cabecera, los nk de detras con su */
+        for (k = 0; ; k++) {                             /* direccion y bytes delante (rombank.sectores_rom) */
+            if (m & 3 || q + m > s + SEC) { carga_err++; i = n; break; }
+            if (a != fin) { if (btr_n == NTR) { carga_err++; i = n; break; } btr[btr_n].a0 = a; btr[btr_n].p = w; btr_n++; }
+            for (j = 0; j < m; j += 4) *(u32 *)(w + j) = *(const u32 *)(q + j);   /* hacia delante: w <= q */
+            w += m; q += m; fin = a + m; btr[btr_n - 1].a1 = fin - 4;
+            if (k == nk) break;
+            a = le32(q); m = le32(q + 4); q += 8;
+        }
         if ((i & 7) == 7) carga_poll();       /* 130 sectores: el CD entre medias (la lectura de fondo sigue) */
     }
     rom_swap(b, (u32)(w - b));

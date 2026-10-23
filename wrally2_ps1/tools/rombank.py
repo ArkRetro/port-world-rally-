@@ -2,8 +2,7 @@
 5, diseno 3): ROM.BIN (prog.bin 0x000000-0x0DD7FF tal cual, para el arranque y las trampas), ROMRES.BIN (los tramos
 residentes de tools/romstat.py en sectores de tipo 2, paquete 0x0600) y work/romres.txt (lineas 'R inicio fin' y
 'B fec3c6 fec3c8 inicio fin', para rc68.py; las lineas B de claves que estas corridas no tienen se conservan). Cada
-tramo lleva 4 bytes de cola (los del vecino, diseno 3.1) y va en sectores seguidos; la cabecera de cada sector dice la
-direccion de su primer byte y cuantos bytes lleva. Exporta sectores_rom() y lee_romres() para los paquetes."""
+tramo lleva 4 bytes de cola (los del vecino, diseno 3.1); los tramos van seguidos, varios por sector (sectores_rom). Exporta sectores_rom() y lee_romres() para los paquetes."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import romstat, tilesbin
@@ -19,16 +18,28 @@ def prog():
     if _prog is None: _prog = open(os.path.join(WORK, 'prog.bin'), 'rb').read()
     return _prog
 
+MAX_TROZOS = 15                   # trozos por sector (byte 5 = los de despues del primero, <= 14 como los registros)
+
 def sectores_rom(trs, paquete, idx0=0):
-    """sectores de tipo 2 con los tramos [(inicio, fin)] (fin excluido, bloques de 256 B) y su cola, en orden"""
-    out = []; p = prog()
+    """sectores de tipo 2 con los tramos [(inicio, fin)] (fin excluido, bloques de 256 B) y su cola, en orden y seguidos:
+    un sector lleva varios trozos (el primero con su direccion y bytes en la cabecera, 16-23; los demas detras de los
+    datos del anterior, cada uno con 8 bytes de direccion y bytes delante; byte 5 = cuantos van detras del primero). Antes
+    cada tramo empezaba en un sector nuevo: el banco de ST04 (79 tramos, 166 KB) ocupaba 132 sectores del area y no 84"""
+    out = []; p = prog(); cur = []; usado = 0
+    def cierra():
+        nonlocal cur, usado
+        (a0, d0), resto = cur[0], cur[1:]
+        cuerpo = d0 + b''.join(a.to_bytes(4, 'little') + len(d).to_bytes(4, 'little') + d for a, d in resto)
+        s = bytearray(tilesbin.sector(2, [cuerpo], paquete, idx0 + len(out), 0, a0.to_bytes(4, 'little') + len(d0).to_bytes(4, 'little')))
+        s[5] = len(resto); out.append(bytes(s)); cur = []; usado = 0
     for a, b in trs:
         d = p[a:b + COLA]; o = 0
         while o < len(d):
-            n = min(POR_SECTOR, len(d) - o)
-            s = bytearray(tilesbin.sector(2, [d[o:o + n]], paquete, idx0 + len(out), 0, (a + o).to_bytes(4, 'little') + n.to_bytes(4, 'little')))
-            s[5] = 0; out.append(bytes(s))
-            o += n
+            sitio = POR_SECTOR - usado - (8 if cur else 0)
+            if sitio < 64 or len(cur) == MAX_TROZOS: cierra(); continue
+            n = min(len(d) - o, sitio) & ~3
+            cur.append((a + o, d[o:o + n])); usado += n + (8 if len(cur) > 1 else 0); o += n
+    if cur: cierra()
     return out
 
 def tramos_bytes(bl): return [(x << 8, (y << 8) + 256) for x, y in romstat.tramos(bl)]

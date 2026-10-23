@@ -48,7 +48,8 @@ MEN="$MEN $(for r in 0 1 2 3; do [ -s $W/tramos/${r}_10_150/blk.bin ] && echo $W
 BLK="$W/attract/blk.bin $W/pt/blk.bin $W/ptL/blk.bin $W/ptR/blk.bin $(for d in $MEN; do echo $d/blk.bin; done)"
 DUMPS="$W/attract/dumps.bin $W/pt/dumps.bin $W/ptL/dumps.bin $W/ptR/dumps.bin $(for d in $MEN; do echo $d/dumps.bin; done)"
 RS="$W/attract/romstat.txt $W/pt/romstat.txt $W/ptL/romstat.txt $W/ptR/romstat.txt $(for d in $MEN; do echo $d/romstat.txt; done) $(ls $W/tramos/*/romstat.txt 2>/dev/null)"
-TR="$(ls -d $W/tramos/*/ 2>/dev/null | while read d; do [ -s $d/blk.bin ] && echo $d; done) $W/pt $W/ptL $W/ptR"
+# las corridas de los coches L y R por todos los rallies (tools/corridas_coches.sh): solo para GAMEL/GAMER.PAK
+TR="$(ls -d $W/tramos/*/ $W/coches/*/ 2>/dev/null | while read d; do [ -s $d/blk.bin ] && echo $d; done) $W/pt $W/ptL $W/ptR"
 python3 "$T/tilesbin.py" --a "$CD/TILESA.BIN"
 cp "$W/romres.txt" "$W/romres_antes.txt" 2>/dev/null || true
 python3 "$T/rombank.py" $RS -o "$CD" --romres "$W/romres.txt"
