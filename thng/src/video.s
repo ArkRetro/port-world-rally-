@@ -33,6 +33,19 @@ video_init_min:
 2:      move.w  #0,REG_VRAMRW
         dbra    d0,2b
         VRAM_GAP
+        /* sprite 0: the LSPC draws it at the end of every scanline list with fewer than 96 sprites (real
+           hardware; MAME does not): transparent tiles, off screen */
+        move.w  #0,REG_VRAMADDR
+        moveq   #31,d0
+6:      move.w  #HI_BLANK&0xFFFF,REG_VRAMRW
+        VRAM_GAP
+        move.w  #(HI_BLANK>>16)<<4,REG_VRAMRW
+        VRAM_GAP
+        dbra    d0,6b
+        move.w  #VRAM_SCB4,REG_VRAMADDR
+        VRAM_GAP
+        move.w  #320<<7,REG_VRAMRW
+        VRAM_GAP
         move.w  #VRAM_FIX,REG_VRAMADDR
         move.w  #40*32-1,d0
 3:      move.w  #0x00FF,REG_VRAMRW
