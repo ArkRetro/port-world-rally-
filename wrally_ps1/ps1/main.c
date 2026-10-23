@@ -39,6 +39,13 @@ void rc_bad(u32 pc) { bad_pc = pc; GP1 = 0x03000000; for (;;); }
 #ifndef FRAMESKIP
 #define FRAMESKIP 1          /* si un cuadro llega tarde no se dibuja el siguiente: la logica sigue a 60 Hz */
 #endif
+/* ritmo de la placa: la PS1 a un cuadro por vblank (59,83 en NTSC) iba unas decimas por minuto por delante de la
+   placa y de MiSTer (cronometro). 59,1 cuadros por segundo, como la del WR2 (MAME gaelco2; la del WR1 en MAME, 60, esta
+   marcada como no exacta): cada cuadro deja una deuda de fps - RITMO milesimas y al llegar a un cuadro entero se espera
+   un vblank mas con la misma imagen (uno de cada ~81 en NTSC). -DRITMO=0: un cuadro por vblank, como antes */
+#ifndef RITMO
+#define RITMO 59100
+#endif
 static void gpu_wait(void) { while (!(GP1 & (1 << 26))); }
 static void dma_wait(void) { while (D2_CHCR & (1 << 24)); }
 static void upload(int x, int y, int w, int h, const void *d)
@@ -1183,7 +1190,7 @@ static u16 joy_read(void)
     return r;
 }
 
-static int fb, nframe, gear, sq_last, l2_last = 1, show_dbg = 0, skipped, eff_due;
+static int fb, nframe, gear, sq_last, l2_last = 1, show_dbg = 0, skipped, eff_due, ritmo_deuda;
 static u32 skips;
 static const u16 font[10] = {0x7B6F, 0x2C97, 0x73E7, 0x73CF, 0x5BC9, 0x79CF, 0x79EF, 0x7249, 0x7BEF, 0x7BCF};
 static void digits(int x, int y, u32 v)
@@ -1249,7 +1256,14 @@ void rc_vblank(void)
         vsync();
         GP1 = 0x05000000 | ((fb ? 256 : 0) << 10);   /* mostrar el cuadro anterior */
         fb ^= 1;
-    } else I_STAT = ~1u;
+        if (RITMO && fps_mil > RITMO) {
+            ritmo_deuda += fps_mil - RITMO;
+            if (ritmo_deuda >= RITMO) { ritmo_deuda -= RITMO; vsync(); }   /* el mismo cuadro un vblank mas */
+        }
+    } else {
+        I_STAT = ~1u;
+        if (RITMO && fps_mil > RITMO) ritmo_deuda += fps_mil - RITMO;   /* se espera en el siguiente que se dibuje */
+    }
     GP1 = 0x03000000;                    /* pantalla encendida (tambien si el primero se salta: barra de carga) */
     pad = joy_read();                    /* el mando justo tras el vblank: la entrada mas reciente para el 68000 */
     if (!(pad & 0x0008) && start_up && jugando()) {

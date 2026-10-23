@@ -109,6 +109,14 @@ static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc, lvid, lvid_acc;
 extern int cd_dbg[8];                           /* cd.c del WR1: [2] errores del controlador */
 static u32 modo_ant, f146_ant, modo_ped;
 int fps_mil = 60000;
+/* ritmo de la placa: 59,1 cuadros por segundo (MAME gaelco2; medido con cronometro contra la placa y MiSTer: la PS1 a un
+   cuadro por vblank, 59,83 en NTSC, iba unas decimas por minuto por delante). Cada cuadro del juego deja una deuda de
+   fps - RITMO milesimas; al llegar a un cuadro entero se espera un vblank mas con la misma imagen (uno de cada ~81 en
+   NTSC). -DRITMO=0: un cuadro por vblank, como antes */
+#ifndef RITMO
+#define RITMO 59100
+#endif
+static int ritmo_deuda;
 /* espera del vsync sondeando el CD (la GPU esta parada: lo que llega se sube) */
 static void vsync(void) { I_STAT = ~1u; while (!(I_STAT & 1)) carga_atiende(); I_STAT = ~1u; }
 static u16 RW(u32 a) { return *(const u16 *)(rc_ram + (a & 0xFFFE)); }
@@ -189,8 +197,16 @@ void rc_vblank(void)
     carga_atiende();
     if ((I_STAT & 1) && !skipped) draw = 0;     /* el vblank ya paso: este cuadro no se dibuja (nunca dos seguidos) */
     skipped = !draw; skips += !draw;
-    if (draw) { vsync(); GP1 = 0x05000000 | ((fb ? 256 : 0) << 10); fb ^= 1; }
-    else I_STAT = ~1u;
+    if (draw) {
+        vsync(); GP1 = 0x05000000 | ((fb ? 256 : 0) << 10); fb ^= 1;
+        if (RITMO && fps_mil > RITMO) {
+            ritmo_deuda += fps_mil - RITMO;
+            if (ritmo_deuda >= RITMO) { ritmo_deuda -= RITMO; vsync(); }   /* el mismo cuadro un vblank mas */
+        }
+    } else {
+        I_STAT = ~1u;
+        if (RITMO && fps_mil > RITMO) ritmo_deuda += fps_mil - RITMO;   /* se espera en el siguiente que se dibuje */
+    }
     GP1 = 0x03000000;
     t0 = T1;
 #ifndef SND_JUEGO

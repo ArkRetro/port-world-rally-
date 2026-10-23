@@ -201,6 +201,11 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   igual (185 -> 189, ruido). Medido sin quedarse: tope de CLUT por cuadro (los destellos de algunos tramos cambian
   paletas enteras cada 2 cuadros: hasta 500 CLUT), CLUT dentro de la lista y el plano a la GPU antes de los sprites:
   ninguno baja los saltos (los cuadros lentos son de GPU + 68000, no de la CPU del dibujo; lo segundo los sube mucho)
+- [x] Ritmo de la placa (`RITMO`, main.c): la PS1 a un cuadro del juego por vblank (59,83 Hz en NTSC) iba un 1,2 %
+  por delante de la placa (59,1 Hz, MAME gaelco2; el usuario lo noto con cronometro contra la placa y MiSTer: unas
+  decimas por minuto). Cada cuadro deja una deuda de fps - 59 100 milesimas y al llegar a un cuadro entero se espera
+  un vblank mas con la misma imagen (uno de cada ~81). En psxprof2, carrera de la partida 0: 59,83 -> 59,09 cuadros/s.
+  El sonido ya iba a tiempo real (modelo del GAE1 por el temporizador 1, tono 0x2D6)
 - [x] Puerta G-RAM sin azar: la reserva del codigo que falta (RES_CODIGO) va en los datos de la imagen y no en la BSS,
   donde ira ese codigo; antes el relleno de la imagen a 2 KB cambiaba el area hasta 2 KB con unos bytes de codigo. Con
   la cuenta buena faltaban 1,2 KB: hojas de la tabla de codigos 272 -> 264 (peor tramo 246, medido 218) y el histograma
