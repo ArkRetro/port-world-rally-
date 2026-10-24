@@ -201,11 +201,11 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   igual (185 -> 189, ruido). Medido sin quedarse: tope de CLUT por cuadro (los destellos de algunos tramos cambian
   paletas enteras cada 2 cuadros: hasta 500 CLUT), CLUT dentro de la lista y el plano a la GPU antes de los sprites:
   ninguno baja los saltos (los cuadros lentos son de GPU + 68000, no de la CPU del dibujo; lo segundo los sube mucho)
-- [x] Coche en cuadrados al girar fuerte: las poses de cada coche (N: conducir 0x0300-0x07FF, choque 0x2000-0x23FF y
+- [x] Coche en cuadrados al girar fuerte: las poses de cada coche (N: conducir 0x0200-0x07FF, choque 0x2000-0x23FF y
   0x7A00; L y R: las que no caben en sus fijos) no estaban en los paquetes de los tramos en que ninguna corrida las vio,
   y L y R solo tenian la partida de Portugal. Corridas de L y R en los cuatro rallies con los 8 estilos
-  (`tools/corridas_coches.sh`, `work/coches`, solo para GAMEL/GAMER) y la L2 de cada coche entera (~1 600 poses, ~117
-  sectores, EXT_PRIO 120). Para que quepa en ST04, los bancos de ROM de los tramos van compactos: varios trozos por
+  (`tools/corridas_coches.sh`, `work/coches`, solo para GAMEL/GAMER) y la L2 de cada coche entera (~1 600-1 800 poses, hasta
+  128 sectores; EXT_PRIO 120: lo de despues si cabe). Para que quepa en ST04, los bancos de ROM de los tramos van compactos: varios trozos por
   sector (`rombank.sectores_rom`, `rom_pon`): el de ST04 de 132 a 83 sectores. Zigzag de 10 000 cuadros en psxprof2
   (faltas de sprites en carrera): N 1 524 -> 169, L 1 799 -> 20, R 1 879 -> 20; partidas de `nuevas/0-3`: 0,10 -> 0,07
   faltas por cuadro en la 0. G-ESTADO: 7 980 cuadros de la partida 0 iguales al banco

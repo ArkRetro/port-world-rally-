@@ -39,13 +39,20 @@ void rc_bad(u32 pc) { bad_pc = pc; GP1 = 0x03000000; for (;;); }
 #ifndef FRAMESKIP
 #define FRAMESKIP 1          /* si un cuadro llega tarde no se dibuja el siguiente: la logica sigue a 60 Hz */
 #endif
-/* ritmo de la placa: la PS1 a un cuadro por vblank (59,83 en NTSC) iba unas decimas por minuto por delante de la
-   placa y de MiSTer (cronometro). 59,1 cuadros por segundo, como la del WR2 (MAME gaelco2; la del WR1 en MAME, 60, esta
-   marcada como no exacta): cada cuadro deja una deuda de fps - RITMO milesimas y al llegar a un cuadro entero se espera
-   un vblank mas con la misma imagen (uno de cada ~81 en NTSC). -DRITMO=0: un cuadro por vblank, como antes */
+/* reloj del juego y saltos de cuadro (como el WR2). adel = tiempo del juego - tiempo real (temporizador 1, en 1/256 de
+   linea; un cuadro del juego = 263 lineas, o 263 x fps / RITMO con RITMO). En cada cuadro:
+   - llega tarde (el vblank ya paso) y va atrasado mas de un vblank: no se dibuja, hasta MAXSKIP seguidos (cuanto mas
+     atrasado, mas saltos; antes, uno y nunca dos seguidos); si no, se dibuja y el retraso no se recupera de golpe;
+   - con RITMO, adelantado mas de medio vblank: el mismo cuadro un vblank mas;
+   - mas de 8 vblanks de golpe (pausa, carga): el reloj empieza de nuevo.
+   Por defecto un cuadro del juego por vblank (59,83 en NTSC): unas decimas por minuto mas deprisa que la placa.
+   -DRITMO=59100: 59,1 cuadros por segundo (la del WR2 en MAME; la del WR1, 60 en MAME, marcada como no exacta), pero en
+   una pantalla de 59,83 es repetir un cuadro de cada ~81, un tiron cada ~1,4 s (probado: el usuario prefirio fluido) */
 #ifndef RITMO
-#define RITMO 59100
+#define RITMO 0
 #endif
+#define MAXSKIP 3
+#define LIN_VBL 263
 static void gpu_wait(void) { while (!(GP1 & (1 << 26))); }
 static void dma_wait(void) { while (D2_CHCR & (1 << 24)); }
 static void upload(int x, int y, int w, int h, const void *d)
@@ -1190,7 +1197,8 @@ static u16 joy_read(void)
     return r;
 }
 
-static int fb, nframe, gear, sq_last, l2_last = 1, show_dbg = 0, skipped, eff_due, ritmo_deuda;
+static int fb, nframe, gear, sq_last, l2_last = 1, show_dbg = 0, skipped, eff_due, nskip, reloj_ok;
+static s32 adel; static u16 t_ref;   /* reloj del juego (arriba) */
 static u32 skips;
 static const u16 font[10] = {0x7B6F, 0x2C97, 0x73E7, 0x73CF, 0x5BC9, 0x79CF, 0x79EF, 0x7249, 0x7BEF, 0x7BCF};
 static void digits(int x, int y, u32 v)
@@ -1235,6 +1243,7 @@ static void pausa(void)
         if (p & 0x0008) up = 1; else if (up) break;
     }
     t1_last = T1;                                    /* la pausa no cuenta (el temporizador da la vuelta en 4,2 s) */
+    reloj_ok = 0;                                    /* ni para el reloj del juego */
     snd_pause(0);
     start_up = 0;                                    /* START sigue pulsado: no vuelve a pausar hasta soltarlo */
 }
@@ -1248,22 +1257,23 @@ void rc_vblank(void)
         used = (u16)(t - lastv);
     }
     dma_wait();                          /* el cuadro anterior ya esta dibujado */
+    {   /* el reloj del juego (arriba): un cuadro mas desde la ultima vez */
+        u16 t = T1; s32 e = (u16)(t - t_ref);
+        s32 paso = RITMO && fps_mil > RITMO ? (s32)((u32)LIN_VBL * 256u * (u32)fps_mil / RITMO) : LIN_VBL * 256;
+        t_ref = t;
+        if (!reloj_ok || e > 8 * LIN_VBL) { adel = 0; reloj_ok = 1; }
+        else adel += paso - (e << 8);
+    }
 #if FRAMESKIP
-    if ((I_STAT & 1) && !skipped) draw = 0;  /* ya paso el vblank: este cuadro no se dibuja (nunca dos seguidos) */
-    skipped = !draw; skips += !draw;
+    if ((I_STAT & 1) && adel < -(LIN_VBL << 8) && nskip < MAXSKIP) draw = 0;   /* tarde y atrasado: sin dibujar */
+    nskip = draw ? 0 : nskip + 1; skipped = !draw; skips += !draw;
 #endif
     if (draw) {
         vsync();
         GP1 = 0x05000000 | ((fb ? 256 : 0) << 10);   /* mostrar el cuadro anterior */
         fb ^= 1;
-        if (RITMO && fps_mil > RITMO) {
-            ritmo_deuda += fps_mil - RITMO;
-            if (ritmo_deuda >= RITMO) { ritmo_deuda -= RITMO; vsync(); }   /* el mismo cuadro un vblank mas */
-        }
-    } else {
-        I_STAT = ~1u;
-        if (RITMO && fps_mil > RITMO) ritmo_deuda += fps_mil - RITMO;   /* se espera en el siguiente que se dibuje */
-    }
+        if (RITMO && adel > (LIN_VBL << 7)) vsync();   /* adelantado: el mismo cuadro un vblank mas */
+    } else I_STAT = ~1u;
     GP1 = 0x03000000;                    /* pantalla encendida (tambien si el primero se salta: barra de carga) */
     pad = joy_read();                    /* el mando justo tras el vblank: la entrada mas reciente para el 68000 */
     if (!(pad & 0x0008) && start_up && jugando()) {

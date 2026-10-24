@@ -320,10 +320,10 @@ static int dm_rom_trae(int n, const u32 *o)
 #endif
 static int l2_ext(int r)
 {
-    int e = r == 4 && lba_gn >= 0 ? (int)gl[1] : 0, p = e < EXT_PRIO ? e : EXT_PRIO, libre = l2_cap - (int)dmi[r][2][1];
+    int e = r == 4 && lba_gn >= 0 ? (int)gl[1] : 0, p = e < EXT_PRIO ? e : EXT_PRIO, libre = l2_cap - (int)dmi[r][2][1] - p;
 #ifdef R1
     libre -= (int)dmi[r][3][1];
-#endif
+#endif                                          /* lo de despues de EXT_PRIO solo con sitio tras la del tramo y la ROM */
     if (libre < 0) libre = 0;
     return p + (e - p < libre ? e - p : libre);
 }

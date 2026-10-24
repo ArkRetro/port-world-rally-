@@ -134,13 +134,15 @@ def escribe_pak(fn, paquete, secciones):
 
 COCHES = {0x0000: 'N', 0x04B0: 'L', 0x0320: 'R'}   # FE8124 -> coche; GAMEc.PAK es el paquete 0x0400 + 'NLR'.index(c)
 HUECOS = 4352                                       # huecos B en carrera (b0-b16)
-EXT_N = ((0x0300, 0x0800), (0x2000, 0x2400), (0x7A00, 0x7B00))   # coche N: poses de conducir (giros y derrapes fuertes
+EXT_N = ((0x0200, 0x0800), (0x2000, 0x2400), (0x7A00, 0x7B00))   # coche N: poses de conducir (giros y derrapes fuertes
                                                     # salen en pocos tramos), de choque y vuelco y sus efectos (medido con
                                                     # psxprof2: casi todas las faltas en carrera, mas en zigzag)
 EXT_PRIO = 120                                      # sectores de la L2 del coche que van siempre al area (EXT_PRIO de carga.c)
-EXT_COCHE_MAX = 120 * 14                            # L2 de un coche: entera siempre (en zigzag con los tres coches, con solo
-                                                    # 54 sectores seguros faltaban poses de todo el resto en ST04); la del
-                                                    # tramo cede su cola (los codigos menos vistos) en ST04 y ST03
+EXT_COCHE_MAX = 128 * 14                            # L2 de un coche: los EXT_PRIO primeros sectores siempre (en zigzag con
+                                                    # los tres coches, con solo 54 seguros faltaban poses de todo el resto en
+                                                    # ST04: la del tramo cede su cola en ST04 y ST03) y lo demas, las poses de
+                                                    # vuelco menos vistas, si cabe (en ST04, con 128 seguros, faltaba un 40 %
+                                                    # mas de decorado)
 L2_CAP = 493                                        # sectores del area de tramo para L2 y ROM en la PS1 (carga_l2_cap 495 - 2)
 
 def rangos(st, ln):

@@ -477,6 +477,9 @@ void vid_menu(void)
 #define F_MAPA 0x80                       /* del mapa: se quita en el negro antes de la demo */
 #define PROPIA(f) (!((f) & (F_IDX | F_ALTA)))
 #define MAXL2 48                          /* subidas de la L2 por cuadro (lo demas, cuadrado y al cuadro siguiente) */
+#define MAXL2S 64                         /* y aparte para los sprites: el plano va antes y en las curvas gastaba las 48, y
+                                             el coche, que cambia de pose al girar, salia con cuadrados */
+static int l2_tope;                       /* hasta cuantas subidas van en este cuadro (plano: MAXL2; sprites: MAXL2S mas) */
 static u8 *hrec;                          /* 10 bytes por hueco en el area de tramo: receta o indice de la L2 */
 static const u8 *l2base;                  /* sectores de la L2 en el area (14 registros de 144 B por sector) */
 static int ba_lo, ba_hi, bhand, nl2;      /* agujas de huecos libres (con CLUT desde abajo, sin ella desde arriba) */
@@ -687,7 +690,7 @@ void vid_pon_l2(const u8 *reg, int j)
 static int b_l2(u32 j)
 {
     const u8 *reg = l2reg(j); int h, pr = PROPIA(reg[141]);
-    if (nl2 >= MAXL2) return -1;
+    if (nl2 >= l2_tope) return -1;
     h = b_libre(pr);
     if (h < 0) h = b_victima(pr);
     if (h < 0) return -1;
@@ -817,7 +820,7 @@ void vid_b(void)
     int sx = (v[0x2802 >> 1] + 0x14 + 8) & 0x3FF, sy = (v[0x2800 >> 1] + 1 + 16) & 0x1FF, i, j, b, h;
     int ox = sx & 15, oy = sy & 15;
     u16 t0 = T1;
-    now++; vid_faltas_cuadro = 0; nl2 = 0; negro = *(const u16 *)(rc_ram + 0xC298) == 0;
+    now++; vid_faltas_cuadro = 0; nl2 = 0; l2_tope = MAXL2; negro = *(const u16 *)(rc_ram + 0xC298) == 0;
     {   /* prelectura en la demo y la carrera */
         u16 md = *(const u16 *)(rc_ram + 0xC298);
         if (md == 1) b_barre(NB / 8);                    /* la reserva de victimas de la carrera, al dia poco a poco */
@@ -845,6 +848,7 @@ void vid_b(void)
         }
     }
     carga_poll();
+    l2_tope = nl2 + MAXL2S;                    /* los sprites (el coche) con su propio cupo */
     b = (vr[3] & 0x10) ? 1 : 0;
     for (j = 0; j < nsent[b]; j++) {
         const spr_t *s = &sent[b][j]; const u16 *cel = scel[b] + s->ci;

@@ -109,14 +109,25 @@ static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc, lvid, lvid_acc;
 extern int cd_dbg[8];                           /* cd.c del WR1: [2] errores del controlador */
 static u32 modo_ant, f146_ant, modo_ped;
 int fps_mil = 60000;
-/* ritmo de la placa: 59,1 cuadros por segundo (MAME gaelco2; medido con cronometro contra la placa y MiSTer: la PS1 a un
-   cuadro por vblank, 59,83 en NTSC, iba unas decimas por minuto por delante). Cada cuadro del juego deja una deuda de
-   fps - RITMO milesimas; al llegar a un cuadro entero se espera un vblank mas con la misma imagen (uno de cada ~81 en
-   NTSC). -DRITMO=0: un cuadro por vblank, como antes */
+/* reloj del juego y saltos de cuadro. adel = tiempo del juego - tiempo real (temporizador 1, en 1/256 de linea; un
+   cuadro del juego = 263 lineas, o 263 x fps / RITMO con RITMO). En cada cuadro:
+   - llega tarde (el vblank ya paso) y va atrasado mas de un vblank: no se dibuja, hasta MAXSKIP seguidos (cuanto mas
+     atrasado, mas saltos; antes, uno y nunca dos seguidos); si no, se dibuja y el retraso no se recupera de golpe;
+   - con RITMO, adelantado mas de medio vblank: el mismo cuadro un vblank mas;
+   - mas de 8 vblanks de golpe (pausa, carga bloqueante): el reloj empieza de nuevo.
+   Por defecto un cuadro del juego por vblank (59,83 en NTSC): un 1,2 % mas deprisa que la placa (59,1 en MAME gaelco2,
+   unas decimas por minuto). -DRITMO=59100: al ritmo de la placa, pero en una pantalla de 59,83 es repetir un cuadro de
+   cada ~81, un tiron cada ~1,4 s (probado: el usuario prefirio fluido) */
 #ifndef RITMO
-#define RITMO 59100
+#define RITMO 0
 #endif
-static int ritmo_deuda;
+#define MAXSKIP 3
+#define LIN_VBL 263
+static s32 adel; static u16 t_ref; static int nskip, reloj_ok;
+static s32 paso256(void)
+{
+    return RITMO && fps_mil > RITMO ? (s32)((u32)LIN_VBL * 256u * (u32)fps_mil / RITMO) : LIN_VBL * 256;
+}
 /* espera del vsync sondeando el CD (la GPU esta parada: lo que llega se sube) */
 static void vsync(void) { I_STAT = ~1u; while (!(I_STAT & 1)) carga_atiende(); I_STAT = ~1u; }
 static u16 RW(u32 a) { return *(const u16 *)(rc_ram + (a & 0xFFFE)); }
@@ -187,6 +198,7 @@ static void pausa(void)
     }
     snd_pausa(0);
     snd_lin_pausa = 0; snd_tv = T1;             /* la pausa no cuenta (el temporizador da la vuelta en 4,2 s) */
+    reloj_ok = 0;                               /* ni para el reloj del juego */
     start_up = 0;                               /* START sigue pulsado: no vuelve a pausar hasta soltarlo */
 }
 void rc_vblank(void)
@@ -195,18 +207,17 @@ void rc_vblank(void)
     l68_acc += (u16)(T1 - lastv);
     while (D2_CHCR & (1 << 24)) carga_poll();   /* la lista anterior aun en la GPU: sondear mientras (hasta 10 ms) */
     carga_atiende();
-    if ((I_STAT & 1) && !skipped) draw = 0;     /* el vblank ya paso: este cuadro no se dibuja (nunca dos seguidos) */
-    skipped = !draw; skips += !draw;
+    {   /* el reloj del juego (arriba): un cuadro mas desde la ultima vez */
+        u16 t = T1; s32 e = (u16)(t - t_ref); t_ref = t;
+        if (!reloj_ok || e > 8 * LIN_VBL) { adel = 0; reloj_ok = 1; }
+        else adel += paso256() - (e << 8);
+    }
+    if ((I_STAT & 1) && adel < -(LIN_VBL << 8) && nskip < MAXSKIP) draw = 0;   /* tarde y atrasado: sin dibujar */
+    nskip = draw ? 0 : nskip + 1; skipped = !draw; skips += !draw;
     if (draw) {
         vsync(); GP1 = 0x05000000 | ((fb ? 256 : 0) << 10); fb ^= 1;
-        if (RITMO && fps_mil > RITMO) {
-            ritmo_deuda += fps_mil - RITMO;
-            if (ritmo_deuda >= RITMO) { ritmo_deuda -= RITMO; vsync(); }   /* el mismo cuadro un vblank mas */
-        }
-    } else {
-        I_STAT = ~1u;
-        if (RITMO && fps_mil > RITMO) ritmo_deuda += fps_mil - RITMO;   /* se espera en el siguiente que se dibuje */
-    }
+        if (adel > (LIN_VBL << 7)) vsync();     /* adelantado: el mismo cuadro un vblank mas */
+    } else I_STAT = ~1u;
     GP1 = 0x03000000;
     t0 = T1;
 #ifndef SND_JUEGO
