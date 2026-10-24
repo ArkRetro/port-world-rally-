@@ -213,7 +213,9 @@ Detalle, cifras y puertas en `diseno.md` (§11 puertas, §13 hitos). S < 1/2 dia
   por delante de la placa (59,1 Hz, MAME gaelco2; el usuario lo noto con cronometro contra la placa y MiSTer: unas
   decimas por minuto). Cada cuadro deja una deuda de fps - 59 100 milesimas y al llegar a un cuadro entero se espera
   un vblank mas con la misma imagen (uno de cada ~81). En psxprof2, carrera de la partida 0: 59,83 -> 59,09 cuadros/s.
-  El sonido ya iba a tiempo real (modelo del GAE1 por el temporizador 1, tono 0x2D6)
+  El sonido ya iba a tiempo real (modelo del GAE1 por el temporizador 1, tono 0x2D6). Despues: en una pantalla de
+  59,83 eso es un tiron cada ~1,4 s y el usuario prefirio fluido: RITMO por defecto 0 (un cuadro por vblank) y un reloj
+  del juego con saltos progresivos (hasta 3 cuadros seguidos sin dibujar si va atrasado mas de un vblank)
 - [x] Puerta G-RAM sin azar: la reserva del codigo que falta (RES_CODIGO) va en los datos de la imagen y no en la BSS,
   donde ira ese codigo; antes el relleno de la imagen a 2 KB cambiaba el area hasta 2 KB con unos bytes de codigo. Con
   la cuenta buena faltaban 1,2 KB: hojas de la tabla de codigos 272 -> 264 (peor tramo 246, medido 218) y el histograma

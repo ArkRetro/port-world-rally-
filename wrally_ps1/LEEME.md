@@ -71,10 +71,9 @@ carpetas para la tarjeta de PSIO o XStation (`SD_NOMBRE` cambia el nombre; por d
   - Pantalla de carga al estilo del juego (bandas de bandera a cuadros, CARGANDO con el degradado de las cifras del marcador y la barra START-FINISH). Al arrancar, encima, el logo de `ps1/logo_pina.png` (después del de PlayStation de la BIOS, si se construye con `LICENCIA`).
   - La lista de la GPU se hace en una sola pasada por las capas y los sprites (un cubo por paso de dibujo).
   - Si un cuadro llega tarde, el siguiente no se dibuja y el juego sigue a 60 Hz (`FRAMESKIP`, `-DFRAMESKIP=0` lo quita).
-  - Ritmo de la placa (`RITMO`, 59,1 cuadros por segundo): a un cuadro por vblank (59,83 en NTSC) el juego iba unas
-    décimas por minuto por delante de la placa y de MiSTer. Uno de cada ~81 cuadros se ve un vblank más; el sonido va
-    por tiempo real. `-DRITMO=0`: un cuadro por vblank, como antes. 59,1 es el de la placa del WR2 (MAME): el de la del
-    WR1 no está medido (MAME pone 60 y lo marca como no exacto); se ajusta con `-DRITMO=` si el cronómetro dice otra cosa.
+  - Reloj del juego y saltos progresivos: si el juego va atrasado más de un vblank, se dejan de dibujar hasta 3 cuadros
+    seguidos (antes uno y nunca dos seguidos). Un cuadro del juego por vblank (59,83 en NTSC): unas décimas por minuto
+    más deprisa que la placa. `-DRITMO=59100` va a 59,1, pero repite un cuadro de cada ~81 (un tirón cada ~1,4 s).
 - `ps1/crt0.s`: arranque del EXE: sin interrupciones y con la pila en su sitio antes de borrar la BSS (un cargador de
   ODE puede saltar al EXE con las interrupciones activas).
 - `ps1/cd.c`: lector de CD por sondeo (datos y CD-DA).
