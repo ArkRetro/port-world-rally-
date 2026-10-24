@@ -59,8 +59,11 @@
         .equ    rt_coins_due,   RT_VARS+0xE5    /* .b coin pulses still to give the arcade */
         .equ    rt_coin_seq,    RT_VARS+0xE6    /* .b frame of the current coin pulse */
         .equ    rt_prev_sel,    RT_VARS+0xE7    /* .b SELECT last frame */
-        .equ    rt_reinit,      RT_VARS+0xE8
-        .equ    rt_ytabkey,     RT_VARS+0xEA    /* .w rt_mode / rt_pcrop YTAB was built for (0xFFFF: none) */    /* .b the BIOS took the screen: rebuild the video */
+        .equ    rt_reinit,      RT_VARS+0xE8    /* .b the BIOS took the screen: rebuild the video */
+        .equ    rt_fskip,       RT_VARS+0xE9    /* .b frameskip level 0-3 (video.s) */
+        .equ    rt_ytabkey,     RT_VARS+0xEA    /* .w rt_mode / rt_pcrop YTAB was built for */
+        .equ    rt_fsk_n,       RT_VARS+0xEC    /* .b frames skipped in a row */
+        .equ    rt_gframe,      RT_VARS+0xED    /* .b the game started a frame since the last VBlank (rt_newframe) */
         .equ    RT_CLEAR_END,   RT_VARS+0x100
         .equ    backup_area,    RT_VARS+0x700   /* 256 bytes the BIOS saves to backup RAM (MVS) */
 

@@ -111,6 +111,28 @@ fix_clear_stamps:
 video_vblank:
         bsr     pal_sync
         move.w  REG_LSPCMODE,rt_prof+6
+        /* progressive frameskip: no new game frame since the last VBlank (rt_newframe) means the game
+           is behind: level up (max 3), else down.  At level n the layers and sprites are converted once
+           every n+1 frames (scroll, columns and sprite changes wait in their dirty marks): the CPU time
+           goes to the game */
+        move.b  rt_fskip,d0
+        tst.b   rt_gframe
+        bne.s   1f
+        cmpi.b  #3,d0
+        bcc.s   2f
+        addq.b  #1,d0
+        bra.s   2f
+1:      clr.b   rt_gframe
+        tst.b   d0
+        beq.s   2f
+        subq.b  #1,d0
+2:      move.b  d0,rt_fskip
+        beq.s   3f
+        cmp.b   rt_fsk_n,d0
+        bls.s   3f
+        addq.b  #1,rt_fsk_n
+        rts                             /* skipped */
+3:      clr.b   rt_fsk_n
         lea     ARC_VRAM+0x1000,a4      /* tilemap 1: vregs 2 (y), 3 (x) */
         move.w  ARC_VREGS+4,d4
         move.w  ARC_VREGS+6,d5
@@ -134,33 +156,27 @@ video_vblank:
 * pal_sync: arcade palette RAM (xBGR555) -> Neo Geo palettes PAL_ARC.., only the colours that changed
 * (compared two at a time with the shadow of the last converted values).  Backdrop = arcade colour 0.
 pal_sync:
-        /* all 64 palettes after the game loaded the palette base (rt_pal_an) and every 64 frames for
-           safety; otherwise only the palettes its usual copy routine marked (rt_palcopy) */
+        /* palettes to look at: all 64 after the game loaded the palette base (rt_pal_an) and every 64
+           frames for safety, otherwise the ones its copy / load / fade routines marked */
         tst.b   rt_paldirty
-        bne   0f
+        bne.s   0f
         moveq   #63,d0
         and.w   rt_frame+2,d0
-        bne   20f
+        bne.s   20f
 0:      clr.b   rt_paldirty
         lea     RT_PALMARK,a0
-        moveq   #15,d0
-21:     clr.l   (a0)+
-        dbra    d0,21b
-        lea     ARC_PAL,a0
-        lea     PAL_SHADOW,a1
-        lea     CT_PAL,a3
-        move.w  #511,d7
-1:      cmpm.l  (a0)+,(a1)+
-        bne   3f
-2:      dbra    d7,1b
-8:      PAL_LATE 9f
-        move.w  PALETTES+PAL_ARC*32,PALETTES+255*32+30
-9:      rts
-20:     /* marked palettes: compare their 8 longs */
+        moveq   #-1,d0
+        moveq   #15,d1
+21:     move.l  d0,(a0)+
+        dbra    d1,21b
+20:     /* marked palettes: compare their 8 longs with the shadow, convert the pairs that changed.  The
+           palette RAM is touched only in the VBlank: past it, the marks left wait for the next one */
         lea     RT_PALMARK,a2
+        lea     CT_PAL,a3
         moveq   #0,d6                   /* palette */
 22:     tst.b   (a2,d6.w)
-        beq   24f
+        beq     24f
+        PAL_LATE 9f
         clr.b   (a2,d6.w)
         move.w  d6,d0
         lsl.w   #5,d0
@@ -168,48 +184,59 @@ pal_sync:
         adda.w  d0,a0
         lea     PAL_SHADOW,a1
         adda.w  d0,a1
-        lea     CT_PAL,a3
+        lea     PALETTES+PAL_ARC*32,a4
+        adda.w  d0,a4
         moveq   #7,d5
-23:     cmpm.l  (a0)+,(a1)+
-        beq   25f
-        movem.l d5-d6/a2,-(sp)
-        moveq   #0,d7
-        bsr   3f                      /* convert the pair (returns through 2: with d7 = 0) */
-        movem.l (sp)+,d5-d6/a2
-25:     dbra    d5,23b
-24:     addq.w  #1,d6
-        cmpi.w  #64,d6
-        bne   22b
-        bra   8b
-3:      PAL_LATE 31f
-        move.l  -4(a0),d0
+23:     move.l  (a0)+,d0
+        cmp.l   (a1)+,d0
+        beq.s   25f
         move.l  d0,-4(a1)
-        move.l  a0,d1
-        subi.l  #ARC_PAL+4,d1           /* byte offset of the pair */
-        lea     PALETTES+PAL_ARC*32,a2
-        adda.w  d1,a2
+        move.l  d0,d1
         swap    d0
         andi.l  #0x7FFF,d0
         add.w   d0,d0
-        move.w  (a3,d0.l),(a2)+
-        move.l  -4(a0),d0
-        andi.l  #0x7FFF,d0
-        add.w   d0,d0
-        move.w  (a3,d0.l),(a2)
-        cmpi.w  #PAL_TEXT*32,d1         /* arcade palettes 48-63: also the fix palettes 0-15 */
-        bcs   2b
-        move.l  -2(a2),-2-(PAL_TEXT+PAL_ARC)*32(a2)
-        bra   2b
-31:     /* out of VBlank time: the rest next frame (a full pass, the converted ones compare equal) */
-        st      rt_paldirty
-        moveq   #0,d7
-        bra   2b
+        move.w  (a3,d0.l),(a4)+
+        andi.l  #0x7FFF,d1
+        add.w   d1,d1
+        move.w  (a3,d1.l),(a4)+
+        dbra    d5,23b
+        bra.s   26f
+25:     addq.l  #4,a4
+        dbra    d5,23b
+26:     cmpi.w  #PAL_TEXT,d6            /* arcade palettes 48-63: also the fix palettes 0-15 */
+        bcs.s   24f
+        lea     -32-(PAL_TEXT+PAL_ARC)*32(a4),a0
+        lea     -32(a4),a1
+        moveq   #7,d5
+27:     move.l  (a1)+,(a0)+
+        dbra    d5,27b
+24:     addq.w  #1,d6
+        cmpi.w  #64,d6
+        bne     22b
+        PAL_LATE 9f
+        move.w  PALETTES+PAL_ARC*32,PALETTES+255*32+30
+9:      rts
 
 * ------------------------------------------------------------------------------------------
 * layer_sync: a4 = map, d4 = scroll y, d5 = scroll x, d6 = first column sprite, a5 = its 21 slot
 * bytes, a6 = dirty mask of the map columns
 layer_sync:
-        lea     RT_COLSLOT,a1           /* map column -> column sprite (0xFF: none) */
+        /* nothing to do if no column was written and the scroll and crop are the ones last written */
+        tst.l   (a6)
+        bne.s   1f
+        lea     rt_lcache,a0
+        cmpi.w  #SPR_TM0,d6
+        bne.s   2f
+        addq.l  #8,a0
+2:      cmp.w   (a0),d5
+        bne.s   1f
+        cmp.w   2(a0),d4
+        bne.s   1f
+        move.w  rt_pcrop,d1
+        cmp.w   4(a0),d1
+        bne.s   1f
+        rts
+1:      lea     RT_COLSLOT,a1           /* map column -> column sprite (0xFF: none) */
         cmpi.w  #SPR_TM0,d6
         bne.s   0f
         lea     32(a1),a1

@@ -114,11 +114,13 @@ FAST = {
     0x16FD4: ('28DE', 2, None),             # covered by fast_copy16 at 0x16FD0
     0x11C4A: ('21835000', 4, None),         # covered by fast_movep at 0x11C46
     0x008B4: ('20C1', 2, None),             # covered by fast_fill at 0x8B0
+    0x23300: ('2087', 2, None),             # covered by fast_rowcp at 0x232FE
     0x008D0: ('20C1', 2, None),             # covered by fast_fill at 0x8CC
 }
 FAST_PATCH = [(0x16FD0, '303C000F28DE51C8FFFC', 'fast_copy16'),
               (0x11C46, '0749000021835000', 'fast_movep'),
               (0x008B0, '303C03FF20C151C8FFFC', 'fast_fill'),
+              (0x232FE, '2E13208741E80004', 'fast_rowcp'),
               (0x008CC, '303C03FF20C151C8FFFC', 'fast_fill')]
 
 
@@ -321,6 +323,9 @@ def cmd_build(a):
         put16(rom, pc + 2, 0xF0FF)
     assert orig[0x4AE:0x4B4] == bytes.fromhex('4BF900FF8000'), 'main loop head'
     rom[0x4AE:0x4B4] = b'\x4E\xB9' + struct.pack('>I', syms['rt_fixcal'])
+    # its new-frame point (the frame flag taken, back to the first task): the frameskip watches it
+    assert orig[0x4D0:0x4D6] == bytes.fromhex('4BF900FF8000'), 'main loop new frame'
+    rom[0x4D0:0x4D6] = b'\x4E\xB9' + struct.pack('>I', syms['rt_newframe'])
 
     assert orig[0x1EC08:0x1EC0E] == bytes.fromhex('23C400FFE558'), 'checksum store'
     rom[0x1EC08:0x1EC0E] = b'\x4E\xB9' + struct.pack('>I', syms['rt_cksum'])
@@ -360,6 +365,13 @@ def cmd_build(a):
             npal += 1
     # the fade loop (0xA39C, every frame of a fade: palette d4 from its ROM data into the RAM copy, which
     # the copy routine above then marks): no full compare
+    # the palette fades (0xA402, 0xA476, 0xA4CA: every colour component x fade level / 8): mulu.w d5,dn /
+    # divu.w #8,dn -> lsr.l #3,dn (the product is unsigned and the quotient < 65536: the same low word;
+    # 14 cycles instead of about 140)
+    for pc in (0xA446, 0xA454, 0xA462, 0xA49A, 0xA4A8, 0xA4B6, 0xA556, 0xA564, 0xA572):
+        n = (orig[pc] >> 1) & 7
+        assert orig[pc - 2:pc] == bytes([0xC0 | n << 1, 0xC5]) and orig[pc:pc + 4] == bytes([0x80 | n << 1, 0xFC, 0, 8]), hex(pc)
+        rom[pc:pc + 4] = bytes([0xE6, 0x88 | n, 0x4E, 0x71])
     assert orig[0x91E0:0x91E6] == bytes.fromhex('49F900200000'), 'palette load'
     rom[0x91E0:0x91E6] = b'\x4E\xB9' + struct.pack('>I', syms['rt_pal_load'])
     assert orig[0xA39C:0xA3A2] == bytes.fromhex('41F900200000'), 'palette fade'

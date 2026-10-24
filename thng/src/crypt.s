@@ -13,7 +13,7 @@
 
         .text
         .global decrypt_long, decrypt_word, linea_handler, linea_done, vstore
-        .global fast_t1, fast_script, fast_cnt, fast_copy16, fast_movep, fast_fill
+        .global fast_t1, fast_script, fast_cnt, fast_copy16, fast_movep, fast_fill, fast_rowcp
 
 * decrypt_long: d0.l = encrypted pair (high word = first written) -> d0.l decrypted.  Others preserved.
 decrypt_long:
@@ -253,4 +253,16 @@ fast_fill:
         dbra    d3,1b
         move.w  #0xFFFF,d0              /* as the dbra leaves it */
         movem.l (sp)+,d1-d3/a1
+        rts
+
+* 0x232FE-0x23305 (map rows from the ROM): move.l (a3),d7 / move.l d7,(a0) / lea 4(a0),a0
+fast_rowcp:
+        move.l  (a3),d7
+        movem.l d0-d2/a0-a1,-(sp)
+        move.l  d7,d0
+        bsr     decrypt_long
+        movea.l a0,a1
+        bsr     vstore
+        movem.l (sp)+,d0-d2/a0-a1
+        addq.l  #4,a0
         rts

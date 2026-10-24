@@ -7,7 +7,7 @@
 
         .text
         .global USER, PLAYER_START, DEMO_END, COIN_SOUND
-        .global irq_vblank, irq_timer, trap_error, group0_error, rt_reset, rt_fixcal, rt_cksum, rt_sprdone, rt_m24_d0, rt_m24_d1, rt_trap1, rt_palcopy, rt_pal_fade, rt_pal_load
+        .global irq_vblank, irq_timer, trap_error, group0_error, rt_reset, rt_fixcal, rt_cksum, rt_sprdone, rt_m24_d0, rt_m24_d1, rt_trap1, rt_palcopy, rt_pal_fade, rt_pal_load, rt_newframe
         .global rt_pal_a0, rt_pal_a1, rt_pal_a2, rt_pal_a3, rt_pal_a4, rt_pal_a5, rt_pal_a6
 
 * USER: called by the BIOS with SR=2700, BIOS_USER_REQUEST = request
@@ -124,6 +124,12 @@ rt_pal_a\n:
         st      rt_paldirty
         rts
         .endr
+
+* main loop new frame (0x4D0, lea $ff8000,a5 patched): the game got to a new frame
+rt_newframe:
+        lea     ARC_WRAM,a5
+        st      rt_gframe
+        rts
 
 * lea $200000,a0 in the fade loop (0xA39C): palette d4 changes
 rt_pal_fade:
