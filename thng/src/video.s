@@ -276,6 +276,12 @@ layer_sync:
         bra.s   2f
 4:      btst    d1,d3
         beq.s   3f
+        movem.l d0/d3-d7/a1,-(sp)       /* a column already in its sprite: only its written rows */
+        bsr     col_part
+        movem.l (sp)+,d0/d3-d7/a1
+        beq.s   3f
+        st      (sp)                    /* (col_part did a full upload) */
+        bra.s   3f
 2:      move.b  d1,(a5,d2.w)
         movem.l d0/d3-d7/a1,-(sp)
         bsr     col_upload
@@ -361,8 +367,131 @@ layer_sync:
         rts
 
 
+* rowptr: a2 = the row pair mask of map column d1 of the layer whose first column sprite is d6
+rowptr:
+        lea     RT_ROWD,a2
+        cmpi.w  #SPR_TM1,d6
+        bne.s   1f
+        lea     64(a2),a2
+1:      adda.w  d1,a2
+        adda.w  d1,a2
+        rts
+
+* col_part: map column d1 of map a4, in column sprite d6 + d2: only the row pairs written (RT_ROWD).
+* Tilemap 0: a priority-1 cell in a column without its HI sprite shown -> col_upload.  NE: full upload
+col_part:
+        bsr     rowptr
+        move.w  (a2),d5
+        clr.w   (a2)
+        move.w  d1,d3
+        lsl.w   #2,d3
+        lea     (a4,d3.w),a3            /* the column's cell in row 0 */
+        moveq   #0,d4                   /* HI sprite shown */
+        cmpi.w  #SPR_TM0,d6
+        bne.s   5f
+        lea     rt_hion,a0
+        move.b  (a0,d2.w),d4
+        bne.s   5f
+        move.w  d5,d0                   /* no HI sprite: any priority-1 cell in the rows written? */
+        movea.l a3,a0
+1:      lsr.w   #1,d0
+        bcc.s   2f
+        move.w  2(a0),d3
+        andi.w  #0xC0,d3
+        cmpi.w  #0x40,d3
+        beq.s   4f
+        move.w  128+2(a0),d3
+        andi.w  #0xC0,d3
+        cmpi.w  #0x40,d3
+        beq.s   4f
+2:      lea     256(a0),a0
+        tst.w   d0
+        bne.s   1b
+        bra.s   5f
+4:      bsr     col_upload
+        moveq   #1,d0
+        rts
+5:      move.w  #1,REG_VRAMMOD
+        move.w  d6,d3
+        add.w   d2,d3
+        lsl.w   #6,d3                   /* SCB1 of the sprite */
+        moveq   #0,d7                   /* row pair */
+6:      lsr.w   #1,d5
+        bcc     8f
+        move.w  d7,d0
+        lsl.w   #2,d0
+        add.w   d3,d0
+        VRAM_GAP
+        move.w  d0,REG_VRAMADDR
+        move.w  d7,d0
+        lsl.w   #8,d0
+        lea     (a3,d0.w),a0
+        bsr   cellpair
+        tst.b   d4
+        beq.s   8f
+        move.w  d7,d0                   /* the HI sprite's two cells */
+        lsl.w   #2,d0
+        add.w   d3,d0
+        addi.w  #(SPR_HI-SPR_TM0)*64,d0
+        VRAM_GAP
+        move.w  d0,REG_VRAMADDR
+        move.w  d7,d0
+        lsl.w   #8,d0
+        lea     (a3,d0.w),a0
+        moveq   #1,d1
+7:      move.w  2(a0),d2
+        move.w  d2,d0
+        andi.w  #0xC0,d0
+        cmpi.w  #0x40,d0
+        bne.s   71f
+        move.w  (a0),d0
+        move.w  d0,d6
+        lsr.w   #2,d0
+        ori.w   #HI_TILES&0xFFFF,d0
+        move.w  d0,REG_VRAMRW
+        andi.w  #0x3F,d2
+        addi.w  #PAL_ARC,d2
+        lsl.w   #8,d2
+        andi.w  #3,d6
+        or.w    d6,d2
+        ori.w   #(HI_TILES>>16)<<4,d2
+        move.w  d2,REG_VRAMRW
+        bra.s   72f
+71:     move.w  #HI_BLANK&0xFFFF,REG_VRAMRW
+        nop
+        nop
+        move.w  #(HI_BLANK>>16)<<4,REG_VRAMRW
+72:     lea     128(a0),a0
+        dbra    d1,7b                   /* (d6 is the caller's, saved) */
+8:      addq.w  #1,d7
+        tst.w   d5
+        bne     6b
+        moveq   #0,d0
+        rts
+
+* cellpair: the two cells at a0, a0 + 128 -> two SCB1 words each (the address is set)
+cellpair:
+        moveq   #1,d1
+1:      move.w  (a0),d0
+        move.w  d0,d2
+        lsr.w   #2,d0
+        ori.w   #0x4000,d0
+        move.w  d0,REG_VRAMRW
+        move.w  2(a0),d0
+        andi.w  #0x3F,d0
+        addi.w  #PAL_ARC,d0
+        lsl.w   #8,d0
+        andi.w  #3,d2
+        or.w    d2,d0
+        move.w  d0,REG_VRAMRW
+        lea     128(a0),a0
+        dbra    d1,1b
+        rts
+
 * col_upload: map column d1 of map a4 -> column sprite d6 + d2 (tilemap 0: also its HI sprite)
 col_upload:
+        bsr     rowptr
+        clr.w   (a2)
         move.w  d2,d4                   /* k */
         add.w   d6,d2
         lsl.w   #6,d2

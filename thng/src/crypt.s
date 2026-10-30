@@ -163,6 +163,22 @@ vstore:
         subi.l  #ARC_VRAM,d1
         cmpi.l  #0x2000,d1
         bcc.s   9f
+        /* the row pair in the column's mask (RT_ROWD: layer * 64 + column * 2, bit = row / 2) */
+        move.w  d1,d2
+        lsr.w   #1,d2
+        andi.w  #62,d2
+        btst    #12,d1
+        beq.s   2f
+        addi.w  #64,d2
+2:      lea     RT_ROWD,a0
+        adda.w  d2,a0
+        move.w  d1,d2
+        lsr.w   #8,d2
+        andi.w  #15,d2
+        cmpi.w  #8,d2
+        bcc.s   3f
+        addq.l  #1,a0
+3:      bset    d2,(a0)
         move.w  d1,d2
         lsr.w   #2,d2
         andi.w  #31,d2                  /* column */

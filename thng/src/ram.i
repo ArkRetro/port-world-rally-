@@ -75,6 +75,7 @@
         .equ    RT_BUF_END,     YTAB+512        /* < BIOS_RAM */
         .equ    FIX_STAMP,      RT_VARS+0x100   /* 1280 bytes: frame id of the last text written (by fix offset) */
         .equ    RT_COLSLOT,     RT_VARS+0x600   /* 2 x 32 bytes: column sprite of each map column (0xFF none) */
+        .equ    RT_ROWD,        RT_VARS+0x680   /* 2 x 32 .w: row pairs written in each map column (tm0, tm1) */
         .equ    RT_PALMARK,     RT_VARS+0x640   /* 64 bytes: palettes the game's copy routine wrote (rt_palcopy) */
         .equ    FIX_BLANK,      0x00FF
 
