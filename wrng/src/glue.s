@@ -12,7 +12,7 @@
 
         .text
         .global game_main, sound_init, frame_hook, trap1_handler, main_wait, arc_sound_tick, srch_hook, night_banks
-        .global delay_long, delay_short
+        .global delay_long, delay_short, fade_word
 
         .equ    ARC_RESET,      0x2400
         .equ    ARC_IRQ6,       0x2F8C
@@ -325,6 +325,21 @@ delay_units:
         movem.l (sp)+,d2-d4
         moveq   #-1,d0
         moveq   #-1,d1
+        rts
+
+* fade_word (jsr at 0x895C): one colour of the arcade's fade step: d0 = (a1) with each 4-bit component
+* decreased by 1 (at least 0), bits 12-15 cleared.  Per nibble: n - (n != 0), the flags as a mask.
+fade_word:
+        move.w  (a1),d0
+        andi.w  #0x0FFF,d0
+        move.w  d0,d1
+        lsr.w   #1,d1
+        or.w    d0,d1                   /* bit 0 of each nibble: bit 0 or 1 set */
+        move.w  d1,d2
+        lsr.w   #2,d2
+        or.w    d2,d1                   /* ... or 2 or 3 */
+        andi.w  #0x0111,d1
+        sub.w   d1,d0
         rts
 
 * arc_sound_tick: the arcade sound sequencer (called once per arcade interrupt at 0x2FFE, moved here so

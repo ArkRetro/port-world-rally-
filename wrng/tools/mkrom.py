@@ -332,6 +332,17 @@ def build(rom_path, refs_path, rt_bin, sym_path, out, p1only=False, sizes_path=N
     assert rom[0x2F70:0x2F8C] == bytes.fromhex('303CFFF051C8FFFE51C9FFF64E75303C0FF051C8FFFE51C9FFF64E75'), 'delays 0x2F70'
     rom[0x2F70:0x2F76] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_long'])
     rom[0x2F7E:0x2F84] = bytes.fromhex('4EF9') + struct.pack('>I', syms['delay_short'])
+    # 4a01. palette fade step (0x895C-0x898D, per colour: each 4-bit component - 1 saturating at 0, bits
+    #       12-15 cleared; 771 colours per step): -> src/glue.s fade_word (same result in d0, no branches).
+    #       The arcade's loop took about as long as its delay per step; here the VBlank work doubled it
+    assert orig[0x895C:0x898E] == bytes.fromhex('30110240000f53406400000442403211024100f004410010640000044241341102420f000442010064000004424282428041'), 'fade 0x895C'
+    rom[0x895C:0x8962] = bytes.fromhex('4EB9') + struct.pack('>I', syms['fade_word'])
+    rom[0x8962:0x8964] = bytes.fromhex('602A')                  # bra.s 0x898E (the cmpw #0,d0 that follows)
+    #       the black pause between screens (move.w #50,d1 / bsr 0x2F7E, about 10 frames) -> 20 units: the new
+    #       screen takes longer to build here than on the arcade, so it is part of the pause already
+    for pc in (0x3302, 0x89FE):
+        assert orig[pc:pc + 6] == bytes.fromhex('323C00326100'), hex(pc)
+        rom[pc:pc + 4] = bytes.fromhex('323C0014')
     # 4a2. faster equivalents of two arcade routines that the race calls very often (same registers and flags):
     #  map strip copy loops -> native (src/glue.s nat_h7/nat_v7/nat_h6/nat_v6): the loop heads take a jmp
     #  sprite list 2 builder -> native (src/glue.s nat_obj); its loop ends with bra 0x4710 / 0x4710
