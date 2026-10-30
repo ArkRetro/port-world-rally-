@@ -1,0 +1,3298 @@
+pc,insn_size,operand_offset,address,mnemonic,operands,access,op_size,region,kind,selfcheck
+00040A,4,2,000000,lea.l,"$0.w, a7",addr,.l,ROM,absW,ok
+000410,6,2,0090DE,jsr,$90de.l,x,,ROM,absL,ok
+000416,6,2,02341C,jsr,$2341c.l,x,,ROM,absL,ok
+00041C,6,2,01EB4A,jsr,$1eb4a.l,x,,ROM,absL,ok
+000422,6,2,0007C8,jsr,$7c8.l,x,,ROM,absL,ok
+000428,6,2,FFE09A,clr.l,$ffe09a.l,w,.l,RAM,absL,ok
+00042E,6,2,440000,clr.l,$440000.l,w,.l,SPR,absL,ok
+000434,6,2,440004,clr.w,$440004.l,w,.w,SPR,absL,ok
+00043A,6,2,FFE13C,clr.l,$ffe13c.l,w,.l,RAM,absL,ok
+000442,6,2,FFDB56,move.w,"d0, $ffdb56.l",w,.w,RAM,absL,ok
+00044C,8,4,FF8000,move.w,"#$1, $ff8000.l",w,.w,RAM,absL,ok
+000454,8,4,FF8002,move.w,"#$b, $ff8002.l",w,.w,RAM,absL,ok
+00045C,6,2,FFE0C4,clr.l,$ffe0c4.l,w,.l,RAM,absL,ok
+000462,6,2,FF8004,clr.w,$ff8004.l,w,.w,RAM,absL,ok
+000468,6,2,FF8006,clr.w,$ff8006.l,w,.w,RAM,absL,ok
+00046E,6,2,FFE6D6,clr.b,$ffe6d6.l,w,.b,RAM,absL,ok
+000474,6,2,FFE556,clr.b,$ffe556.l,w,.b,RAM,absL,ok
+00047E,6,2,10800C,clr.w,$10800c.l,w,.w,VREG,absL,ok
+000484,6,2,FFDC0A,clr.w,$ffdc0a.l,w,.w,RAM,absL,ok
+00048E,6,2,FFDB62,clr.l,$ffdb62.l,w,.l,RAM,absL,ok
+000494,8,4,FFD2E7,cmpi.b,"#$5, $ffd2e7.l",r,.b,RAM,absL,ok
+00049E,6,2,FFDB62,addq.l,"#$1, $ffdb62.l",rw,.l,RAM,absL,ok
+0004A4,8,4,FFD2E7,cmpi.b,"#$6, $ffd2e7.l",r,.b,RAM,absL,ok
+0004AE,6,2,FF8000,lea.l,"$ff8000.l, a5",addr,.l,RAM,absL,ok
+0004C6,8,4,FFE0AC,bclr.b,"#$0, $ffe0ac.l",rw,.b,RAM,absL,ok
+0004D0,6,2,FF8000,lea.l,"$ff8000.l, a5",addr,.l,RAM,absL,ok
+0004DE,6,2,FF8E00,cmpa.l,"#$ff8e00, a5",imm,.l,RAM,imm32,ok
+0004E8,6,2,FFDB5E,movea.l,"#$ffdb5e, a6",imm,.l,RAM,imm32,ok
+0004F6,6,2,000400,move.l,"#$400, (a6)",imm,.l,ROM,imm32,ok
+0004FE,6,2,102810,move.l,"(a6), $102810.l",w,.l,VRAM,absL,ok
+000512,6,2,102040,move.l,"a0, $102040.l",w,.l,VRAM,absL,ok
+00052C,6,2,102040,movea.l,"$102040.l, a0",r,.l,VRAM,absL,ok
+000534,10,6,FFDB5E,cmpi.l,"#$5000, $ffdb5e.l",r,.l,RAM,absL,ok
+000540,10,6,102810,cmpi.l,"#$84c41db, $102810.l",r,.l,VRAM,absL,ok
+0005BA,6,2,FF8040,lea.l,"$ff8040.l, a0",addr,.l,RAM,absL,ok
+0005C8,6,2,FF8E00,cmpa.l,"#$ff8e00, a0",imm,.l,RAM,imm32,ok
+0005DA,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+00060E,6,2,FF8040,lea.l,"$ff8040.l, a0",addr,.l,RAM,absL,ok
+00062E,10,6,017A14,cmpi.l,"#$45c045a, $17a14.l",r,.l,ROM,absL,ok
+00063A,6,2,000AE8,jsr,$ae8.l,x,,ROM,absL,ok
+000650,6,2,FFD2CF,move.b,"(a0)+, $ffd2cf.l",w,.b,RAM,absL,ok
+000656,6,2,FFD2CE,clr.b,$ffd2ce.l,w,.b,RAM,absL,ok
+00065C,6,2,FFD2CB,move.b,"(a0)+, $ffd2cb.l",w,.b,RAM,absL,ok
+000662,6,2,FFD2CA,clr.b,$ffd2ca.l,w,.b,RAM,absL,ok
+000670,6,2,FF8040,lea.l,"$ff8040.l, a1",addr,.l,RAM,absL,ok
+000686,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+00068C,6,2,FFD2CA,tst.w,$ffd2ca.l,r,.w,RAM,absL,ok
+000694,6,2,FFD2C6,clr.w,$ffd2c6.l,w,.w,RAM,absL,ok
+00069A,8,4,FFD2D2,move.w,"#$1, $ffd2d2.l",w,.w,RAM,absL,ok
+0006AE,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+0006B6,6,2,700003,move.b,"$700003.l, d0",r,.b,IO,absL,ok
+0006BE,6,2,700001,move.b,"$700001.l, d0",r,.b,IO,absL,ok
+0006C6,6,2,FFD2DE,move.w,"d0, $ffd2de.l",w,.w,RAM,absL,ok
+0006CE,6,2,0006E2,jsr,$6e2.l,x,,ROM,absL,ok
+0006D4,6,2,000782,jsr,$782.l,x,,ROM,absL,ok
+0006DA,6,2,0007A6,jsr,$7a6.l,x,,ROM,absL,ok
+0006E2,6,2,FFE57C,clr.b,$ffe57c.l,w,.b,RAM,absL,ok
+0006E8,6,2,FFD2F0,clr.b,$ffd2f0.l,w,.b,RAM,absL,ok
+0006EE,6,2,FFD2DE,move.b,"$ffd2de.l, d0",r,.b,RAM,absL,ok
+0006FC,6,2,FFE57A,move.b,"d0, $ffe57a.l",w,.b,RAM,absL,ok
+000702,6,2,000762,lea.l,"$762.l, a0",addr,.l,ROM,absL,ok
+00070C,6,2,FFD2DA,move.w,"(a0), $ffd2da.l",w,.w,RAM,absL,ok
+00071A,6,2,FFE57B,move.b,"d1, $ffe57b.l",w,.b,RAM,absL,ok
+000720,6,2,000772,lea.l,"$772.l, a0",addr,.l,ROM,absL,ok
+00072A,6,2,FFD2DC,move.w,"(a0), $ffd2dc.l",w,.w,RAM,absL,ok
+000730,8,4,FFD2DE,btst.b,"#$6, $ffd2de.l",r,.b,RAM,absL,ok
+00073A,8,4,FFE57C,move.b,"#$1, $ffe57c.l",w,.b,RAM,absL,ok
+000742,8,4,FFD2DE,btst.b,"#$7, $ffd2de.l",r,.b,RAM,absL,ok
+00074C,8,4,FFD2F0,move.b,"#$1, $ffd2f0.l",w,.b,RAM,absL,ok
+000754,6,2,FFD2DA,clr.w,$ffd2da.l,w,.w,RAM,absL,ok
+00075A,6,2,FFD2DC,clr.w,$ffd2dc.l,w,.w,RAM,absL,ok
+000782,6,2,FFD2DF,move.b,"$ffd2df.l, d0",r,.b,RAM,absL,ok
+00078E,6,2,00079E,lea.l,"$79e.l, a0",addr,.l,ROM,absL,ok
+000796,6,2,FFD2E0,move.b,"(a0), $ffd2e0.l",w,.b,RAM,absL,ok
+0007A6,6,2,FFD2DF,move.b,"$ffd2df.l, d0",r,.b,RAM,absL,ok
+0007B4,6,2,0007C4,lea.l,"$7c4.l, a0",addr,.l,ROM,absL,ok
+0007BC,6,2,FFD2E8,move.b,"(a0), $ffd2e8.l",w,.b,RAM,absL,ok
+0007CC,6,2,FFDB5B,clr.b,$ffdb5b.l,w,.b,RAM,absL,ok
+0007D2,8,4,FFD2DF,btst.b,"#$6, $ffd2df.l",r,.b,RAM,absL,ok
+0007DC,8,4,FFDB5B,move.b,"#$1, $ffdb5b.l",w,.b,RAM,absL,ok
+0007E4,6,2,0006CE,jsr,$6ce.l,x,,ROM,absL,ok
+0007EA,6,2,020388,jsr,$20388.l,x,,ROM,absL,ok
+0007F0,6,2,00BF30,jsr,$bf30.l,x,,ROM,absL,ok
+0007F6,6,2,04F400,lea.l,"$4f400.l, a0",addr,.l,ROM,absL,ok
+00080E,6,2,FFE692,move.l,"a0, $ffe692.l",w,.l,RAM,absL,ok
+000814,6,2,FFE696,move.l,"d0, $ffe696.l",w,.l,RAM,absL,ok
+00081A,6,2,FFE69A,move.l,"d1, $ffe69a.l",w,.l,RAM,absL,ok
+000824,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00082A,6,2,01EE82,jsr,$1ee82.l,x,,ROM,absL,ok
+000830,8,4,FFD2C0,move.w,"#$200, $ffd2c0.l",w,.w,RAM,absL,ok
+000838,8,4,FFD2C2,move.w,"#$200, $ffd2c2.l",w,.w,RAM,absL,ok
+000840,8,4,FFD2C4,move.w,"#$c, $ffd2c4.l",w,.w,RAM,absL,ok
+000848,6,2,FFDB4B,clr.b,$ffdb4b.l,w,.b,RAM,absL,ok
+00084E,6,2,FFE0A0,clr.l,$ffe0a0.l,w,.l,RAM,absL,ok
+000854,10,6,FFE0A4,move.l,"#$ffffffff, $ffe0a4.l",w,.l,RAM,absL,ok
+00085E,10,2,000400,move.l,"#$400, $ffdb5e.l",imm,.l,ROM,imm32,ok
+00085E,10,6,FFDB5E,move.l,"#$400, $ffdb5e.l",w,.l,RAM,absL,ok
+00086E,6,2,FF8040,lea.l,"$ff8040.l, a0",addr,.l,RAM,absL,ok
+000884,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+00088A,6,2,FFD2CA,tst.w,$ffd2ca.l,r,.w,RAM,absL,ok
+000892,6,2,FFD2C6,clr.w,$ffd2c6.l,w,.w,RAM,absL,ok
+000898,8,4,FFD2D2,move.w,"#$1, $ffd2d2.l",w,.w,RAM,absL,ok
+0008AA,6,2,100000,lea.l,"$100000.l, a0",addr,.l,VRAM,absL,ok
+0008C6,6,2,101000,lea.l,"$101000.l, a0",addr,.l,VRAM,absL,ok
+0008DA,6,2,440000,lea.l,"$440000.l, a0",addr,.l,SPR,absL,ok
+0008EE,6,2,FFADC0,lea.l,"$ffadc0.l, a0",addr,.l,RAM,absL,ok
+0008F4,6,2,FFC1C0,lea.l,"$ffc1c0.l, a1",addr,.l,RAM,absL,ok
+000902,6,2,FFD1C0,lea.l,"$ffd1c0.l, a0",addr,.l,RAM,absL,ok
+000914,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00092C,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+000934,6,2,FF8E00,lea.l,"$ff8e00.l, a0",addr,.l,RAM,absL,ok
+00094A,6,2,FF9280,lea.l,"$ff9280.l, a0",addr,.l,RAM,absL,ok
+000960,6,2,FF9880,lea.l,"$ff9880.l, a0",addr,.l,RAM,absL,ok
+000972,6,2,FF9280,lea.l,"$ff9280.l, a0",addr,.l,RAM,absL,ok
+000984,6,2,FF9400,lea.l,"$ff9400.l, a0",addr,.l,RAM,absL,ok
+00099A,6,2,FF9700,lea.l,"$ff9700.l, a0",addr,.l,RAM,absL,ok
+0009B0,6,2,FF9880,lea.l,"$ff9880.l, a0",addr,.l,RAM,absL,ok
+0009C6,6,2,FF9AC0,lea.l,"$ff9ac0.l, a0",addr,.l,RAM,absL,ok
+0009DC,6,2,FF9DC0,lea.l,"$ff9dc0.l, a0",addr,.l,RAM,absL,ok
+0009F2,6,2,FFA0C0,lea.l,"$ffa0c0.l, a0",addr,.l,RAM,absL,ok
+000A08,6,2,FFDD44,lea.l,"$ffdd44.l, a0",addr,.l,RAM,absL,ok
+000A1A,6,2,FFDF44,lea.l,"$ffdf44.l, a0",addr,.l,RAM,absL,ok
+000A2C,6,2,FFE14E,lea.l,"$ffe14e.l, a0",addr,.l,RAM,absL,ok
+000A42,6,2,FFE34E,lea.l,"$ffe34e.l, a0",addr,.l,RAM,absL,ok
+000A58,6,2,FFD328,clr.w,$ffd328.l,w,.w,RAM,absL,ok
+000A5E,6,2,FFD32E,clr.w,$ffd32e.l,w,.w,RAM,absL,ok
+000A66,6,2,FF8E02,lea.l,"$ff8e02.l, a1",addr,.l,RAM,absL,ok
+000A82,4,2,000000,lea.l,"$0.w, a1",addr,.l,ROM,absW,ok
+000A8E,6,2,FF9282,lea.l,"$ff9282.l, a1",addr,.l,RAM,absL,ok
+000AA0,6,2,FF9882,lea.l,"$ff9882.l, a1",addr,.l,RAM,absL,ok
+000AB2,6,2,FF9402,lea.l,"$ff9402.l, a1",addr,.l,RAM,absL,ok
+000AC4,6,2,FF9702,lea.l,"$ff9702.l, a1",addr,.l,RAM,absL,ok
+000AD6,6,2,FF9DC2,lea.l,"$ff9dc2.l, a1",addr,.l,RAM,absL,ok
+000AE8,6,2,0027F8,lea.l,"$27f8.l, a0",addr,.l,ROM,absL,ok
+000AF6,6,2,002A48,move.l,"#$2a48, d5",imm,.l,ROM,imm32,ok
+000B2E,6,2,FFADC0,lea.l,"$ffadc0.l, a1",addr,.l,RAM,absL,ok
+000B96,6,2,FFD1C0,lea.l,"$ffd1c0.l, a2",addr,.l,RAM,absL,ok
+000C08,6,2,FFD1C0,lea.l,"$ffd1c0.l, a6",addr,.l,RAM,absL,ok
+000D44,6,2,000AE8,jmp,$ae8.l,x,,ROM,absL,ok
+000D50,6,2,000AE8,jmp,$ae8.l,x,,ROM,absL,ok
+000D5A,6,2,000AE8,jmp,$ae8.l,x,,ROM,absL,ok
+000D6A,6,2,000AE8,jmp,$ae8.l,x,,ROM,absL,ok
+000FC6,6,2,000B92,jsr,$b92.l,x,,ROM,absL,ok
+000FCC,6,2,FF8040,lea.l,"$ff8040.l, a0",addr,.l,RAM,absL,ok
+001020,6,2,000B92,jsr,$b92.l,x,,ROM,absL,ok
+00102A,6,2,FFD2F0,tst.b,$ffd2f0.l,r,.b,RAM,absL,ok
+001032,6,2,002A8E,lea.l,"$2a8e.l, a0",addr,.l,ROM,absL,ok
+00103A,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+001042,6,2,FFE57C,tst.b,$ffe57c.l,r,.b,RAM,absL,ok
+00104A,6,2,002AA2,lea.l,"$2aa2.l, a0",addr,.l,ROM,absL,ok
+001050,8,4,FFD31C,cmpi.b,"#$2, $ffd31c.l",r,.b,RAM,absL,ok
+00105A,6,2,002B1A,lea.l,"$2b1a.l, a0",addr,.l,ROM,absL,ok
+001060,8,4,FFD31C,cmpi.b,"#$3, $ffd31c.l",r,.b,RAM,absL,ok
+00106A,6,2,002B92,lea.l,"$2b92.l, a0",addr,.l,ROM,absL,ok
+001070,8,4,FFD31C,cmpi.b,"#$4, $ffd31c.l",r,.b,RAM,absL,ok
+00107A,6,2,002C0A,lea.l,"$2c0a.l, a0",addr,.l,ROM,absL,ok
+001082,8,4,FFD31C,cmpi.b,"#$1, $ffd31c.l",r,.b,RAM,absL,ok
+00108E,6,2,002A7A,lea.l,"$2a7a.l, a0",addr,.l,ROM,absL,ok
+001096,6,2,002A66,lea.l,"$2a66.l, a0",addr,.l,ROM,absL,ok
+0010C2,6,2,000B92,jsr,$b92.l,x,,ROM,absL,ok
+0010D0,6,2,FFDB6A,lea.l,"$ffdb6a.l, a2",addr,.l,RAM,absL,ok
+00110C,6,2,000B92,jsr,$b92.l,x,,ROM,absL,ok
+001122,6,2,FFDB5A,clr.b,$ffdb5a.l,w,.b,RAM,absL,ok
+001128,6,2,FFD2C6,clr.w,$ffd2c6.l,w,.w,RAM,absL,ok
+00112E,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+00113A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+001140,6,2,FFD2F0,tst.b,$ffd2f0.l,r,.b,RAM,absL,ok
+001148,8,4,FFDB5C,move.b,"#$bf, $ffdb5c.l",w,.b,RAM,absL,ok
+001150,8,4,FFD32F,btst.b,"#$7, $ffd32f.l",r,.b,RAM,absL,ok
+00115C,8,4,FFDB5C,move.b,"#$7f, $ffdb5c.l",w,.b,RAM,absL,ok
+001164,8,4,FFD32F,btst.b,"#$6, $ffd32f.l",r,.b,RAM,absL,ok
+001170,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+00117A,6,2,FFD2C8,move.w,"$ffd2c8.l, d0",r,.w,RAM,absL,ok
+001206,6,2,000A58,jsr,$a58.l,x,,ROM,absL,ok
+00120C,6,2,FFD31E,clr.b,$ffd31e.l,w,.b,RAM,absL,ok
+001212,6,2,FFD31D,clr.b,$ffd31d.l,w,.b,RAM,absL,ok
+001218,6,2,FFD31F,clr.b,$ffd31f.l,w,.b,RAM,absL,ok
+00121E,6,2,FFD2E1,clr.b,$ffd2e1.l,w,.b,RAM,absL,ok
+001224,6,2,FFE0F4,clr.w,$ffe0f4.l,w,.w,RAM,absL,ok
+00122A,6,2,FFD2C8,clr.w,$ffd2c8.l,w,.w,RAM,absL,ok
+001230,6,2,FF8004,clr.w,$ff8004.l,w,.w,RAM,absL,ok
+001236,6,2,FFD2E2,clr.b,$ffd2e2.l,w,.b,RAM,absL,ok
+001244,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+00124A,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+001256,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001260,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00126A,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+001274,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00127A,6,4,0000C0,btst.b,"#$0, $c0.w",r,.b,ROM,absW,ok
+001282,8,4,FFE6AE,move.w,"#$460, $ffe6ae.l",w,.w,RAM,absL,ok
+00128A,8,4,FFE6B0,move.w,"#$3eb0, $ffe6b0.l",w,.w,RAM,absL,ok
+001296,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+00129C,8,4,FFD2D0,move.w,"#$100, $ffd2d0.l",w,.w,RAM,absL,ok
+0012A4,8,4,FFD2C8,move.w,"#$2, $ffd2c8.l",w,.w,RAM,absL,ok
+0012AC,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0012B2,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+0012BC,6,2,FFD2D0,tst.w,$ffd2d0.l,r,.w,RAM,absL,ok
+0012C4,8,4,FFD2D0,subi.w,"#$1, $ffd2d0.l",rw,.w,RAM,absL,ok
+0012CC,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0012D2,8,4,FFD2C8,move.w,"#$3, $ffd2c8.l",w,.w,RAM,absL,ok
+0012DA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0012E4,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+0012F6,8,4,FFD2C8,move.w,"#$4, $ffd2c8.l",w,.w,RAM,absL,ok
+0012FE,8,4,FFD2E2,move.b,"#$1, $ffd2e2.l",w,.b,RAM,absL,ok
+001306,6,2,FFD2E0,clr.b,$ffd2e0.l,w,.b,RAM,absL,ok
+00130C,8,4,FF8004,move.w,"#$3, $ff8004.l",w,.w,RAM,absL,ok
+001314,8,4,FFDB4A,move.b,"#$1, $ffdb4a.l",w,.b,RAM,absL,ok
+001320,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+001326,6,2,FFDB4A,tst.b,$ffdb4a.l,r,.b,RAM,absL,ok
+001330,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+00133A,8,4,FFD31D,move.b,"#$1, $ffd31d.l",w,.b,RAM,absL,ok
+001342,8,4,FFD2E1,move.b,"#$1, $ffd2e1.l",w,.b,RAM,absL,ok
+00134A,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+001352,6,2,00BFA2,jsr,$bfa2.l,x,,ROM,absL,ok
+001358,8,4,FFDB4B,cmpi.b,"#$3, $ffdb4b.l",r,.b,RAM,absL,ok
+001362,6,2,FFDB4B,clr.b,$ffdb4b.l,w,.b,RAM,absL,ok
+001368,6,2,0013D4,lea.l,"$13d4.l, a0",addr,.l,ROM,absL,ok
+00136E,6,2,FFDB4B,move.b,"$ffdb4b.l, d0",r,.b,RAM,absL,ok
+001380,6,2,FFD2E1,move.b,"d0, $ffd2e1.l",w,.b,RAM,absL,ok
+001386,6,2,FFE0F4,move.w,"(a0)+, $ffe0f4.l",w,.w,RAM,absL,ok
+00138C,6,2,011A80,jsr,$11a80.l,x,,ROM,absL,ok
+001392,8,4,FFDB4B,addi.b,"#$1, $ffdb4b.l",rw,.b,RAM,absL,ok
+00139A,8,4,FFDB4C,move.w,"#$6ea, $ffdb4c.l",w,.w,RAM,absL,ok
+0013A2,8,4,FFD2C8,move.w,"#$5, $ffd2c8.l",w,.w,RAM,absL,ok
+0013AA,6,2,FFD2C6,clr.w,$ffd2c6.l,w,.w,RAM,absL,ok
+0013B4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0013C6,8,4,FFD2C8,move.w,"#$10, $ffd2c8.l",w,.w,RAM,absL,ok
+0013CE,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0013EC,8,4,FF8004,move.w,"#$0, $ff8004.l",w,.w,RAM,absL,ok
+0013F4,6,2,FFD31D,clr.b,$ffd31d.l,w,.b,RAM,absL,ok
+0013FA,6,2,FFD2E3,clr.b,$ffd2e3.l,w,.b,RAM,absL,ok
+001400,8,4,FFD2C8,move.w,"#$f, $ffd2c8.l",w,.w,RAM,absL,ok
+001408,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+00140E,6,2,FFDB4C,tst.w,$ffdb4c.l,r,.w,RAM,absL,ok
+001416,8,4,FFDB4C,subi.w,"#$1, $ffdb4c.l",rw,.w,RAM,absL,ok
+00141E,6,2,01717C,jsr,$1717c.l,x,,ROM,absL,ok
+001424,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+00142A,8,4,FFD2C8,move.w,"#$1d, $ffd2c8.l",w,.w,RAM,absL,ok
+001432,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+001438,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+001504,6,2,FFDB4A,clr.b,$ffdb4a.l,w,.b,RAM,absL,ok
+001510,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001530,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+001538,8,4,FFE6AE,move.w,"#$1000, $ffe6ae.l",w,.w,RAM,absL,ok
+001540,8,4,FFE6B0,move.w,"#$3f10, $ffe6b0.l",w,.w,RAM,absL,ok
+00154C,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+001552,8,4,FFE6C2,move.w,"#$60, $ffe6c2.l",w,.w,RAM,absL,ok
+00155A,8,4,FFE6C4,move.w,"#$3eb0, $ffe6c4.l",w,.w,RAM,absL,ok
+001566,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+001578,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+00158A,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+001590,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+00159C,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0015BE,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0015C6,6,2,FFDB4E,clr.w,$ffdb4e.l,w,.w,RAM,absL,ok
+0015CC,8,4,FFDB50,move.w,"#$c0, $ffdb50.l",w,.w,RAM,absL,ok
+0015EA,6,2,FFE6B2,cmp.w,"$ffe6b2.l, d0",r,.w,RAM,absL,ok
+0015F2,10,6,FFE6B2,addi.l,"#$8000, $ffe6b2.l",rw,.l,RAM,absL,ok
+001604,8,4,FFDB50,cmpi.w,"#$c0, $ffdb50.l",r,.w,RAM,absL,ok
+001612,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001618,6,2,FFDB50,tst.w,$ffdb50.l,r,.w,RAM,absL,ok
+001620,8,4,FFDB50,subi.w,"#$1, $ffdb50.l",rw,.w,RAM,absL,ok
+001628,6,2,001694,lea.l,"$1694.l, a0",addr,.l,ROM,absL,ok
+00162E,6,2,FFDB4E,move.b,"$ffdb4e.l, d0",r,.b,RAM,absL,ok
+001642,6,2,FFDB4E,clr.w,$ffdb4e.l,w,.w,RAM,absL,ok
+00164E,6,2,FFDB4F,cmp.b,"$ffdb4f.l, d0",r,.b,RAM,absL,ok
+001656,8,4,FFDB4F,addi.b,"#$1, $ffdb4f.l",rw,.b,RAM,absL,ok
+001666,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+00166E,8,4,FFDB4E,addi.b,"#$4, $ffdb4e.l",rw,.b,RAM,absL,ok
+001676,6,2,FFDB4F,clr.b,$ffdb4f.l,w,.b,RAM,absL,ok
+0016A6,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0016C8,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+0016D6,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+0016E8,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+0016FA,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+001700,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+00170C,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001728,8,4,FFDB50,move.w,"#$100, $ffdb50.l",w,.w,RAM,absL,ok
+001730,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+00174E,8,4,FFDB50,cmpi.w,"#$100, $ffdb50.l",r,.w,RAM,absL,ok
+00175C,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001766,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00176C,8,4,FFDB50,subi.w,"#$1, $ffdb50.l",rw,.w,RAM,absL,ok
+00177C,8,4,FFE6B2,cmpi.w,"#$ffb0, $ffe6b2.l",r,.w,RAM,absL,ok
+00179C,6,2,FFE6B2,cmp.w,"$ffe6b2.l, d0",r,.w,RAM,absL,ok
+0017A4,10,6,FFE6B2,subi.l,"#$8000, $ffe6b2.l",rw,.l,RAM,absL,ok
+0017B0,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0017D2,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+0017E0,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+0017F2,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+001804,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+00180A,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001816,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001832,8,4,FFDB50,move.w,"#$100, $ffdb50.l",w,.w,RAM,absL,ok
+00183A,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001858,8,4,FFDB50,cmpi.w,"#$100, $ffdb50.l",r,.w,RAM,absL,ok
+001866,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00186C,8,4,FFDB50,subi.w,"#$1, $ffdb50.l",rw,.w,RAM,absL,ok
+00187C,8,4,FFE6B2,cmpi.w,"#$50, $ffe6b2.l",r,.w,RAM,absL,ok
+00189C,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0018BE,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+0018C8,8,4,FFE6AE,move.w,"#$1000, $ffe6ae.l",w,.w,RAM,absL,ok
+0018D0,8,4,FFE6B0,move.w,"#$3f10, $ffe6b0.l",w,.w,RAM,absL,ok
+0018DC,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+0018E2,8,4,FFE6C2,move.w,"#$60, $ffe6c2.l",w,.w,RAM,absL,ok
+0018EA,8,4,FFE6C4,move.w,"#$3eb0, $ffe6c4.l",w,.w,RAM,absL,ok
+0018F6,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+001908,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+00191A,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+00192C,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+00193E,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+00194A,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00195E,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+00197C,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+00199E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0019B8,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0019D6,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0019F4,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+001A16,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001A30,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001A4E,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001A6C,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+001A8E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001AA8,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001AC6,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001AD2,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001AF2,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+001AFC,8,4,FFE6AE,move.w,"#$1000, $ffe6ae.l",w,.w,RAM,absL,ok
+001B04,8,4,FFE6B0,move.w,"#$3f10, $ffe6b0.l",w,.w,RAM,absL,ok
+001B10,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+001B16,8,4,FFE6C2,move.w,"#$60, $ffe6c2.l",w,.w,RAM,absL,ok
+001B1E,8,4,FFE6C4,move.w,"#$3eb0, $ffe6c4.l",w,.w,RAM,absL,ok
+001B2A,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+001B3C,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+001B4E,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+001B60,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001B6C,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001B88,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001BAE,8,4,FFE6B2,cmpi.w,"#$90, $ffe6b2.l",r,.w,RAM,absL,ok
+001BCE,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001BEC,6,2,FFE6B2,cmp.w,"$ffe6b2.l, d0",r,.w,RAM,absL,ok
+001BF4,10,6,FFE6B2,addi.l,"#$4000, $ffe6b2.l",rw,.l,RAM,absL,ok
+001C04,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+001C0E,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+001C14,8,4,FFE6AE,move.w,"#$1000, $ffe6ae.l",w,.w,RAM,absL,ok
+001C1C,8,4,FFE6B0,move.w,"#$3f10, $ffe6b0.l",w,.w,RAM,absL,ok
+001C28,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+001C2E,8,4,FFE6C2,move.w,"#$60, $ffe6c2.l",w,.w,RAM,absL,ok
+001C36,8,4,FFE6C4,move.w,"#$3eb0, $ffe6c4.l",w,.w,RAM,absL,ok
+001C42,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+001C54,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+001C66,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+001C78,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+001C8A,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001C96,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001CB2,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001CC8,6,2,FFDB4E,clr.w,$ffdb4e.l,w,.w,RAM,absL,ok
+001CEE,6,2,FFE6B6,cmp.w,"$ffe6b6.l, d0",r,.w,RAM,absL,ok
+001CF6,10,6,FFE6B6,subi.l,"#$8000, $ffe6b6.l",rw,.l,RAM,absL,ok
+001D02,6,2,FFE6A2,cmp.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+001D0A,10,6,FFE6A2,addi.l,"#$18000, $ffe6a2.l",rw,.l,RAM,absL,ok
+001D1C,8,4,FFE6B6,cmpi.w,"#$ff40, $ffe6b6.l",r,.w,RAM,absL,ok
+001D26,6,2,001D9E,lea.l,"$1d9e.l, a0",addr,.l,ROM,absL,ok
+001D2C,6,2,FFDB4E,move.b,"$ffdb4e.l, d0",r,.b,RAM,absL,ok
+001D42,6,2,FFDB4F,cmp.b,"$ffdb4f.l, d0",r,.b,RAM,absL,ok
+001D4A,8,4,FFDB4F,addi.b,"#$1, $ffdb4f.l",rw,.b,RAM,absL,ok
+001D5A,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+001D62,8,4,FFDB4E,addi.b,"#$4, $ffdb4e.l",rw,.b,RAM,absL,ok
+001D6A,6,2,FFDB4F,clr.b,$ffdb4f.l,w,.b,RAM,absL,ok
+001D78,8,4,FFE110,move.w,"#$20, $ffe110.l",w,.w,RAM,absL,ok
+001D84,8,4,FFDB4E,move.b,"#$3c, $ffdb4e.l",w,.b,RAM,absL,ok
+001D8C,6,2,FFDB4F,clr.b,$ffdb4f.l,w,.b,RAM,absL,ok
+001DF0,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+001DF8,8,4,FFE110,subi.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+001E08,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001E16,6,4,0000C0,btst.b,"#$2, $c0.w",r,.b,ROM,absW,ok
+001E40,6,2,001D9E,lea.l,"$1d9e.l, a0",addr,.l,ROM,absL,ok
+001E46,6,2,FFDB4E,move.b,"$ffdb4e.l, d0",r,.b,RAM,absL,ok
+001E58,8,4,FFDB4E,move.b,"#$3c, $ffdb4e.l",w,.b,RAM,absL,ok
+001E66,6,2,FFDB4F,cmp.b,"$ffdb4f.l, d0",r,.b,RAM,absL,ok
+001E6E,8,4,FFDB4F,addi.b,"#$1, $ffdb4f.l",rw,.b,RAM,absL,ok
+001E7E,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+001E86,8,4,FFDB4E,addi.b,"#$4, $ffdb4e.l",rw,.b,RAM,absL,ok
+001E8E,6,2,FFDB4F,clr.b,$ffdb4f.l,w,.b,RAM,absL,ok
+001E9C,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+001EB2,8,4,FF8004,move.w,"#$2, $ff8004.l",w,.w,RAM,absL,ok
+001EBA,8,4,FFE6AE,move.w,"#$ffe, $ffe6ae.l",w,.w,RAM,absL,ok
+001EC2,8,4,FFE6B0,move.w,"#$3ba0, $ffe6b0.l",w,.w,RAM,absL,ok
+001ECE,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+001ED4,8,4,FFE6C2,move.w,"#$3000, $ffe6c2.l",w,.w,RAM,absL,ok
+001EDC,8,4,FFE6C4,move.w,"#$3d50, $ffe6c4.l",w,.w,RAM,absL,ok
+001EE8,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+001EF4,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+001F00,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001F24,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+001F32,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+001F4E,8,4,FFE6A2,cmpi.w,"#$1b8, $ffe6a2.l",r,.w,RAM,absL,ok
+001F6E,6,2,00094A,jsr,$94a.l,x,,ROM,absL,ok
+001F74,6,2,000A1A,jsr,$a1a.l,x,,ROM,absL,ok
+001F7C,6,2,FFDB20,lea.l,"$ffdb20.l, a3",addr,.l,RAM,absL,ok
+001F8C,6,2,FFE630,lea.l,"$ffe630.l, a3",addr,.l,RAM,absL,ok
+001F9E,6,2,FFDB66,addq.b,"#$1, $ffdb66.l",rw,.b,RAM,absL,ok
+001FA4,6,2,FFD953,lea.l,"$ffd953.l, a3",addr,.l,RAM,absL,ok
+001FB6,10,2,012C46,move.l,"#$12c46, $ffe050.l",imm,.l,ROM,imm32,ok
+001FB6,10,6,FFE050,move.l,"#$12c46, $ffe050.l",w,.l,RAM,absL,ok
+001FC0,8,4,FFE05A,move.w,"#$2, $ffe05a.l",w,.w,RAM,absL,ok
+001FCC,6,2,00BD0C,jsr,$bd0c.l,x,,ROM,absL,ok
+001FD2,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+001FF6,6,2,009250,jsr,$9250.l,x,,ROM,absL,ok
+001FFC,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+00201A,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+00202E,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+002038,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+00203E,8,4,FFD31D,move.b,"#$1, $ffd31d.l",w,.b,RAM,absL,ok
+002046,8,4,FFD2C8,move.w,"#$10, $ffd2c8.l",w,.w,RAM,absL,ok
+00204E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+002054,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+00205E,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+00206C,8,4,FFD2C8,move.w,"#$20, $ffd2c8.l",w,.w,RAM,absL,ok
+002074,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+00207A,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+002084,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+00208C,6,2,FFD2C6,clr.w,$ffd2c6.l,w,.w,RAM,absL,ok
+002092,6,2,FFD2C8,clr.w,$ffd2c8.l,w,.w,RAM,absL,ok
+00209C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0020A2,6,2,FFDB5A,clr.b,$ffdb5a.l,w,.b,RAM,absL,ok
+0020A8,6,2,FFE10F,clr.b,$ffe10f.l,w,.b,RAM,absL,ok
+0020B2,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+0020BE,6,2,FFE57C,tst.b,$ffe57c.l,r,.b,RAM,absL,ok
+0020D4,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0020DE,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0020E4,6,2,023002,jsr,$23002.l,x,,ROM,absL,ok
+0020EA,10,6,102F00,move.l,"#$45c845c, $102f00.l",w,.l,VRAM,absL,ok
+0020F4,6,2,022FD6,jsr,$22fd6.l,x,,ROM,absL,ok
+0020FA,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+002102,8,4,FFD2C6,move.w,"#$b, $ffd2c6.l",w,.w,RAM,absL,ok
+00210A,6,2,000A58,jsr,$a58.l,x,,ROM,absL,ok
+002110,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+002116,6,2,FFD2C8,move.w,"$ffd2c8.l, d0",r,.w,RAM,absL,ok
+002130,6,2,002180,jsr,$2180.l,x,,ROM,absL,ok
+002136,6,2,FFD31E,tst.b,$ffd31e.l,r,.b,RAM,absL,ok
+00213E,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+002146,8,4,FFD2C8,move.w,"#$2, $ffd2c8.l",w,.w,RAM,absL,ok
+002156,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+00215C,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+002162,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+00216A,6,2,FFD2C6,clr.w,$ffd2c6.l,w,.w,RAM,absL,ok
+002170,6,2,FFD2C8,clr.w,$ffd2c8.l,w,.w,RAM,absL,ok
+00217A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+002180,6,2,FFD2F0,tst.b,$ffd2f0.l,r,.b,RAM,absL,ok
+00218A,6,2,FFE57C,tst.b,$ffe57c.l,r,.b,RAM,absL,ok
+002194,8,4,FFD32F,bclr.b,"#$6, $ffd32f.l",rw,.b,RAM,absL,ok
+00219E,8,4,FFD31C,cmpi.b,"#$2, $ffd31c.l",r,.b,RAM,absL,ok
+0021A8,8,4,FFD31F,btst.b,"#$0, $ffd31f.l",r,.b,RAM,absL,ok
+0021B2,8,4,FFD31D,bset.b,"#$0, $ffd31d.l",rw,.b,RAM,absL,ok
+0021BA,8,4,FFD31F,bset.b,"#$0, $ffd31f.l",rw,.b,RAM,absL,ok
+0021C2,8,4,FFD31E,move.b,"#$1, $ffd31e.l",w,.b,RAM,absL,ok
+0021CA,8,4,FFD31C,subi.b,"#$2, $ffd31c.l",rw,.b,RAM,absL,ok
+0021D2,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+0021D8,6,2,00BFA2,jsr,$bfa2.l,x,,ROM,absL,ok
+0021E0,8,4,FFD32F,bclr.b,"#$7, $ffd32f.l",rw,.b,RAM,absL,ok
+0021EA,8,4,FFD31C,cmpi.b,"#$4, $ffd31c.l",r,.b,RAM,absL,ok
+0021F4,8,4,FFD31F,btst.b,"#$1, $ffd31f.l",r,.b,RAM,absL,ok
+0021FE,8,4,FFD31E,move.b,"#$2, $ffd31e.l",w,.b,RAM,absL,ok
+002206,8,4,FFD31F,move.b,"#$3, $ffd31f.l",w,.b,RAM,absL,ok
+00220E,8,4,FFD31D,bset.b,"#$0, $ffd31d.l",rw,.b,RAM,absL,ok
+002216,8,4,FFD31C,subi.b,"#$4, $ffd31c.l",rw,.b,RAM,absL,ok
+00221E,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+002224,6,2,00BFA2,jsr,$bfa2.l,x,,ROM,absL,ok
+00222A,6,2,00BFD6,jsr,$bfd6.l,x,,ROM,absL,ok
+002232,8,4,FFD32F,bclr.b,"#$6, $ffd32f.l",rw,.b,RAM,absL,ok
+00223C,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+002244,8,4,FFD31F,btst.b,"#$0, $ffd31f.l",r,.b,RAM,absL,ok
+00224E,8,4,FFD31D,bset.b,"#$0, $ffd31d.l",rw,.b,RAM,absL,ok
+002256,8,4,FFD31F,bset.b,"#$0, $ffd31f.l",rw,.b,RAM,absL,ok
+00225E,8,4,FFD31E,move.b,"#$1, $ffd31e.l",w,.b,RAM,absL,ok
+002266,8,4,FFD31C,subi.b,"#$1, $ffd31c.l",rw,.b,RAM,absL,ok
+00226E,6,2,00BFA2,jsr,$bfa2.l,x,,ROM,absL,ok
+002276,8,4,FFD32F,bclr.b,"#$7, $ffd32f.l",rw,.b,RAM,absL,ok
+002280,8,4,FFD31C,cmpi.b,"#$1, $ffd31c.l",r,.b,RAM,absL,ok
+00228A,8,4,FFD31F,btst.b,"#$1, $ffd31f.l",r,.b,RAM,absL,ok
+002294,8,4,FFD31E,move.b,"#$2, $ffd31e.l",w,.b,RAM,absL,ok
+00229C,8,4,FFD31F,move.b,"#$3, $ffd31f.l",w,.b,RAM,absL,ok
+0022A4,8,4,FFD31D,bset.b,"#$0, $ffd31d.l",rw,.b,RAM,absL,ok
+0022AC,8,4,FFD31C,subi.b,"#$2, $ffd31c.l",rw,.b,RAM,absL,ok
+0022B4,6,2,00BFA2,jsr,$bfa2.l,x,,ROM,absL,ok
+0022BA,6,2,00BFD6,jsr,$bfd6.l,x,,ROM,absL,ok
+0022C2,8,4,FFDB5C,bclr.b,"#$6, $ffdb5c.l",rw,.b,RAM,absL,ok
+0022CC,8,4,FFD31F,btst.b,"#$0, $ffd31f.l",r,.b,RAM,absL,ok
+0022D6,8,4,FFD31D,bset.b,"#$0, $ffd31d.l",rw,.b,RAM,absL,ok
+0022DE,8,4,FFD31F,bset.b,"#$0, $ffd31f.l",rw,.b,RAM,absL,ok
+0022E6,8,4,FFD31E,move.b,"#$1, $ffd31e.l",w,.b,RAM,absL,ok
+0022EE,6,2,00BFA2,jsr,$bfa2.l,x,,ROM,absL,ok
+0022F6,8,4,FFDB5C,bclr.b,"#$7, $ffdb5c.l",rw,.b,RAM,absL,ok
+002300,8,4,FFD31F,btst.b,"#$1, $ffd31f.l",r,.b,RAM,absL,ok
+00230A,8,4,FFD31E,move.b,"#$2, $ffd31e.l",w,.b,RAM,absL,ok
+002312,8,4,FFD31F,move.b,"#$3, $ffd31f.l",w,.b,RAM,absL,ok
+00231A,8,4,FFD31D,bset.b,"#$0, $ffd31d.l",rw,.b,RAM,absL,ok
+002322,6,2,00BFA2,jsr,$bfa2.l,x,,ROM,absL,ok
+002328,6,2,00BFD6,jsr,$bfd6.l,x,,ROM,absL,ok
+002330,8,4,FFD31E,cmpi.b,"#$2, $ffd31e.l",r,.b,RAM,absL,ok
+00233A,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+002344,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00234A,6,2,0023AA,jsr,$23aa.l,x,,ROM,absL,ok
+00235A,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+002364,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00236A,6,2,0023AA,jsr,$23aa.l,x,,ROM,absL,ok
+002380,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+002386,6,2,0023AA,jsr,$23aa.l,x,,ROM,absL,ok
+002392,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+002398,6,2,0023AA,jsr,$23aa.l,x,,ROM,absL,ok
+0023B6,8,4,FFDBB6,move.b,"#$1, $ffdbb6.l",w,.b,RAM,absL,ok
+0023D0,6,2,FFD2EA,move.l,"$ffd2ea.l, d1",r,.l,RAM,absL,ok
+0023DE,8,4,FFD2EA,move.l,"$46(a0), $ffd2ea.l",w,.l,RAM,absL,ok
+0023F4,6,2,102412,move.b,"$102412.l, d5",r,.b,VRAM,absL,ok
+0023FA,6,2,FFD2E2,tst.b,$ffd2e2.l,r,.b,RAM,absL,ok
+00240C,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+002414,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+002422,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+002438,6,2,FFDBAA,move.b,"d6, $ffdbaa.l",w,.b,RAM,absL,ok
+00243E,8,4,FFDBAB,move.b,"#$ff, $ffdbab.l",w,.b,RAM,absL,ok
+002448,6,2,FFE0C4,addq.l,"#$8, $ffe0c4.l",rw,.l,RAM,absL,ok
+00244E,10,2,FFE0C4,move.l,"$ffe0c4.l, $1024b0.l",r,.l,RAM,absL,ok
+00244E,10,6,1024B0,move.l,"$ffe0c4.l, $1024b0.l",w,.l,VRAM,absL,ok
+002458,10,6,FFE0C4,cmpi.l,"#$1800, $ffe0c4.l",r,.l,RAM,absL,ok
+002464,10,6,1024B0,cmpi.l,"#$84c458b, $1024b0.l",r,.l,VRAM,absL,ok
+002470,6,2,FFE0C4,clr.l,$ffe0c4.l,w,.l,RAM,absL,ok
+002476,6,2,1024B0,clr.l,$1024b0.l,w,.l,VRAM,absL,ok
+002494,8,4,FFDBB2,move.b,"#$ff, $ffdbb2.l",w,.b,RAM,absL,ok
+0024C0,8,4,FFDBB1,move.b,"#$35, $ffdbb1.l",w,.b,RAM,absL,ok
+0024CA,8,4,FFDBB1,cmpi.b,"#$36, $ffdbb1.l",r,.b,RAM,absL,ok
+0024D4,8,4,FFDBB1,move.b,"#$36, $ffdbb1.l",w,.b,RAM,absL,ok
+0024DE,8,4,FFDBB1,cmpi.b,"#$39, $ffdbb1.l",r,.b,RAM,absL,ok
+0024E8,6,2,FFDBB1,addq.b,"#$1, $ffdbb1.l",rw,.b,RAM,absL,ok
+0024F0,8,4,FFDBB1,move.b,"#$3a, $ffdbb1.l",w,.b,RAM,absL,ok
+0024FA,8,4,FFDBB1,cmpi.b,"#$3b, $ffdbb1.l",r,.b,RAM,absL,ok
+002504,8,4,FFDBB1,move.b,"#$3c, $ffdbb1.l",w,.b,RAM,absL,ok
+00250E,8,4,FFDBB1,move.b,"#$3b, $ffdbb1.l",w,.b,RAM,absL,ok
+002518,8,4,FFDBB1,cmpi.b,"#$3d, $ffdbb1.l",r,.b,RAM,absL,ok
+002522,8,4,FFDBB1,move.b,"#$3d, $ffdbb1.l",w,.b,RAM,absL,ok
+00252C,8,4,FFDBB1,cmpi.b,"#$44, $ffdbb1.l",r,.b,RAM,absL,ok
+002538,6,2,FFDBB1,addq.b,"#$1, $ffdbb1.l",rw,.b,RAM,absL,ok
+002540,10,6,002466,cmpi.l,"#$84c458b, $2466.l",r,.l,ROM,absL,ok
+00254C,6,2,FFD2C6,addq.w,"#$1, $ffd2c6.l",rw,.w,RAM,absL,ok
+002558,10,6,FFDB8A,move.l,"#$80898989, $ffdb8a.l",w,.l,RAM,absL,ok
+002562,10,6,FFDB8E,move.l,"#$89898989, $ffdb8e.l",w,.l,RAM,absL,ok
+00256C,10,6,FFDB92,move.l,"#$898aff00, $ffdb92.l",w,.l,RAM,absL,ok
+002576,6,2,FFDB8B,movea.l,"#$ffdb8b, a6",imm,.l,RAM,imm32,ok
+002580,6,2,FFDB5D,move.b,"$ffdb5d.l, d4",r,.b,RAM,absL,ok
+0025EC,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+0025F2,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+0025FC,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00260A,8,4,FFDBAC,cmpi.w,"#$56ff, $ffdbac.l",r,.w,RAM,absL,ok
+002614,8,4,FFDBAC,move.w,"#$56ff, $ffdbac.l",w,.w,RAM,absL,ok
+00261E,8,4,FFDBAC,move.w,"#$56ff, $ffdbac.l",w,.w,RAM,absL,ok
+002634,6,2,FFDBAC,move.b,"d0, $ffdbac.l",w,.b,RAM,absL,ok
+00265E,10,6,FFDBF2,addi.l,"#$100, $ffdbf2.l",rw,.l,RAM,absL,ok
+002668,10,2,FFDBF2,move.l,"$ffdbf2.l, $1024fc.l",r,.l,RAM,absL,ok
+002668,10,6,1024FC,move.l,"$ffdbf2.l, $1024fc.l",w,.l,VRAM,absL,ok
+002672,8,4,FFDBB0,move.b,"#$ff, $ffdbb0.l",w,.b,RAM,absL,ok
+002680,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00268A,10,6,102408,cmpi.l,"#$d4c1f8, $102408.l",r,.l,VRAM,absL,ok
+002696,8,4,FFA54D,bchg.b,"#$3, $ffa54d.l",rw,.b,RAM,absL,ok
+0026A4,6,2,FFDBB6,tst.b,$ffdbb6.l,r,.b,RAM,absL,ok
+0026AC,6,2,FFDBB6,subq.b,"#$1, $ffdbb6.l",rw,.b,RAM,absL,ok
+0026B4,6,2,FFDBB4,tst.w,$ffdbb4.l,r,.w,RAM,absL,ok
+0026BC,6,2,FFDBB4,subq.w,"#$1, $ffdbb4.l",rw,.w,RAM,absL,ok
+0026C2,8,4,FFDBB4,cmpi.w,"#$a, $ffdbb4.l",r,.w,RAM,absL,ok
+0026DE,6,2,0026F8,lea.l,"$26f8.l, a6",addr,.l,ROM,absL,ok
+0026E4,6,2,002728,lea.l,"$2728.l, a5",addr,.l,ROM,absL,ok
+003C74,10,6,01ABFC,cmpi.l,"#$84c79d9, $1abfc.l",r,.l,ROM,absL,ok
+003C84,6,2,000400,jmp,$400.l,x,,ROM,absL,ok
+00492E,10,6,010D22,cmpi.l,"#$45e045c, $10d22.l",r,.l,ROM,absL,ok
+004B2A,10,6,102250,move.l,"#$45cd810, $102250.l",w,.l,VRAM,absL,ok
+004BCA,10,6,102250,cmpi.l,"#$1456, $102250.l",r,.l,VRAM,absL,ok
+004BD6,6,2,017A12,move.l,"#$17a12, d0",imm,.l,ROM,imm32,ok
+004E5A,6,4,00A308,move.l,"$800(a4), $a308.w",w,.l,ROM,absW,MISMATCH
+005216,4,2,001818,move.w,"$1818.w, ccr",r,.w,ROM,absW,ok
+005D04,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+005D14,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+005D24,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+005D2E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+005D3E,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+005D46,8,4,FFE69E,cmpi.w,"#$1f00, $ffe69e.l",r,.w,RAM,absL,ok
+005D58,8,4,FFE0AB,move.b,"#$3, $ffe0ab.l",w,.b,RAM,absL,ok
+005D6A,6,2,FFDC00,lea.l,"$ffdc00.l, a4",addr,.l,RAM,absL,ok
+005D70,6,2,FFDBF6,movea.l,"$ffdbf6.l, a3",r,.l,RAM,absL,ok
+005D92,10,6,FFDBF6,addi.l,"#$2, $ffdbf6.l",rw,.l,RAM,absL,ok
+005D9E,10,2,005570,move.l,"#$5570, $ffdbf6.l",imm,.l,ROM,imm32,ok
+005D9E,10,6,FFDBF6,move.l,"#$5570, $ffdbf6.l",w,.l,RAM,absL,ok
+005DAA,10,2,005570,move.l,"#$5570, $ffdbf6.l",imm,.l,ROM,imm32,ok
+005DAA,10,6,FFDBF6,move.l,"#$5570, $ffdbf6.l",w,.l,RAM,absL,ok
+005DB6,8,4,FFDBFF,move.b,"$9(a5), $ffdbff.l",w,.b,RAM,absL,ok
+005DC0,8,2,FFDBFF,move.b,"$ffdbff.l, $9(a5)",r,.b,RAM,absL,ok
+005DEE,8,2,FFDBFD,move.b,"$ffdbfd.l, $e(a5)",r,.b,RAM,absL,ok
+005DF6,8,4,FFDBFD,cmpi.b,"#$1, $ffdbfd.l",r,.b,RAM,absL,ok
+005E00,6,2,FFDBFD,subq.b,"#$1, $ffdbfd.l",rw,.b,RAM,absL,ok
+005E08,8,4,FFDBFB,move.b,"$8(a1), $ffdbfb.l",w,.b,RAM,absL,ok
+005E1A,6,2,FFDBFB,move.b,"$ffdbfb.l, d0",r,.b,RAM,absL,ok
+005E24,6,2,FFDBFC,cmp.b,"$ffdbfc.l, d0",r,.b,RAM,absL,ok
+005E2E,8,4,FFDBFB,move.b,"$8(a1), $ffdbfb.l",w,.b,RAM,absL,ok
+005E3C,8,4,FFDBFC,addi.b,"#$10, $ffdbfc.l",rw,.b,RAM,absL,ok
+005E46,6,2,FF9700,lea.l,"$ff9700.l, a0",addr,.l,RAM,absL,ok
+005EA8,6,2,005EDE,lea.l,"$5ede.l, a4",addr,.l,ROM,absL,ok
+00613E,6,2,FF9700,lea.l,"$ff9700.l, a1",addr,.l,RAM,absL,ok
+0061A0,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+0061A6,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+0061AC,6,2,100F80,lea.l,"$100f80.l, a4",addr,.l,VRAM,absL,ok
+0061FC,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+00621C,6,2,FFE6A2,move.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+006244,6,2,FFDC0A,tst.w,$ffdc0a.l,r,.w,RAM,absL,ok
+006256,6,2,006266,lea.l,"$6266.l, a2",addr,.l,ROM,absL,ok
+0062D0,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+0062D6,6,2,FFDC06,addq.l,"#$1, $ffdc06.l",rw,.l,RAM,absL,ok
+0062DC,10,2,FFDC06,move.l,"$ffdc06.l, $102b54.l",r,.l,RAM,absL,ok
+0062DC,10,6,102B54,move.l,"$ffdc06.l, $102b54.l",w,.l,VRAM,absL,ok
+0062E6,10,6,FFDC06,cmpi.l,"#$400, $ffdc06.l",r,.l,RAM,absL,ok
+0062F2,10,6,102B54,cmpi.l,"#$84cd0c4, $102b54.l",r,.l,VRAM,absL,ok
+0062FE,6,2,FFDC0A,addq.w,"#$1, $ffdc0a.l",rw,.w,RAM,absL,ok
+006306,6,2,0062C6,jmp,$62c6.l,x,,ROM,absL,ok
+006326,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+00633C,6,2,0062C6,jmp,$62c6.l,x,,ROM,absL,ok
+00634E,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+006360,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+00636C,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+00637A,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+0063C2,6,2,0062C6,jmp,$62c6.l,x,,ROM,absL,ok
+0063D4,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+0063EE,6,2,0062C6,jmp,$62c6.l,x,,ROM,absL,ok
+006400,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+006412,6,2,0062C6,jmp,$62c6.l,x,,ROM,absL,ok
+006480,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+006498,6,2,006244,jmp,$6244.l,x,,ROM,absL,ok
+00653E,6,2,006548,lea.l,"$6548.l, a6",addr,.l,ROM,absL,ok
+00655A,6,2,006564,lea.l,"$6564.l, a6",addr,.l,ROM,absL,ok
+006576,6,2,006580,lea.l,"$6580.l, a6",addr,.l,ROM,absL,ok
+006592,6,2,00659C,lea.l,"$659c.l, a6",addr,.l,ROM,absL,ok
+0065AE,6,2,0065B8,lea.l,"$65b8.l, a6",addr,.l,ROM,absL,ok
+0065CA,6,2,0065D4,lea.l,"$65d4.l, a6",addr,.l,ROM,absL,ok
+0065E6,6,2,0065F0,lea.l,"$65f0.l, a6",addr,.l,ROM,absL,ok
+006602,6,2,00660C,lea.l,"$660c.l, a6",addr,.l,ROM,absL,ok
+006B66,8,2,006A2A,move.l,"#$6a2a, $1c(a4)",imm,.l,ROM,imm32,ok
+006C96,6,2,0091C0,jsr,$91c0.l,x,,ROM,absL,ok
+006CAA,6,2,0091C0,jsr,$91c0.l,x,,ROM,absL,ok
+006CBE,6,2,0091C0,jsr,$91c0.l,x,,ROM,absL,ok
+006CD2,6,2,0091C0,jsr,$91c0.l,x,,ROM,absL,ok
+006CDC,6,2,FFE0F0,move.w,"$ffe0f0.l, d0",r,.w,RAM,absL,ok
+006E5A,6,2,01E4AC,jsr,$1e4ac.l,x,,ROM,absL,ok
+0071DC,6,2,FFDC21,lea.l,"$ffdc21.l, a3",addr,.l,RAM,absL,ok
+0071F0,6,2,FFDC21,lea.l,"$ffdc21.l, a3",addr,.l,RAM,absL,ok
+007208,6,2,FFDC21,lea.l,"$ffdc21.l, a3",addr,.l,RAM,absL,ok
+00721E,8,2,FFDC21,move.b,"$ffdc21.l, $8(a5)",r,.b,RAM,absL,ok
+0074B0,8,2,0073A6,move.l,"#$73a6, $1c(a4)",imm,.l,ROM,imm32,ok
+007572,10,6,01717E,cmpi.l,"#$45c045a, $1717e.l",r,.l,ROM,absL,ok
+00757E,6,2,000400,jsr,$400.l,x,,ROM,absL,ok
+007732,6,2,FFE0F4,move.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+007738,6,2,FFDC14,move.w,"d0, $ffdc14.l",w,.w,RAM,absL,ok
+007748,6,2,FFDC14,move.w,"$ffdc14.l, d0",r,.w,RAM,absL,ok
+00774E,6,2,FFE0F4,cmp.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+00784E,8,4,FFDC0C,move.w,"$18(a1), $ffdc0c.l",w,.w,RAM,absL,ok
+007858,8,2,FFDC0C,move.w,"$ffdc0c.l, $18(a1)",r,.w,RAM,absL,ok
+007872,6,2,FFDC10,move.w,"d0, $ffdc10.l",w,.w,RAM,absL,ok
+007878,8,4,FFDC12,move.w,"$38(a5), $ffdc12.l",w,.w,RAM,absL,ok
+007882,8,2,FFDC10,move.w,"$ffdc10.l, $36(a5)",r,.w,RAM,absL,ok
+00788A,8,2,FFDC12,move.w,"$ffdc12.l, $38(a5)",r,.w,RAM,absL,ok
+007EAA,8,2,007D68,move.l,"#$7d68, $1c(a4)",imm,.l,ROM,imm32,ok
+008242,6,2,FFDC2C,lea.l,"$ffdc2c.l, a4",addr,.l,RAM,absL,ok
+008272,6,2,0081E8,lea.l,"$81e8.l, a3",addr,.l,ROM,absL,ok
+008278,6,2,FFDC2C,lea.l,"$ffdc2c.l, a4",addr,.l,RAM,absL,ok
+0082B2,6,2,FFDC2C,movea.l,"#$ffdc2c, a3",imm,.l,RAM,imm32,ok
+0082E4,6,2,FFDC2C,movea.l,"#$ffdc2c, a3",imm,.l,RAM,imm32,ok
+008536,4,2,000105,move.w,"sr, $105.w",w,.w,ROM,absW,ok
+008544,6,4,000144,move.l,"$800(a4), $144.w",w,.l,ROM,absW,ok
+0085F0,6,2,FFA4C0,lea.l,"$ffa4c0.l, a3",addr,.l,RAM,absL,ok
+0085F6,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+008600,6,2,FFA540,lea.l,"$ffa540.l, a3",addr,.l,RAM,absL,ok
+00860C,6,2,022F90,jsr,$22f90.l,x,,ROM,absL,ok
+008612,6,2,FFDBAF,addq.b,"#$1, $ffdbaf.l",rw,.b,RAM,absL,ok
+008618,8,4,FFDBAF,cmpi.b,"#$3a, $ffdbaf.l",r,.b,RAM,absL,ok
+008622,6,2,FFDBAE,addq.b,"#$1, $ffdbae.l",rw,.b,RAM,absL,ok
+008628,8,4,FFDBAF,move.b,"#$30, $ffdbaf.l",w,.b,RAM,absL,ok
+00878E,8,2,0086FA,move.l,"#$86fa, $1c(a4)",imm,.l,ROM,imm32,ok
+0087B2,6,2,00CB5C,lea.l,"$cb5c.l, a6",addr,.l,ROM,absL,ok
+0087C4,6,2,FF8000,lea.l,"$ff8000.l, a4",addr,.l,RAM,absL,ok
+0087D4,6,2,102800,lea.l,"$102800.l, a6",addr,.l,VRAM,absL,ok
+008974,6,2,FFDC46,tst.b,$ffdc46.l,r,.b,RAM,absL,ok
+00897C,6,2,FFD83B,lea.l,"$ffd83b.l, a6",addr,.l,RAM,absL,ok
+00899A,6,2,FFDC46,addq.b,"#$1, $ffdc46.l",rw,.b,RAM,absL,ok
+0089A0,6,2,FFDC0F,lea.l,"$ffdc0f.l, a6",addr,.l,RAM,absL,ok
+0089E0,10,6,023BE6,cmpi.l,"#$5c6812, $23be6.l",r,.l,ROM,absL,ok
+0089EC,6,2,FFA4C0,jsr,$ffa4c0.l,x,,RAM,absL,ok
+0089F4,8,4,FFE6A2,cmpi.w,"#$e0, $ffe6a2.l",r,.w,RAM,absL,ok
+008A06,8,4,FFE0AB,move.b,"#$3, $ffe0ab.l",w,.b,RAM,absL,ok
+008A1C,8,4,FFDC3C,cmpi.b,"#$4, $ffdc3c.l",r,.b,RAM,absL,ok
+008A26,8,2,FFDC3C,move.b,"$ffdc3c.l, $f(a5)",r,.b,RAM,absL,ok
+008A38,8,4,FFDC3D,move.b,"$8(a1), $ffdc3d.l",w,.b,RAM,absL,ok
+008A46,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+008A52,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+008A66,6,2,011238,jsr,$11238.l,x,,ROM,absL,ok
+008A6E,10,2,FFDC3E,move.b,"$ffdc3e.l, $ffdc41.l",r,.b,RAM,absL,ok
+008A6E,10,6,FFDC41,move.b,"$ffdc3e.l, $ffdc41.l",w,.b,RAM,absL,ok
+008A78,10,2,FFDC3F,move.b,"$ffdc3f.l, $ffdc42.l",r,.b,RAM,absL,ok
+008A78,10,6,FFDC42,move.b,"$ffdc3f.l, $ffdc42.l",w,.b,RAM,absL,ok
+008A82,10,2,FFDC40,move.b,"$ffdc40.l, $ffdc43.l",r,.b,RAM,absL,ok
+008A82,10,6,FFDC43,move.b,"$ffdc40.l, $ffdc43.l",w,.b,RAM,absL,ok
+008A8E,10,2,FFDC41,move.b,"$ffdc41.l, $ffdc3e.l",r,.b,RAM,absL,ok
+008A8E,10,6,FFDC3E,move.b,"$ffdc41.l, $ffdc3e.l",w,.b,RAM,absL,ok
+008A98,10,2,FFDC42,move.b,"$ffdc42.l, $ffdc3f.l",r,.b,RAM,absL,ok
+008A98,10,6,FFDC3F,move.b,"$ffdc42.l, $ffdc3f.l",w,.b,RAM,absL,ok
+008AA2,10,2,FFDC43,move.b,"$ffdc43.l, $ffdc40.l",r,.b,RAM,absL,ok
+008AA2,10,6,FFDC40,move.b,"$ffdc43.l, $ffdc40.l",w,.b,RAM,absL,ok
+0090D4,6,4,0001FF,move.l,"-$6e00(a4), $1ff.w",w,.l,ROM,absW,ok
+0090DE,6,2,019038,movea.l,"#$19038, a4",imm,.l,ROM,imm32,ok
+0090E4,6,2,102000,movea.l,"#$102000, a6",imm,.l,VRAM,imm32,ok
+0090F0,6,2,002758,movea.l,"#$2758, a4",imm,.l,ROM,imm32,ok
+0090F6,6,2,102400,movea.l,"#$102400, a6",imm,.l,VRAM,imm32,ok
+00910C,6,2,FF8000,lea.l,"$ff8000.l, a4",addr,.l,RAM,absL,ok
+00911E,6,2,FFDCF4,lea.l,"$ffdcf4.l, a0",addr,.l,RAM,absL,ok
+00913C,6,2,FFDCF4,lea.l,"$ffdcf4.l, a0",addr,.l,RAM,absL,ok
+009188,6,2,FFA5C0,lea.l,"$ffa5c0.l, a2",addr,.l,RAM,absL,ok
+00918E,6,2,200000,lea.l,"$200000.l, a4",addr,.l,PAL,absL,ok
+0091C0,10,6,FFDD34,addi.l,"#$10, $ffdd34.l",rw,.l,RAM,absL,ok
+0091CA,10,2,FFDD34,move.l,"$ffdd34.l, $102390.l",r,.l,RAM,absL,ok
+0091CA,10,6,102390,move.l,"$ffdd34.l, $102390.l",w,.l,VRAM,absL,ok
+0091D4,6,2,028000,lea.l,"$28000.l, a2",addr,.l,ROM,absL,ok
+0091DA,6,2,FFDC70,lea.l,"$ffdc70.l, a3",addr,.l,RAM,absL,ok
+0091E0,6,2,200000,lea.l,"$200000.l, a4",addr,.l,PAL,absL,ok
+009226,10,6,FFDD34,cmpi.l,"#$3000, $ffdd34.l",r,.l,RAM,absL,ok
+009232,10,6,102390,cmpi.l,"#$84c47f3, $102390.l",r,.l,VRAM,absL,ok
+00923E,6,2,FFDC70,lea.l,"$ffdc70.l, a3",addr,.l,RAM,absL,ok
+009250,6,2,FFD200,lea.l,"$ffd200.l, a1",addr,.l,RAM,absL,ok
+00926C,6,2,00945A,lea.l,"$945a.l, a0",addr,.l,ROM,absL,ok
+009284,6,2,FFD200,lea.l,"$ffd200.l, a2",addr,.l,RAM,absL,ok
+0092B8,6,2,00945A,lea.l,"$945a.l, a0",addr,.l,ROM,absL,ok
+0092CC,6,2,FFD200,lea.l,"$ffd200.l, a1",addr,.l,RAM,absL,ok
+0092FA,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+00930A,6,2,FFD200,lea.l,"$ffd200.l, a1",addr,.l,RAM,absL,ok
+009432,10,6,FFE140,addi.l,"#$12, $ffe140.l",rw,.l,RAM,absL,ok
+00943C,10,2,FFE140,move.l,"$ffe140.l, $102090.l",r,.l,RAM,absL,ok
+00943C,10,6,102090,move.l,"$ffe140.l, $102090.l",w,.l,VRAM,absL,ok
+00A0E4,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+00A0F4,6,2,00A586,lea.l,"$a586.l, a0",addr,.l,ROM,absL,ok
+00A104,8,4,FFDC48,move.b,"#$1, $ffdc48.l",w,.b,RAM,absL,ok
+00A10C,6,2,FFDC4A,clr.w,$ffdc4a.l,w,.w,RAM,absL,ok
+00A112,6,2,FFDC49,clr.b,$ffdc49.l,w,.b,RAM,absL,ok
+00A140,6,2,200000,lea.l,"$200000.l, a0",addr,.l,PAL,absL,ok
+00A146,6,2,FFA5C0,lea.l,"$ffa5c0.l, a1",addr,.l,RAM,absL,ok
+00A14C,6,2,028000,lea.l,"$28000.l, a2",addr,.l,ROM,absL,ok
+00A174,6,2,200000,lea.l,"$200000.l, a0",addr,.l,PAL,absL,ok
+00A17A,6,2,FFA5C0,lea.l,"$ffa5c0.l, a1",addr,.l,RAM,absL,ok
+00A180,6,2,028000,lea.l,"$28000.l, a2",addr,.l,ROM,absL,ok
+00A1B0,6,2,FFDC70,lea.l,"$ffdc70.l, a4",addr,.l,RAM,absL,ok
+00A1C8,6,2,200000,lea.l,"$200000.l, a0",addr,.l,PAL,absL,ok
+00A1CE,6,2,FFA5C0,lea.l,"$ffa5c0.l, a1",addr,.l,RAM,absL,ok
+00A1D4,6,2,028000,lea.l,"$28000.l, a2",addr,.l,ROM,absL,ok
+00A27E,6,2,FFDC48,tst.b,$ffdc48.l,r,.b,RAM,absL,ok
+00A286,6,2,FFDC4A,clr.w,$ffdc4a.l,w,.w,RAM,absL,ok
+00A29C,6,2,FFDC49,cmp.b,"$ffdc49.l, d5",r,.b,RAM,absL,ok
+00A2A4,8,4,FFDC49,addi.b,"#$1, $ffdc49.l",rw,.b,RAM,absL,ok
+00A2B0,6,2,FFDC49,clr.b,$ffdc49.l,w,.b,RAM,absL,ok
+00A2B6,6,2,FFDC48,clr.b,$ffdc48.l,w,.b,RAM,absL,ok
+00A2D4,6,2,200000,lea.l,"$200000.l, a0",addr,.l,PAL,absL,ok
+00A2DA,6,2,FFA5C0,lea.l,"$ffa5c0.l, a1",addr,.l,RAM,absL,ok
+00A2E0,6,2,028000,lea.l,"$28000.l, a2",addr,.l,ROM,absL,ok
+00A300,6,2,00911A,jsr,$911a.l,x,,ROM,absL,ok
+00A318,6,2,FFDC48,add.b,"d0, $ffdc48.l",rw,.b,RAM,absL,ok
+00A324,6,2,200000,lea.l,"$200000.l, a0",addr,.l,PAL,absL,ok
+00A32A,6,2,FFA5C0,lea.l,"$ffa5c0.l, a1",addr,.l,RAM,absL,ok
+00A330,6,2,028000,lea.l,"$28000.l, a2",addr,.l,ROM,absL,ok
+00A34C,8,4,FFDC4A,addi.w,"#$1, $ffdc4a.l",rw,.w,RAM,absL,ok
+00A35E,6,2,FFDC48,add.b,"d0, $ffdc48.l",rw,.b,RAM,absL,ok
+00A370,6,2,00911A,jsr,$911a.l,x,,ROM,absL,ok
+00A37A,6,2,FFDC70,lea.l,"$ffdc70.l, a4",addr,.l,RAM,absL,ok
+00A394,8,4,FFDC4A,addi.w,"#$1, $ffdc4a.l",rw,.w,RAM,absL,ok
+00A39C,6,2,200000,lea.l,"$200000.l, a0",addr,.l,PAL,absL,ok
+00A3A2,6,2,FFA5C0,lea.l,"$ffa5c0.l, a1",addr,.l,RAM,absL,ok
+00A3A8,6,2,028000,lea.l,"$28000.l, a2",addr,.l,ROM,absL,ok
+00A3C6,6,2,FFDC48,add.b,"d0, $ffdc48.l",rw,.b,RAM,absL,ok
+00A3E8,6,2,00911A,jsr,$911a.l,x,,ROM,absL,ok
+00A3F2,6,2,FFE10F,clr.b,$ffe10f.l,w,.b,RAM,absL,ok
+00A41A,6,2,FFDC4A,move.w,"$ffdc4a.l, d5",r,.w,RAM,absL,ok
+00A476,6,2,FFDC4A,move.w,"$ffdc4a.l, d5",r,.w,RAM,absL,ok
+00A4CA,6,2,FFDC4A,move.w,"$ffdc4a.l, d5",r,.w,RAM,absL,ok
+00A4EC,6,2,FFDC4A,move.w,"$ffdc4a.l, d5",r,.w,RAM,absL,ok
+00A656,10,6,00EE08,cmpi.l,"#$84cd1ec, $ee08.l",r,.l,ROM,absL,ok
+00A668,6,2,000AD6,jsr,$ad6.l,x,,ROM,absL,ok
+00A694,6,2,012B96,lea.l,"$12b96.l, a0",addr,.l,ROM,absL,ok
+00A6B4,6,2,00AE80,lea.l,"$ae80.l, a2",addr,.l,ROM,absL,ok
+00A6BA,6,2,00AE90,lea.l,"$ae90.l, a3",addr,.l,ROM,absL,ok
+00A6CE,6,2,00ACB4,lea.l,"$acb4.l, a2",addr,.l,ROM,absL,ok
+00A6D4,6,2,00ACCC,lea.l,"$accc.l, a3",addr,.l,ROM,absL,ok
+00A704,10,6,FFDD38,addi.l,"#$10, $ffdd38.l",rw,.l,RAM,absL,ok
+00A70E,10,2,FFDD38,move.l,"$ffdd38.l, $102940.l",r,.l,RAM,absL,ok
+00A70E,10,6,102940,move.l,"$ffdd38.l, $102940.l",w,.l,VRAM,absL,ok
+00A718,10,6,FFDD38,cmpi.l,"#$200, $ffdd38.l",r,.l,RAM,absL,ok
+00A724,10,6,102940,cmpi.l,"#$84c79d9, $102940.l",r,.l,VRAM,absL,ok
+00A730,6,2,FFDD38,clr.l,$ffdd38.l,w,.l,RAM,absL,ok
+00A736,6,2,FFE0F4,addq.w,"#$5, $ffe0f4.l",rw,.w,RAM,absL,ok
+00A740,6,2,000AD6,jsr,$ad6.l,x,,ROM,absL,ok
+00A76A,6,2,FF9DC0,lea.l,"$ff9dc0.l, a1",addr,.l,RAM,absL,ok
+00A7AC,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00A7B2,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00A7BC,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00A826,6,2,FFDBAF,addq.b,"#$1, $ffdbaf.l",rw,.b,RAM,absL,ok
+00A82C,8,4,FFDBAF,cmpi.b,"#$3a, $ffdbaf.l",r,.b,RAM,absL,ok
+00A836,6,2,FFDBAE,addq.b,"#$1, $ffdbae.l",rw,.b,RAM,absL,ok
+00A83C,8,4,FFDBAF,move.b,"#$30, $ffdbaf.l",w,.b,RAM,absL,ok
+00A85E,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+00A882,6,2,FFE6A2,move.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+00A8B6,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+00A8BC,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+00A8C2,6,2,100F80,lea.l,"$100f80.l, a4",addr,.l,VRAM,absL,ok
+00A8FC,6,2,00AA08,lea.l,"$aa08.l, a2",addr,.l,ROM,absL,ok
+00A906,6,2,00AACA,lea.l,"$aaca.l, a3",addr,.l,ROM,absL,ok
+00A910,6,2,00AAD0,lea.l,"$aad0.l, a2",addr,.l,ROM,absL,ok
+00A91A,6,2,00AB92,lea.l,"$ab92.l, a3",addr,.l,ROM,absL,ok
+00ABA2,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00ABA8,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00ABB2,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00ABC2,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+00ABE6,6,2,FFE6A2,move.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+00AC9C,6,2,FFDF44,lea.l,"$ffdf44.l, a2",addr,.l,RAM,absL,ok
+00AD82,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00AD88,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00AD94,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00ADA4,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+00ADC8,6,2,FFE6A2,move.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+00AEF0,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00AEF6,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00AF00,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00AF34,10,6,01122A,cmpi.l,"#$84c58d9, $1122a.l",r,.l,ROM,absL,ok
+00AF40,8,4,FFD31C,addi.b,"#$32, $ffd31c.l",rw,.b,RAM,absL,ok
+00AF52,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+00AF5C,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+00AF62,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+00AF68,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00AF72,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+00AF78,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+00AFE4,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00AFF0,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00B880,6,2,FFE08C,clr.b,$ffe08c.l,w,.b,RAM,absL,ok
+00B88A,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00B89E,8,4,FFD2E1,cmpi.b,"#$5, $ffd2e1.l",r,.b,RAM,absL,ok
+00B8AA,6,2,FFE13A,lea.l,"$ffe13a.l, a4",addr,.l,RAM,absL,ok
+00B8B0,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00B8BA,6,2,FFE139,lea.l,"$ffe139.l, a4",addr,.l,RAM,absL,ok
+00B8DC,10,2,FFDD3D,move.b,"$ffdd3d.l, $ffdd3e.l",r,.b,RAM,absL,ok
+00B8DC,10,6,FFDD3E,move.b,"$ffdd3d.l, $ffdd3e.l",w,.b,RAM,absL,ok
+00B8E8,10,2,FFDD3E,move.b,"$ffdd3e.l, $ffdd3d.l",r,.b,RAM,absL,ok
+00B8E8,10,6,FFDD3D,move.b,"$ffdd3e.l, $ffdd3d.l",w,.b,RAM,absL,ok
+00B8FC,6,2,FFDD3F,move.b,"$ffdd3f.l, d7",r,.b,RAM,absL,ok
+00B910,8,4,FFE69E,cmpi.w,"#$5c0, $ffe69e.l",r,.w,RAM,absL,ok
+00B922,8,4,FFDD3C,move.b,"#$1, $ffdd3c.l",w,.b,RAM,absL,ok
+00B92A,8,4,FFE0AB,move.b,"#$3, $ffe0ab.l",w,.b,RAM,absL,ok
+00B994,8,2,FFDD41,move.b,"$ffdd41.l, $a(a5)",r,.b,RAM,absL,ok
+00B99C,8,4,FFDD41,subi.b,"#$8, $ffdd41.l",rw,.b,RAM,absL,ok
+00B9E6,8,4,FFE10E,move.b,"#$8, $ffe10e.l",w,.b,RAM,absL,ok
+00B9F0,6,2,FFE10E,clr.b,$ffe10e.l,w,.b,RAM,absL,ok
+00BA00,6,2,011238,jsr,$11238.l,x,,ROM,absL,ok
+00BA10,6,2,FFDD42,move.b,"d0, $ffdd42.l",w,.b,RAM,absL,ok
+00BA1A,6,2,FFDD42,move.b,"$ffdd42.l, d0",r,.b,RAM,absL,ok
+00BA28,6,2,102500,movea.l,"#$102500, a6",imm,.l,VRAM,imm32,ok
+00BA2E,6,2,00AF0E,movea.l,"#$af0e, a2",imm,.l,ROM,imm32,ok
+00BA40,8,4,FFDB5D,move.b,"$8(a1), $ffdb5d.l",w,.b,RAM,absL,ok
+00BA4A,6,2,FFE588,addq.l,"#$1, $ffe588.l",rw,.l,RAM,absL,ok
+00BA50,10,2,FFE588,move.l,"$ffe588.l, $102060.l",r,.l,RAM,absL,ok
+00BA50,10,6,102060,move.l,"$ffe588.l, $102060.l",w,.l,VRAM,absL,ok
+00BA5C,10,6,FFE07A,addi.l,"#$10, $ffe07a.l",rw,.l,RAM,absL,ok
+00BA66,10,2,FFE07A,move.l,"$ffe07a.l, $102c14.l",r,.l,RAM,absL,ok
+00BA66,10,6,102C14,move.l,"$ffe07a.l, $102c14.l",w,.l,VRAM,absL,ok
+00BA70,6,2,FFE04C,move.w,"$ffe04c.l, d7",r,.w,RAM,absL,ok
+00BA76,8,4,FFE078,move.b,"#$0, $ffe078.l",w,.b,RAM,absL,ok
+00BA7E,6,2,00BA9C,jsr,$ba9c.l,x,,ROM,absL,ok
+00BA86,6,2,FFE04C,move.w,"$ffe04c.l, d7",r,.w,RAM,absL,ok
+00BA8C,8,4,FFE078,move.b,"#$1, $ffe078.l",w,.b,RAM,absL,ok
+00BA94,6,2,00BA9C,jsr,$ba9c.l,x,,ROM,absL,ok
+00BA9C,6,2,FFDD44,lea.l,"$ffdd44.l, a4",addr,.l,RAM,absL,ok
+00BAB2,6,2,FFE044,movea.l,"$ffe044.l, a0",r,.l,RAM,absL,ok
+00BAB8,6,2,FFE04E,cmp.w,"$ffe04e.l, d7",r,.w,RAM,absL,ok
+00BADC,6,2,FFE078,tst.b,$ffe078.l,r,.b,RAM,absL,ok
+00BAE6,6,2,FFE69E,move.w,"$ffe69e.l, d5",r,.w,RAM,absL,ok
+00BAEC,6,2,FFE6A2,move.w,"$ffe6a2.l, d6",r,.w,RAM,absL,ok
+00BB88,6,2,FFE69E,move.w,"$ffe69e.l, d5",r,.w,RAM,absL,ok
+00BBC0,10,6,FFE07A,cmpi.l,"#$10000, $ffe07a.l",r,.l,RAM,absL,ok
+00BBCC,10,6,102C14,cmpi.l,"#$4ed0d4, $102c14.l",r,.l,VRAM,absL,ok
+00BBD8,6,2,FFE07A,clr.l,$ffe07a.l,w,.l,RAM,absL,ok
+00BBDE,6,2,FF8E00,lea.l,"$ff8e00.l, a6",addr,.l,RAM,absL,ok
+00BBF0,10,6,020692,cmpi.l,"#$84c5959, $20692.l",r,.l,ROM,absL,ok
+00BBFE,6,2,FFE69E,move.w,"$ffe69e.l, d2",r,.w,RAM,absL,ok
+00BC20,6,2,FFE6A2,move.w,"$ffe6a2.l, d2",r,.w,RAM,absL,ok
+00BC5E,6,2,000A66,lea.l,"$a66.l, a1",addr,.l,ROM,absL,ok
+00BCA8,6,2,000A8E,lea.l,"$a8e.l, a1",addr,.l,ROM,absL,ok
+00BCB8,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+00BCBE,6,2,000A66,lea.l,"$a66.l, a1",addr,.l,ROM,absL,ok
+00BCC6,6,2,000AB2,lea.l,"$ab2.l, a1",addr,.l,ROM,absL,ok
+00BCF2,6,2,FFE058,move.w,"$ffe058.l, d7",r,.w,RAM,absL,ok
+00BCFC,6,2,FFE064,move.w,"$ffe064.l, d7",r,.w,RAM,absL,ok
+00BD0C,6,2,FFE050,movea.l,"$ffe050.l, a0",r,.l,RAM,absL,ok
+00BD12,6,2,FFDF44,lea.l,"$ffdf44.l, a4",addr,.l,RAM,absL,ok
+00BD28,6,2,FFE05A,cmp.w,"$ffe05a.l, d7",r,.w,RAM,absL,ok
+00BD3A,6,2,FFE69E,move.w,"$ffe69e.l, d2",r,.w,RAM,absL,ok
+00BD5A,6,2,FFE6A2,move.w,"$ffe6a2.l, d2",r,.w,RAM,absL,ok
+00BD7E,6,2,00BD94,jsr,$bd94.l,x,,ROM,absL,ok
+00BD9A,6,2,000A8E,lea.l,"$a8e.l, a1",addr,.l,ROM,absL,ok
+00BDC8,6,2,FFE05C,movea.l,"$ffe05c.l, a0",r,.l,RAM,absL,ok
+00BDCE,6,2,FFDF44,lea.l,"$ffdf44.l, a4",addr,.l,RAM,absL,ok
+00BDE4,6,2,FFE066,move.w,"$ffe066.l, d3",r,.w,RAM,absL,ok
+00BDFC,6,2,FFE69E,move.w,"$ffe69e.l, d2",r,.w,RAM,absL,ok
+00BE1C,6,2,FFE6A2,move.w,"$ffe6a2.l, d2",r,.w,RAM,absL,ok
+00BE40,6,2,00BE56,jsr,$be56.l,x,,ROM,absL,ok
+00BE5C,6,2,000AA0,lea.l,"$aa0.l, a1",addr,.l,ROM,absL,ok
+00BE98,6,2,FF9AC0,lea.l,"$ff9ac0.l, a6",addr,.l,RAM,absL,ok
+00BEB4,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+00BEE4,6,2,FFA0C0,lea.l,"$ffa0c0.l, a6",addr,.l,RAM,absL,ok
+00BF00,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+00BF30,8,4,FFE084,move.w,"#$180, $ffe084.l",w,.w,RAM,absL,ok
+00BF38,8,4,FFE086,move.w,"#$180, $ffe086.l",w,.w,RAM,absL,ok
+00BF40,8,4,FFE082,move.w,"#$180, $ffe082.l",w,.w,RAM,absL,ok
+00BF48,8,4,FFE07E,move.w,"#$200, $ffe07e.l",w,.w,RAM,absL,ok
+00BF50,8,4,FFE080,move.w,"#$180, $ffe080.l",w,.w,RAM,absL,ok
+00BF5A,8,2,FFD2E8,move.b,"$ffd2e8.l, $4a(a0)",r,.b,RAM,absL,ok
+00BF66,8,2,FFE07E,move.w,"$ffe07e.l, $20(a0)",r,.w,RAM,absL,ok
+00BF6E,8,2,FFE080,move.w,"$ffe080.l, $22(a0)",r,.w,RAM,absL,ok
+00BF76,10,6,FFE090,cmpi.l,"#$ffffff00, $ffe090.l",r,.l,RAM,absL,ok
+00BF82,10,6,102B34,cmpi.l,"#$ae2a6352, $102b34.l",r,.l,VRAM,absL,ok
+00BF8E,6,2,FFD31C,move.b,"$ffd31c.l, d7",r,.b,RAM,absL,ok
+00BF9A,6,2,FFD31C,move.b,"d7, $ffd31c.l",w,.b,RAM,absL,ok
+00BFA2,6,2,FFE090,subq.l,"#$8, $ffe090.l",rw,.l,RAM,absL,ok
+00BFA8,10,2,FFE090,move.l,"$ffe090.l, $102b34.l",r,.l,RAM,absL,ok
+00BFA8,10,6,102B34,move.l,"$ffe090.l, $102b34.l",w,.l,VRAM,absL,ok
+00BFB2,6,2,000914,jsr,$914.l,x,,ROM,absL,ok
+00BFB8,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00BFCE,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00BFD6,6,2,FFE090,subq.l,"#$8, $ffe090.l",rw,.l,RAM,absL,ok
+00BFDC,10,2,FFE090,move.l,"$ffe090.l, $102b34.l",r,.l,RAM,absL,ok
+00BFDC,10,6,102B34,move.l,"$ffe090.l, $102b34.l",w,.l,VRAM,absL,ok
+00BFE6,6,2,00092C,jsr,$92c.l,x,,ROM,absL,ok
+00BFEC,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00C004,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00C00C,6,2,FFE090,subq.l,"#$8, $ffe090.l",rw,.l,RAM,absL,ok
+00C012,10,2,FFE090,move.l,"$ffe090.l, $102b34.l",r,.l,RAM,absL,ok
+00C012,10,6,102B34,move.l,"$ffe090.l, $102b34.l",w,.l,VRAM,absL,ok
+00C01C,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00C02E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00C036,6,2,FFE090,subq.l,"#$8, $ffe090.l",rw,.l,RAM,absL,ok
+00C03C,10,2,FFE090,move.l,"$ffe090.l, $102b34.l",r,.l,RAM,absL,ok
+00C03C,10,6,102B34,move.l,"$ffe090.l, $102b34.l",w,.l,VRAM,absL,ok
+00C046,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00C058,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00C060,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00C06C,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00C076,8,2,FFE07E,move.w,"$ffe07e.l, $20(a0)",r,.w,RAM,absL,ok
+00C07E,8,2,FFE080,move.w,"$ffe080.l, $22(a0)",r,.w,RAM,absL,ok
+00C086,6,2,00C0C6,jsr,$c0c6.l,x,,ROM,absL,ok
+00C08C,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+00C096,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00C0A0,8,2,FFE07E,move.w,"$ffe07e.l, $20(a0)",r,.w,RAM,absL,ok
+00C0A8,8,2,FFE080,move.w,"$ffe080.l, $22(a0)",r,.w,RAM,absL,ok
+00C0B0,6,2,00C0C6,jsr,$c0c6.l,x,,ROM,absL,ok
+00C0C6,6,2,FFDBE0,addq.l,"#$1, $ffdbe0.l",rw,.l,RAM,absL,ok
+00C0CC,10,2,FFDBE0,move.l,"$ffdbe0.l, $102c80.l",r,.l,RAM,absL,ok
+00C0CC,10,6,102C80,move.l,"$ffdbe0.l, $102c80.l",w,.l,VRAM,absL,ok
+00C0E0,8,4,FFD2C8,move.w,"#$1f, $ffd2c8.l",w,.w,RAM,absL,ok
+00C106,6,2,016FB0,jsr,$16fb0.l,x,,ROM,absL,ok
+00C110,6,2,FFE0F4,move.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+00C148,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00C15E,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00C174,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00C182,6,2,00E008,jsr,$e008.l,x,,ROM,absL,ok
+00C194,8,4,FFDBAE,move.w,"#$3030, $ffdbae.l",w,.w,RAM,absL,ok
+00C1A0,6,2,FFDBB6,clr.b,$ffdbb6.l,w,.b,RAM,absL,ok
+00C1A6,8,4,FFDBB4,move.w,"#$c9, $ffdbb4.l",w,.w,RAM,absL,ok
+00C1B2,8,4,FFE0F2,move.w,"#$4524, $ffe0f2.l",w,.w,RAM,absL,ok
+00C1BC,8,4,FFE08A,addi.w,"#$1, $ffe08a.l",rw,.w,RAM,absL,ok
+00C1C4,8,4,FFE08A,cmpi.w,"#$3b, $ffe08a.l",r,.w,RAM,absL,ok
+00C1D0,6,2,FFE08A,clr.w,$ffe08a.l,w,.w,RAM,absL,ok
+00C1D6,8,4,FFE088,addi.w,"#$1, $ffe088.l",rw,.w,RAM,absL,ok
+00C1DE,10,6,0234CE,cmpi.l,"#$84c79d9, $234ce.l",r,.l,ROM,absL,ok
+00C1EE,10,6,1023D0,cmpi.l,"#$800, $1023d0.l",r,.l,VRAM,absL,ok
+00C1FA,8,4,1023D0,move.w,"#$400, $1023d0.l",w,.w,VRAM,absL,ok
+00C204,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00C20E,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+00C214,6,2,FFD327,lea.l,"$ffd327.l, a1",addr,.l,RAM,absL,ok
+00C224,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+00C22E,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+00C234,6,2,FFD32D,lea.l,"$ffd32d.l, a1",addr,.l,RAM,absL,ok
+00C28A,8,4,102471,cmpi.b,"#$30, $102471.l",r,.b,VRAM,absL,ok
+00C300,8,4,FFD2C8,move.w,"#$1f, $ffd2c8.l",w,.w,RAM,absL,ok
+00C308,8,4,FFD2E1,cmpi.b,"#$5, $ffd2e1.l",r,.b,RAM,absL,ok
+00C32A,6,2,FFD2E1,add.b,"$ffd2e1.l, d0",r,.b,RAM,absL,ok
+00C336,8,4,FFD2E1,cmpi.b,"#$3, $ffd2e1.l",r,.b,RAM,absL,ok
+00C340,6,2,FFDE79,lea.l,"$ffde79.l, a4",addr,.l,RAM,absL,ok
+00C350,8,4,FFDC45,cmpi.b,"#$5, $ffdc45.l",r,.b,RAM,absL,ok
+00C35C,6,2,FFC92B,lea.l,"$ffc92b.l, a4",addr,.l,RAM,absL,ok
+00C362,6,2,001763,adda.l,"#$1763, a4",imm,.l,ROM,imm32,ok
+00C378,8,4,FFD2E1,cmpi.b,"#$5, $ffd2e1.l",r,.b,RAM,absL,ok
+00C3A0,8,4,FFE0AB,move.b,"#$3, $ffe0ab.l",w,.b,RAM,absL,ok
+00C3A8,8,4,FFE0AA,move.b,"#$3, $ffe0aa.l",w,.b,RAM,absL,ok
+00C3C8,6,2,FFE0F4,move.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+00C3D2,6,2,FFD2E1,move.b,"$ffd2e1.l, d0",r,.b,RAM,absL,ok
+00C3F6,6,2,017AF8,jsr,$17af8.l,x,,ROM,absL,ok
+00C400,8,4,FFD2C8,move.w,"#$1d, $ffd2c8.l",w,.w,RAM,absL,ok
+00C40A,8,4,FFE108,move.w,"#$1d, $ffe108.l",w,.w,RAM,absL,ok
+00C412,8,4,FFD2C8,move.w,"#$f, $ffd2c8.l",w,.w,RAM,absL,ok
+00C41C,6,2,FFDBB4,tst.w,$ffdbb4.l,r,.w,RAM,absL,ok
+00C426,8,4,FFE10E,move.b,"#$1, $ffe10e.l",w,.b,RAM,absL,ok
+00C450,8,4,FFE0AB,move.b,"#$3, $ffe0ab.l",w,.b,RAM,absL,ok
+00C458,8,4,FFE0AA,move.b,"#$3, $ffe0aa.l",w,.b,RAM,absL,ok
+00C462,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+00C468,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00C472,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+00C478,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+00C48A,6,2,FFE0F4,move.w,"d0, $ffe0f4.l",w,.w,RAM,absL,ok
+00C494,6,2,FFD2E1,move.b,"d0, $ffd2e1.l",w,.b,RAM,absL,ok
+00C5F4,6,2,FFE69E,move.l,"$ffe69e.l, d0",r,.l,RAM,absL,ok
+00C5FA,6,2,FFE6A2,move.l,"$ffe6a2.l, d1",r,.l,RAM,absL,ok
+00C670,8,4,FFD31D,cmpi.b,"#$3, $ffd31d.l",r,.b,RAM,absL,ok
+00C6A0,8,2,FFE07E,move.w,"$ffe07e.l, $20(a0)",r,.w,RAM,absL,ok
+00C6A8,8,2,FFE080,move.w,"$ffe080.l, $22(a0)",r,.w,RAM,absL,ok
+00C6C6,8,2,FFE082,move.w,"$ffe082.l, $20(a0)",r,.w,RAM,absL,ok
+00CA08,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+00CA0E,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+00CA14,6,2,100F80,lea.l,"$100f80.l, a4",addr,.l,VRAM,absL,ok
+00CA40,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+00CA46,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+00CA62,6,2,FFE692,movea.l,"$ffe692.l, a2",r,.l,RAM,absL,ok
+00CA70,6,2,FFE696,movea.l,"$ffe696.l, a3",r,.l,RAM,absL,ok
+00CA88,6,2,FFE69A,movea.l,"$ffe69a.l, a4",r,.l,RAM,absL,ok
+00D7BC,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00D7CA,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00D7F6,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+00D804,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+00DB6E,6,2,FF9AC0,lea.l,"$ff9ac0.l, a6",addr,.l,RAM,absL,ok
+00DBCC,6,2,00DEEE,lea.l,"$deee.l, a3",addr,.l,ROM,absL,ok
+00DC22,6,2,00DEEE,lea.l,"$deee.l, a3",addr,.l,ROM,absL,ok
+00DC70,6,2,00DEEE,lea.l,"$deee.l, a3",addr,.l,ROM,absL,ok
+00DCCC,6,2,00DEEE,lea.l,"$deee.l, a3",addr,.l,ROM,absL,ok
+00DD32,8,4,FFD2E1,cmpi.b,"#$3, $ffd2e1.l",r,.b,RAM,absL,ok
+00DD7E,6,2,00DEEE,lea.l,"$deee.l, a3",addr,.l,ROM,absL,ok
+00DDE6,6,2,00DEEE,lea.l,"$deee.l, a3",addr,.l,ROM,absL,ok
+00DF5A,6,2,00C8CE,jsr,$c8ce.l,x,,ROM,absL,ok
+00DFE4,6,2,019BBA,movea.l,"#$19bba, a2",imm,.l,ROM,imm32,ok
+00DFF4,6,2,000A8E,lea.l,"$a8e.l, a1",addr,.l,ROM,absL,ok
+00E008,10,6,0230B0,cmpi.l,"#$84c5919, $230b0.l",r,.l,ROM,absL,ok
+00E028,6,2,00E03C,lea.l,"$e03c.l, a4",addr,.l,ROM,absL,ok
+00E0CE,6,2,102D00,movea.l,"#$102d00, a6",imm,.l,VRAM,imm32,ok
+00E1EE,6,2,00E214,lea.l,"$e214.l, a4",addr,.l,ROM,absL,ok
+00E634,6,2,00E73A,lea.l,"$e73a.l, a4",addr,.l,ROM,absL,ok
+00E642,6,2,00E77A,lea.l,"$e77a.l, a4",addr,.l,ROM,absL,ok
+00E650,6,2,00E6FA,lea.l,"$e6fa.l, a4",addr,.l,ROM,absL,ok
+00E65E,6,2,00E6BA,lea.l,"$e6ba.l, a4",addr,.l,ROM,absL,ok
+00E66C,6,2,00E7BA,lea.l,"$e7ba.l, a4",addr,.l,ROM,absL,ok
+00E67A,6,2,00E7FA,lea.l,"$e7fa.l, a4",addr,.l,ROM,absL,ok
+00E688,6,2,00E83A,lea.l,"$e83a.l, a4",addr,.l,ROM,absL,ok
+00E696,6,2,00E87A,lea.l,"$e87a.l, a4",addr,.l,ROM,absL,ok
+00E6A4,6,2,00E6FA,lea.l,"$e6fa.l, a4",addr,.l,ROM,absL,ok
+00E8BA,6,2,00E9C4,lea.l,"$e9c4.l, a4",addr,.l,ROM,absL,ok
+00E8C8,6,2,00EA04,lea.l,"$ea04.l, a4",addr,.l,ROM,absL,ok
+00E8D6,6,2,00E984,lea.l,"$e984.l, a4",addr,.l,ROM,absL,ok
+00E8E4,6,2,00E944,lea.l,"$e944.l, a4",addr,.l,ROM,absL,ok
+00E8F2,6,2,00EA44,lea.l,"$ea44.l, a4",addr,.l,ROM,absL,ok
+00E900,6,2,00EA84,lea.l,"$ea84.l, a4",addr,.l,ROM,absL,ok
+00E90E,6,2,00EAC4,lea.l,"$eac4.l, a4",addr,.l,ROM,absL,ok
+00E91C,6,2,00EB04,lea.l,"$eb04.l, a4",addr,.l,ROM,absL,ok
+00E92A,6,2,00E984,lea.l,"$e984.l, a4",addr,.l,ROM,absL,ok
+00EB44,6,2,FFE09A,tst.l,$ffe09a.l,r,.l,RAM,absL,ok
+00EB50,6,2,00EB7C,lea.l,"$eb7c.l, a3",addr,.l,ROM,absL,ok
+00EB74,6,2,010578,jmp,$10578.l,x,,ROM,absL,ok
+00EDEA,6,2,FFE096,addq.l,"#$1, $ffe096.l",rw,.l,RAM,absL,ok
+00EDF0,10,2,FFE096,move.l,"$ffe096.l, $10227c.l",r,.l,RAM,absL,ok
+00EDF0,10,6,10227C,move.l,"$ffe096.l, $10227c.l",w,.l,VRAM,absL,ok
+00EDFA,10,6,FFE096,cmpi.l,"#$500, $ffe096.l",r,.l,RAM,absL,ok
+00EE06,10,6,10227C,cmpi.l,"#$84cd1ec, $10227c.l",r,.l,VRAM,absL,ok
+00EE12,6,2,FFE09A,addq.l,"#$1, $ffe09a.l",rw,.l,RAM,absL,ok
+00EF48,8,4,FFDB67,cmpi.b,"#$72, $ffdb67.l",r,.b,RAM,absL,ok
+00EFEC,6,2,FFA4C0,cmpa.l,"#$ffa4c0, a0",imm,.l,RAM,imm32,ok
+00F024,6,2,005E46,jsr,$5e46.l,x,,ROM,absL,ok
+00F038,8,4,FFE094,move.b,"$1(a2), $ffe094.l",w,.b,RAM,absL,ok
+00F04E,8,4,FFE094,subi.b,"#$1, $ffe094.l",rw,.b,RAM,absL,ok
+00F10A,6,2,019BBA,movea.l,"#$19bba, a2",imm,.l,ROM,imm32,ok
+00F11A,6,2,000A8E,lea.l,"$a8e.l, a1",addr,.l,ROM,absL,ok
+010584,6,2,102D0C,move.l,"d1, $102d0c.l",w,.l,VRAM,absL,ok
+01058C,6,2,102D08,move.l,"d0, $102d08.l",w,.l,VRAM,absL,ok
+01059C,6,2,102D08,movea.l,"$102d08.l, a3",r,.l,VRAM,absL,ok
+0105A4,6,2,FFDB5A,move.b,"$ffdb5a.l, d0",r,.b,RAM,absL,ok
+0105AA,6,2,FFDB5B,and.b,"$ffdb5b.l, d0",r,.b,RAM,absL,ok
+0105B2,8,4,70005B,move.b,"#$0, $70005b.l",w,.b,OTHER,absL,ok
+0105BA,6,2,FFE6A8,move.w,"$ffe6a8.l, d0",r,.w,RAM,absL,ok
+0105CA,6,2,108000,move.w,"d0, $108000.l",w,.w,VREG,absL,ok
+0105D0,6,2,FFE6A6,move.w,"$ffe6a6.l, d0",r,.w,RAM,absL,ok
+0105DE,6,2,108002,move.w,"d0, $108002.l",w,.w,VREG,absL,ok
+0105E4,6,2,FFE6BC,move.w,"$ffe6bc.l, d0",r,.w,RAM,absL,ok
+0105F4,6,2,108004,move.w,"d0, $108004.l",w,.w,VREG,absL,ok
+0105FA,6,2,FFE6BA,move.w,"$ffe6ba.l, d0",r,.w,RAM,absL,ok
+010608,6,2,108006,move.w,"d0, $108006.l",w,.w,VREG,absL,ok
+010610,8,4,70005B,move.b,"#$1, $70005b.l",w,.b,OTHER,absL,ok
+010618,6,2,FFE6A8,move.w,"$ffe6a8.l, d0",r,.w,RAM,absL,ok
+010626,6,2,108000,move.w,"d0, $108000.l",w,.w,VREG,absL,ok
+01062C,6,2,FFE6A6,move.w,"$ffe6a6.l, d0",r,.w,RAM,absL,ok
+01063C,6,2,108002,move.w,"d0, $108002.l",w,.w,VREG,absL,ok
+010642,6,2,FFE6BC,move.w,"$ffe6bc.l, d0",r,.w,RAM,absL,ok
+010650,6,2,108004,move.w,"d0, $108004.l",w,.w,VREG,absL,ok
+010656,6,2,FFE6BA,move.w,"$ffe6ba.l, d0",r,.w,RAM,absL,ok
+010666,6,2,108006,move.w,"d0, $108006.l",w,.w,VREG,absL,ok
+01066E,6,2,FFDB5A,move.b,"$ffdb5a.l, d0",r,.b,RAM,absL,ok
+010674,6,2,FFDB5B,and.b,"$ffdb5b.l, d0",r,.b,RAM,absL,ok
+01067E,6,2,FFDB52,move.b,"$ffdb52.l, d0",r,.b,RAM,absL,ok
+010684,6,2,FFDB53,or.b,"$ffdb53.l, d0",r,.b,RAM,absL,ok
+01068C,6,2,FFD2D4,move.w,"$ffd2d4.l, d0",r,.w,RAM,absL,ok
+010692,6,2,FFD2D6,move.w,"$ffd2d6.l, d1",r,.w,RAM,absL,ok
+01069C,6,2,440006,lea.l,"$440006.l, a4",addr,.l,SPR,absL,ok
+0106A2,6,2,FFC1C0,lea.l,"$ffc1c0.l, a0",addr,.l,RAM,absL,ok
+0106A8,6,2,FFD2D4,move.w,"$ffd2d4.l, d0",r,.w,RAM,absL,ok
+0106BE,6,2,FFD1C0,lea.l,"$ffd1c0.l, a0",addr,.l,RAM,absL,ok
+0106D2,6,2,FFD2D8,move.w,"$ffd2d8.l, d3",r,.w,RAM,absL,ok
+0106D8,6,2,FFD2D8,move.w,"d2, $ffd2d8.l",w,.w,RAM,absL,ok
+0106F4,6,2,FFDB52,clr.b,$ffdb52.l,w,.b,RAM,absL,ok
+0106FA,6,2,FFDB53,clr.b,$ffdb53.l,w,.b,RAM,absL,ok
+01070A,6,2,FFDB52,move.b,"$ffdb52.l, d0",r,.b,RAM,absL,ok
+010710,6,2,FFDB53,or.b,"$ffdb53.l, d0",r,.b,RAM,absL,ok
+01071A,6,2,FFD2D4,move.w,"$ffd2d4.l, d0",r,.w,RAM,absL,ok
+010720,6,2,FFD2D6,move.w,"$ffd2d6.l, d1",r,.w,RAM,absL,ok
+01072A,6,2,440006,lea.l,"$440006.l, a4",addr,.l,SPR,absL,ok
+010730,6,2,FFC1C0,lea.l,"$ffc1c0.l, a0",addr,.l,RAM,absL,ok
+010736,6,2,FFD2D4,move.w,"$ffd2d4.l, d0",r,.w,RAM,absL,ok
+01077A,6,2,FFD1C0,lea.l,"$ffd1c0.l, a0",addr,.l,RAM,absL,ok
+0107B4,6,2,FFD2D8,move.w,"$ffd2d8.l, d3",r,.w,RAM,absL,ok
+0107BA,6,2,FFD2D8,move.w,"d2, $ffd2d8.l",w,.w,RAM,absL,ok
+0107D6,6,2,FFDB52,clr.b,$ffdb52.l,w,.b,RAM,absL,ok
+0107DC,6,2,FFDB53,clr.b,$ffdb53.l,w,.b,RAM,absL,ok
+010834,6,2,70002B,move.b,"d0, $70002b.l",w,.b,OTHER,absL,ok
+01083C,6,2,70003B,move.b,"d0, $70003b.l",w,.b,OTHER,absL,ok
+010844,6,2,70000B,move.b,"d0, $70000b.l",w,.b,IO,absL,ok
+01084C,6,2,70001B,move.b,"d0, $70001b.l",w,.b,OTHER,absL,ok
+010854,8,4,70004B,move.b,"#$0, $70004b.l",w,.b,OTHER,absL,ok
+01085E,8,4,70004B,move.b,"#$1, $70004b.l",w,.b,OTHER,absL,ok
+010868,8,4,102456,cmpi.b,"#$37, $102456.l",r,.b,VRAM,absL,ok
+010874,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01087E,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+010888,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+010892,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+01089C,6,2,FF9700,lea.l,"$ff9700.l, a0",addr,.l,RAM,absL,ok
+0108E8,6,2,0A5000,lea.l,"$a5000.l, a2",addr,.l,ROM,absL,ok
+01091A,6,2,0A5000,lea.l,"$a5000.l, a2",addr,.l,ROM,absL,ok
+010934,6,2,FF8E00,lea.l,"$ff8e00.l, a1",addr,.l,RAM,absL,ok
+010958,6,2,FF8E00,lea.l,"$ff8e00.l, a1",addr,.l,RAM,absL,ok
+010978,8,4,FFE09E,btst.b,"#$0, $ffe09e.l",r,.b,RAM,absL,ok
+010986,6,2,FF9400,lea.l,"$ff9400.l, a1",addr,.l,RAM,absL,ok
+0109C6,6,2,0A5000,lea.l,"$a5000.l, a3",addr,.l,ROM,absL,ok
+010A40,6,2,FFA4C0,cmpa.l,"#$ffa4c0, a0",imm,.l,RAM,imm32,ok
+010A48,6,2,FFA540,cmpa.l,"#$ffa540, a0",imm,.l,RAM,imm32,ok
+010A74,8,4,FFE09E,btst.b,"#$2, $ffe09e.l",r,.b,RAM,absL,ok
+010AAA,8,4,FFE09E,btst.b,"#$1, $ffe09e.l",r,.b,RAM,absL,ok
+010BE6,6,2,FFA504,add.w,"d0, $ffa504.l",rw,.w,RAM,absL,ok
+010BFE,6,2,FFA584,add.w,"d0, $ffa584.l",rw,.w,RAM,absL,ok
+010C36,6,2,0A5000,lea.l,"$a5000.l, a3",addr,.l,ROM,absL,ok
+010CFE,6,2,FFDB54,tst.b,$ffdb54.l,r,.b,RAM,absL,ok
+010D06,8,4,FFE0AC,bset.b,"#$0, $ffe0ac.l",rw,.b,RAM,absL,ok
+010D0E,6,2,FFDB54,clr.b,$ffdb54.l,w,.b,RAM,absL,ok
+010D14,6,2,0105A4,jsr,$105a4.l,x,,ROM,absL,ok
+010D1A,6,2,01066E,jsr,$1066e.l,x,,ROM,absL,ok
+010D20,10,6,102254,move.l,"#$45e045c, $102254.l",w,.l,VRAM,absL,ok
+010D2A,6,2,00913C,jsr,$913c.l,x,,ROM,absL,ok
+010D30,6,2,0234EA,jsr,$234ea.l,x,,ROM,absL,ok
+010D36,6,2,010F0E,jsr,$10f0e.l,x,,ROM,absL,ok
+010D3C,6,2,01106E,jsr,$1106e.l,x,,ROM,absL,ok
+010D42,6,2,011B10,jsr,$11b10.l,x,,ROM,absL,ok
+010D48,6,2,010F60,jsr,$10f60.l,x,,ROM,absL,ok
+010D4E,6,2,010EE0,jsr,$10ee0.l,x,,ROM,absL,ok
+010D54,6,2,011B5A,jsr,$11b5a.l,x,,ROM,absL,ok
+010D62,6,2,10800C,clr.w,$10800c.l,w,.w,VREG,absL,ok
+010D6E,6,2,FFE0E8,subq.l,"#$8, $ffe0e8.l",rw,.l,RAM,absL,ok
+010D74,10,2,FFE0E8,move.l,"$ffe0e8.l, $102b38.l",r,.l,RAM,absL,ok
+010D74,10,6,102B38,move.l,"$ffe0e8.l, $102b38.l",w,.l,VRAM,absL,ok
+010D82,6,2,FFD2C6,move.w,"$ffd2c6.l, d0",r,.w,RAM,absL,ok
+010DCA,6,2,FFD2D2,tst.w,$ffd2d2.l,r,.w,RAM,absL,ok
+010DD2,6,2,FF8004,move.w,"$ff8004.l, d0",r,.w,RAM,absL,ok
+010DEA,6,2,011134,jsr,$11134.l,x,,ROM,absL,ok
+010DF0,8,4,FFDB54,move.b,"#$1, $ffdb54.l",w,.b,RAM,absL,ok
+010DF8,8,4,FF8000,move.w,"#$2, $ff8000.l",w,.w,RAM,absL,ok
+010E06,6,2,FFE0C2,subq.w,"#$2, $ffe0c2.l",rw,.w,RAM,absL,ok
+010E0C,10,6,FFE0C0,andi.l,"#$fffe, $ffe0c0.l",rw,.l,RAM,absL,ok
+010E16,10,2,FFE0C0,move.l,"$ffe0c0.l, $102900.l",r,.l,RAM,absL,ok
+010E16,10,6,102900,move.l,"$ffe0c0.l, $102900.l",w,.l,VRAM,absL,ok
+010E22,6,2,0112DA,jsr,$112da.l,x,,ROM,absL,ok
+010E2C,6,2,011706,jsr,$11706.l,x,,ROM,absL,ok
+010E38,6,2,02319E,jsr,$2319e.l,x,,ROM,absL,ok
+010E40,6,2,023154,jsr,$23154.l,x,,ROM,absL,ok
+010E48,8,4,FFD2D2,addi.w,"#$1, $ffd2d2.l",rw,.w,RAM,absL,ok
+010E50,6,2,FFD2CE,move.w,"$ffd2ce.l, d0",r,.w,RAM,absL,ok
+010E56,6,2,FFD2D2,cmp.w,"$ffd2d2.l, d0",r,.w,RAM,absL,ok
+010E60,10,2,FFD2CA,move.w,"$ffd2ca.l, $ffd2c6.l",r,.w,RAM,absL,ok
+010E60,10,6,FFD2C6,move.w,"$ffd2ca.l, $ffd2c6.l",w,.w,RAM,absL,ok
+010E6A,6,2,FFD2D2,clr.w,$ffd2d2.l,w,.w,RAM,absL,ok
+010E7C,6,2,0008A2,jsr,$8a2.l,x,,ROM,absL,ok
+010E82,6,2,0008BE,jsr,$8be.l,x,,ROM,absL,ok
+010E88,6,2,FFD2D4,clr.w,$ffd2d4.l,w,.w,RAM,absL,ok
+010E8E,8,4,FFDB52,move.b,"#$1, $ffdb52.l",w,.b,RAM,absL,ok
+010E96,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+010E9C,6,2,000934,jsr,$934.l,x,,ROM,absL,ok
+010EA2,6,2,00094A,jsr,$94a.l,x,,ROM,absL,ok
+010EA8,6,2,000984,jsr,$984.l,x,,ROM,absL,ok
+010EAE,6,2,00099A,jsr,$99a.l,x,,ROM,absL,ok
+010EB4,6,2,0009B0,jsr,$9b0.l,x,,ROM,absL,ok
+010EBA,6,2,0009C6,jsr,$9c6.l,x,,ROM,absL,ok
+010EC0,6,2,0009F2,jsr,$9f2.l,x,,ROM,absL,ok
+010EC6,6,2,000A2C,jsr,$a2c.l,x,,ROM,absL,ok
+010ECC,6,2,000A42,jsr,$a42.l,x,,ROM,absL,ok
+010ED2,6,2,0009DC,jsr,$9dc.l,x,,ROM,absL,ok
+010ED8,6,2,009250,jsr,$9250.l,x,,ROM,absL,ok
+010EE0,6,2,FF8000,lea.l,"$ff8000.l, a0",addr,.l,RAM,absL,ok
+010EF0,10,6,102254,cmpi.l,"#$10000, $102254.l",r,.l,VRAM,absL,ok
+010F0E,8,4,FFD2E7,addi.b,"#$1, $ffd2e7.l",rw,.b,RAM,absL,ok
+010F16,8,4,FFD2E7,cmpi.b,"#$3b, $ffd2e7.l",r,.b,RAM,absL,ok
+010F20,6,2,FFD2E7,clr.b,$ffd2e7.l,w,.b,RAM,absL,ok
+010F26,8,4,FFD2E6,addi.b,"#$1, $ffd2e6.l",rw,.b,RAM,absL,ok
+010F2E,8,4,FFD2E6,cmpi.b,"#$3b, $ffd2e6.l",r,.b,RAM,absL,ok
+010F38,6,2,FFD2E6,clr.b,$ffd2e6.l,w,.b,RAM,absL,ok
+010F3E,8,4,FFD2E5,addi.b,"#$1, $ffd2e5.l",rw,.b,RAM,absL,ok
+010F46,8,4,FFD2E5,cmpi.b,"#$3b, $ffd2e5.l",r,.b,RAM,absL,ok
+010F50,6,2,FFD2E5,clr.b,$ffd2e5.l,w,.b,RAM,absL,ok
+010F56,8,4,FFD2E4,addi.b,"#$1, $ffd2e4.l",rw,.b,RAM,absL,ok
+010F60,8,4,FFD33B,bclr.b,"#$0, $ffd33b.l",rw,.b,RAM,absL,ok
+010F6A,8,4,FFD31C,cmpi.b,"#$62, $ffd31c.l",r,.b,RAM,absL,ok
+010F74,8,4,FFE6D8,move.b,"#$1, $ffe6d8.l",w,.b,RAM,absL,ok
+010F7C,8,4,FFD31C,addi.b,"#$1, $ffd31c.l",rw,.b,RAM,absL,ok
+010F84,8,4,FFD33B,bclr.b,"#$1, $ffd33b.l",rw,.b,RAM,absL,ok
+010F8E,6,2,FFD2E2,clr.b,$ffd2e2.l,w,.b,RAM,absL,ok
+010F96,6,2,FFD2E2,tst.b,$ffd2e2.l,r,.b,RAM,absL,ok
+010F9E,8,4,FFD2E2,cmpi.b,"#$2, $ffd2e2.l",r,.b,RAM,absL,ok
+010FA8,6,2,FFD324,lea.l,"$ffd324.l, a0",addr,.l,RAM,absL,ok
+010FAE,6,2,700004,move.w,"$700004.l, d0",r,.w,IO,absL,ok
+010FB4,6,2,011AC6,jsr,$11ac6.l,x,,ROM,absL,ok
+010FBA,6,2,011116,jsr,$11116.l,x,,ROM,absL,ok
+010FC0,6,2,FFD32A,lea.l,"$ffd32a.l, a0",addr,.l,RAM,absL,ok
+010FC6,6,2,700006,move.w,"$700006.l, d0",r,.w,IO,absL,ok
+010FD4,6,2,FFD324,lea.l,"$ffd324.l, a0",addr,.l,RAM,absL,ok
+010FDA,6,2,700004,move.w,"$700004.l, d0",r,.w,IO,absL,ok
+010FE0,6,2,011A2E,jsr,$11a2e.l,x,,ROM,absL,ok
+010FE6,6,2,011116,jsr,$11116.l,x,,ROM,absL,ok
+010FEE,8,4,FFD2DF,btst.b,"#$2, $ffd2df.l",r,.b,RAM,absL,ok
+010FF8,6,2,FFD324,lea.l,"$ffd324.l, a0",addr,.l,RAM,absL,ok
+010FFE,6,2,700004,move.w,"$700004.l, d0",r,.w,IO,absL,ok
+011008,6,2,700006,move.w,"$700006.l, d1",r,.w,IO,absL,ok
+011020,6,2,700006,move.w,"$700006.l, d0",r,.w,IO,absL,ok
+01102C,6,2,FFD32A,lea.l,"$ffd32a.l, a0",addr,.l,RAM,absL,ok
+011038,6,2,FFD324,lea.l,"$ffd324.l, a0",addr,.l,RAM,absL,ok
+01103E,6,2,700004,move.w,"$700004.l, d0",r,.w,IO,absL,ok
+011048,6,2,FFD32A,lea.l,"$ffd32a.l, a0",addr,.l,RAM,absL,ok
+01104E,6,2,700006,move.w,"$700006.l, d0",r,.w,IO,absL,ok
+011054,6,2,011116,jsr,$11116.l,x,,ROM,absL,ok
+01105C,6,2,FFD336,lea.l,"$ffd336.l, a0",addr,.l,RAM,absL,ok
+011062,6,2,700008,move.w,"$700008.l, d0",r,.w,IO,absL,ok
+011068,6,2,011116,jmp,$11116.l,x,,ROM,absL,ok
+01106E,6,2,FFD330,lea.l,"$ffd330.l, a0",addr,.l,RAM,absL,ok
+011074,6,2,700004,move.w,"$700004.l, d0",r,.w,IO,absL,ok
+01107E,6,2,FFD335,lea.l,"$ffd335.l, a0",addr,.l,RAM,absL,ok
+011096,6,2,FFD320,lea.l,"$ffd320.l, a1",addr,.l,RAM,absL,ok
+01109C,8,4,FFD33D,move.b,"#$5, $ffd33d.l",w,.b,RAM,absL,ok
+0110A6,6,2,FFD2DA,lea.l,"$ffd2da.l, a2",addr,.l,RAM,absL,ok
+0110BE,6,2,FFD322,lea.l,"$ffd322.l, a1",addr,.l,RAM,absL,ok
+0110C4,8,4,FFD33E,move.b,"#$5, $ffd33e.l",w,.b,RAM,absL,ok
+0110CE,6,2,FFD2DC,lea.l,"$ffd2dc.l, a2",addr,.l,RAM,absL,ok
+0110EC,8,4,FFE6D8,move.b,"#$1, $ffe6d8.l",w,.b,RAM,absL,ok
+0110FC,6,2,FFD31C,move.b,"$ffd31c.l, d3",r,.b,RAM,absL,ok
+01110E,6,2,FFD31C,move.b,"d3, $ffd31c.l",w,.b,RAM,absL,ok
+011134,10,6,016A30,cmpi.l,"#$84cd8c1, $16a30.l",r,.l,ROM,absL,ok
+011142,6,2,FFD1C0,lea.l,"$ffd1c0.l, a0",addr,.l,RAM,absL,ok
+011164,6,2,FFD1C0,lea.l,"$ffd1c0.l, a0",addr,.l,RAM,absL,ok
+01116A,6,2,FFADC0,lea.l,"$ffadc0.l, a1",addr,.l,RAM,absL,ok
+011170,6,2,FFD1C0,lea.l,"$ffd1c0.l, a2",addr,.l,RAM,absL,ok
+01120E,6,2,FFD2D6,move.w,"d3, $ffd2d6.l",w,.w,RAM,absL,ok
+011214,8,4,FFDB53,move.b,"#$1, $ffdb53.l",w,.b,RAM,absL,ok
+01121C,10,6,FFE0C0,cmpi.l,"#$8000, $ffe0c0.l",r,.l,RAM,absL,ok
+011228,10,6,102900,cmpi.l,"#$84c58d9, $102900.l",r,.l,VRAM,absL,ok
+011238,6,2,FFE0AD,tst.b,$ffe0ad.l,r,.b,RAM,absL,ok
+011240,6,2,FFE0AD,move.b,"d0, $ffe0ad.l",w,.b,RAM,absL,ok
+011246,6,2,FFE0AE,move.b,"d0, $ffe0ae.l",w,.b,RAM,absL,ok
+01124C,6,2,FFE0AF,move.b,"d1, $ffe0af.l",w,.b,RAM,absL,ok
+011252,6,2,FFE0B0,clr.b,$ffe0b0.l,w,.b,RAM,absL,ok
+011258,6,2,FFE0B1,clr.b,$ffe0b1.l,w,.b,RAM,absL,ok
+011264,6,2,FFE0AD,move.b,"$ffe0ad.l, d0",r,.b,RAM,absL,ok
+01126A,6,2,FFE0AF,move.b,"$ffe0af.l, d1",r,.b,RAM,absL,ok
+011272,6,2,FFE0AE,move.b,"$ffe0ae.l, d1",r,.b,RAM,absL,ok
+01127A,6,2,FFE0B0,tst.b,$ffe0b0.l,r,.b,RAM,absL,ok
+011282,8,4,FFE0B1,btst.b,"#$0, $ffe0b1.l",r,.b,RAM,absL,ok
+01128E,8,4,FFE0B1,bset.b,"#$0, $ffe0b1.l",rw,.b,RAM,absL,ok
+011296,8,4,FFE0B0,move.b,"#$1, $ffe0b0.l",w,.b,RAM,absL,ok
+01129E,6,2,FFE6A2,add.w,"d0, $ffe6a2.l",rw,.w,RAM,absL,ok
+0112A6,8,4,FFE0B1,bclr.b,"#$0, $ffe0b1.l",rw,.b,RAM,absL,ok
+0112AE,8,4,FFE0B0,move.b,"#$1, $ffe0b0.l",w,.b,RAM,absL,ok
+0112B6,6,2,FFE6A2,sub.w,"d0, $ffe6a2.l",rw,.w,RAM,absL,ok
+0112BE,8,4,FFE0AD,subi.b,"#$1, $ffe0ad.l",rw,.b,RAM,absL,ok
+0112C8,8,4,FFE0B0,subi.b,"#$1, $ffe0b0.l",rw,.b,RAM,absL,ok
+0112D2,6,2,02319E,jsr,$2319e.l,x,,ROM,absL,ok
+0112DA,6,2,FFE0AD,tst.b,$ffe0ad.l,r,.b,RAM,absL,ok
+0112E4,6,2,FFD31D,move.b,"$ffd31d.l, d0",r,.b,RAM,absL,ok
+0112F4,6,2,FFA4D8,move.w,"$ffa4d8.l, d1",r,.w,RAM,absL,ok
+0112FA,6,2,FFA558,add.w,"$ffa558.l, d1",r,.w,RAM,absL,ok
+011302,6,2,FFA4DC,move.w,"$ffa4dc.l, d2",r,.w,RAM,absL,ok
+011308,6,2,FFA55C,add.w,"$ffa55c.l, d2",r,.w,RAM,absL,ok
+011312,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01131C,6,2,FFA4D8,move.l,"$ffa4d8.l, d1",r,.l,RAM,absL,ok
+011322,6,2,FFA4DC,move.l,"$ffa4dc.l, d2",r,.l,RAM,absL,ok
+01132A,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+011336,6,2,FFA558,move.l,"$ffa558.l, d1",r,.l,RAM,absL,ok
+01133C,6,2,FFA55C,move.l,"$ffa55c.l, d2",r,.l,RAM,absL,ok
+011344,8,4,FFA4CE,btst.b,"#$1, $ffa4ce.l",r,.b,RAM,absL,ok
+01134E,8,4,FFA4CE,btst.b,"#$2, $ffa4ce.l",r,.b,RAM,absL,ok
+01135C,8,4,FFA54E,btst.b,"#$1, $ffa54e.l",r,.b,RAM,absL,ok
+011366,8,4,FFA54E,btst.b,"#$2, $ffa54e.l",r,.b,RAM,absL,ok
+011382,6,2,FFA4C0,lea.l,"$ffa4c0.l, a2",addr,.l,RAM,absL,ok
+011388,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+011392,6,2,FFA540,lea.l,"$ffa540.l, a2",addr,.l,RAM,absL,ok
+0113A6,8,4,FFE0AA,cmpi.b,"#$3, $ffe0aa.l",r,.b,RAM,absL,ok
+0113B2,8,4,FFE0AA,cmpi.b,"#$1, $ffe0aa.l",r,.b,RAM,absL,ok
+0113BE,8,4,FFE0AA,cmpi.b,"#$2, $ffe0aa.l",r,.b,RAM,absL,ok
+0113CA,6,2,FFE6A2,sub.l,"$ffe6a2.l, d2",r,.l,RAM,absL,ok
+0113D2,6,2,FFE0B2,cmp.w,"$ffe0b2.l, d2",r,.w,RAM,absL,ok
+0113DC,6,2,FFE0B4,cmp.w,"$ffe0b4.l, d2",r,.w,RAM,absL,ok
+0113E6,8,4,FFE6A4,move.w,"$1e(a2), $ffe6a4.l",w,.w,RAM,absL,ok
+0113F0,8,4,FFE0AB,cmpi.b,"#$3, $ffe0ab.l",r,.b,RAM,absL,ok
+0113FC,8,4,FFE0AB,cmpi.b,"#$1, $ffe0ab.l",r,.b,RAM,absL,ok
+011408,8,4,FFE0AB,cmpi.b,"#$2, $ffe0ab.l",r,.b,RAM,absL,ok
+011414,6,2,FFE69E,sub.l,"$ffe69e.l, d1",r,.l,RAM,absL,ok
+01141C,6,2,FFE0B8,cmp.w,"$ffe0b8.l, d1",r,.w,RAM,absL,ok
+011426,6,2,FFE0BA,cmp.w,"$ffe0ba.l, d1",r,.w,RAM,absL,ok
+011430,8,4,FFE6A0,move.w,"$1a(a2), $ffe6a0.l",w,.w,RAM,absL,ok
+011440,6,2,010000,move.l,"#$10000, d0",imm,.l,ROM,imm32,ok
+01145A,6,2,FFE6A2,move.l,"$ffe6a2.l, d2",r,.l,RAM,absL,ok
+011466,6,2,FFE106,sub.w,"$ffe106.l, d4",r,.w,RAM,absL,ok
+01146C,6,2,FFD2C4,move.w,"$ffd2c4.l, d0",r,.w,RAM,absL,ok
+011476,6,2,FFE106,add.w,"$ffe106.l, d4",r,.w,RAM,absL,ok
+0114A2,6,2,FFE6A2,move.l,"$ffe6a2.l, d2",r,.l,RAM,absL,ok
+0114AE,6,2,FFE106,sub.w,"$ffe106.l, d4",r,.w,RAM,absL,ok
+0114B4,6,2,FFD2C4,move.w,"$ffd2c4.l, d0",r,.w,RAM,absL,ok
+0114BE,6,2,FFE106,add.w,"$ffe106.l, d4",r,.w,RAM,absL,ok
+0114D0,6,2,010000,move.l,"#$10000, d0",imm,.l,ROM,imm32,ok
+0114EA,6,2,FFE69E,move.l,"$ffe69e.l, d1",r,.l,RAM,absL,ok
+0114F6,6,2,FFE104,sub.w,"$ffe104.l, d3",r,.w,RAM,absL,ok
+0114FC,6,2,FFD2C4,move.w,"$ffd2c4.l, d0",r,.w,RAM,absL,ok
+011506,6,2,FFE104,add.w,"$ffe104.l, d3",r,.w,RAM,absL,ok
+011532,6,2,FFE69E,move.l,"$ffe69e.l, d1",r,.l,RAM,absL,ok
+01153E,6,2,FFE104,sub.w,"$ffe104.l, d3",r,.w,RAM,absL,ok
+011544,6,2,FFD2C4,move.w,"$ffd2c4.l, d0",r,.w,RAM,absL,ok
+01154E,6,2,FFE104,add.w,"$ffe104.l, d3",r,.w,RAM,absL,ok
+01155A,6,2,02319E,jsr,$2319e.l,x,,ROM,absL,ok
+011574,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+01157A,6,2,FFE6A2,move.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+0115A8,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+0115AE,8,4,FFE0B8,move.w,"$8(a0), $ffe0b8.l",w,.w,RAM,absL,ok
+0115B6,8,4,FFE0BA,move.w,"$a(a0), $ffe0ba.l",w,.w,RAM,absL,ok
+0115BE,8,4,FFE0B2,move.w,"$c(a0), $ffe0b2.l",w,.w,RAM,absL,ok
+0115C6,8,4,FFE0B4,move.w,"$e(a0), $ffe0b4.l",w,.w,RAM,absL,ok
+0115D0,4,2,000000,lea.l,"$0.w, a0",addr,.l,ROM,absW,ok
+0115D4,6,2,FFD2E1,move.b,"$ffd2e1.l, d0",r,.b,RAM,absL,ok
+0115DE,6,2,016FB0,jsr,$16fb0.l,x,,ROM,absL,ok
+011614,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+01162A,6,2,FFE6A2,move.l,"d2, $ffe6a2.l",w,.l,RAM,absL,ok
+011630,6,2,FFE6B6,move.l,"d4, $ffe6b6.l",w,.l,RAM,absL,ok
+01164E,6,2,FFE6A2,move.l,"d0, $ffe6a2.l",w,.l,RAM,absL,ok
+01165E,6,2,FFE6A2,move.l,"d0, $ffe6a2.l",w,.l,RAM,absL,ok
+011690,6,2,FFE6A2,move.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+0116A6,6,2,FFE69E,move.l,"d1, $ffe69e.l",w,.l,RAM,absL,ok
+0116AC,6,2,FFE6B2,move.l,"d3, $ffe6b2.l",w,.l,RAM,absL,ok
+0116C2,8,4,FFE0B8,move.w,"$8(a1), $ffe0b8.l",w,.w,RAM,absL,ok
+0116CA,8,4,FFE0BA,move.w,"$a(a1), $ffe0ba.l",w,.w,RAM,absL,ok
+0116D2,8,4,FFE0B2,move.w,"$c(a1), $ffe0b2.l",w,.w,RAM,absL,ok
+0116DA,8,4,FFE0B4,move.w,"$e(a1), $ffe0b4.l",w,.w,RAM,absL,ok
+0116EC,6,2,FFE69E,move.l,"d0, $ffe69e.l",w,.l,RAM,absL,ok
+0116FC,6,2,FFE69E,move.l,"d0, $ffe69e.l",w,.l,RAM,absL,ok
+011706,6,2,FFC1C0,lea.l,"$ffc1c0.l, a2",addr,.l,RAM,absL,ok
+011710,6,2,FF8E00,lea.l,"$ff8e00.l, a0",addr,.l,RAM,absL,ok
+01171A,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+011724,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+01172E,6,2,FF9280,lea.l,"$ff9280.l, a0",addr,.l,RAM,absL,ok
+011738,6,2,FF9880,lea.l,"$ff9880.l, a0",addr,.l,RAM,absL,ok
+011746,6,2,FF8E00,lea.l,"$ff8e00.l, a0",addr,.l,RAM,absL,ok
+011750,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+01175A,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+011764,6,2,FF9280,lea.l,"$ff9280.l, a0",addr,.l,RAM,absL,ok
+01176E,6,2,FF9880,lea.l,"$ff9880.l, a0",addr,.l,RAM,absL,ok
+011778,6,2,FF9DC0,lea.l,"$ff9dc0.l, a0",addr,.l,RAM,absL,ok
+011782,6,2,FF9400,lea.l,"$ff9400.l, a0",addr,.l,RAM,absL,ok
+01178C,6,2,FF9700,lea.l,"$ff9700.l, a0",addr,.l,RAM,absL,ok
+011796,6,2,FFC1C0,lea.l,"$ffc1c0.l, a0",addr,.l,RAM,absL,ok
+0117A2,6,2,FFD2D4,move.w,"d0, $ffd2d4.l",w,.w,RAM,absL,ok
+0117A8,8,4,FFDB52,move.b,"#$1, $ffdb52.l",w,.b,RAM,absL,ok
+011878,6,2,FFE69E,sub.w,"$ffe69e.l, d2",r,.w,RAM,absL,ok
+011892,6,2,FFE6A2,sub.w,"$ffe6a2.l, d3",r,.w,RAM,absL,ok
+0118AE,6,2,02D800,lea.l,"$2d800.l, a1",addr,.l,ROM,absL,ok
+01195E,6,2,FFE69E,sub.w,"$ffe69e.l, d2",r,.w,RAM,absL,ok
+011978,6,2,FFE6A2,sub.w,"$ffe6a2.l, d3",r,.w,RAM,absL,ok
+011994,6,2,02D800,lea.l,"$2d800.l, a1",addr,.l,ROM,absL,ok
+011A2E,6,2,FFD2E3,tst.b,$ffd2e3.l,r,.b,RAM,absL,ok
+011A38,6,2,FFD344,move.b,"$ffd344.l, d1",r,.b,RAM,absL,ok
+011A40,6,2,FFD34A,movea.l,"#$ffd34a, a1",imm,.l,RAM,imm32,ok
+011A48,6,2,FFD346,move.l,"a1, $ffd346.l",w,.l,RAM,absL,ok
+011A4E,6,2,FFD346,movea.l,"$ffd346.l, a1",r,.l,RAM,absL,ok
+011A58,6,2,FFD346,move.l,"a1, $ffd346.l",w,.l,RAM,absL,ok
+011A5E,6,2,FFD344,move.b,"d1, $ffd344.l",w,.b,RAM,absL,ok
+011A80,8,4,FFD2E3,move.b,"#$ff, $ffd2e3.l",w,.b,RAM,absL,ok
+011A88,8,4,FFD2E2,cmpi.b,"#$1, $ffd2e2.l",r,.b,RAM,absL,ok
+011A92,6,2,FFD344,clr.b,$ffd344.l,w,.b,RAM,absL,ok
+011A9A,8,4,FFD344,move.b,"#$1, $ffd344.l",w,.b,RAM,absL,ok
+011AA6,6,2,0013D4,lea.l,"$13d4.l, a0",addr,.l,ROM,absL,ok
+011AAC,6,2,FFDB4B,move.b,"$ffdb4b.l, d0",r,.b,RAM,absL,ok
+011ABC,8,4,FFD346,move.l,"$4(a0), $ffd346.l",w,.l,RAM,absL,ok
+011AC6,6,2,FFD2E3,tst.b,$ffd2e3.l,r,.b,RAM,absL,ok
+011ACE,6,2,FFD346,movea.l,"$ffd346.l, a1",r,.l,RAM,absL,ok
+011AD4,6,2,FFD344,move.b,"$ffd344.l, d1",r,.b,RAM,absL,ok
+011ADE,6,2,FFD344,move.b,"d1, $ffd344.l",w,.b,RAM,absL,ok
+011AE4,6,2,FFD346,move.l,"a1, $ffd346.l",w,.l,RAM,absL,ok
+011B10,6,2,FFD33C,move.b,"$ffd33c.l, d0",r,.b,RAM,absL,ok
+011B1A,6,2,FFD33D,tst.b,$ffd33d.l,r,.b,RAM,absL,ok
+011B22,6,2,FFD33D,subq.b,"#$1, $ffd33d.l",rw,.b,RAM,absL,ok
+011B2C,6,2,FFD33E,tst.b,$ffd33e.l,r,.b,RAM,absL,ok
+011B34,6,2,FFD33E,subq.b,"#$1, $ffd33e.l",rw,.b,RAM,absL,ok
+011B3E,6,2,FFD31C,move.b,"$ffd31c.l, d1",r,.b,RAM,absL,ok
+011B4E,6,2,FFD33C,move.b,"d0, $ffd33c.l",w,.b,RAM,absL,ok
+011B54,6,2,010834,jmp,$10834.l,x,,ROM,absL,ok
+011B5A,6,2,FFE0BE,move.b,"$ffe0be.l, d0",r,.b,RAM,absL,ok
+011B64,6,2,FFE0BE,clr.b,$ffe0be.l,w,.b,RAM,absL,ok
+011B6A,6,2,100000,lea.l,"$100000.l, a0",addr,.l,VRAM,absL,ok
+011B9C,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+011BA2,6,2,FFE6A2,move.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+011BA8,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+011BB4,6,2,080000,lea.l,"$80000.l, a1",addr,.l,ROM,absL,ok
+011BD8,6,2,FFE6AE,move.w,"$ffe6ae.l, d3",r,.w,RAM,absL,ok
+011BDE,6,2,FFE6B0,move.w,"$ffe6b0.l, d4",r,.w,RAM,absL,ok
+011BE4,6,2,FFE69E,add.w,"$ffe69e.l, d3",r,.w,RAM,absL,ok
+011BEA,6,2,FFE6A2,add.w,"$ffe6a2.l, d4",r,.w,RAM,absL,ok
+011C22,6,2,100000,lea.l,"$100000.l, a0",addr,.l,VRAM,absL,ok
+011C8A,6,2,080000,lea.l,"$80000.l, a1",addr,.l,ROM,absL,ok
+011CAE,6,2,FFE6C2,move.w,"$ffe6c2.l, d3",r,.w,RAM,absL,ok
+011CB4,6,2,FFE6C4,move.w,"$ffe6c4.l, d4",r,.w,RAM,absL,ok
+011CBA,6,2,FFE6B2,add.w,"$ffe6b2.l, d3",r,.w,RAM,absL,ok
+011CC0,6,2,FFE6B6,add.w,"$ffe6b6.l, d4",r,.w,RAM,absL,ok
+011CF8,6,2,101000,lea.l,"$101000.l, a0",addr,.l,VRAM,absL,ok
+011D5C,6,2,000A66,jsr,$a66.l,x,,ROM,absL,ok
+011D7A,6,2,FFE69E,add.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+011D80,6,2,FFE6A2,add.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+011D9A,6,2,FFE69E,add.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+011DA0,6,2,FFE6A2,add.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+014184,4,2,0002B0,bchg.b,"d3, $2b0.w",rw,.b,ROM,absW,ok
+016854,8,4,FFD2C6,move.w,"#$d, $ffd2c6.l",w,.w,RAM,absL,ok
+01685C,6,2,FFD2E1,tst.b,$ffd2e1.l,r,.b,RAM,absL,ok
+016864,8,4,FFD2C8,move.w,"#$10, $ffd2c8.l",w,.w,RAM,absL,ok
+01686C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016872,8,4,FFD2E1,move.b,"#$1, $ffd2e1.l",w,.b,RAM,absL,ok
+01687A,8,4,FFD2C8,move.w,"#$10, $ffd2c8.l",w,.w,RAM,absL,ok
+016882,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016888,10,6,00A726,cmpi.l,"#$84c79d9, $a726.l",r,.l,ROM,absL,ok
+016894,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01689A,6,2,FFD2C8,move.w,"$ffd2c8.l, d0",r,.w,RAM,absL,ok
+016946,6,2,FFDB5A,clr.b,$ffdb5a.l,w,.b,RAM,absL,ok
+01694C,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+016956,8,4,FFDB5A,move.b,"#$1, $ffdb5a.l",w,.b,RAM,absL,ok
+01695E,6,2,FFE088,clr.w,$ffe088.l,w,.w,RAM,absL,ok
+016964,6,2,009250,jsr,$9250.l,x,,ROM,absL,ok
+01696A,6,2,023038,jsr,$23038.l,x,,ROM,absL,ok
+016976,8,4,FFE6C2,move.w,"#$3000, $ffe6c2.l",w,.w,RAM,absL,ok
+01697E,8,4,FFE6C4,move.w,"#$3b90, $ffe6c4.l",w,.w,RAM,absL,ok
+01698A,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+016990,6,2,000A58,jsr,$a58.l,x,,ROM,absL,ok
+01699A,8,4,FFE11A,move.w,"#$ff90, $ffe11a.l",w,.w,RAM,absL,ok
+0169A6,6,2,FFE11A,move.w,"$ffe11a.l, d1",r,.w,RAM,absL,ok
+0169B0,6,2,011D58,jsr,$11d58.l,x,,ROM,absL,ok
+0169B6,6,2,FFE116,move.l,"a1, $ffe116.l",w,.l,RAM,absL,ok
+0169BC,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0169C8,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0169D6,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+0169DE,8,4,FFE10C,move.w,"#$100, $ffe10c.l",w,.w,RAM,absL,ok
+0169E6,8,4,FFD2C8,move.w,"#$15, $ffd2c8.l",w,.w,RAM,absL,ok
+0169EE,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0169FC,6,2,FFD2E1,move.b,"$ffd2e1.l, d2",r,.b,RAM,absL,ok
+016A0C,6,2,011D58,jsr,$11d58.l,x,,ROM,absL,ok
+016A12,6,2,FFE13C,addq.l,"#$1, $ffe13c.l",rw,.l,RAM,absL,ok
+016A18,10,2,FFE13C,move.l,"$ffe13c.l, $102e90.l",r,.l,RAM,absL,ok
+016A18,10,6,102E90,move.l,"$ffe13c.l, $102e90.l",w,.l,VRAM,absL,ok
+016A22,10,6,FFE13C,cmpi.l,"#$30, $ffe13c.l",r,.l,RAM,absL,ok
+016A2E,10,6,102E90,cmpi.l,"#$84cd8c1, $102e90.l",r,.l,VRAM,absL,ok
+016A3A,6,2,FFD2E1,addq.b,"#$2, $ffd2e1.l",rw,.b,RAM,absL,ok
+016A40,6,2,FFE13C,clr.l,$ffe13c.l,w,.l,RAM,absL,ok
+016A46,6,2,102E90,clr.l,$102e90.l,w,.l,VRAM,absL,ok
+016A4E,8,4,FFE11A,cmpi.w,"#$0, $ffe11a.l",r,.w,RAM,absL,ok
+016A5A,8,4,FFE11A,addi.w,"#$1, $ffe11a.l",rw,.w,RAM,absL,ok
+016A6C,6,2,FFE11A,move.w,"$ffe11a.l, d1",r,.w,RAM,absL,ok
+016A76,6,2,011D96,jsr,$11d96.l,x,,ROM,absL,ok
+016A7E,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016A86,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016A8C,6,2,FFE10C,tst.w,$ffe10c.l,r,.w,RAM,absL,ok
+016A94,8,4,FFE10C,cmpi.w,"#$ff, $ffe10c.l",r,.w,RAM,absL,ok
+016AA2,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+016AAC,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+016AB2,8,4,FFE10C,subi.w,"#$1, $ffe10c.l",rw,.w,RAM,absL,ok
+016ABA,6,2,016A4E,jsr,$16a4e.l,x,,ROM,absL,ok
+016AC0,6,2,FFD329,lea.l,"$ffd329.l, a0",addr,.l,RAM,absL,ok
+016AC6,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+016AD0,6,2,FFD32F,lea.l,"$ffd32f.l, a0",addr,.l,RAM,absL,ok
+016ADC,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016AE2,8,4,FFD2C8,move.w,"#$12, $ffd2c8.l",w,.w,RAM,absL,ok
+016AF2,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+016B00,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+016B06,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016B16,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016B1C,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016B24,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+016B2E,6,2,FFE6AE,move.w,"(a6), $ffe6ae.l",w,.w,RAM,absL,ok
+016B34,8,4,FFE6B0,move.w,"$2(a6), $ffe6b0.l",w,.w,RAM,absL,ok
+016B40,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+016B46,6,2,000A58,jsr,$a58.l,x,,ROM,absL,ok
+016B4C,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016B5C,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+016B64,8,4,FFE10C,move.w,"#$100, $ffe10c.l",w,.w,RAM,absL,ok
+016B6C,8,4,FFD2C8,move.w,"#$13, $ffd2c8.l",w,.w,RAM,absL,ok
+016B74,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016B7A,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016B82,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016B88,6,2,FFE10C,tst.w,$ffe10c.l,r,.w,RAM,absL,ok
+016B90,8,4,FFE10C,subi.w,"#$1, $ffe10c.l",rw,.w,RAM,absL,ok
+016B98,6,2,FFD329,lea.l,"$ffd329.l, a0",addr,.l,RAM,absL,ok
+016B9E,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+016BA8,6,2,FFD32F,lea.l,"$ffd32f.l, a0",addr,.l,RAM,absL,ok
+016BB4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016BBA,8,4,FFD2C8,move.w,"#$12, $ffd2c8.l",w,.w,RAM,absL,ok
+016BC2,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016BD2,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016BD8,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016BE0,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016BE6,6,2,000934,jsr,$934.l,x,,ROM,absL,ok
+016BEC,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016BF4,8,4,FFE10E,move.b,"#$7, $ffe10e.l",w,.b,RAM,absL,ok
+016C00,6,2,FFE0F4,clr.w,$ffe0f4.l,w,.w,RAM,absL,ok
+016C06,8,4,FFE104,move.w,"$4(a6), $ffe104.l",w,.w,RAM,absL,ok
+016C0E,8,4,FFE106,move.w,"$6(a6), $ffe106.l",w,.w,RAM,absL,ok
+016C16,8,4,FFE6AE,move.w,"$8(a6), $ffe6ae.l",w,.w,RAM,absL,ok
+016C1E,8,4,FFE6B0,move.w,"$a(a6), $ffe6b0.l",w,.w,RAM,absL,ok
+016C26,8,4,FFE6C2,move.w,"$c(a6), $ffe6c2.l",w,.w,RAM,absL,ok
+016C2E,8,4,FFE6C4,move.w,"$e(a6), $ffe6c4.l",w,.w,RAM,absL,ok
+016C3E,6,2,FFE100,move.w,"d0, $ffe100.l",w,.w,RAM,absL,ok
+016C44,6,2,FFE102,move.w,"d1, $ffe102.l",w,.w,RAM,absL,ok
+016C4C,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+016C60,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+016C6A,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+016C70,6,2,00C060,jsr,$c060.l,x,,ROM,absL,ok
+016C76,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+016C80,6,2,FFE139,clr.b,$ffe139.l,w,.b,RAM,absL,ok
+016C88,6,2,FFE13A,clr.b,$ffe13a.l,w,.b,RAM,absL,ok
+016C8E,6,2,000A58,jsr,$a58.l,x,,ROM,absL,ok
+016C9C,8,4,FFD2C8,move.w,"#$1b, $ffd2c8.l",w,.w,RAM,absL,ok
+016CA4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016CAE,6,2,FFDB5A,clr.b,$ffdb5a.l,w,.b,RAM,absL,ok
+016CB4,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+016CBE,8,4,FFDB5A,move.b,"#$1, $ffdb5a.l",w,.b,RAM,absL,ok
+016CC6,8,4,FFE104,move.w,"$4(a6), $ffe104.l",w,.w,RAM,absL,ok
+016CCE,8,4,FFE106,move.w,"$6(a6), $ffe106.l",w,.w,RAM,absL,ok
+016CD6,8,4,FFE6AE,move.w,"$8(a6), $ffe6ae.l",w,.w,RAM,absL,ok
+016CDE,8,4,FFE6B0,move.w,"$a(a6), $ffe6b0.l",w,.w,RAM,absL,ok
+016CE6,8,4,FFE6C2,move.w,"$c(a6), $ffe6c2.l",w,.w,RAM,absL,ok
+016CEE,8,4,FFE6C4,move.w,"$e(a6), $ffe6c4.l",w,.w,RAM,absL,ok
+016D00,8,4,FFE08E,cmpi.b,"#$27, $ffe08e.l",r,.b,RAM,absL,ok
+016D0C,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016D18,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+016D22,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+016D28,6,2,00C060,jsr,$c060.l,x,,ROM,absL,ok
+016D2E,8,4,FFD2C8,cmpi.w,"#$1f, $ffd2c8.l",r,.w,RAM,absL,ok
+016D38,6,2,00BA86,jsr,$ba86.l,x,,ROM,absL,ok
+016D3E,6,2,00BCF2,jsr,$bcf2.l,x,,ROM,absL,ok
+016D50,6,2,000A58,jsr,$a58.l,x,,ROM,absL,ok
+016D56,8,4,FFE10E,move.b,"#$7, $ffe10e.l",w,.b,RAM,absL,ok
+016D5E,8,4,FFD2C8,move.w,"#$1b, $ffd2c8.l",w,.w,RAM,absL,ok
+016D66,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016D6C,8,4,FFD2C8,move.w,"#$16, $ffd2c8.l",w,.w,RAM,absL,ok
+016D74,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016D7A,6,2,FFE10F,clr.b,$ffe10f.l,w,.b,RAM,absL,ok
+016D80,8,4,FFD2C8,move.w,"#$19, $ffd2c8.l",w,.w,RAM,absL,ok
+016D88,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016D8E,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016D9A,8,4,FFE10E,move.b,"#$0, $ffe10e.l",w,.b,RAM,absL,ok
+016DA2,8,4,FFD2C8,move.w,"#$11, $ffd2c8.l",w,.w,RAM,absL,ok
+016DAA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016DB4,8,4,FFE054,move.l,"$1c(a6), $ffe054.l",w,.l,RAM,absL,ok
+016DBC,8,4,FFE048,move.l,"$20(a6), $ffe048.l",w,.l,RAM,absL,ok
+016DC4,8,4,FFE060,move.l,"$24(a6), $ffe060.l",w,.l,RAM,absL,ok
+016DCC,8,4,FFE0F8,move.l,"$28(a6), $ffe0f8.l",w,.l,RAM,absL,ok
+016DD4,8,4,FFE0FC,move.l,"$2c(a6), $ffe0fc.l",w,.l,RAM,absL,ok
+016DDE,6,2,01717C,jsr,$1717c.l,x,,ROM,absL,ok
+016DE4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016DEA,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+016DF6,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016E02,6,2,FFE0EC,clr.l,$ffe0ec.l,w,.l,RAM,absL,ok
+016E08,8,4,FFD2C8,move.w,"#$1c, $ffd2c8.l",w,.w,RAM,absL,ok
+016E10,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016E16,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016E1E,8,4,FFD2C6,move.w,"#$0, $ffd2c6.l",w,.w,RAM,absL,ok
+016E26,8,4,FFD2C8,move.w,"#$1e, $ffd2c8.l",w,.w,RAM,absL,ok
+016E32,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016E3E,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+016E48,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+016E52,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+016E5C,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+016E66,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+016E72,8,4,FFD2E1,cmpi.b,"#$5, $ffd2e1.l",r,.b,RAM,absL,ok
+016E7E,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+016E8A,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016E96,6,2,FFE0EC,clr.l,$ffe0ec.l,w,.l,RAM,absL,ok
+016E9C,8,4,FFD2C8,move.w,"#$19, $ffd2c8.l",w,.w,RAM,absL,ok
+016EA4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016EAA,8,4,FFD2C8,move.w,"#$0, $ffd2c8.l",w,.w,RAM,absL,ok
+016EB2,8,4,FFD2C6,move.w,"#$e, $ffd2c6.l",w,.w,RAM,absL,ok
+016EBA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016EC0,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016ECE,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016EDA,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+016EE0,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+016EE6,8,4,FFE6C2,move.w,"#$2e00, $ffe6c2.l",w,.w,RAM,absL,ok
+016EEE,8,4,FFE6C4,move.w,"#$3b90, $ffe6c4.l",w,.w,RAM,absL,ok
+016EFA,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+016F00,8,4,FFE6AE,move.w,"$14(a6), $ffe6ae.l",w,.w,RAM,absL,ok
+016F08,8,4,FFE6B0,move.w,"$16(a6), $ffe6b0.l",w,.w,RAM,absL,ok
+016F14,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+016F22,6,2,FFD2E1,move.b,"$ffd2e1.l, d2",r,.b,RAM,absL,ok
+016F32,6,2,011D58,jsr,$11d58.l,x,,ROM,absL,ok
+016F40,8,4,FFE110,move.w,"#$80, $ffe110.l",w,.w,RAM,absL,ok
+016F48,8,4,FFD2C8,move.w,"#$1a, $ffd2c8.l",w,.w,RAM,absL,ok
+016F50,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016F56,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016F5E,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+016F66,8,4,FFE110,subi.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+016F70,8,4,FFD2C8,move.w,"#$18, $ffd2c8.l",w,.w,RAM,absL,ok
+016F78,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+016F88,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016F8E,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+016F96,8,4,FFD2C8,move.w,"#$10, $ffd2c8.l",w,.w,RAM,absL,ok
+016F9E,8,4,FFD2E1,addi.b,"#$1, $ffd2e1.l",rw,.b,RAM,absL,ok
+016FAA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+016FB0,6,2,FFD2E1,move.b,"$ffd2e1.l, d0",r,.b,RAM,absL,ok
+016FC2,6,2,019038,lea.l,"$19038.l, a6",addr,.l,ROM,absL,ok
+016FCA,6,2,102000,movea.l,"#$102000, a4",imm,.l,VRAM,imm32,ok
+016FDA,6,2,102000,movea.l,"#$102000, a6",imm,.l,VRAM,imm32,ok
+016FE2,6,2,000A08,jsr,$a08.l,x,,ROM,absL,ok
+016FE8,6,2,000A1A,jsr,$a1a.l,x,,ROM,absL,ok
+016FEE,6,2,009250,jsr,$9250.l,x,,ROM,absL,ok
+016FF4,6,2,011562,jsr,$11562.l,x,,ROM,absL,ok
+016FFA,6,2,FFE0EC,clr.l,$ffe0ec.l,w,.l,RAM,absL,ok
+017004,8,4,FFE550,move.w,"#$0, $ffe550.l",w,.w,RAM,absL,ok
+01700C,6,2,FFE0AA,clr.b,$ffe0aa.l,w,.b,RAM,absL,ok
+017012,6,2,FFE0AB,clr.b,$ffe0ab.l,w,.b,RAM,absL,ok
+01701C,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+017022,6,2,FFE6A2,move.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+017028,6,2,FFD2C4,move.w,"$ffd2c4.l, d2",r,.w,RAM,absL,ok
+01702E,6,2,FFE104,sub.w,"$ffe104.l, d0",r,.w,RAM,absL,ok
+017034,6,2,FFE106,sub.w,"$ffe106.l, d1",r,.w,RAM,absL,ok
+017042,6,2,FFE104,add.w,"$ffe104.l, d0",r,.w,RAM,absL,ok
+017048,6,2,FFE106,add.w,"$ffe106.l, d1",r,.w,RAM,absL,ok
+01704E,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+017054,8,4,FFD31E,cmpi.b,"#$2, $ffd31e.l",r,.b,RAM,absL,ok
+01706C,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01707C,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+017098,6,2,000A08,jsr,$a08.l,x,,ROM,absL,ok
+01709E,6,2,000A1A,jsr,$a1a.l,x,,ROM,absL,ok
+0170B0,6,2,FFE0F4,move.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+0170C8,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+0170DA,6,2,FFD2C4,move.w,"$ffd2c4.l, d2",r,.w,RAM,absL,ok
+0170E0,6,2,FFE104,sub.w,"$ffe104.l, d0",r,.w,RAM,absL,ok
+0170E6,6,2,FFE106,sub.w,"$ffe106.l, d1",r,.w,RAM,absL,ok
+0170F4,6,2,FFE104,add.w,"$ffe104.l, d0",r,.w,RAM,absL,ok
+0170FA,6,2,FFE106,add.w,"$ffe106.l, d1",r,.w,RAM,absL,ok
+017100,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+017106,6,2,011562,jsr,$11562.l,x,,ROM,absL,ok
+01710C,6,2,FFE088,clr.w,$ffe088.l,w,.w,RAM,absL,ok
+017116,6,2,FFE0AA,clr.b,$ffe0aa.l,w,.b,RAM,absL,ok
+01711C,6,2,FFE0AB,clr.b,$ffe0ab.l,w,.b,RAM,absL,ok
+017122,8,4,FFD31E,cmpi.b,"#$2, $ffd31e.l",r,.b,RAM,absL,ok
+01713A,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01714A,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01717C,10,6,1023D0,move.l,"#$45c045a, $1023d0.l",w,.l,VRAM,absL,ok
+017190,6,2,00C1EE,jsr,$c1ee.l,x,,ROM,absL,ok
+01719A,6,2,010868,jsr,$10868.l,x,,ROM,absL,ok
+0171A4,6,2,00BA5C,jsr,$ba5c.l,x,,ROM,absL,ok
+0171AE,6,2,00BCF2,jsr,$bcf2.l,x,,ROM,absL,ok
+0171B8,6,2,0171CE,jsr,$171ce.l,x,,ROM,absL,ok
+0171BE,6,2,017284,jsr,$17284.l,x,,ROM,absL,ok
+0171D0,6,2,017204,lea.l,"$17204.l, a0",addr,.l,ROM,absL,ok
+0171D6,6,2,FFD2E0,move.b,"$ffd2e0.l, d1",r,.b,RAM,absL,ok
+0171E6,6,2,FFE088,move.w,"$ffe088.l, d1",r,.w,RAM,absL,ok
+0171FC,6,2,FFE0F0,move.w,"d0, $ffe0f0.l",w,.w,RAM,absL,ok
+017284,6,2,FFE0F2,tst.w,$ffe0f2.l,r,.w,RAM,absL,ok
+01728C,8,4,FFE0F2,subi.w,"#$1, $ffe0f2.l",rw,.w,RAM,absL,ok
+017298,6,2,FF9AC0,lea.l,"$ff9ac0.l, a5",addr,.l,RAM,absL,ok
+0172C8,6,2,FFA0C0,lea.l,"$ffa0c0.l, a5",addr,.l,RAM,absL,ok
+0172FA,6,2,FFDC48,tst.b,$ffdc48.l,r,.b,RAM,absL,ok
+017304,6,2,FFE0F8,movea.l,"$ffe0f8.l, a2",r,.l,RAM,absL,ok
+01730A,6,2,FFE0EC,move.l,"$ffe0ec.l, d2",r,.l,RAM,absL,ok
+017310,6,2,FFE69E,move.w,"$ffe69e.l, d3",r,.w,RAM,absL,ok
+017316,6,2,FFE6A2,move.w,"$ffe6a2.l, d4",r,.w,RAM,absL,ok
+017342,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017352,6,2,FFE0EC,move.l,"d2, $ffe0ec.l",w,.l,RAM,absL,ok
+01736C,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+017374,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+017380,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+01738C,6,2,FFE0EC,clr.l,$ffe0ec.l,w,.l,RAM,absL,ok
+017392,6,2,FFE114,clr.b,$ffe114.l,w,.b,RAM,absL,ok
+017398,8,4,FFD2C8,move.w,"#$b, $ffd2c8.l",w,.w,RAM,absL,ok
+0173A0,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0173A6,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+0173AE,8,4,FFD2C6,move.w,"#$0, $ffd2c6.l",w,.w,RAM,absL,ok
+0173B6,8,4,FFD2C8,move.w,"#$d, $ffd2c8.l",w,.w,RAM,absL,ok
+0173C2,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0173C8,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+0173D2,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+0173D8,6,2,000934,jsr,$934.l,x,,ROM,absL,ok
+0173DE,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0173E6,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+0173F4,6,2,FFE120,clr.b,$ffe120.l,w,.b,RAM,absL,ok
+0173FA,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017406,8,4,FFE120,move.b,"#$1, $ffe120.l",w,.b,RAM,absL,ok
+01740E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017414,8,4,FFE6AE,move.w,"#$1600, $ffe6ae.l",w,.w,RAM,absL,ok
+01741C,8,4,FFE6B0,move.w,"#$3f10, $ffe6b0.l",w,.w,RAM,absL,ok
+017428,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+01742E,10,6,102F00,move.l,"#$45c845c, $102f00.l",w,.l,VRAM,absL,ok
+017438,6,2,022FD6,jsr,$22fd6.l,x,,ROM,absL,ok
+01744E,6,2,FFE11C,move.w,"d2, $ffe11c.l",w,.w,RAM,absL,ok
+017454,8,4,FFE11E,move.w,"#$a, $ffe11e.l",w,.w,RAM,absL,ok
+01745C,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+01746E,8,4,FFE10E,move.b,"#$7, $ffe10e.l",w,.b,RAM,absL,ok
+017476,8,4,FFD2C8,move.w,"#$c, $ffd2c8.l",w,.w,RAM,absL,ok
+01747E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017484,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+01748C,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+017492,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017498,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+0174B4,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+0174BA,6,2,FFD31E,tst.b,$ffd31e.l,r,.b,RAM,absL,ok
+0174C6,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+0174CC,6,2,FFE10E,clr.b,$ffe10e.l,w,.b,RAM,absL,ok
+0174D2,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0174E2,8,4,FFD2C8,move.w,"#$24, $ffd2c8.l",w,.w,RAM,absL,ok
+0174EA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0174F0,8,4,FFD31E,cmpi.b,"#$2, $ffd31e.l",r,.b,RAM,absL,ok
+0174FA,10,2,FFD31F,move.b,"$ffd31f.l, $ffd31d.l",r,.b,RAM,absL,ok
+0174FA,10,6,FFD31D,move.b,"$ffd31f.l, $ffd31d.l",w,.b,RAM,absL,ok
+017506,6,2,017AF8,jsr,$17af8.l,x,,ROM,absL,ok
+01750C,6,2,00C462,jsr,$c462.l,x,,ROM,absL,ok
+01751E,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+017530,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+017536,8,4,FFE11E,move.w,"#$5, $ffe11e.l",w,.w,RAM,absL,ok
+01753E,8,4,FFE11C,move.w,"#$37, $ffe11c.l",w,.w,RAM,absL,ok
+017546,8,4,FFE120,cmpi.b,"#$1, $ffe120.l",r,.b,RAM,absL,ok
+017554,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017560,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017566,8,4,FFE110,move.w,"#$40, $ffe110.l",w,.w,RAM,absL,ok
+01756E,8,4,FFD2C8,move.w,"#$17, $ffd2c8.l",w,.w,RAM,absL,ok
+017576,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01757C,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+017588,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+01758E,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+017596,8,4,FFE10A,move.b,"#$76, $ffe10a.l",w,.b,RAM,absL,ok
+01759E,8,4,FFE10B,move.b,"#$a, $ffe10b.l",w,.b,RAM,absL,ok
+0175A6,6,2,000A58,jsr,$a58.l,x,,ROM,absL,ok
+0175AC,8,4,FFD2C8,move.w,"#$e, $ffd2c8.l",w,.w,RAM,absL,ok
+0175B4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0175BA,6,2,FFE11E,subq.w,"#$1, $ffe11e.l",rw,.w,RAM,absL,ok
+0175C2,8,4,FFE11E,move.w,"#$a, $ffe11e.l",w,.w,RAM,absL,ok
+0175CC,6,2,FFE11C,move.w,"$ffe11c.l, d2",r,.w,RAM,absL,ok
+0175EC,6,2,FFE11C,move.w,"d2, $ffe11c.l",w,.w,RAM,absL,ok
+0175FA,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+017604,6,2,FFE10A,tst.b,$ffe10a.l,r,.b,RAM,absL,ok
+01760C,8,4,FFE10A,subi.b,"#$1, $ffe10a.l",rw,.b,RAM,absL,ok
+017616,6,2,FFE10B,tst.b,$ffe10b.l,r,.b,RAM,absL,ok
+017620,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+01762E,8,4,FFD2C8,move.w,"#$22, $ffd2c8.l",w,.w,RAM,absL,ok
+017636,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01763C,8,4,FFE10A,move.b,"#$76, $ffe10a.l",w,.b,RAM,absL,ok
+017644,8,4,FFE10B,subi.b,"#$1, $ffe10b.l",rw,.b,RAM,absL,ok
+017656,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+017660,8,4,FFD329,bclr.b,"#$5, $ffd329.l",rw,.b,RAM,absL,ok
+01766A,8,4,FFD329,bclr.b,"#$4, $ffd329.l",rw,.b,RAM,absL,ok
+017674,8,4,FFD329,andi.b,"#$cf, $ffd329.l",rw,.b,RAM,absL,ok
+01767C,6,2,FFE10A,clr.b,$ffe10a.l,w,.b,RAM,absL,ok
+017682,8,4,FFD32F,bclr.b,"#$6, $ffd32f.l",rw,.b,RAM,absL,ok
+01768E,6,2,FFD2F0,tst.b,$ffd2f0.l,r,.b,RAM,absL,ok
+017696,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+0176A0,8,4,FFD31C,subi.b,"#$1, $ffd31c.l",rw,.b,RAM,absL,ok
+0176A8,8,4,FFE114,bset.b,"#$0, $ffe114.l",rw,.b,RAM,absL,ok
+0176B0,6,2,00C00C,jsr,$c00c.l,x,,ROM,absL,ok
+0176B8,8,4,FFD32F,bclr.b,"#$5, $ffd32f.l",rw,.b,RAM,absL,ok
+0176C2,8,4,FFD32F,bclr.b,"#$4, $ffd32f.l",rw,.b,RAM,absL,ok
+0176CC,8,4,FFD32F,andi.b,"#$cf, $ffd32f.l",rw,.b,RAM,absL,ok
+0176D4,6,2,FFE10A,clr.b,$ffe10a.l,w,.b,RAM,absL,ok
+0176DA,8,4,FFD32F,bclr.b,"#$7, $ffd32f.l",rw,.b,RAM,absL,ok
+0176E4,6,2,FFD2F0,tst.b,$ffd2f0.l,r,.b,RAM,absL,ok
+0176EC,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+0176F4,8,4,FFE114,bset.b,"#$1, $ffe114.l",rw,.b,RAM,absL,ok
+0176FC,8,4,FFD31C,subi.b,"#$1, $ffd31c.l",rw,.b,RAM,absL,ok
+017704,6,2,00C036,jsr,$c036.l,x,,ROM,absL,ok
+01770A,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+017718,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017724,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017730,8,4,FFD2C8,move.w,"#$20, $ffd2c8.l",w,.w,RAM,absL,ok
+017738,8,4,FFE110,move.w,"#$4, $ffe110.l",w,.w,RAM,absL,ok
+017740,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017746,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017758,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+01776C,6,2,FFE10B,move.b,"$ffe10b.l, d3",r,.b,RAM,absL,ok
+017778,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+017780,6,2,FFE138,tst.b,$ffe138.l,r,.b,RAM,absL,ok
+01778C,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017796,8,4,FFE110,subi.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+01779E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0177A4,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+0177AC,6,2,0186A2,jsr,$186a2.l,x,,ROM,absL,ok
+0177B2,6,2,023038,jsr,$23038.l,x,,ROM,absL,ok
+0177C4,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+0177CA,8,4,FFE11E,move.w,"#$1, $ffe11e.l",w,.w,RAM,absL,ok
+0177DC,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0177EA,6,2,FFE120,tst.b,$ffe120.l,r,.b,RAM,absL,ok
+0177F6,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017804,8,4,FFE138,move.b,"#$1, $ffe138.l",w,.b,RAM,absL,ok
+01780C,8,4,FFD2C8,move.w,"#$23, $ffd2c8.l",w,.w,RAM,absL,ok
+017814,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01781A,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+017822,6,2,0186A2,jsr,$186a2.l,x,,ROM,absL,ok
+017828,8,4,FFE6AE,move.w,"#$e00, $ffe6ae.l",w,.w,RAM,absL,ok
+017830,8,4,FFE6B0,move.w,"#$3f10, $ffe6b0.l",w,.w,RAM,absL,ok
+01783C,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+01784E,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+01785A,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+017868,6,2,FFE120,tst.b,$ffe120.l,r,.b,RAM,absL,ok
+017874,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017882,6,2,FFE138,clr.b,$ffe138.l,w,.b,RAM,absL,ok
+017888,8,4,FFD2C8,move.w,"#$23, $ffd2c8.l",w,.w,RAM,absL,ok
+017890,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017896,6,2,FFE138,tst.b,$ffe138.l,r,.b,RAM,absL,ok
+0178A2,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+0178AA,8,4,FFE110,move.w,"#$120, $ffe110.l",w,.w,RAM,absL,ok
+0178B2,8,4,FFD2C8,move.w,"#$21, $ffd2c8.l",w,.w,RAM,absL,ok
+0178BA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0178C0,8,4,FFD31E,subi.b,"#$1, $ffd31e.l",rw,.b,RAM,absL,ok
+0178C8,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+0178D2,8,4,FFD31F,bclr.b,"#$0, $ffd31f.l",rw,.b,RAM,absL,ok
+0178DA,8,4,FFD31D,bclr.b,"#$0, $ffd31d.l",rw,.b,RAM,absL,ok
+0178E4,8,4,FFD31F,bclr.b,"#$1, $ffd31f.l",rw,.b,RAM,absL,ok
+0178EC,8,4,FFD31D,bclr.b,"#$1, $ffd31d.l",rw,.b,RAM,absL,ok
+0178F4,6,2,FFD31E,tst.b,$ffd31e.l,r,.b,RAM,absL,ok
+0178FE,8,4,FFD31E,cmpi.b,"#$2, $ffd31e.l",r,.b,RAM,absL,ok
+017908,10,2,FFD31F,move.b,"$ffd31f.l, $ffd31d.l",r,.b,RAM,absL,ok
+017908,10,6,FFD31D,move.b,"$ffd31f.l, $ffd31d.l",w,.b,RAM,absL,ok
+017914,6,2,017AF8,jsr,$17af8.l,x,,ROM,absL,ok
+01791A,6,2,00C462,jsr,$c462.l,x,,ROM,absL,ok
+017920,8,4,FFD2C8,move.w,"#$1d, $ffd2c8.l",w,.w,RAM,absL,ok
+017928,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017932,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+017938,6,2,FFE10E,clr.b,$ffe10e.l,w,.b,RAM,absL,ok
+01793E,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+01794E,8,4,FFD2C8,move.w,"#$24, $ffd2c8.l",w,.w,RAM,absL,ok
+017956,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01795C,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+017968,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01796E,8,4,FFE110,cmpi.w,"#$28, $ffe110.l",r,.w,RAM,absL,ok
+017978,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017982,8,4,FFE120,cmpi.b,"#$1, $ffe120.l",r,.b,RAM,absL,ok
+017994,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+0179A4,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+0179AC,8,4,FFD2C8,move.w,"#$1d, $ffd2c8.l",w,.w,RAM,absL,ok
+0179B4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0179BA,8,4,FFE110,subi.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+0179C2,6,2,FFE11E,subq.w,"#$1, $ffe11e.l",rw,.w,RAM,absL,ok
+0179CA,8,4,FFE11E,move.w,"#$5, $ffe11e.l",w,.w,RAM,absL,ok
+0179D2,8,4,FFE11C,cmpi.w,"#$3b, $ffe11c.l",r,.w,RAM,absL,ok
+0179E8,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+0179F0,6,2,FFE11C,addq.w,"#$1, $ffe11c.l",rw,.w,RAM,absL,ok
+017A00,6,2,FFE11C,move.w,"$ffe11c.l, d2",r,.w,RAM,absL,ok
+017A06,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+017A0C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017A12,10,6,1023D0,move.l,"#$45c045a, $1023d0.l",w,.l,VRAM,absL,ok
+017A1C,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+017A22,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+017A2C,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+017A3A,6,2,00C1EE,jsr,$c1ee.l,x,,ROM,absL,ok
+017A40,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017A46,8,4,FFD2E1,cmpi.b,"#$5, $ffd2e1.l",r,.b,RAM,absL,ok
+017A50,8,4,FFDBAE,cmpi.w,"#$3030, $ffdbae.l",r,.w,RAM,absL,ok
+017A5A,8,4,FFDBAF,cmpi.b,"#$30, $ffdbaf.l",r,.b,RAM,absL,ok
+017A64,8,4,FFDBAE,subi.b,"#$1, $ffdbae.l",rw,.b,RAM,absL,ok
+017A6C,8,4,FFDBAF,move.b,"#$3a, $ffdbaf.l",w,.b,RAM,absL,ok
+017A74,8,4,FFDBAF,subi.b,"#$1, $ffdbaf.l",rw,.b,RAM,absL,ok
+017A7C,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+017A82,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+017A8C,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+017A98,8,4,FFDBB0,move.b,"#$ff, $ffdbb0.l",w,.b,RAM,absL,ok
+017AAA,6,2,02347E,jsr,$2347e.l,x,,ROM,absL,ok
+017AB0,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+017AB8,8,4,FFD2C8,move.w,"#$27, $ffd2c8.l",w,.w,RAM,absL,ok
+017AC0,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017AC6,8,4,FFD2C8,move.w,"#$26, $ffd2c8.l",w,.w,RAM,absL,ok
+017ACE,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017AD4,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017ADC,8,4,FFE110,subi.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+017AE4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017AEA,8,4,FFD2C8,move.w,"#$1f, $ffd2c8.l",w,.w,RAM,absL,ok
+017AF2,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017AF8,8,4,FFD31E,cmpi.b,"#$1, $ffd31e.l",r,.b,RAM,absL,ok
+017B02,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+017B0C,8,4,FFD31D,move.b,"#$1, $ffd31d.l",w,.b,RAM,absL,ok
+017B16,8,4,FFD31D,move.b,"#$2, $ffd31d.l",w,.b,RAM,absL,ok
+017B20,6,2,FFE0F4,move.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+017B26,6,2,FFE0FC,movea.l,"$ffe0fc.l, a1",r,.l,RAM,absL,ok
+017B3E,6,2,FFE044,move.l,"d0, $ffe044.l",w,.l,RAM,absL,ok
+017B44,6,2,FFE048,sub.l,"$ffe048.l, d0",r,.l,RAM,absL,ok
+017B4A,6,2,FFE048,sub.l,"$ffe048.l, d1",r,.l,RAM,absL,ok
+017B5C,6,2,FFE04C,move.w,"d0, $ffe04c.l",w,.w,RAM,absL,ok
+017B62,6,2,FFE04E,move.w,"d1, $ffe04e.l",w,.w,RAM,absL,ok
+017B70,6,2,FFE050,move.l,"d0, $ffe050.l",w,.l,RAM,absL,ok
+017B76,6,2,FFE054,sub.l,"$ffe054.l, d0",r,.l,RAM,absL,ok
+017B7C,6,2,FFE054,sub.l,"$ffe054.l, d1",r,.l,RAM,absL,ok
+017B8E,6,2,FFE058,move.w,"d0, $ffe058.l",w,.w,RAM,absL,ok
+017B94,6,2,FFE05A,move.w,"d1, $ffe05a.l",w,.w,RAM,absL,ok
+017BA2,6,2,FFE05C,move.l,"d0, $ffe05c.l",w,.l,RAM,absL,ok
+017BA8,6,2,FFE060,sub.l,"$ffe060.l, d0",r,.l,RAM,absL,ok
+017BAE,6,2,FFE060,sub.l,"$ffe060.l, d1",r,.l,RAM,absL,ok
+017BC0,6,2,FFE064,move.w,"d0, $ffe064.l",w,.w,RAM,absL,ok
+017BC6,6,2,FFE066,move.w,"d1, $ffe066.l",w,.w,RAM,absL,ok
+017BCE,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+017BD4,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+017BDE,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+017BE4,6,2,FFE0FC,movea.l,"$ffe0fc.l, a1",r,.l,RAM,absL,ok
+017BF0,6,2,FFE0F4,move.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+017C28,8,4,FFE0F4,addi.w,"#$1, $ffe0f4.l",rw,.w,RAM,absL,ok
+017C3A,8,4,FFD2C6,move.w,"#$f, $ffd2c6.l",w,.w,RAM,absL,ok
+017C42,8,4,FFD2C8,move.w,"#$3, $ffd2c8.l",w,.w,RAM,absL,ok
+017C4A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017C50,6,2,FFD2C8,move.w,"$ffd2c8.l, d0",r,.w,RAM,absL,ok
+017D04,6,2,FFE10F,clr.b,$ffe10f.l,w,.b,RAM,absL,ok
+017D0E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017D14,8,4,FFE136,move.w,"#$7e, $ffe136.l",w,.w,RAM,absL,ok
+017D1C,6,2,FFE110,clr.w,$ffe110.l,w,.w,RAM,absL,ok
+017D22,8,4,FFD2C8,move.w,"#$28, $ffd2c8.l",w,.w,RAM,absL,ok
+017D2A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017D30,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+017D36,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+017D3C,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+017D42,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017D4A,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+017D50,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017D56,8,4,FFE110,move.w,"#$4, $ffe110.l",w,.w,RAM,absL,ok
+017D66,6,2,FFE136,move.w,"$ffe136.l, d2",r,.w,RAM,absL,ok
+017D6C,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+017D72,8,4,FFE136,cmpi.w,"#$99, $ffe136.l",r,.w,RAM,absL,ok
+017D7C,6,2,FFE136,addq.w,"#$1, $ffe136.l",rw,.w,RAM,absL,ok
+017D82,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017D88,8,4,FFE110,move.w,"#$80, $ffe110.l",w,.w,RAM,absL,ok
+017D90,8,4,FFD2C8,move.w,"#$29, $ffd2c8.l",w,.w,RAM,absL,ok
+017D98,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017D9E,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+017DA4,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+017DAA,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+017DB0,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017DB8,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+017DBE,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017DC4,8,4,FFD2C8,move.w,"#$1c, $ffd2c8.l",w,.w,RAM,absL,ok
+017DCC,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017DD2,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+017DD8,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+017DDE,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+017DE4,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+017DEC,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017DFE,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+017E04,10,2,0188BC,move.l,"#$188bc, $ffe126.l",imm,.l,ROM,imm32,ok
+017E04,10,6,FFE126,move.l,"#$188bc, $ffe126.l",w,.l,RAM,absL,ok
+017E0E,8,4,FFD2C8,move.w,"#$1e, $ffd2c8.l",w,.w,RAM,absL,ok
+017E16,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017E22,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+017E2C,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+017E36,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+017E40,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+017E4A,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+017E50,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+017E5E,8,4,FFE110,move.w,"#$20, $ffe110.l",w,.w,RAM,absL,ok
+017E66,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+017E6C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017E72,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017E7A,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+017E80,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+017E8A,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+017E92,8,4,FFD2C8,move.w,"#$19, $ffd2c8.l",w,.w,RAM,absL,ok
+017E9E,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+017EA4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017EAA,6,2,000972,jsr,$972.l,x,,ROM,absL,ok
+017EB0,6,2,000960,jsr,$960.l,x,,ROM,absL,ok
+017EB6,6,2,000A1A,jsr,$a1a.l,x,,ROM,absL,ok
+017EBC,6,2,023002,jsr,$23002.l,x,,ROM,absL,ok
+017EC2,10,6,102F00,move.l,"#$45c845c, $102f00.l",w,.l,VRAM,absL,ok
+017ECC,6,2,022FD6,jsr,$22fd6.l,x,,ROM,absL,ok
+017ED2,8,4,FFE6AE,move.w,"#$12f0, $ffe6ae.l",w,.w,RAM,absL,ok
+017EDA,8,4,FFE6B0,move.w,"#$3048, $ffe6b0.l",w,.w,RAM,absL,ok
+017EE6,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+017EEC,8,4,FFE6C2,move.w,"#$27b0, $ffe6c2.l",w,.w,RAM,absL,ok
+017EF4,8,4,FFE6C4,move.w,"#$3010, $ffe6c4.l",w,.w,RAM,absL,ok
+017F00,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+017F06,6,2,019014,move.l,"#$19014, d0",imm,.l,ROM,imm32,ok
+017F0C,6,2,FFE050,move.l,"d0, $ffe050.l",w,.l,RAM,absL,ok
+017F12,8,4,FFE05A,move.w,"#$2, $ffe05a.l",w,.w,RAM,absL,ok
+017F1E,6,2,00BD0C,jsr,$bd0c.l,x,,ROM,absL,ok
+017F24,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+017F30,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+017F3E,8,4,FFE110,move.w,"#$c0, $ffe110.l",w,.w,RAM,absL,ok
+017F46,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+017F4C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017F52,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017F62,8,4,FFE110,move.w,"#$40, $ffe110.l",w,.w,RAM,absL,ok
+017F6A,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+017F70,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+017F76,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017F7C,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017F84,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+017F8C,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+017F92,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017F98,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+017FA0,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017FA6,6,2,009250,jsr,$9250.l,x,,ROM,absL,ok
+017FAC,6,2,FFE134,clr.w,$ffe134.l,w,.w,RAM,absL,ok
+017FB2,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+017FBA,8,4,FFD2C8,move.w,"#$26, $ffd2c8.l",w,.w,RAM,absL,ok
+017FC2,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+017FC8,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+017FDC,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+017FE2,6,2,00094A,jsr,$94a.l,x,,ROM,absL,ok
+017FE8,6,2,0009B0,jsr,$9b0.l,x,,ROM,absL,ok
+017FEE,10,2,012C56,move.l,"#$12c56, $ffe050.l",imm,.l,ROM,imm32,ok
+017FEE,10,6,FFE050,move.l,"#$12c56, $ffe050.l",w,.l,RAM,absL,ok
+017FF8,8,4,FFE05A,move.w,"#$2, $ffe05a.l",w,.w,RAM,absL,ok
+018004,6,2,00BD0C,jsr,$bd0c.l,x,,ROM,absL,ok
+01800A,8,4,FFD2C8,move.w,"#$4, $ffd2c8.l",w,.w,RAM,absL,ok
+018012,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+01801A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018020,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+01802A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018030,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+018038,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+01803E,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+018048,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01805A,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+018060,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+018068,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+01806E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018080,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+018086,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+01808E,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+018094,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0180A6,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+0180AC,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+0180B4,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+0180BA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0180CC,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+0180D2,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+0180DA,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+0180E0,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0180F2,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+0180F8,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+018100,8,4,FFD2C8,move.w,"#$11, $ffd2c8.l",w,.w,RAM,absL,ok
+018108,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01811A,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+018120,8,4,FFE110,move.w,"#$10, $ffe110.l",w,.w,RAM,absL,ok
+018128,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+01812E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018140,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+018146,6,2,FFE134,clr.w,$ffe134.l,w,.w,RAM,absL,ok
+01814C,8,4,FFE110,move.w,"#$d0, $ffe110.l",w,.w,RAM,absL,ok
+018154,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+01815A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018160,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+018168,6,2,FFD2C8,addq.w,"#$1, $ffd2c8.l",rw,.w,RAM,absL,ok
+018172,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+018178,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01817E,6,2,FFE134,tst.w,$ffe134.l,r,.w,RAM,absL,ok
+018186,6,2,FFE134,subq.w,"#$1, $ffe134.l",rw,.w,RAM,absL,ok
+01818E,8,4,FFE134,move.w,"#$2, $ffe134.l",w,.w,RAM,absL,ok
+018196,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+01819C,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+0181A6,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+0181C2,6,2,FFE134,tst.w,$ffe134.l,r,.w,RAM,absL,ok
+0181CA,6,2,FFE134,subq.w,"#$1, $ffe134.l",rw,.w,RAM,absL,ok
+0181D2,6,2,FFA4C0,lea.l,"$ffa4c0.l, a0",addr,.l,RAM,absL,ok
+0181D8,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+0181E2,6,2,FFA540,lea.l,"$ffa540.l, a0",addr,.l,RAM,absL,ok
+018228,8,4,FFE134,move.w,"#$4, $ffe134.l",w,.w,RAM,absL,ok
+018238,6,2,0186A2,jsr,$186a2.l,x,,ROM,absL,ok
+01823E,8,4,FFE6AE,move.w,"#$e00, $ffe6ae.l",w,.w,RAM,absL,ok
+018246,8,4,FFE6B0,move.w,"#$3f10, $ffe6b0.l",w,.w,RAM,absL,ok
+018252,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+018264,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+01826A,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+018276,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+018288,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+01828E,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+018294,6,2,000934,jsr,$934.l,x,,ROM,absL,ok
+01829A,6,2,000984,jsr,$984.l,x,,ROM,absL,ok
+0182A0,6,2,000972,jsr,$972.l,x,,ROM,absL,ok
+0182A6,6,2,000960,jsr,$960.l,x,,ROM,absL,ok
+0182AC,6,2,000A1A,jsr,$a1a.l,x,,ROM,absL,ok
+0182BE,6,2,FFE12E,move.w,"d2, $ffe12e.l",w,.w,RAM,absL,ok
+0182C4,6,2,011D58,jsr,$11d58.l,x,,ROM,absL,ok
+0182CA,6,2,FFE130,move.l,"a1, $ffe130.l",w,.l,RAM,absL,ok
+0182D0,8,4,FFE124,move.w,"#$70, $ffe124.l",w,.w,RAM,absL,ok
+0182E4,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+0182F2,8,4,FFE110,move.w,"#$2, $ffe110.l",w,.w,RAM,absL,ok
+0182FA,8,4,FFE112,move.w,"#$8, $ffe112.l",w,.w,RAM,absL,ok
+018302,8,4,FFE122,move.w,"#$8, $ffe122.l",w,.w,RAM,absL,ok
+01830A,8,4,FFE11C,move.w,"#$3c, $ffe11c.l",w,.w,RAM,absL,ok
+018312,8,4,FFD2C8,move.w,"#$2, $ffd2c8.l",w,.w,RAM,absL,ok
+01831A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018320,8,4,FFE12E,cmpi.w,"#$12f9, $ffe12e.l",r,.w,RAM,absL,ok
+01832A,8,4,FFE12E,move.w,"#$12f2, $ffe12e.l",w,.w,RAM,absL,ok
+018332,6,2,FFE12E,move.w,"$ffe12e.l, d2",r,.w,RAM,absL,ok
+018348,6,2,FFE130,movea.l,"$ffe130.l, a1",r,.l,RAM,absL,ok
+01834E,6,2,011D96,jsr,$11d96.l,x,,ROM,absL,ok
+018354,6,2,FFE12E,addq.w,"#$1, $ffe12e.l",rw,.w,RAM,absL,ok
+01835C,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+018362,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+018368,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+018370,8,4,FFE110,move.w,"#$2, $ffe110.l",w,.w,RAM,absL,ok
+018378,8,4,FFE11C,cmpi.w,"#$42, $ffe11c.l",r,.w,RAM,absL,ok
+018382,6,2,FFE11C,addq.w,"#$1, $ffe11c.l",rw,.w,RAM,absL,ok
+018390,6,2,FFE11C,move.w,"$ffe11c.l, d2",r,.w,RAM,absL,ok
+018396,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+01839E,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+0183A6,6,2,FFE112,tst.w,$ffe112.l,r,.w,RAM,absL,ok
+0183AE,6,2,FFE112,subq.w,"#$1, $ffe112.l",rw,.w,RAM,absL,ok
+0183B4,8,4,FFE11C,move.w,"#$3c, $ffe11c.l",w,.w,RAM,absL,ok
+0183BE,8,4,FFD2C8,move.w,"#$22, $ffd2c8.l",w,.w,RAM,absL,ok
+0183C6,8,4,FFE110,move.w,"#$200, $ffe110.l",w,.w,RAM,absL,ok
+0183CE,8,4,FFE112,move.w,"#$2, $ffe112.l",w,.w,RAM,absL,ok
+0183D6,8,4,FFE11C,move.w,"#$44, $ffe11c.l",w,.w,RAM,absL,ok
+0183EA,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+0183F0,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0183F6,10,6,004B2C,cmpi.l,"#$45cd810, $4b2c.l",r,.l,ROM,absL,ok
+018402,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+01840A,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+018410,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+018422,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+018428,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+018430,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+01843E,8,4,FFD2C8,move.w,"#$10, $ffd2c8.l",w,.w,RAM,absL,ok
+018446,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+01844C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018452,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+01845A,8,4,FFE120,move.b,"#$1, $ffe120.l",w,.b,RAM,absL,ok
+018462,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01846C,6,2,FFE120,clr.b,$ffe120.l,w,.b,RAM,absL,ok
+018472,6,2,FFE10F,clr.b,$ffe10f.l,w,.b,RAM,absL,ok
+018478,8,4,FFE11C,move.w,"#$1a, $ffe11c.l",w,.w,RAM,absL,ok
+018480,8,4,FFE11E,move.w,"#$1, $ffe11e.l",w,.w,RAM,absL,ok
+018488,8,4,FFD2C8,move.w,"#$28, $ffd2c8.l",w,.w,RAM,absL,ok
+018494,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01849A,6,2,FFE112,tst.w,$ffe112.l,r,.w,RAM,absL,ok
+0184A2,6,2,FFE112,subq.w,"#$1, $ffe112.l",rw,.w,RAM,absL,ok
+0184AA,8,4,FFE112,move.w,"#$2, $ffe112.l",w,.w,RAM,absL,ok
+0184B2,8,4,FFE11C,cmpi.w,"#$47, $ffe11c.l",r,.w,RAM,absL,ok
+0184BC,8,4,FFE11C,move.w,"#$43, $ffe11c.l",w,.w,RAM,absL,ok
+0184C4,6,2,FFE11C,addq.w,"#$1, $ffe11c.l",rw,.w,RAM,absL,ok
+0184D2,6,2,FFE11C,move.w,"$ffe11c.l, d2",r,.w,RAM,absL,ok
+0184D8,6,2,011C82,jsr,$11c82.l,x,,ROM,absL,ok
+0184E0,6,2,FFE122,tst.w,$ffe122.l,r,.w,RAM,absL,ok
+0184E8,6,2,FFE122,subq.w,"#$1, $ffe122.l",rw,.w,RAM,absL,ok
+0184F0,8,4,FFE122,move.w,"#$4, $ffe122.l",w,.w,RAM,absL,ok
+0184F8,8,4,FFE124,cmpi.w,"#$73, $ffe124.l",r,.w,RAM,absL,ok
+018502,8,4,FFE124,move.w,"#$6f, $ffe124.l",w,.w,RAM,absL,ok
+01850A,6,2,FFE124,addq.w,"#$1, $ffe124.l",rw,.w,RAM,absL,ok
+018518,6,2,FFE124,move.w,"$ffe124.l, d2",r,.w,RAM,absL,ok
+01851E,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+018526,10,2,0188BC,move.l,"#$188bc, $ffe126.l",imm,.l,ROM,imm32,ok
+018526,10,6,FFE126,move.l,"#$188bc, $ffe126.l",w,.l,RAM,absL,ok
+018530,8,4,FFD2C8,move.w,"#$1d, $ffd2c8.l",w,.w,RAM,absL,ok
+018538,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01853E,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+01854E,8,4,FFE110,move.w,"#$20, $ffe110.l",w,.w,RAM,absL,ok
+018556,8,4,FFD2C8,move.w,"#$1e, $ffd2c8.l",w,.w,RAM,absL,ok
+01855E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018564,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+01856A,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+018570,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+018576,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+01857E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018588,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+018592,6,2,00060E,jsr,$60e.l,x,,ROM,absL,ok
+018598,6,2,000934,jsr,$934.l,x,,ROM,absL,ok
+01859E,6,2,000984,jsr,$984.l,x,,ROM,absL,ok
+0185A4,6,2,000972,jsr,$972.l,x,,ROM,absL,ok
+0185AA,6,2,000960,jsr,$960.l,x,,ROM,absL,ok
+0185B0,6,2,000A1A,jsr,$a1a.l,x,,ROM,absL,ok
+0185C2,6,2,FFE12E,move.w,"d2, $ffe12e.l",w,.w,RAM,absL,ok
+0185C8,6,2,011D58,jsr,$11d58.l,x,,ROM,absL,ok
+0185CE,6,2,FFE130,move.l,"a1, $ffe130.l",w,.l,RAM,absL,ok
+0185D4,8,4,FFA4D8,move.w,"#$d0, $ffa4d8.l",w,.w,RAM,absL,ok
+0185DC,8,4,FFA558,move.w,"#$d0, $ffa558.l",w,.w,RAM,absL,ok
+0185E4,6,2,FFE126,movea.l,"$ffe126.l, a6",r,.l,RAM,absL,ok
+0185EE,8,4,FFE110,move.w,"#$200, $ffe110.l",w,.w,RAM,absL,ok
+0185F6,8,4,FFD2C8,move.w,"#$f, $ffd2c8.l",w,.w,RAM,absL,ok
+0185FE,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018604,6,2,FFE10E,clr.b,$ffe10e.l,w,.b,RAM,absL,ok
+018612,8,4,FFA4D8,move.w,"#$300, $ffa4d8.l",w,.w,RAM,absL,ok
+01861A,8,4,FFA558,move.w,"#$300, $ffa558.l",w,.w,RAM,absL,ok
+01862C,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+01863A,6,2,FFE050,move.l,"d0, $ffe050.l",w,.l,RAM,absL,ok
+018640,8,4,FFE05A,move.w,"#$2, $ffe05a.l",w,.w,RAM,absL,ok
+01864C,6,2,00BD0C,jsr,$bd0c.l,x,,ROM,absL,ok
+018656,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+018662,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+018678,6,2,FFDBB7,lea.l,"$ffdbb7.l, a4",addr,.l,RAM,absL,ok
+018688,6,2,FFE126,move.l,"a6, $ffe126.l",w,.l,RAM,absL,ok
+018694,8,4,FFD2C8,move.w,"#$1f, $ffd2c8.l",w,.w,RAM,absL,ok
+01869C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0186A2,8,4,FFE6C2,move.w,"#$2140, $ffe6c2.l",w,.w,RAM,absL,ok
+0186AA,8,4,FFE6C4,move.w,"#$3eb0, $ffe6c4.l",w,.w,RAM,absL,ok
+0186B6,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+0186BE,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+0186C4,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+0186CA,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+0186D0,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+0186D8,8,4,FFE110,move.w,"#$c0, $ffe110.l",w,.w,RAM,absL,ok
+0186E0,8,4,FFD2C8,move.w,"#$20, $ffd2c8.l",w,.w,RAM,absL,ok
+0186E8,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0186EE,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+0186F4,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+0186FA,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+018700,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+018708,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+01870E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018714,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+018724,8,4,FFE110,move.w,"#$40, $ffe110.l",w,.w,RAM,absL,ok
+01872C,8,4,FFE10E,move.b,"#$7, $ffe10e.l",w,.b,RAM,absL,ok
+018734,8,4,FFD2C8,move.w,"#$21, $ffd2c8.l",w,.w,RAM,absL,ok
+01873C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018742,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+018748,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+01874E,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+018756,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+01875C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018762,8,4,FFD2C8,move.w,"#$1d, $ffd2c8.l",w,.w,RAM,absL,ok
+018770,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018776,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+01877C,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+018782,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+018794,6,2,011BB0,jsr,$11bb0.l,x,,ROM,absL,ok
+01879A,6,2,FFE122,clr.w,$ffe122.l,w,.w,RAM,absL,ok
+0187A0,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+0187A6,8,4,FFE12C,move.w,"#$79, $ffe12c.l",w,.w,RAM,absL,ok
+0187AE,8,4,FFD2C8,move.w,"#$23, $ffd2c8.l",w,.w,RAM,absL,ok
+0187B6,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0187BC,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+0187C2,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+0187C8,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+0187CE,8,4,FFE12C,cmpi.w,"#$7f, $ffe12c.l",r,.w,RAM,absL,ok
+0187DA,6,2,FFE12C,move.w,"$ffe12c.l, d0",r,.w,RAM,absL,ok
+0187E2,8,4,FFE110,move.w,"#$100, $ffe110.l",w,.w,RAM,absL,ok
+0187EA,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0187F6,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+018808,8,4,FFD2C8,move.w,"#$24, $ffd2c8.l",w,.w,RAM,absL,ok
+018810,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018816,8,4,FFE110,move.w,"#$200, $ffe110.l",w,.w,RAM,absL,ok
+01881E,6,2,FFE10F,clr.b,$ffe10f.l,w,.b,RAM,absL,ok
+018828,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+01882E,8,4,FFD2C8,move.w,"#$27, $ffd2c8.l",w,.w,RAM,absL,ok
+018836,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01883C,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+018842,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+018848,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+01884E,6,2,FFE110,tst.w,$ffe110.l,r,.w,RAM,absL,ok
+018856,6,2,FFE110,subq.w,"#$1, $ffe110.l",rw,.w,RAM,absL,ok
+01885C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018862,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+018872,8,4,FFD2C8,move.w,"#$25, $ffd2c8.l",w,.w,RAM,absL,ok
+01887A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+018880,6,2,018320,jsr,$18320.l,x,,ROM,absL,ok
+018886,6,2,01849A,jsr,$1849a.l,x,,ROM,absL,ok
+01888C,6,2,0184E0,jsr,$184e0.l,x,,ROM,absL,ok
+018892,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+01889A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0188A2,6,2,0008EE,jsr,$8ee.l,x,,ROM,absL,ok
+0188A8,6,2,FFE12C,addq.w,"#$1, $ffe12c.l",rw,.w,RAM,absL,ok
+0188AE,8,4,FFD2C8,move.w,"#$23, $ffd2c8.l",w,.w,RAM,absL,ok
+0188B6,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+019B02,6,2,019B22,lea.l,"$19b22.l, a3",addr,.l,ROM,absL,ok
+019B34,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+019B40,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+019B4C,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+019B58,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+019B68,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+019B74,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+019B80,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+019B90,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+019BE6,10,6,000542,cmpi.l,"#$84c41db, $542.l",r,.l,ROM,absL,ok
+01A01E,4,2,000901,move.w,"sr, $901.w",w,.w,ROM,absW,ok
+01A172,6,2,FFE146,move.w,"(a1), $ffe146.l",w,.w,RAM,absL,ok
+01A17A,6,2,FFE146,move.w,"$ffe146.l, (a1)",r,.w,RAM,absL,ok
+01A642,6,2,0091C0,jsr,$91c0.l,x,,ROM,absL,ok
+01A65C,6,2,0091C0,jsr,$91c0.l,x,,ROM,absL,ok
+01A704,6,2,0129F6,lea.l,"$129f6.l, a3",addr,.l,ROM,absL,ok
+01A740,8,4,FFE10E,btst.b,"#$1, $ffe10e.l",r,.b,RAM,absL,ok
+01A75A,6,2,FFE0F4,cmp.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+01A762,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+01A780,6,2,FFE6A2,move.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+01A824,6,2,0129F6,lea.l,"$129f6.l, a3",addr,.l,ROM,absL,ok
+01A860,8,4,FFE10E,btst.b,"#$2, $ffe10e.l",r,.b,RAM,absL,ok
+01A87A,6,2,FFE0F4,cmp.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+01A882,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+01A888,6,2,FFE6A2,move.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+01A8C6,10,6,009234,cmpi.l,"#$84c47f3, $9234.l",r,.l,ROM,absL,ok
+01A968,6,2,012396,lea.l,"$12396.l, a3",addr,.l,ROM,absL,ok
+01A9BA,8,4,FFE10E,btst.b,"#$0, $ffe10e.l",r,.b,RAM,absL,ok
+01A9C6,8,4,FFE10E,btst.b,"#$3, $ffe10e.l",r,.b,RAM,absL,ok
+01A9E6,6,2,FFE0F4,cmp.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+01A9EE,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+01AA0C,6,2,FFE6A2,move.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+01AA34,6,2,FFE14E,lea.l,"$ffe14e.l, a6",addr,.l,RAM,absL,ok
+01AA64,6,2,FFE556,tst.b,$ffe556.l,r,.b,RAM,absL,ok
+01AAC4,6,2,FFE54E,bclr.b,"d1, $ffe54e.l",rw,.b,RAM,absL,ok
+01AB04,6,2,FFE34E,lea.l,"$ffe34e.l, a0",addr,.l,RAM,absL,ok
+01AB20,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+01AB6E,6,2,FFE34E,lea.l,"$ffe34e.l, a0",addr,.l,RAM,absL,ok
+01AB8A,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+01ABB4,6,2,102C00,movea.l,"#$102c00, a6",imm,.l,VRAM,imm32,ok
+01ABC0,6,2,01AC88,lea.l,"$1ac88.l, a2",addr,.l,ROM,absL,ok
+01ABDA,6,2,102C00,move.l,"d0, $102c00.l",w,.l,VRAM,absL,ok
+01ABEE,10,6,FFE588,cmpi.l,"#$200, $ffe588.l",r,.l,RAM,absL,ok
+01ABFA,10,6,102060,cmpi.l,"#$84c79d9, $102060.l",r,.l,VRAM,absL,ok
+01AC06,6,2,FFD31C,lea.l,"$ffd31c.l, a6",addr,.l,RAM,absL,ok
+01AC1A,6,2,FFE588,clr.l,$ffe588.l,w,.l,RAM,absL,ok
+01AC20,6,2,102060,clr.l,$102060.l,w,.l,VRAM,absL,ok
+01AC34,6,2,FF8000,addi.l,"#$ff8000, d0",imm,.l,RAM,imm32,ok
+01AC4E,6,2,FFE14E,lea.l,"$ffe14e.l, a6",addr,.l,RAM,absL,ok
+01B088,10,6,FFE552,addi.l,"#$10, $ffe552.l",rw,.l,RAM,absL,ok
+01B092,10,2,FFE552,move.l,"$ffe552.l, $102a78.l",r,.l,RAM,absL,ok
+01B092,10,6,102A78,move.l,"$ffe552.l, $102a78.l",w,.l,VRAM,absL,ok
+01B09C,10,6,FFE552,cmpi.l,"#$10000, $ffe552.l",r,.l,RAM,absL,ok
+01B0A8,10,6,102A78,cmpi.l,"#$4ed0d4, $102a78.l",r,.l,VRAM,absL,ok
+01B0B4,6,2,FFE556,addq.b,"#$1, $ffe556.l",rw,.b,RAM,absL,ok
+01B0C2,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01B0DA,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B0FC,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01B10E,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01B13A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B15A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B17A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B19C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B1B0,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B1CA,6,2,FFDF44,lea.l,"$ffdf44.l, a3",addr,.l,RAM,absL,ok
+01B1D6,6,2,FFDD44,lea.l,"$ffdd44.l, a3",addr,.l,RAM,absL,ok
+01B1FC,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+01B218,6,2,FFDF44,lea.l,"$ffdf44.l, a3",addr,.l,RAM,absL,ok
+01B224,6,2,FFDD44,lea.l,"$ffdd44.l, a3",addr,.l,RAM,absL,ok
+01B244,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+01B29A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B2E8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B2EE,6,2,FFA4C0,lea.l,"$ffa4c0.l, a3",addr,.l,RAM,absL,ok
+01B2F4,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01B302,8,4,FFD31D,cmpi.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01B30E,8,4,FFD31D,cmpi.b,"#$2, $ffd31d.l",r,.b,RAM,absL,ok
+01B494,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B4A8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B4C0,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B51C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B530,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B544,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B558,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+01B582,6,2,FFE6A2,move.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+01B5B4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B5C8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B5DC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B5FE,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B696,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B6DC,6,2,00A704,jsr,$a704.l,x,,ROM,absL,ok
+01B6EA,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B6F0,6,2,FFE14E,movea.l,"#$ffe14e, a2",imm,.l,RAM,imm32,ok
+01B74E,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B754,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+01B776,6,2,FFE6A2,move.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+01B7AA,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B7B0,6,2,FFE068,lea.l,"$ffe068.l, a4",addr,.l,RAM,absL,ok
+01B7F8,6,2,00BCC6,jsr,$bcc6.l,x,,ROM,absL,ok
+01B802,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B808,6,2,FFE068,lea.l,"$ffe068.l, a4",addr,.l,RAM,absL,ok
+01B850,6,2,00BCBE,jsr,$bcbe.l,x,,ROM,absL,ok
+01B85A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B860,6,2,FFE068,lea.l,"$ffe068.l, a4",addr,.l,RAM,absL,ok
+01B8A8,6,2,00BCA8,jsr,$bca8.l,x,,ROM,absL,ok
+01B8B2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B8C6,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B8CE,6,2,FFFFFF,andi.l,"#$ffffff, d1",imm,.l,RAM,imm32,ok
+01B8E8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B8F0,6,2,FFFFFF,andi.l,"#$ffffff, d1",imm,.l,RAM,imm32,ok
+01B908,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B916,6,2,000A8E,jsr,$a8e.l,x,,ROM,absL,ok
+01B92A,6,2,FFE14E,lea.l,"$ffe14e.l, a4",addr,.l,RAM,absL,ok
+01B984,6,2,FF8000,move.l,"#$ff8000, d0",imm,.l,RAM,imm32,ok
+01B996,6,2,016086,lea.l,"$16086.l, a6",addr,.l,ROM,absL,ok
+01B9D2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B9EC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01B9FA,6,2,000A66,jsr,$a66.l,x,,ROM,absL,ok
+01BA0E,6,2,FFE14E,lea.l,"$ffe14e.l, a4",addr,.l,RAM,absL,ok
+01BA68,6,2,FF8000,move.l,"#$ff8000, d0",imm,.l,RAM,imm32,ok
+01BA7A,6,2,016088,lea.l,"$16088.l, a6",addr,.l,ROM,absL,ok
+01BAB2,6,2,012986,lea.l,"$12986.l, a6",addr,.l,ROM,absL,ok
+01BAFA,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BB14,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BB24,6,2,FFE14E,lea.l,"$ffe14e.l, a6",addr,.l,RAM,absL,ok
+01BB52,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+01BB72,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BB8E,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BB9A,6,2,FF8000,addi.l,"#$ff8000, d0",imm,.l,RAM,imm32,ok
+01BBA2,6,2,FFE14E,subi.l,"#$ffe14e, d1",imm,.l,RAM,imm32,ok
+01BBC6,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BBE4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BC18,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BC1E,6,2,FFE14E,lea.l,"$ffe14e.l, a4",addr,.l,RAM,absL,ok
+01BC46,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+01BC6A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BC7C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BCB4,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+01BCCE,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BCDC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BD1A,6,2,000406,jmp,$406.l,x,,ROM,absL,ok
+01BD44,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01BD6E,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BD8C,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BD9E,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BDC8,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BDE6,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BDF8,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BE0A,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BE38,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BE56,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BE68,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BE96,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BEB4,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BEC6,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BF36,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BF5C,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BF7A,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BF92,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01BFB4,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C028,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C04E,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C06C,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C084,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C0A6,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C0D6,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C0E8,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C118,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C12A,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C174,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C186,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C1B8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C1EA,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C240,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C256,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C26C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C282,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C296,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C2AA,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C2C4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C310,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C324,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C338,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C386,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C3C4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C402,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C440,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C4A8,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C4B6,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C50E,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C51C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C574,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C582,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C5DA,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01C5E8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C618,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01C62C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C636,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01C64A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C698,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C6D6,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C714,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C752,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C78C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C7A2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C7B8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C7CE,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C7E4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C7FA,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C812,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C82A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C842,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C84A,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01C854,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C85C,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01C870,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C87C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C884,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01C898,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C8A4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C8AC,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01C8C4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C8FC,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01C92C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C94E,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C970,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C988,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C9BA,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C9DC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01C9F2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CA08,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CA22,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CA3C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CA56,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CA70,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CA76,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+01CA8C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CA92,6,2,FFE6A2,move.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+01CAA8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CAC2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CADC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CAF4,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01CAFE,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01CB0A,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01CB14,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01CB2A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CB92,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01CB9C,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01CBA8,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01CBB2,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01CBC8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CC30,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01CC3A,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01CC46,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01CC50,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01CC66,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CCCE,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01CCD8,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01CCE4,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01CCEE,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01CD04,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CD94,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CDD4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CE14,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CE54,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CE8A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CEC0,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CED8,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01CEE2,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01CEEE,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01CEF8,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01CF0E,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01CF7E,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01CF88,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01CF94,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01CF9E,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01CFB4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D024,6,2,FFA4C0,cmpa.l,"#$ffa4c0, a4",imm,.l,RAM,imm32,ok
+01D054,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D068,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01D072,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01D086,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01D090,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01D112,6,2,FFA4C0,cmpa.l,"#$ffa4c0, a4",imm,.l,RAM,imm32,ok
+01D142,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D156,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01D160,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01D174,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01D17E,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01D200,6,2,FFA4C0,cmpa.l,"#$ffa4c0, a4",imm,.l,RAM,imm32,ok
+01D230,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D244,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01D24E,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01D262,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01D26C,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01D2EE,6,2,FFA4C0,cmpa.l,"#$ffa4c0, a4",imm,.l,RAM,imm32,ok
+01D31E,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D332,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01D33C,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01D350,8,4,FFD31D,btst.b,"#$1, $ffd31d.l",r,.b,RAM,absL,ok
+01D35A,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01D3E0,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D3FE,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D438,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D474,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D4B0,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D4F4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D516,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D538,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D568,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D588,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D5E6,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D5F0,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01D5F8,6,2,FFE0F0,move.w,"$ffe0f0.l, d0",r,.w,RAM,absL,ok
+01D612,6,2,FFE0F0,move.w,"$ffe0f0.l, d0",r,.w,RAM,absL,ok
+01D634,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01D642,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D656,6,2,FFE0F0,mulu.w,"$ffe0f0.l, d0",r,.w,RAM,absL,ok
+01D66C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D680,6,2,FFE0F0,mulu.w,"$ffe0f0.l, d0",r,.w,RAM,absL,ok
+01D696,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D6A0,6,2,FFD2E0,move.b,"$ffd2e0.l, d0",r,.b,RAM,absL,ok
+01D6B8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D6CC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D6D2,6,2,FFE54E,move.b,"$ffe54e.l, d0",r,.b,RAM,absL,ok
+01D6F4,6,2,FFE54E,bset.b,"d1, $ffe54e.l",rw,.b,RAM,absL,ok
+01D702,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D714,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D736,6,2,FFE54E,bclr.b,"d1, $ffe54e.l",rw,.b,RAM,absL,ok
+01D748,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D764,6,2,00911A,jsr,$911a.l,x,,ROM,absL,ok
+01D772,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D786,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D7A8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D7D8,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D81C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D840,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D85A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D87C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D896,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D8A0,6,2,FFE0F4,move.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+01D8B2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D8C6,6,2,FFA4C0,cmpa.l,"#$ffa4c0, a4",imm,.l,RAM,imm32,ok
+01D8EE,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D902,6,2,FFA4C0,cmpa.l,"#$ffa4c0, a4",imm,.l,RAM,imm32,ok
+01D92A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D946,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D978,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D99A,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01D9BC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DA20,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DA86,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DAE4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DB22,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DBFE,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DCDC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DE1C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DE5E,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DEA2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DEB4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DEE6,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DF18,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DF46,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01DFBC,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E01C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E02A,6,2,FFFFFF,andi.l,"#$ffffff, d0",imm,.l,RAM,imm32,ok
+01E098,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E0C2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E0F4,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E126,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E146,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E162,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+01E168,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+01E16E,6,2,100F80,lea.l,"$100f80.l, a4",addr,.l,VRAM,absL,ok
+01E1B2,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E1C0,6,2,FFE0F4,cmp.w,"$ffe0f4.l, d0",r,.w,RAM,absL,ok
+01E1CA,6,2,FFE0F4,move.w,"d0, $ffe0f4.l",w,.w,RAM,absL,ok
+01E1D0,8,4,FFE0F6,move.w,"#$1, $ffe0f6.l",w,.w,RAM,absL,ok
+01E1E0,8,4,FFE0F6,addi.w,"#$1, $ffe0f6.l",rw,.w,RAM,absL,ok
+01E1EC,6,2,FFE0F6,cmp.w,"$ffe0f6.l, d0",r,.w,RAM,absL,ok
+01E1F4,8,4,FFE0F4,addi.w,"#$1, $ffe0f4.l",rw,.w,RAM,absL,ok
+01E204,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E218,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E22C,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E27E,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+01E284,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+01E28A,6,2,100F80,lea.l,"$100f80.l, a4",addr,.l,VRAM,absL,ok
+01E2B0,6,2,01ABEE,jmp,$1abee.l,x,,ROM,absL,ok
+01E2BE,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E2E0,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+01E2E6,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+01E2EC,6,2,100F80,lea.l,"$100f80.l, a4",addr,.l,VRAM,absL,ok
+01E330,6,2,01ABAE,jmp,$1abae.l,x,,ROM,absL,ok
+01E3D0,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+01E3DA,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+01E3E2,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+01E3EA,6,2,FFFFFF,andi.l,"#$ffffff, d1",imm,.l,RAM,imm32,ok
+01E462,6,2,01E55E,lea.l,"$1e55e.l, a3",addr,.l,ROM,absL,ok
+01E494,6,2,01E53A,lea.l,"$1e53a.l, a3",addr,.l,ROM,absL,ok
+01E4B2,6,2,01E582,lea.l,"$1e582.l, a3",addr,.l,ROM,absL,ok
+01E65E,6,2,01E94A,lea.l,"$1e94a.l, a6",addr,.l,ROM,absL,ok
+01E694,6,2,01E94A,lea.l,"$1e94a.l, a6",addr,.l,ROM,absL,ok
+01E85E,6,2,01E894,lea.l,"$1e894.l, a6",addr,.l,ROM,absL,ok
+01E876,6,2,01E894,lea.l,"$1e894.l, a6",addr,.l,ROM,absL,ok
+01EB4A,4,2,000400,lea.l,"$400.w, a0",addr,.l,ROM,absW,ok
+01EB4E,6,2,07FFFF,lea.l,"$7ffff.l, a1",addr,.l,ROM,absL,ok
+01EB68,6,2,FF8000,lea.l,"$ffff8000.l, a2",addr,.l,RAM,absL,ok
+01EB6E,6,2,01EB7A,lea.l,"$1eb7a.l, a1",addr,.l,ROM,absL,ok
+01EB82,6,2,100000,lea.l,"$100000.l, a2",addr,.l,VRAM,absL,ok
+01EB88,6,2,100FFF,lea.l,"$100fff.l, a3",addr,.l,VRAM,absL,ok
+01EB8E,6,2,01EB9A,lea.l,"$1eb9a.l, a1",addr,.l,ROM,absL,ok
+01EBA2,6,2,101000,lea.l,"$101000.l, a2",addr,.l,VRAM,absL,ok
+01EBA8,6,2,101FFF,lea.l,"$101fff.l, a3",addr,.l,VRAM,absL,ok
+01EBAE,6,2,01EBBA,lea.l,"$1ebba.l, a1",addr,.l,ROM,absL,ok
+01EBC2,6,2,440006,lea.l,"$440006.l, a2",addr,.l,SPR,absL,ok
+01EBC8,6,2,440FFD,lea.l,"$440ffd.l, a3",addr,.l,SPR,absL,ok
+01EBCE,6,2,01EBDC,lea.l,"$1ebdc.l, a1",addr,.l,ROM,absL,ok
+01EBE0,8,4,FFE57D,bset.b,"#$3, $ffe57d.l",rw,.b,RAM,absL,ok
+01EBE8,6,2,200000,lea.l,"$200000.l, a2",addr,.l,PAL,absL,ok
+01EBEE,6,2,2007FF,lea.l,"$2007ff.l, a3",addr,.l,PAL,absL,ok
+01EBF4,6,2,01EBFE,lea.l,"$1ebfe.l, a1",addr,.l,ROM,absL,ok
+01EC08,6,2,FFE558,move.l,"d4, $ffe558.l",w,.l,RAM,absL,ok
+01EC0E,6,2,FFE57D,move.b,"d6, $ffe57d.l",w,.b,RAM,absL,ok
+01EC14,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+01EC52,6,2,440006,cmpa.l,"#$440006, a2",imm,.l,SPR,imm32,ok
+01EC6A,6,2,FFE588,clr.l,$ffe588.l,w,.l,RAM,absL,ok
+01EC70,6,2,102060,clr.l,$102060.l,w,.l,VRAM,absL,ok
+01EC76,6,2,01ECC0,movea.l,"#$1ecc0, a0",imm,.l,ROM,imm32,ok
+01EC90,6,2,01ECE8,movea.l,"#$1ece8, a0",imm,.l,ROM,imm32,ok
+01ED10,10,6,01B0AA,cmpi.l,"#$4ed0d4, $1b0aa.l",r,.l,ROM,absL,ok
+01ED20,6,2,FFDB5A,clr.b,$ffdb5a.l,w,.b,RAM,absL,ok
+01ED26,6,2,FFD2C8,move.w,"$ffd2c8.l, d0",r,.w,RAM,absL,ok
+01ED3A,6,2,FFE560,tst.w,$ffe560.l,r,.w,RAM,absL,ok
+01ED46,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+01ED4C,6,2,FFDB56,tst.w,$ffdb56.l,r,.w,RAM,absL,ok
+01ED5A,6,2,FFD2C8,clr.w,$ffd2c8.l,w,.w,RAM,absL,ok
+01ED60,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01ED66,8,4,0000C0,btst.b,"#$1, $c0.l",r,.b,ROM,absL,ok
+01ED7C,8,4,FFE560,move.w,"#$100, $ffe560.l",w,.w,RAM,absL,ok
+01ED84,6,2,FFE560,subq.w,"#$1, $ffe560.l",rw,.w,RAM,absL,ok
+01ED9A,8,4,FFD2DF,btst.b,"#$7, $ffd2df.l",r,.b,RAM,absL,ok
+01EDA8,8,4,FFE560,move.w,"#$64, $ffe560.l",w,.w,RAM,absL,ok
+01EDB0,8,4,FFD2C8,move.w,"#$2, $ffd2c8.l",w,.w,RAM,absL,ok
+01EDBA,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+01EDC2,8,4,FFD2C6,move.w,"#$2, $ffd2c6.l",w,.w,RAM,absL,ok
+01EDCA,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+01EDD2,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01EDD8,6,2,FFE560,subq.w,"#$1, $ffe560.l",rw,.w,RAM,absL,ok
+01EDE0,8,4,FFD2C6,move.w,"#$4, $ffd2c6.l",w,.w,RAM,absL,ok
+01EDE8,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01EDF2,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+01EDF8,6,2,FFE6A8,clr.w,$ffe6a8.l,w,.w,RAM,absL,ok
+01EDFE,6,2,FFE6A6,clr.w,$ffe6a6.l,w,.w,RAM,absL,ok
+01EE0C,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+01EE12,8,4,FFE560,move.w,"#$100, $ffe560.l",w,.w,RAM,absL,ok
+01EE28,8,4,FFE57D,btst.b,"#$0, $ffe57d.l",r,.b,RAM,absL,ok
+01EE40,8,4,FFE57D,btst.b,"#$1, $ffe57d.l",r,.b,RAM,absL,ok
+01EE58,8,4,FFE57D,btst.b,"#$2, $ffe57d.l",r,.b,RAM,absL,ok
+01EE70,8,4,FFE57D,btst.b,"#$3, $ffe57d.l",r,.b,RAM,absL,ok
+01EE84,6,2,FFD2C6,clr.w,$ffd2c6.l,w,.w,RAM,absL,ok
+01EE8E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+01EE94,6,2,FFE6A8,clr.w,$ffe6a8.l,w,.w,RAM,absL,ok
+01EE9A,6,2,FFE6A6,clr.w,$ffe6a6.l,w,.w,RAM,absL,ok
+01EEA4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01EEAA,6,2,FFD324,lea.l,"$ffd324.l, a0",addr,.l,RAM,absL,ok
+01EEBE,6,2,FFE55C,addq.w,"#$1, $ffe55c.l",rw,.w,RAM,absL,ok
+01EEC4,6,2,01EEDE,lea.l,"$1eede.l, a1",addr,.l,ROM,absL,ok
+01EECA,6,2,FFE55C,move.w,"$ffe55c.l, d0",r,.w,RAM,absL,ok
+01EED8,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+01EF1E,6,2,FFD32E,clr.w,$ffd32e.l,w,.w,RAM,absL,ok
+01EF24,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+01EF2A,6,2,01EDEE,jsr,$1edee.l,x,,ROM,absL,ok
+01EF36,8,4,FFE55C,move.w,"#$1, $ffe55c.l",w,.w,RAM,absL,ok
+01EF46,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+01EF52,8,4,FFE55C,move.w,"#$3, $ffe55c.l",w,.w,RAM,absL,ok
+01EF68,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+01EF74,8,4,FFE55C,move.w,"#$5, $ffe55c.l",w,.w,RAM,absL,ok
+01EF7E,6,2,0006B6,jsr,$6b6.l,x,,ROM,absL,ok
+01EF84,6,2,0006CE,jsr,$6ce.l,x,,ROM,absL,ok
+01EF8C,6,2,FFD2DE,move.b,"$ffd2de.l, d0",r,.b,RAM,absL,ok
+01EF96,6,2,FFE55E,move.w,"d0, $ffe55e.l",w,.w,RAM,absL,ok
+01EFA6,8,4,FFD2DE,btst.b,"#$6, $ffd2de.l",r,.b,RAM,absL,ok
+01EFB8,8,4,FFD2DE,btst.b,"#$7, $ffd2de.l",r,.b,RAM,absL,ok
+01EFCC,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+01EFD8,8,4,FFE55C,move.w,"#$7, $ffe55c.l",w,.w,RAM,absL,ok
+01EFE2,6,2,0006B6,jsr,$6b6.l,x,,ROM,absL,ok
+01EFE8,6,2,0006CE,jsr,$6ce.l,x,,ROM,absL,ok
+01EFEE,6,2,FFD2DF,move.b,"$ffd2df.l, d0",r,.b,RAM,absL,ok
+01EFFA,6,2,FFE579,move.b,"d1, $ffe579.l",w,.b,RAM,absL,ok
+01F008,6,2,FFE578,move.b,"d1, $ffe578.l",w,.b,RAM,absL,ok
+01F016,6,2,FFE577,move.b,"d1, $ffe577.l",w,.b,RAM,absL,ok
+01F024,6,2,FFE576,move.b,"d1, $ffe576.l",w,.b,RAM,absL,ok
+01F032,6,2,FFE575,move.b,"d1, $ffe575.l",w,.b,RAM,absL,ok
+01F040,6,2,FFE574,move.b,"d1, $ffe574.l",w,.b,RAM,absL,ok
+01F04C,8,4,FFD2DF,btst.b,"#$7, $ffd2df.l",r,.b,RAM,absL,ok
+01F064,8,4,FFD2DF,btst.b,"#$6, $ffd2df.l",r,.b,RAM,absL,ok
+01F07C,8,4,FFD2DF,btst.b,"#$5, $ffd2df.l",r,.b,RAM,absL,ok
+01F09E,8,4,FFD2DF,btst.b,"#$2, $ffd2df.l",r,.b,RAM,absL,ok
+01F0B8,6,2,FFD2E0,move.b,"$ffd2e0.l, d1",r,.b,RAM,absL,ok
+01F0CE,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+01F0DA,6,2,FFE56C,clr.w,$ffe56c.l,w,.w,RAM,absL,ok
+01F0EA,8,4,FFE55C,move.w,"#$9, $ffe55c.l",w,.w,RAM,absL,ok
+01F126,6,2,FFE56E,clr.w,$ffe56e.l,w,.w,RAM,absL,ok
+01F136,6,2,FFE56C,move.w,"$ffe56c.l, d0",r,.w,RAM,absL,ok
+01F14C,8,4,FFE56E,move.w,"#$20, $ffe56e.l",w,.w,RAM,absL,ok
+01F162,8,4,FFE56E,move.w,"#$20, $ffe56e.l",w,.w,RAM,absL,ok
+01F16E,6,2,FFE56E,subq.w,"#$1, $ffe56e.l",rw,.w,RAM,absL,ok
+01F17C,8,4,FFE56E,move.w,"#$3, $ffe56e.l",w,.w,RAM,absL,ok
+01F188,6,2,FFE56E,subq.w,"#$1, $ffe56e.l",rw,.w,RAM,absL,ok
+01F196,8,4,FFE56E,move.w,"#$3, $ffe56e.l",w,.w,RAM,absL,ok
+01F1A4,6,2,FFE56C,move.w,"$ffe56c.l, d0",r,.w,RAM,absL,ok
+01F1B6,6,2,FFE56C,move.w,"d0, $ffe56c.l",w,.w,RAM,absL,ok
+01F1C0,6,2,FFE56C,move.w,"$ffe56c.l, d0",r,.w,RAM,absL,ok
+01F1D0,6,2,FFE56C,move.w,"d0, $ffe56c.l",w,.w,RAM,absL,ok
+01F1E8,6,2,FFD32E,clr.w,$ffd32e.l,w,.w,RAM,absL,ok
+01F1EE,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+01F1FE,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+01F206,8,4,FFA4C0,move.w,"#$804, $ffa4c0.l",w,.w,RAM,absL,ok
+01F20E,8,4,FFA4CA,move.w,"#$7, $ffa4ca.l",w,.w,RAM,absL,ok
+01F216,6,2,FFE57E,clr.w,$ffe57e.l,w,.w,RAM,absL,ok
+01F222,6,2,FFE584,move.l,"d0, $ffe584.l",w,.l,RAM,absL,ok
+01F228,6,2,FFE580,move.l,"d0, $ffe580.l",w,.l,RAM,absL,ok
+01F22E,8,4,FFE55C,move.w,"#$b, $ffe55c.l",w,.w,RAM,absL,ok
+01F23A,6,2,FFD32A,lea.l,"$ffd32a.l, a1",addr,.l,RAM,absL,ok
+01F24A,6,2,FFE57E,move.w,"$ffe57e.l, d0",r,.w,RAM,absL,ok
+01F25E,6,2,FFE57E,move.w,"d0, $ffe57e.l",w,.w,RAM,absL,ok
+01F26E,6,2,FFE562,clr.w,$ffe562.l,w,.w,RAM,absL,ok
+01F286,6,2,01F276,lea.l,"$1f276.l, a1",addr,.l,ROM,absL,ok
+01F28E,6,2,FFE562,move.b,"$ffe562.l, d0",r,.b,RAM,absL,ok
+01F29A,8,4,FFE562,addi.w,"#$20, $ffe562.l",rw,.w,RAM,absL,ok
+01F2B8,6,2,FFE57E,tst.w,$ffe57e.l,r,.w,RAM,absL,ok
+01F2C8,6,2,FFE6A2,add.l,"d0, $ffe6a2.l",rw,.l,RAM,absL,ok
+01F2D6,6,2,FFE6A2,sub.l,"d0, $ffe6a2.l",rw,.l,RAM,absL,ok
+01F2E4,6,2,FFE69E,add.l,"d0, $ffe69e.l",rw,.l,RAM,absL,ok
+01F2F2,6,2,FFE69E,sub.l,"d0, $ffe69e.l",rw,.l,RAM,absL,ok
+01F302,6,2,FFE580,add.l,"d0, $ffe580.l",rw,.l,RAM,absL,ok
+01F310,6,2,FFE580,sub.l,"d0, $ffe580.l",rw,.l,RAM,absL,ok
+01F31E,6,2,FFE584,add.l,"d0, $ffe584.l",rw,.l,RAM,absL,ok
+01F32C,6,2,FFE584,sub.l,"d0, $ffe584.l",rw,.l,RAM,absL,ok
+01F334,6,2,FFE69E,move.l,"$ffe69e.l, d0",r,.l,RAM,absL,ok
+01F33A,6,2,FFE584,add.l,"$ffe584.l, d0",r,.l,RAM,absL,ok
+01F340,6,2,FFA4D8,move.l,"d0, $ffa4d8.l",w,.l,RAM,absL,ok
+01F346,6,2,FFE6A2,move.l,"$ffe6a2.l, d0",r,.l,RAM,absL,ok
+01F34C,6,2,FFE580,add.l,"$ffe580.l, d0",r,.l,RAM,absL,ok
+01F352,6,2,FFA4DC,move.l,"d0, $ffa4dc.l",w,.l,RAM,absL,ok
+01F364,6,2,010E7C,jsr,$10e7c.l,x,,ROM,absL,ok
+01F36A,10,2,01F472,move.l,"#$1f472, $ffe566.l",imm,.l,ROM,imm32,ok
+01F36A,10,6,FFE566,move.l,"#$1f472, $ffe566.l",w,.l,RAM,absL,ok
+01F374,8,4,FFE562,move.w,"#$808, $ffe562.l",w,.w,RAM,absL,ok
+01F37C,8,4,FFE564,move.w,"#$2, $ffe564.l",w,.w,RAM,absL,ok
+01F390,8,4,FFE55C,move.w,"#$d, $ffe55c.l",w,.w,RAM,absL,ok
+01F3B4,6,2,FFE563,move.b,"$ffe563.l, d0",r,.b,RAM,absL,ok
+01F3C2,6,2,FFE563,move.b,"d0, $ffe563.l",w,.b,RAM,absL,ok
+01F3D6,6,2,FFE563,move.b,"$ffe563.l, d0",r,.b,RAM,absL,ok
+01F3E4,6,2,FFE563,move.b,"d0, $ffe563.l",w,.b,RAM,absL,ok
+01F3F8,6,2,FFE565,move.b,"$ffe565.l, d0",r,.b,RAM,absL,ok
+01F406,6,2,FFE565,move.b,"d0, $ffe565.l",w,.b,RAM,absL,ok
+01F41A,6,2,FFE565,move.b,"$ffe565.l, d0",r,.b,RAM,absL,ok
+01F428,6,2,FFE565,move.b,"d0, $ffe565.l",w,.b,RAM,absL,ok
+01F434,6,2,FFE562,subq.b,"#$1, $ffe562.l",rw,.b,RAM,absL,ok
+01F43C,10,2,FFE563,move.b,"$ffe563.l, $ffe562.l",r,.b,RAM,absL,ok
+01F43C,10,6,FFE562,move.b,"$ffe563.l, $ffe562.l",w,.b,RAM,absL,ok
+01F44A,6,2,FFE564,move.b,"$ffe564.l, d0",r,.b,RAM,absL,ok
+01F452,6,2,FFE564,move.b,"d0, $ffe564.l",w,.b,RAM,absL,ok
+01F458,6,2,FFE565,cmp.b,"$ffe565.l, d0",r,.b,RAM,absL,ok
+01F460,6,2,FFE564,clr.b,$ffe564.l,w,.b,RAM,absL,ok
+01F466,10,2,01F472,move.l,"#$1f472, $ffe566.l",imm,.l,ROM,imm32,ok
+01F466,10,6,FFE566,move.l,"#$1f472, $ffe566.l",w,.l,RAM,absL,ok
+01F4B4,6,2,FFE566,movea.l,"$ffe566.l, a0",r,.l,RAM,absL,ok
+01F4BE,6,2,FFE566,move.l,"a0, $ffe566.l",w,.l,RAM,absL,ok
+01F4C4,6,2,100000,lea.l,"$100000.l, a0",addr,.l,VRAM,absL,ok
+01F4CA,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+01FB16,4,2,000800,move.l,"d0, $800.w",w,.l,ROM,absW,ok
+01FF78,4,2,009801,move.w,"sr, $9801.w",w,.w,ROM,absW,MISMATCH
+01FF82,4,2,000004,bchg.b,"d2, $4.w",rw,.b,ROM,absW,ok
+02001E,6,4,000026,ori.b,"#$2, $26.w",rw,.b,ROM,absW,ok
+020024,4,2,009801,move.w,"sr, $9801.w",w,.w,ROM,absW,MISMATCH
+020388,10,2,030D40,move.l,"#$30d40, $ffd2ea.l",imm,.l,ROM,imm32,ok
+020388,10,6,FFD2EA,move.l,"#$30d40, $ffd2ea.l",w,.l,RAM,absL,ok
+020392,6,2,FFE5D4,lea.l,"$ffe5d4.l, a0",addr,.l,RAM,absL,ok
+020398,6,2,0202E8,lea.l,"$202e8.l, a1",addr,.l,ROM,absL,ok
+0203AA,10,2,030D40,move.l,"#$30d40, $ffd2ea.l",imm,.l,ROM,imm32,ok
+0203AA,10,6,FFD2EA,move.l,"#$30d40, $ffd2ea.l",w,.l,RAM,absL,ok
+0203B4,6,2,FFE5D4,lea.l,"$ffe5d4.l, a0",addr,.l,RAM,absL,ok
+0203D0,6,2,FFD2EA,move.l,"(a0), $ffd2ea.l",w,.l,RAM,absL,ok
+0203D8,6,2,FFE5C2,tst.w,$ffe5c2.l,r,.w,RAM,absL,ok
+0203E0,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+0203E8,6,2,001206,jmp,$1206.l,x,,ROM,absL,ok
+0203EE,8,4,FFD2C6,move.w,"#$7, $ffd2c6.l",w,.w,RAM,absL,ok
+0203F6,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+0203FE,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020404,6,2,FFE5C2,tst.w,$ffe5c2.l,r,.w,RAM,absL,ok
+02040C,6,2,FFD31C,tst.b,$ffd31c.l,r,.b,RAM,absL,ok
+020414,6,2,001206,jmp,$1206.l,x,,ROM,absL,ok
+02041A,6,2,FFD2C8,move.w,"$ffd2c8.l, d0",r,.w,RAM,absL,ok
+020442,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+02044A,8,4,FFD2C8,move.w,"#$3, $ffd2c8.l",w,.w,RAM,absL,ok
+020452,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020458,6,2,FFE5A0,tst.w,$ffe5a0.l,r,.w,RAM,absL,ok
+020460,8,4,FFE5A0,subi.w,"#$1, $ffe5a0.l",rw,.w,RAM,absL,ok
+020468,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020476,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+02047C,8,4,FFD2C8,move.w,"#$6, $ffd2c8.l",w,.w,RAM,absL,ok
+020484,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+02048A,8,4,FFE6AE,move.w,"#$660, $ffe6ae.l",w,.w,RAM,absL,ok
+020492,8,4,FFE6B0,move.w,"#$3eb0, $ffe6b0.l",w,.w,RAM,absL,ok
+02049E,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+0204A4,6,2,020B56,jsr,$20b56.l,x,,ROM,absL,ok
+0204AA,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0204B6,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0204BC,8,4,FFE5A0,move.w,"#$100, $ffe5a0.l",w,.w,RAM,absL,ok
+0204CC,8,4,FFD2C8,move.w,"#$5, $ffd2c8.l",w,.w,RAM,absL,ok
+0204D4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0204DA,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+0204EA,8,4,FFD2C8,move.w,"#$2, $ffd2c8.l",w,.w,RAM,absL,ok
+0204F2,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0204F8,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+020500,6,2,FFE5C2,tst.b,$ffe5c2.l,r,.b,RAM,absL,ok
+020508,6,2,FFE5C2,move.w,"$ffe5c2.l, d0",r,.w,RAM,absL,ok
+02050E,6,2,020BFC,jsr,$20bfc.l,x,,ROM,absL,ok
+020518,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+02051E,8,4,FFD2C8,move.w,"#$4, $ffd2c8.l",w,.w,RAM,absL,ok
+020526,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+02052C,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+02053C,8,4,FFD2C8,move.w,"#$7, $ffd2c8.l",w,.w,RAM,absL,ok
+020544,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+02054A,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+020556,6,2,FFE5C2,clr.w,$ffe5c2.l,w,.w,RAM,absL,ok
+02055C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020562,6,2,FFE5C2,clr.w,$ffe5c2.l,w,.w,RAM,absL,ok
+020568,8,4,FF8004,move.w,"#$1, $ff8004.l",w,.w,RAM,absL,ok
+020570,8,4,FFD2C6,move.w,"#$9, $ffd2c6.l",w,.w,RAM,absL,ok
+020578,8,4,FFD2C8,move.w,"#$1, $ffd2c8.l",w,.w,RAM,absL,ok
+020580,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020586,6,2,FFD2C8,move.w,"$ffd2c8.l, d0",r,.w,RAM,absL,ok
+0205C4,10,6,FFE5C4,move.l,"#$3e3e3e3e, $ffe5c4.l",w,.l,RAM,absL,ok
+0205CE,10,6,FFE5C8,move.l,"#$3e3effff, $ffe5c8.l",w,.l,RAM,absL,ok
+0205D8,6,2,FFA506,move.l,"$ffa506.l, d0",r,.l,RAM,absL,ok
+0205DE,6,2,FFE590,move.l,"d0, $ffe590.l",w,.l,RAM,absL,ok
+0205E4,6,2,FFA506,clr.l,$ffa506.l,w,.l,RAM,absL,ok
+0205EE,6,2,FFE59E,move.b,"d1, $ffe59e.l",w,.b,RAM,absL,ok
+0205F4,6,2,FFE5C2,move.b,"d1, $ffe5c2.l",w,.b,RAM,absL,ok
+020602,6,2,FFE5C2,clr.b,$ffe5c2.l,w,.b,RAM,absL,ok
+020608,8,4,FFD2C8,move.w,"#$4, $ffd2c8.l",w,.w,RAM,absL,ok
+020610,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020616,6,2,FFDB5A,clr.b,$ffdb5a.l,w,.b,RAM,absL,ok
+02061C,8,4,FFD2C8,move.w,"#$2, $ffd2c8.l",w,.w,RAM,absL,ok
+020624,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+02062A,6,2,FFE676,addq.l,"#$1, $ffe676.l",rw,.l,RAM,absL,ok
+020630,10,2,FFE676,move.l,"$ffe676.l, $102120.l",r,.l,RAM,absL,ok
+020630,10,6,102120,move.l,"$ffe676.l, $102120.l",w,.l,VRAM,absL,ok
+02063A,8,4,FFE598,move.b,"#$1, $ffe598.l",w,.b,RAM,absL,ok
+020642,8,4,FFE6AE,move.w,"#$a40, $ffe6ae.l",w,.w,RAM,absL,ok
+02064A,8,4,FFE6B0,move.w,"#$3eb0, $ffe6b0.l",w,.w,RAM,absL,ok
+020656,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+020660,8,4,FFD2C8,move.w,"#$a, $ffd2c8.l",w,.w,RAM,absL,ok
+020668,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+02066E,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+020676,8,4,FFD2C8,move.w,"#$3, $ffd2c8.l",w,.w,RAM,absL,ok
+02067E,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020684,10,6,FFE676,cmpi.l,"#$8, $ffe676.l",r,.l,RAM,absL,ok
+020690,10,6,102120,cmpi.l,"#$84c5959, $102120.l",r,.l,VRAM,absL,ok
+02069C,8,4,FFD2C6,move.w,"#$14, $ffd2c6.l",w,.w,RAM,absL,ok
+0206A6,6,2,FFD329,lea.l,"$ffd329.l, a1",addr,.l,RAM,absL,ok
+0206B0,6,2,FFE594,tst.b,$ffe594.l,r,.b,RAM,absL,ok
+0206B8,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0206C2,8,4,FFD2C8,move.w,"#$4, $ffd2c8.l",w,.w,RAM,absL,ok
+0206CA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0206D0,10,6,FFE5C4,move.l,"#$3e3e3e3e, $ffe5c4.l",w,.l,RAM,absL,ok
+0206DA,10,6,FFE5C8,move.l,"#$3e3effff, $ffe5c8.l",w,.l,RAM,absL,ok
+0206E4,6,2,FFA586,move.l,"$ffa586.l, d0",r,.l,RAM,absL,ok
+0206EA,6,2,FFE590,move.l,"d0, $ffe590.l",w,.l,RAM,absL,ok
+0206F0,6,2,FFA586,clr.l,$ffa586.l,w,.l,RAM,absL,ok
+0206FA,6,2,FFE59E,move.b,"d1, $ffe59e.l",w,.b,RAM,absL,ok
+020700,6,2,FFE5C3,move.b,"d1, $ffe5c3.l",w,.b,RAM,absL,ok
+02070C,6,2,FFE5C3,clr.b,$ffe5c3.l,w,.b,RAM,absL,ok
+020712,8,4,FFD2C8,move.w,"#$7, $ffd2c8.l",w,.w,RAM,absL,ok
+02071A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020720,8,4,FFDB5A,move.b,"#$1, $ffdb5a.l",w,.b,RAM,absL,ok
+020728,8,4,FFD2C8,move.w,"#$5, $ffd2c8.l",w,.w,RAM,absL,ok
+020730,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020736,10,6,0062F4,cmpi.l,"#$84cd0c4, $62f4.l",r,.l,ROM,absL,ok
+020742,6,2,000400,jmp,$400.l,x,,ROM,absL,ok
+020748,8,4,FFE598,move.b,"#$2, $ffe598.l",w,.b,RAM,absL,ok
+020750,8,4,FFE6AE,move.w,"#$a40, $ffe6ae.l",w,.w,RAM,absL,ok
+020758,8,4,FFE6B0,move.w,"#$3eb0, $ffe6b0.l",w,.w,RAM,absL,ok
+020764,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+02076E,8,4,FFD2C8,move.w,"#$b, $ffd2c8.l",w,.w,RAM,absL,ok
+020776,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+02077C,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+020784,8,4,FFD2C8,move.w,"#$6, $ffd2c8.l",w,.w,RAM,absL,ok
+02078C,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020792,6,2,FFD32F,lea.l,"$ffd32f.l, a1",addr,.l,RAM,absL,ok
+02079C,6,2,FFE594,tst.b,$ffe594.l,r,.b,RAM,absL,ok
+0207A4,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0207B0,6,2,FFE67B,tst.b,$ffe67b.l,r,.b,RAM,absL,ok
+0207B8,6,2,FFE611,lea.l,"$ffe611.l, a6",addr,.l,RAM,absL,ok
+0207CA,6,2,FFE5E8,lea.l,"$ffe5e8.l, a6",addr,.l,RAM,absL,ok
+0207DA,6,2,FFE67B,addq.b,"#$1, $ffe67b.l",rw,.b,RAM,absL,ok
+0207E2,8,4,FFD2C8,move.w,"#$7, $ffd2c8.l",w,.w,RAM,absL,ok
+0207EA,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+0207F0,6,2,FFE5C2,move.b,"$ffe5c2.l, d0",r,.b,RAM,absL,ok
+0207F6,6,2,FFE5C3,move.b,"$ffe5c3.l, d1",r,.b,RAM,absL,ok
+020808,8,4,FFE5C2,addi.b,"#$1, $ffe5c2.l",rw,.b,RAM,absL,ok
+020810,8,4,FFE5C2,cmpi.b,"#$a, $ffe5c2.l",r,.b,RAM,absL,ok
+02081A,8,4,FFE5C2,move.b,"#$7f, $ffe5c2.l",w,.b,RAM,absL,ok
+020822,8,4,FFD2C8,move.w,"#$8, $ffd2c8.l",w,.w,RAM,absL,ok
+02082A,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+020830,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+020840,8,4,FFD2C8,move.w,"#$9, $ffd2c8.l",w,.w,RAM,absL,ok
+020848,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+02084E,6,2,FFE10F,tst.b,$ffe10f.l,r,.b,RAM,absL,ok
+020856,6,2,FFE10F,clr.b,$ffe10f.l,w,.b,RAM,absL,ok
+02085C,6,2,FFD2C8,clr.w,$ffd2c8.l,w,.w,RAM,absL,ok
+020866,6,2,010DCA,jmp,$10dca.l,x,,ROM,absL,ok
+02086C,6,2,FFE5D4,lea.l,"$ffe5d4.l, a0",addr,.l,RAM,absL,ok
+020892,8,4,FFE10F,move.b,"#$1, $ffe10f.l",w,.b,RAM,absL,ok
+02089E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0208AC,8,4,FFE594,move.b,"#$1e, $ffe594.l",w,.b,RAM,absL,ok
+0208B4,8,4,FFE595,move.b,"#$3b, $ffe595.l",w,.b,RAM,absL,ok
+0208BC,8,4,FFE59A,move.w,"#$78, $ffe59a.l",w,.w,RAM,absL,ok
+0208C4,8,4,FFE59C,move.w,"#$0, $ffe59c.l",w,.w,RAM,absL,ok
+0208CC,8,4,FFE596,move.b,"#$1d, $ffe596.l",w,.b,RAM,absL,ok
+0208D4,6,2,FFE597,clr.b,$ffe597.l,w,.b,RAM,absL,ok
+0208DA,6,2,000A58,jsr,$a58.l,x,,ROM,absL,ok
+0208E0,6,2,FF8E30,lea.l,"$ff8e30.l, a6",addr,.l,RAM,absL,ok
+020902,6,2,FF8E60,lea.l,"$ff8e60.l, a6",addr,.l,RAM,absL,ok
+02090C,8,4,FFE598,cmpi.b,"#$1, $ffe598.l",r,.b,RAM,absL,ok
+02093A,6,2,FFE595,tst.b,$ffe595.l,r,.b,RAM,absL,ok
+020942,6,2,FFE594,tst.b,$ffe594.l,r,.b,RAM,absL,ok
+02094A,8,4,FFE595,subi.b,"#$1, $ffe595.l",rw,.b,RAM,absL,ok
+020954,8,4,FFE594,subi.b,"#$1, $ffe594.l",rw,.b,RAM,absL,ok
+02095C,8,4,FFE595,move.b,"#$3b, $ffe595.l",w,.b,RAM,absL,ok
+02096C,8,4,FFE595,move.b,"#$3b, $ffe595.l",w,.b,RAM,absL,ok
+020984,8,4,FFE59C,cmpi.w,"#$60, $ffe59c.l",r,.w,RAM,absL,ok
+02098E,8,4,FFE59C,addi.w,"#$18, $ffe59c.l",rw,.w,RAM,absL,ok
+020996,8,4,FFE596,subi.b,"#$6, $ffe596.l",rw,.b,RAM,absL,ok
+0209AA,8,4,FFE59C,cmpi.w,"#$0, $ffe59c.l",r,.w,RAM,absL,ok
+0209B4,8,4,FFE59C,subi.w,"#$18, $ffe59c.l",rw,.w,RAM,absL,ok
+0209BC,8,4,FFE596,addi.b,"#$6, $ffe596.l",rw,.b,RAM,absL,ok
+0209D0,8,4,FFE59A,cmpi.w,"#$78, $ffe59a.l",r,.w,RAM,absL,ok
+0209DA,8,4,FFE59A,addi.w,"#$18, $ffe59a.l",rw,.w,RAM,absL,ok
+0209E2,8,4,FFE596,addi.b,"#$1, $ffe596.l",rw,.b,RAM,absL,ok
+0209F6,8,4,FFE59A,cmpi.w,"#$0, $ffe59a.l",r,.w,RAM,absL,ok
+020A00,8,4,FFE59A,subi.w,"#$18, $ffe59a.l",rw,.w,RAM,absL,ok
+020A08,8,4,FFE596,subi.b,"#$1, $ffe596.l",rw,.b,RAM,absL,ok
+020A22,8,4,FFE596,cmpi.b,"#$1d, $ffe596.l",r,.b,RAM,absL,ok
+020A2C,6,2,FFE594,clr.b,$ffe594.l,w,.b,RAM,absL,ok
+020A34,6,2,020AD0,jsr,$20ad0.l,x,,ROM,absL,ok
+020A3A,6,2,FF8E00,lea.l,"$ff8e00.l, a0",addr,.l,RAM,absL,ok
+020A48,6,2,FFE69E,add.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+020A4E,6,2,FFE59A,add.w,"$ffe59a.l, d0",r,.w,RAM,absL,ok
+020A5C,6,2,FFE6A2,add.w,"$ffe6a2.l, d0",r,.w,RAM,absL,ok
+020A62,6,2,FFE59C,add.w,"$ffe59c.l, d0",r,.w,RAM,absL,ok
+020A6E,6,2,FFE59E,move.b,"$ffe59e.l, d0",r,.b,RAM,absL,ok
+020A74,6,2,FFE5D4,lea.l,"$ffe5d4.l, a0",addr,.l,RAM,absL,ok
+020A9E,6,2,FFE590,move.l,"$ffe590.l, (a2)",r,.l,RAM,absL,ok
+020AAC,6,2,FFE5C4,lea.l,"$ffe5c4.l, a0",addr,.l,RAM,absL,ok
+020AC4,6,2,FFE59E,move.b,"$ffe59e.l, d1",r,.b,RAM,absL,ok
+020AD0,6,2,FFE5C4,lea.l,"$ffe5c4.l, a1",addr,.l,RAM,absL,ok
+020AD6,6,2,FFE597,move.b,"$ffe597.l, d0",r,.b,RAM,absL,ok
+020AE6,6,2,FFE596,move.b,"$ffe596.l, d1",r,.b,RAM,absL,ok
+020B08,8,4,FFE597,addi.b,"#$1, $ffe597.l",rw,.b,RAM,absL,ok
+020B18,8,4,FFE596,cmpi.b,"#$1c, $ffe596.l",r,.b,RAM,absL,ok
+020B22,8,4,FFE597,subi.b,"#$1, $ffe597.l",rw,.b,RAM,absL,ok
+020B38,6,2,FFE597,tst.b,$ffe597.l,r,.b,RAM,absL,ok
+020B40,8,4,FFE597,subi.b,"#$1, $ffe597.l",rw,.b,RAM,absL,ok
+020B48,6,2,FFE597,move.b,"$ffe597.l, d0",r,.b,RAM,absL,ok
+020B5C,6,2,FFE5D4,lea.l,"$ffe5d4.l, a0",addr,.l,RAM,absL,ok
+020B6C,6,2,020B94,jsr,$20b94.l,x,,ROM,absL,ok
+020B78,6,2,020BB4,jsr,$20bb4.l,x,,ROM,absL,ok
+020B84,6,2,020BD2,jsr,$20bd2.l,x,,ROM,absL,ok
+020BA2,6,2,FFE5B2,move.b,"d3, $ffe5b2.l",w,.b,RAM,absL,ok
+020BC4,6,2,FFE5B2,move.l,"(a0), $ffe5b2.l",w,.l,RAM,absL,ok
+020BE2,6,2,FFE5A2,lea.l,"$ffe5a2.l, a1",addr,.l,RAM,absL,ok
+020C28,6,2,020BD2,jsr,$20bd2.l,x,,ROM,absL,ok
+020C32,6,2,FFE5D4,lea.l,"$ffe5d4.l, a0",addr,.l,RAM,absL,ok
+020C4A,4,2,000000,lea.l,"$0.w, a0",addr,.l,ROM,absW,ok
+020CB6,4,2,005502,move.l,"d0, $5502.w",w,.l,ROM,absW,ok
+020D98,6,2,FFE0F0,move.w,"$ffe0f0.l, d0",r,.w,RAM,absL,ok
+020D9E,6,2,020DAC,movea.l,"#$20dac, a6",imm,.l,ROM,imm32,ok
+020FE6,10,6,1021F0,move.l,"#$14, $1021f0.l",w,.l,VRAM,absL,ok
+02106A,6,2,FFE0F0,move.w,"$ffe0f0.l, d0",r,.w,RAM,absL,ok
+021070,6,2,021086,movea.l,"#$21086, a6",imm,.l,ROM,imm32,ok
+02107C,8,4,FFE67C,move.b,"(a6, d0.w), $ffe67c.l",w,.b,RAM,absL,ok
+021090,6,2,FFE67C,move.b,"$ffe67c.l, d0",r,.b,RAM,absL,ok
+0212BE,6,2,011238,jsr,$11238.l,x,,ROM,absL,ok
+02142C,4,2,000840,move.b,"$840.w, -(a5)",r,.b,ROM,absW,ok
+02145E,6,2,400002,move.b,"$8400002.l, -(a5)",r,.b,OTHER,absL,ok
+021468,4,2,000840,move.b,"$840.w, -(a5)",r,.b,ROM,absW,ok
+02149A,6,2,400002,move.b,"$8400002.l, -(a5)",r,.b,OTHER,absL,ok
+0214A4,4,2,000840,move.b,"$840.w, -(a5)",r,.b,ROM,absW,ok
+0214D6,6,2,400002,move.b,"$8400002.l, -(a5)",r,.b,OTHER,absL,ok
+0214E6,6,2,005200,move.b,"$5200.w, $1b31(a6)",r,.b,ROM,absW,ok
+021512,6,2,400002,move.b,"$8400002.l, -(a5)",r,.b,OTHER,absL,ok
+02151C,4,2,000840,move.b,"$840.w, -(a5)",r,.b,ROM,absW,ok
+02154E,6,2,400002,move.b,"$8400002.l, -(a5)",r,.b,OTHER,absL,ok
+021558,4,2,000840,move.b,"$840.w, -(a5)",r,.b,ROM,absW,ok
+0215E8,6,2,02172E,movea.l,"#$2172e, a6",imm,.l,ROM,imm32,ok
+0215EE,6,2,FFE684,move.b,"$ffe684.l, d0",r,.b,RAM,absL,ok
+02160E,6,2,021656,movea.l,"#$21656, a6",imm,.l,ROM,imm32,ok
+021614,6,2,FFE683,move.b,"$ffe683.l, d0",r,.b,RAM,absL,ok
+02163C,6,2,FFE683,move.b,"d0, $ffe683.l",w,.b,RAM,absL,ok
+021644,6,2,FFD2E0,move.b,"$ffd2e0.l, d0",r,.b,RAM,absL,ok
+02164E,6,2,FFE684,move.b,"d0, $ffe684.l",w,.b,RAM,absL,ok
+021A18,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+021A24,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+021A34,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+021A42,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+021A50,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+021A5E,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+021A64,6,2,009250,jsr,$9250.l,x,,ROM,absL,ok
+021A6E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+021A76,6,2,009250,jsr,$9250.l,x,,ROM,absL,ok
+021A80,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+021A8A,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+021A94,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+021A9E,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+021AA6,8,4,FFE69E,cmpi.w,"#$f80, $ffe69e.l",r,.w,RAM,absL,ok
+021AB8,8,4,FFE0AB,move.b,"#$3, $ffe0ab.l",w,.b,RAM,absL,ok
+021AC0,8,4,FFE145,move.b,"#$1, $ffe145.l",w,.b,RAM,absL,ok
+0220C8,6,4,005102,move.l,"$800(a4), $5102.w",w,.l,ROM,absW,ok
+022130,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+022136,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+022140,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+022256,6,2,102800,lea.l,"$102800.l, a6",addr,.l,VRAM,absL,ok
+0222D0,6,2,FFE687,tst.b,$ffe687.l,r,.b,RAM,absL,ok
+0222D8,6,2,FFD83B,lea.l,"$ffd83b.l, a6",addr,.l,RAM,absL,ok
+0222F6,6,2,FFE687,addq.b,"#$1, $ffe687.l",rw,.b,RAM,absL,ok
+0222FC,6,2,FFE643,lea.l,"$ffe643.l, a6",addr,.l,RAM,absL,ok
+02241C,8,4,FFE69E,cmpi.w,"#$ec0, $ffe69e.l",r,.w,RAM,absL,ok
+02242E,8,4,FFE0AB,move.b,"#$3, $ffe0ab.l",w,.b,RAM,absL,ok
+022442,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0224F6,10,2,000400,move.l,"#$400, $ffe68c.l",imm,.l,ROM,imm32,ok
+0224F6,10,6,FFE68C,move.l,"#$400, $ffe68c.l",w,.l,RAM,absL,ok
+022504,6,2,FFE68C,movea.l,"$ffe68c.l, a4",r,.l,RAM,absL,ok
+022512,10,2,000400,move.l,"#$400, $ffe68c.l",imm,.l,ROM,imm32,ok
+022512,10,6,FFE68C,move.l,"#$400, $ffe68c.l",w,.l,RAM,absL,ok
+022522,10,6,FFE68C,addi.l,"#$1, $ffe68c.l",rw,.l,RAM,absL,ok
+022F94,6,2,FFE690,tst.b,$ffe690.l,r,.b,RAM,absL,ok
+022F9C,6,2,FFD83B,lea.l,"$ffd83b.l, a6",addr,.l,RAM,absL,ok
+022FBA,6,2,FFE690,addq.b,"#$1, $ffe690.l",rw,.b,RAM,absL,ok
+022FC0,6,2,FFE669,lea.l,"$ffe669.l, a6",addr,.l,RAM,absL,ok
+022FD6,10,6,102F00,cmpi.l,"#$100, $102f00.l",r,.l,VRAM,absL,ok
+022FE2,4,2,000000,jsr,$0.w,x,,ROM,absW,ok
+022FE6,8,4,FFE6C2,move.w,"#$2000, $ffe6c2.l",w,.w,RAM,absL,ok
+022FEE,8,4,FFE6C4,move.w,"#$3eb0, $ffe6c4.l",w,.w,RAM,absL,ok
+022FFA,6,2,02304A,jsr,$2304a.l,x,,ROM,absL,ok
+023002,8,4,FFE6AE,move.w,"#$1000, $ffe6ae.l",w,.w,RAM,absL,ok
+02300A,8,4,FFE6B0,move.w,"#$3eb0, $ffe6b0.l",w,.w,RAM,absL,ok
+023016,6,2,FFE6D2,addq.l,"#$1, $ffe6d2.l",rw,.l,RAM,absL,ok
+02301C,10,6,FFE6D2,andi.l,"#$ff, $ffe6d2.l",rw,.l,RAM,absL,ok
+023026,10,2,FFE6D2,move.l,"$ffe6d2.l, $102f50.l",r,.l,RAM,absL,ok
+023026,10,6,102F50,move.l,"$ffe6d2.l, $102f50.l",w,.l,VRAM,absL,ok
+023030,6,2,0230A2,jsr,$230a2.l,x,,ROM,absL,ok
+023038,8,4,FFE6AE,move.w,"#$0, $ffe6ae.l",w,.w,RAM,absL,ok
+023040,8,4,FFE6B0,move.w,"#$3eb0, $ffe6b0.l",w,.w,RAM,absL,ok
+02304A,10,6,00BBCE,cmpi.l,"#$4ed0d4, $bbce.l",r,.l,ROM,absL,ok
+023058,6,2,FFE6B2,move.w,"d0, $ffe6b2.l",w,.w,RAM,absL,ok
+02305E,6,2,FFE6C2,add.w,"$ffe6c2.l, d0",r,.w,RAM,absL,ok
+023064,6,2,FFE6B4,clr.w,$ffe6b4.l,w,.w,RAM,absL,ok
+02306A,6,2,FFE6BA,move.w,"d0, $ffe6ba.l",w,.w,RAM,absL,ok
+023070,6,2,FFE6B6,move.w,"d1, $ffe6b6.l",w,.w,RAM,absL,ok
+023076,6,2,FFE6C4,add.w,"$ffe6c4.l, d1",r,.w,RAM,absL,ok
+02307C,6,2,FFE6B8,clr.w,$ffe6b8.l,w,.w,RAM,absL,ok
+023082,6,2,FFE6BC,move.w,"d1, $ffe6bc.l",w,.w,RAM,absL,ok
+023088,6,2,101000,lea.l,"$101000.l, a0",addr,.l,VRAM,absL,ok
+023092,6,2,FFE6BE,move.w,"d0, $ffe6be.l",w,.w,RAM,absL,ok
+023098,6,2,FFE6C0,move.w,"d1, $ffe6c0.l",w,.w,RAM,absL,ok
+0230A2,10,6,FFE6D2,cmpi.l,"#$40, $ffe6d2.l",r,.l,RAM,absL,ok
+0230AE,10,6,102F50,cmpi.l,"#$84c5919, $102f50.l",r,.l,VRAM,absL,ok
+0230BA,6,2,FFE6D6,addq.b,"#$1, $ffe6d6.l",rw,.b,RAM,absL,ok
+0230C2,6,2,FFE69E,move.w,"d0, $ffe69e.l",w,.w,RAM,absL,ok
+0230C8,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+0230CE,6,2,FFE6A0,clr.w,$ffe6a0.l,w,.w,RAM,absL,ok
+0230D4,6,2,FFE6A6,move.w,"d0, $ffe6a6.l",w,.w,RAM,absL,ok
+0230DA,6,2,FFE6A2,move.w,"d1, $ffe6a2.l",w,.w,RAM,absL,ok
+0230E0,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+0230E6,6,2,FFE6A4,clr.w,$ffe6a4.l,w,.w,RAM,absL,ok
+0230EC,6,2,FFE6A8,move.w,"d1, $ffe6a8.l",w,.w,RAM,absL,ok
+0230F2,6,2,100000,lea.l,"$100000.l, a0",addr,.l,VRAM,absL,ok
+0230FC,6,2,FFE6AA,move.w,"d0, $ffe6aa.l",w,.w,RAM,absL,ok
+023102,6,2,FFE6AC,move.w,"d1, $ffe6ac.l",w,.w,RAM,absL,ok
+023110,6,2,FFE6D6,tst.b,$ffe6d6.l,r,.b,RAM,absL,ok
+023118,6,2,FFE6C6,lea.l,"$ffe6c6.l, a4",addr,.l,RAM,absL,ok
+023124,6,2,FFE6C8,lea.l,"$ffe6c8.l, a5",addr,.l,RAM,absL,ok
+023154,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+02315A,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+023160,6,2,FFE6A6,move.w,"d0, $ffe6a6.l",w,.w,RAM,absL,ok
+023166,6,2,FFE6A2,move.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+02316C,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+023172,6,2,FFE6A8,move.w,"d1, $ffe6a8.l",w,.w,RAM,absL,ok
+023178,6,2,FFE6B2,move.w,"$ffe6b2.l, d0",r,.w,RAM,absL,ok
+02317E,6,2,FFE6C2,add.w,"$ffe6c2.l, d0",r,.w,RAM,absL,ok
+023184,6,2,FFE6BA,move.w,"d0, $ffe6ba.l",w,.w,RAM,absL,ok
+02318A,6,2,FFE6B6,move.w,"$ffe6b6.l, d1",r,.w,RAM,absL,ok
+023190,6,2,FFE6C4,add.w,"$ffe6c4.l, d1",r,.w,RAM,absL,ok
+023196,6,2,FFE6BC,move.w,"d1, $ffe6bc.l",w,.w,RAM,absL,ok
+0231A0,8,4,FFE67A,cmpi.b,"#$7, $ffe67a.l",r,.b,RAM,absL,ok
+0231AA,6,2,100000,lea.l,"$100000.l, a0",addr,.l,VRAM,absL,ok
+0231B0,6,2,FFE6AA,lea.l,"$ffe6aa.l, a4",addr,.l,RAM,absL,ok
+0231B6,6,2,FFE6AC,lea.l,"$ffe6ac.l, a5",addr,.l,RAM,absL,ok
+0231BC,6,2,FFE69E,move.w,"$ffe69e.l, d0",r,.w,RAM,absL,ok
+0231C2,6,2,FFE6AE,add.w,"$ffe6ae.l, d0",r,.w,RAM,absL,ok
+0231C8,6,2,FFE6A6,move.w,"d0, $ffe6a6.l",w,.w,RAM,absL,ok
+0231CE,6,2,FFE6A2,move.w,"$ffe6a2.l, d1",r,.w,RAM,absL,ok
+0231D4,6,2,FFE6B0,add.w,"$ffe6b0.l, d1",r,.w,RAM,absL,ok
+0231DA,6,2,FFE6A8,move.w,"d1, $ffe6a8.l",w,.w,RAM,absL,ok
+0231E4,6,2,101000,lea.l,"$101000.l, a0",addr,.l,VRAM,absL,ok
+0231EA,6,2,FFE6BE,lea.l,"$ffe6be.l, a4",addr,.l,RAM,absL,ok
+0231F0,6,2,FFE6C0,lea.l,"$ffe6c0.l, a5",addr,.l,RAM,absL,ok
+0231F6,6,2,FFE6B2,move.w,"$ffe6b2.l, d0",r,.w,RAM,absL,ok
+0231FC,6,2,FFE6C2,add.w,"$ffe6c2.l, d0",r,.w,RAM,absL,ok
+023202,6,2,FFE6BA,move.w,"d0, $ffe6ba.l",w,.w,RAM,absL,ok
+023208,6,2,FFE6B6,move.w,"$ffe6b6.l, d1",r,.w,RAM,absL,ok
+02320E,6,2,FFE6C4,add.w,"$ffe6c4.l, d1",r,.w,RAM,absL,ok
+023214,6,2,FFE6BC,move.w,"d1, $ffe6bc.l",w,.w,RAM,absL,ok
+0232BE,6,2,FFE692,movea.l,"$ffe692.l, a1",r,.l,RAM,absL,ok
+0232CC,6,2,FFE696,movea.l,"$ffe696.l, a2",r,.l,RAM,absL,ok
+0232E6,6,2,FFE69A,movea.l,"$ffe69a.l, a3",r,.l,RAM,absL,ok
+02331E,6,2,FFE692,sub.l,"$ffe692.l, d7",r,.l,RAM,absL,ok
+023334,6,2,FFE696,add.l,"$ffe696.l, d7",r,.l,RAM,absL,ok
+02333E,6,2,FFE696,sub.l,"$ffe696.l, d7",r,.l,RAM,absL,ok
+023352,6,2,FFE69A,add.l,"$ffe69a.l, d7",r,.l,RAM,absL,ok
+02337E,6,2,FFE69A,add.l,"$ffe69a.l, d7",r,.l,RAM,absL,ok
+023388,6,2,FFE69A,sub.l,"$ffe69a.l, d7",r,.l,RAM,absL,ok
+0233B2,6,2,FFE6CA,move.l,"a1, $ffe6ca.l",w,.l,RAM,absL,ok
+0233B8,6,2,FFE692,cmpa.l,"$ffe692.l, a1",r,.l,RAM,absL,ok
+0233C4,6,2,FFE6CE,move.l,"a1, $ffe6ce.l",w,.l,RAM,absL,ok
+0233D0,6,2,FFE696,add.l,"$ffe696.l, d7",r,.l,RAM,absL,ok
+0233E4,6,2,FFE69A,add.l,"$ffe69a.l, d7",r,.l,RAM,absL,ok
+0233EE,6,2,FFE69A,sub.l,"$ffe69a.l, d7",r,.l,RAM,absL,ok
+02341C,10,6,00BF84,cmpi.l,"#$ae2a6352, $bf84.l",r,.l,ROM,absL,ok
+023428,6,2,FFE6DA,lea.l,"$ffe6da.l, a0",addr,.l,RAM,absL,ok
+02343C,6,2,FFE6EC,lea.l,"$ffe6ec.l, a0",addr,.l,RAM,absL,ok
+023448,8,4,70000F,move.b,"#$78, $70000f.l",w,.b,IO,absL,ok
+023450,6,2,FFE72C,clr.l,$ffe72c.l,w,.l,RAM,absL,ok
+023456,6,2,102D44,clr.l,$102d44.l,w,.l,VRAM,absL,ok
+02345E,6,2,FFE6EC,lea.l,"$ffe6ec.l, a0",addr,.l,RAM,absL,ok
+023482,10,6,FFE72C,cmpi.l,"#$200, $ffe72c.l",r,.l,RAM,absL,ok
+023492,6,2,FFE6DC,lea.l,"$ffe6dc.l, a0",addr,.l,RAM,absL,ok
+0234AC,10,6,FFE72C,addi.l,"#$1, $ffe72c.l",rw,.l,RAM,absL,ok
+0234B6,10,2,FFE72C,move.l,"$ffe72c.l, $102d44.l",r,.l,RAM,absL,ok
+0234B6,10,6,102D44,move.l,"$ffe72c.l, $102d44.l",w,.l,VRAM,absL,ok
+0234C0,10,6,FFE72C,cmpi.l,"#$200, $ffe72c.l",r,.l,RAM,absL,ok
+0234CC,10,6,102D44,cmpi.l,"#$84c79d9, $102d44.l",r,.l,VRAM,absL,ok
+0234D8,6,2,FFE72C,clr.l,$ffe72c.l,w,.l,RAM,absL,ok
+0234DE,6,2,102D44,clr.l,$102d44.l,w,.l,VRAM,absL,ok
+0234EA,6,2,70000F,move.b,"$70000f.l, d0",r,.b,IO,absL,ok
+0234F6,6,2,010854,jsr,$10854.l,x,,ROM,absL,ok
+0234FC,8,4,FFE6D9,move.b,"#$64, $ffe6d9.l",w,.b,RAM,absL,ok
+023506,6,2,FFE6D9,tst.b,$ffe6d9.l,r,.b,RAM,absL,ok
+02350E,8,4,FFE6D9,subi.b,"#$1, $ffe6d9.l",rw,.b,RAM,absL,ok
+023518,6,2,01085E,jsr,$1085e.l,x,,ROM,absL,ok
+023522,6,2,FFE6D8,move.b,"$ffe6d8.l, d0",r,.b,RAM,absL,ok
+02352A,6,2,FFE6D8,clr.b,$ffe6d8.l,w,.b,RAM,absL,ok
+023532,6,2,FFE6DC,lea.l,"$ffe6dc.l, a0",addr,.l,RAM,absL,ok
+023550,8,4,FFD2DF,btst.b,"#$5, $ffd2df.l",r,.b,RAM,absL,ok
+02355A,6,2,FFD2E2,tst.b,$ffd2e2.l,r,.b,RAM,absL,ok
+023564,6,2,023584,jsr,$23584.l,x,,ROM,absL,ok
+02356A,6,2,023666,jsr,$23666.l,x,,ROM,absL,ok
+023578,6,2,0239E4,lea.l,"$239e4.l, a1",addr,.l,ROM,absL,ok
+023592,6,2,02345E,jsr,$2345e.l,x,,ROM,absL,ok
+02359E,6,2,0238CE,cmp.b,"$238ce.l, d0",r,.b,ROM,absL,ok
+0235AA,6,2,02387A,lea.l,"$2387a.l, a1",addr,.l,ROM,absL,ok
+0235C2,6,2,FFE6EC,lea.l,"$ffe6ec.l, a0",addr,.l,RAM,absL,ok
+023626,6,2,70000F,move.b,"d1, $70000f.l",w,.b,IO,absL,ok
+02362C,6,2,70000F,move.b,"$70000f.l, d0",r,.b,IO,absL,ok
+02365C,8,2,02398E,move.l,"#$2398e, $2(a0)",imm,.l,ROM,imm32,ok
+02366E,6,2,FFE6EC,lea.l,"$ffe6ec.l, a0",addr,.l,RAM,absL,ok
+023684,6,2,70000F,move.b,"$70000f.l, d1",r,.b,IO,absL,ok
+0236DA,6,2,023832,lea.l,"$23832.l, a2",addr,.l,ROM,absL,ok
+0236EC,6,2,70000F,move.b,"$70000f.l, d0",r,.b,IO,absL,ok
+023700,6,2,70000F,move.b,"d0, $70000f.l",w,.b,IO,absL,ok
+02370C,6,2,70000D,move.b,"d4, $70000d.l",w,.b,IO,absL,ok
+02371A,6,2,70000F,move.b,"d1, $70000f.l",w,.b,IO,absL,ok
+02372E,6,2,70000F,move.b,"d1, $70000f.l",w,.b,IO,absL,ok
+023BCC,6,4,000478,andi.w,"#$29, $478.w",rw,.w,ROM,absW,ok
+023BD4,6,4,000032,andi.w,"#$3b, $32.w",rw,.w,ROM,absW,ok
+023E0E,6,2,FFE733,move.b,"$ffe733.l, d0",r,.b,RAM,absL,ok
+023E1A,6,2,FFE733,clr.b,$ffe733.l,w,.b,RAM,absL,ok
+024176,6,4,003303,move.b,"$24178(pc), $3303.w",w,.b,ROM,absW,ok
+02454E,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+024554,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+02455E,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+024842,6,2,011238,jsr,$11238.l,x,,ROM,absL,ok
+024852,6,2,011238,jsr,$11238.l,x,,ROM,absL,ok
+024862,6,2,011238,jsr,$11238.l,x,,ROM,absL,ok
+024872,6,2,FFE730,move.w,"(a1), $ffe730.l",w,.w,RAM,absL,ok
+02487A,6,2,FFE730,move.w,"$ffe730.l, (a1)",r,.w,RAM,absL,ok
+024882,6,2,FFA540,lea.l,"$ffa540.l, a4",addr,.l,RAM,absL,ok
+024888,8,4,FFD31D,btst.b,"#$0, $ffd31d.l",r,.b,RAM,absL,ok
+024892,6,2,FFA4C0,lea.l,"$ffa4c0.l, a4",addr,.l,RAM,absL,ok
+0248A4,8,2,02414A,move.l,"#$2414a, $1c(a4)",imm,.l,ROM,imm32,ok
+0248DE,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0248EE,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+0248FA,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+02490A,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+02494A,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0249AE,6,2,0249A0,movea.l,"#$249a0, a6",imm,.l,ROM,imm32,ok
+0249B4,6,2,FFE73D,move.b,"$ffe73d.l, d0",r,.b,RAM,absL,ok
+0249C2,6,2,FFE73D,clr.b,$ffe73d.l,w,.b,RAM,absL,ok
+0249CE,8,4,FFE73D,addi.b,"#$1, $ffe73d.l",rw,.b,RAM,absL,ok
+0249DC,8,4,FFD2E1,cmpi.b,"#$1, $ffd2e1.l",r,.b,RAM,absL,ok
+0249EA,6,2,0092B4,jsr,$92b4.l,x,,ROM,absL,ok
+0249FA,8,4,FFD2E1,cmpi.b,"#$1, $ffd2e1.l",r,.b,RAM,absL,ok
+024A0C,6,2,009268,jsr,$9268.l,x,,ROM,absL,ok
+024B84,4,2,003200,move.w,"sr, $3200.w",w,.w,ROM,absW,ok
+024C6E,4,2,00000A,btst.l,"d7, $a.w",r,.l,ROM,absW,ok
+024FE2,4,2,009080,move.w,"sr, $9080.w",w,.w,ROM,absW,MISMATCH
+025044,10,6,102200,cmpi.l,"#$45890, $102200.l",r,.l,VRAM,absL,ok
+025056,6,2,FFA4E0,lea.l,"$ffa4e0.l, a2",addr,.l,RAM,absL,ok
+0290AE,4,2,003A0C,move.w,"a2, $3a0c.w",w,.w,ROM,absW,ok

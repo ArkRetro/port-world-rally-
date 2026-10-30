@@ -1,0 +1,54 @@
+# Arcade program sites that write to the encrypted VRAM / screen RAM (0x100000-0x103FFF).
+# MAME write tap over attract + play (thoop, 7000 frames) + static absolute-address writes.
+0004FE
+000512
+0008B4
+0008D0
+0020EA
+00244E
+002476
+002668
+004B2A
+0062DC
+009100
+0091CA
+00943C
+00BA66
+00BFA8
+00BFDC
+00C0CC
+00C1FA
+00E0D4
+00EDF0
+010584
+01058C
+010D20
+010D74
+010E16
+011C4A
+011D20
+016A18
+016A46
+016FD4
+01717C
+01ABDA
+01AC20
+01B092
+01EC70
+01EC86
+01ECB8
+023026
+023300
+023456
+0234B6
+0234DE
+02336E   # map column copy when scrolling up (found by the unpatched-write tap, demo 3)
+00A70E   # protection checks (absolute writes found in the swept / later code)
+00BA50
+00C012
+00C03C
+01742E
+017A12
+017EC2
+020630
+020FE6

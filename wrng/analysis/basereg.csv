@@ -1,0 +1,1107 @@
+pc,insn,reg,base,region,how,n_uses,uses(pc:insn:disp:access:size;...)
+000440,"lea.l $2000.l, a0",a0,002000,ROM,lea,1,"000450:move.b (a1)+, (a0)+:0:w:.b"
+000446,"lea.l $5b4.l, a1",a1,0005B4,ROM,lea,1,"000450:move.b (a1)+, (a0)+:0:r:.b"
+000456,"lea.l $200000.l, a0",a0,200000,PAL,lea,1,"000466:move.w (a1)+, (a0)+:0:w:.w"
+000460,"lea.l $480.l, a1",a1,000480,ROM,lea,1,"000466:move.w (a1)+, (a0)+:0:r:.w"
+00201A,"lea.l $fefff0.l, a7",a7,FEFFF0,RAM,lea,0,
+002024,"lea.l $23c8.l, a2",a2,0023C8,ROM,lea,1,002082:jmp (a2):0:x:
+0020FC,"movea.l #$fec000, a1",a1,FEC000,RAM,movea#,0,
+00213E,"movea.l #$fec006, a1",a1,FEC006,RAM,movea#,0,
+002150,"movea.l #$fec006, a1",a1,FEC006,RAM,movea#,0,
+0021EA,"movea.l #$fefff0, a7",a7,FEFFF0,RAM,movea#,0,
+00220C,"lea.l $2034.l, a2",a2,002034,ROM,lea,0,
+002400,"movea.l #$feff80, a7",a7,FEFF80,RAM,movea#,0,
+0024A8,"lea.l $ddc3e.l, a0",a0,0DDC3E,ROM,lea,2,"0024BA:move.w (a0), (a2)+:0:r:.w;0024BC:move.w (a0)+, (a1)+:0:r:.w"
+0024AE,"lea.l $200000.l, a1",a1,200000,PAL,lea,1,"0024BC:move.w (a0)+, (a1)+:0:w:.w"
+0024B4,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"0024BA:move.w (a0), (a2)+:0:w:.w"
+0024C8,"lea.l $200120.l, a1",a1,200120,PAL,lea,1,"0024E0:move.w (a0)+, (a1)+:0:w:.w"
+0024CE,"lea.l $fef99e.l, a2",a2,FEF99E,RAM,lea,1,"0024DE:move.w (a0), (a2)+:0:w:.w"
+0024D4,"lea.l $ddc3e.l, a0",a0,0DDC3E,ROM,lea,2,"0024DE:move.w (a0), (a2)+:0:r:.w;0024E0:move.w (a0)+, (a1)+:0:r:.w"
+00268A,"lea.l $200180.l, a0",a0,200180,PAL,lea,1,"0026A4:move.w (a1)+, (a0)+:0:w:.w"
+002690,"lea.l $fef9fe.l, a2",a2,FEF9FE,RAM,lea,1,"0026A2:move.w (a1), (a2)+:0:w:.w"
+002696,"lea.l $df5cc.l, a1",a1,0DF5CC,ROM,lea,2,"0026A2:move.w (a1), (a2)+:0:r:.w;0026A4:move.w (a1)+, (a0)+:0:r:.w"
+0026AA,"lea.l $200520.l, a0",a0,200520,PAL,lea,1,"0026C2:move.w (a1)+, -(a0):0:w:.w"
+0026B0,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"0026C0:move.w (a1), -(a2):0:w:.w"
+0026B6,"lea.l $e53aa.l, a1",a1,0E53AA,ROM,lea,2,"0026C0:move.w (a1), -(a2):0:r:.w;0026C2:move.w (a1)+, -(a0):0:r:.w"
+0026C8,"lea.l $200540.l, a0",a0,200540,PAL,lea,1,"0026E0:move.w (a1)+, -(a0):0:w:.w"
+0026CE,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"0026DE:move.w (a1), -(a2):0:w:.w"
+0026D4,"lea.l $e54ea.l, a1",a1,0E54EA,ROM,lea,2,"0026DE:move.w (a1), -(a2):0:r:.w;0026E0:move.w (a1)+, -(a0):0:r:.w"
+0026E6,"lea.l $200560.l, a0",a0,200560,PAL,lea,1,"0026FE:move.w (a1)+, -(a0):0:w:.w"
+0026EC,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"0026FC:move.w (a1), -(a2):0:w:.w"
+0026F2,"lea.l $e54ca.l, a1",a1,0E54CA,ROM,lea,2,"0026FC:move.w (a1), -(a2):0:r:.w;0026FE:move.w (a1)+, -(a0):0:r:.w"
+00271E,"lea.l $fef366.l, a0",a0,FEF366,RAM,lea,0,
+002744,"lea.l $fec000.l, a0",a0,FEC000,RAM,lea,0,
+002752,"lea.l $200000.l, a0",a0,200000,PAL,lea,0,
+002784,"lea.l $ed858.l, a5",a5,0ED858,ROM,lea,0,
+002790,"lea.l $ed86c.l, a5",a5,0ED86C,ROM,lea,0,
+0027A0,"lea.l $ed87e.l, a5",a5,0ED87E,ROM,lea,0,
+0027AC,"lea.l $fef366.l, a0",a0,FEF366,RAM,lea,0,
+0027BC,"lea.l $fef366.l, a5",a5,FEF366,RAM,lea,0,
+0027C8,"lea.l $fef366.l, a0",a0,FEF366,RAM,lea,0,
+0027D6,"lea.l $fef366.l, a5",a5,FEF366,RAM,lea,0,
+0027E2,"lea.l $ed896.l, a5",a5,0ED896,ROM,lea,0,
+0027EE,"lea.l $fef366.l, a5",a5,FEF366,RAM,lea,0,
+0027FA,"lea.l $ed8ae.l, a5",a5,0ED8AE,ROM,lea,0,
+00280C,"lea.l $ed8c8.l, a5",a5,0ED8C8,ROM,lea,0,
+0028C4,"lea.l $200540.l, a0",a0,200540,PAL,lea,1,"0028DC:move.w (a1)+, -(a0):0:w:.w"
+0028CA,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"0028DA:move.w (a1), -(a2):0:w:.w"
+0028D0,"lea.l $e4364.l, a1",a1,0E4364,ROM,lea,2,"0028DA:move.w (a1), -(a2):0:r:.w;0028DC:move.w (a1)+, -(a0):0:r:.w"
+0028E2,"lea.l $200520.l, a0",a0,200520,PAL,lea,1,"0028FA:move.w (a1)+, -(a0):0:w:.w"
+0028E8,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"0028F8:move.w (a1), -(a2):0:w:.w"
+0028EE,"lea.l $e532a.l, a1",a1,0E532A,ROM,lea,2,"0028F8:move.w (a1), -(a2):0:r:.w;0028FA:move.w (a1)+, -(a0):0:r:.w"
+002900,"lea.l $200460.l, a0",a0,200460,PAL,lea,1,"002918:move.w (a1)+, -(a0):0:w:.w"
+002906,"lea.l $fefcde.l, a2",a2,FEFCDE,RAM,lea,1,"002916:move.w (a1), -(a2):0:w:.w"
+00290C,"lea.l $e532a.l, a1",a1,0E532A,ROM,lea,2,"002916:move.w (a1), -(a2):0:r:.w;002918:move.w (a1)+, -(a0):0:r:.w"
+00291E,"lea.l $200420.l, a0",a0,200420,PAL,lea,1,"002936:move.w (a1)+, -(a0):0:w:.w"
+002924,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"002934:move.w (a1), -(a2):0:w:.w"
+00292A,"lea.l $e54ea.l, a1",a1,0E54EA,ROM,lea,2,"002934:move.w (a1), -(a2):0:r:.w;002936:move.w (a1)+, -(a0):0:r:.w"
+0029BC,"lea.l $ed98d.l, a5",a5,0ED98D,ROM,lea,0,
+0029D6,"lea.l $edb7e.l, a0",a0,0EDB7E,ROM,lea,1,"0029DC:movea.l (a0, d0.w), a5:0:r:.l"
+0029E6,"lea.l $ed972.l, a5",a5,0ED972,ROM,lea,0,
+0029FE,"lea.l $edb5e.l, a0",a0,0EDB5E,ROM,lea,1,"002A04:movea.l (a0, d0.w), a5:0:r:.l"
+002A0E,"lea.l $ed942.l, a5",a5,0ED942,ROM,lea,0,
+002A20,"lea.l $ed912.l, a5",a5,0ED912,ROM,lea,0,
+002A2C,"lea.l $ed8ea.l, a5",a5,0ED8EA,ROM,lea,0,
+002A38,"lea.l $ed90a.l, a5",a5,0ED90A,ROM,lea,0,
+002A4A,"lea.l $ed90e.l, a5",a5,0ED90E,ROM,lea,0,
+002AFC,"lea.l $ed9a8.l, a5",a5,0ED9A8,ROM,lea,0,
+002B16,"lea.l $edb32.l, a0",a0,0EDB32,ROM,lea,1,"002B1C:movea.l (a0, d0.w), a5:0:r:.l"
+002B26,"lea.l $ed9c4.l, a5",a5,0ED9C4,ROM,lea,0,
+002B38,"lea.l $ed9e4.l, a5",a5,0ED9E4,ROM,lea,0,
+002B44,"lea.l $eda04.l, a5",a5,0EDA04,ROM,lea,0,
+002B5E,"lea.l $edaf6.l, a0",a0,0EDAF6,ROM,lea,1,"002B64:movea.l (a0, d0.w), a5:0:r:.l"
+002B6E,"lea.l $eda1c.l, a5",a5,0EDA1C,ROM,lea,0,
+002B7A,"lea.l $ed90a.l, a5",a5,0ED90A,ROM,lea,0,
+002B8C,"lea.l $ed90e.l, a5",a5,0ED90E,ROM,lea,0,
+002B98,"lea.l $eda68.l, a5",a5,0EDA68,ROM,lea,0,
+002BAA,"lea.l $eda46.l, a5",a5,0EDA46,ROM,lea,0,
+002BB6,"lea.l $eda8c.l, a5",a5,0EDA8C,ROM,lea,0,
+002BC2,"lea.l $ed90a.l, a5",a5,0ED90A,ROM,lea,0,
+002BD4,"lea.l $ed90e.l, a5",a5,0ED90E,ROM,lea,0,
+002C88,"lea.l $f01bc.l, a0",a0,0F01BC,ROM,lea,2,"002C94:move.w (a0, d0.w), d1:0:r:.w;002C9E:move.w $2(a0, d0.w), d1:2:r:.w"
+002CBE,"lea.l $f01bc.l, a0",a0,0F01BC,ROM,lea,2,"002CCA:move.w (a0, d0.w), d1:0:r:.w;002CD4:move.w $2(a0, d0.w), d1:2:r:.w"
+002D18,"lea.l $fef34d.l, a0",a0,FEF34D,RAM,lea,0,
+002D2A,"lea.l $fef348.l, a5",a5,FEF348,RAM,lea,0,
+002D66,"lea.l $fef357.l, a0",a0,FEF357,RAM,lea,0,
+002D78,"lea.l $fef352.l, a5",a5,FEF352,RAM,lea,0,
+002EA2,"lea.l $fef361.l, a0",a0,FEF361,RAM,lea,0,
+002EAE,"lea.l $fef35c.l, a5",a5,FEF35C,RAM,lea,0,
+002EF2,"lea.l $f00ec.l, a0",a0,0F00EC,ROM,lea,2,"002EF8:move.w (a0, d0.w), d1:0:r:.w;002F02:move.w $2(a0, d0.w), d1:2:r:.w"
+002F12,"lea.l $edaa6.l, a5",a5,0EDAA6,ROM,lea,0,
+0031AA,"movea.l #$feff80, a7",a7,FEFF80,RAM,movea#,0,
+003390,"lea.l $fed466.l, a1",a1,FED466,RAM,lea,0,
+0033A0,"lea.l $fed52e.l, a1",a1,FED52E,RAM,lea,0,
+0033AC,"lea.l $fec88e.l, a1",a1,FEC88E,RAM,lea,0,
+0033BC,"lea.l $fecea6.l, a1",a1,FECEA6,RAM,lea,0,
+003704,"lea.l $e20cc.l, a0",a0,0E20CC,ROM,lea,1,"00370A:move.l (a0, d0.w), $101400.l:0:r:.l"
+003732,"lea.l $e20ec.l, a0",a0,0E20EC,ROM,lea,1,"003738:move.l (a0, d0.w), $101404.l:0:r:.l"
+003954,"lea.l $df854.l, a0",a0,0DF854,ROM,lea,0,
+003964,"lea.l $df954.l, a0",a0,0DF954,ROM,lea,2,"00397C:move.w (a0), -(a2):0:r:.w;00397E:move.w (a0)+, -(a1):0:r:.w"
+00396C,"movea.l #$2004a0, a1",a1,2004A0,PAL,movea#,1,"00397E:move.w (a0)+, -(a1):0:w:.w"
+003972,"lea.l $fefd1e.l, a2",a2,FEFD1E,RAM,lea,1,"00397C:move.w (a0), -(a2):0:w:.w"
+003DBA,"lea.l $dfba4.l, a0",a0,0DFBA4,ROM,lea,1,"003DD0:or.w (a0, d0.w), d1:0:r:.w"
+003DDA,"lea.l $dfbbc.l, a0",a0,0DFBBC,ROM,lea,3,"003DFE:move.l (a0)+, $100004.l:0:r:.l;003E0A:move.l (a0)+, $100008.l:0:r:.l;003E24:move.l (a0)+, $10000a.l:0:r:.l"
+003E6A,"lea.l $fec188.l, a2",a2,FEC188,RAM,lea,1,"003E7A:move.l $102000.l, (a2)+:0:w:.l"
+0044E6,"lea.l $440006.l, a1",a1,440006,SPR,lea,7,"0044FE:move.l (a0)+, (a1)+:0:w:.l;004500:move.l (a0)+, (a1)+:0:w:.l;004518:move.l (a0)+, (a1)+:0:w:.l;00451A:move.l (a0)+, (a1)+:0:w:.l;004538:move.l (a0)+, (a1)+:0:w:.l;00453A:move.l (a0)+, (a1)+:0:w:.l;00456A:move.w #$f0, (a1):0:w:.w"
+0044F8,"lea.l $fed600.l, a0",a0,FED600,RAM,lea,2,"0044FE:move.l (a0)+, (a1)+:0:r:.l;004500:move.l (a0)+, (a1)+:0:r:.l"
+004512,"lea.l $feddf8.l, a0",a0,FEDDF8,RAM,lea,2,"004518:move.l (a0)+, (a1)+:0:r:.l;00451A:move.l (a0)+, (a1)+:0:r:.l"
+004532,"lea.l $fee5c8.l, a0",a0,FEE5C8,RAM,lea,2,"004538:move.l (a0)+, (a1)+:0:r:.l;00453A:move.l (a0)+, (a1)+:0:r:.l"
+00457C,"lea.l $fec58c.l, a0",a0,FEC58C,RAM,lea,0,
+00458A,"lea.l $fec28c.l, a0",a0,FEC28C,RAM,lea,1,"0045AA:btst.b #$f, (a0):0:r:.b"
+004590,"lea.l $fed600.l, a3",a3,FED600,RAM,lea,0,
+004596,"lea.l $fec27e.l, a6",a6,FEC27E,RAM,lea,1,00459C:clr.w (a6):0:w:.w
+00459E,"lea.l $d07d6.l, a1",a1,0D07D6,ROM,lea,0,
+0046E4,"lea.l $feddf8.l, a3",a3,FEDDF8,RAM,lea,0,
+0046EA,"lea.l $fecea6.l, a0",a0,FECEA6,RAM,lea,0,
+0046F8,"lea.l $fec88e.l, a0",a0,FEC88E,RAM,lea,1,"004700:btst.b #$f, (a0):0:r:.b"
+004708,"lea.l $fec280.l, a4",a4,FEC280,RAM,lea,1,00470E:clr.w (a4):0:w:.w
+00471C,"lea.l $d07d6.l, a1",a1,0D07D6,ROM,lea,2,"004748:move.w (a1)+, d1:0:r:.w;00475E:move.w (a1), d2:0:r:.w"
+00488E,"lea.l $fed52e.l, a0",a0,FED52E,RAM,lea,0,
+00489E,"lea.l $fed466.l, a0",a0,FED466,RAM,lea,1,"0048B2:btst.b #$f, (a0):0:r:.b"
+0048A6,"lea.l $d07d6.l, a1",a1,0D07D6,ROM,lea,0,
+0048C0,"lea.l $fee5c8.l, a3",a3,FEE5C8,RAM,lea,4,"004920:move.b (a2), (a3):0:w:.b;004940:andi.b #$c3, $4(a3):4:rw:.b;004946:or.b d7, $4(a3):4:rw:.b;004952:move.w d7, $6(a3):6:w:.w"
+0049D0,"lea.l $fee5c8.l, a3",a3,FEE5C8,RAM,lea,0,
+0049D6,"lea.l $d07d6.l, a1",a1,0D07D6,ROM,lea,0,
+004DA2,"lea.l $dfca4.l, a0",a0,0DFCA4,ROM,lea,1,"004DBA:move.w (a0, d1.w), d0:0:r:.w"
+004E2C,"lea.l $feea4a.l, a0",a0,FEEA4A,RAM,lea,3,"004E36:move.w (a0, d5.w), d0:0:r:.w;004E42:move.w $2(a0, d5.w), d1:2:r:.w;004E46:move.w $4(a0, d5.w), d2:4:r:.w"
+004E62,"lea.l $feea6e.l, a0",a0,FEEA6E,RAM,lea,3,"004E6C:move.w (a0, d5.w), d0:0:r:.w;004E78:move.w $2(a0, d5.w), d1:2:r:.w;004E7C:move.w $4(a0, d5.w), d2:4:r:.w"
+004E98,"lea.l $fed5f6.l, a0",a0,FED5F6,RAM,lea,2,"004EAA:move.l (a0)+, d0:0:r:.l;004EAC:move.w (a0)+, d1:0:r:.w"
+005016,"lea.l $e4152.l, a0",a0,0E4152,ROM,lea,1,"00502A:add.w (a0, d0.w), d1:0:r:.w"
+0054BE,"lea.l $df658.l, a3",a3,0DF658,ROM,lea,2,"0054C6:move.w (a3, d2.w), $fec21e.l:0:r:.w;0054CE:move.w $2(a3, d2.w), $fec220.l:2:r:.w"
+0055A4,"lea.l $df658.l, a3",a3,0DF658,ROM,lea,2,"0055AC:move.w (a3, d2.w), $fec21e.l:0:r:.w;0055B4:move.w $2(a3, d2.w), $fec220.l:2:r:.w"
+0057A2,"lea.l $df658.l, a3",a3,0DF658,ROM,lea,2,"0057B0:move.w (a3, d2.w), $fec21e.l:0:r:.w;0057B8:move.w $2(a3, d2.w), $fec220.l:2:r:.w"
+00586E,"lea.l $df6d0.l, a0",a0,0DF6D0,ROM,lea,1,"00587E:move.l (a0, d0.w), d5:0:r:.l"
+005AE6,"lea.l $70006b.l, a0",a0,70006B,IO,lea,3,005AF4:st.b (a0):0:r:.b;005AFC:clr.b (a0):0:w:.b;005B18:st.b (a0):0:r:.b
+005AEC,"lea.l $70007b.l, a1",a1,70007B,IO,lea,3,005AF6:clr.b (a1):0:w:.b;005B10:st.b (a1):0:r:.b;005B12:clr.b (a1):0:w:.b
+005D52,"lea.l $e00d0.l, a0",a0,0E00D0,ROM,lea,0,
+005D64,"lea.l $e00c2.l, a0",a0,0E00C2,ROM,lea,2,"005D6C:move.w (a0)+, d1:0:r:.w;005D88:move.w (a0), d1:0:r:.w"
+005EDE,"lea.l $feeaa8.l, a0",a0,FEEAA8,RAM,lea,1,"005EF6:move.l (a0), (a2):0:r:.l"
+005EE4,"lea.l $feeaac.l, a1",a1,FEEAAC,RAM,lea,1,"005EF8:move.l (a1), (a3):0:r:.l"
+005EEA,"lea.l $feeab2.l, a2",a2,FEEAB2,RAM,lea,1,"005EF6:move.l (a0), (a2):0:w:.l"
+005EF0,"lea.l $feeab6.l, a3",a3,FEEAB6,RAM,lea,1,"005EF8:move.l (a1), (a3):0:w:.l"
+0060A0,"lea.l $dfc7c.l, a0",a0,0DFC7C,ROM,lea,1,"0060AA:move.w (a0), d0:0:r:.w"
+006D82,"lea.l $dff82.l, a0",a0,0DFF82,ROM,lea,2,"006D8C:move.w (a0, d0.w), d1:0:r:.w;006D90:move.w $2(a0, d0.w), d2:2:r:.w"
+006E02,"lea.l $fec15e.l, a2",a2,FEC15E,RAM,lea,0,
+006E08,"lea.l $fec158.l, a3",a3,FEC158,RAM,lea,0,
+006E3C,"lea.l $dff76.l, a1",a1,0DFF76,ROM,lea,0,
+006E42,"lea.l $feeb32.l, a0",a0,FEEB32,RAM,lea,0,
+006E64,"lea.l $feeb38.l, a0",a0,FEEB38,RAM,lea,1,"006E7A:or.w (a0)+, d1:0:r:.w"
+006E6A,"lea.l $dff7c.l, a1",a1,0DFF7C,ROM,lea,1,"006E7E:move.w (a1)+, (a3)+:0:r:.w"
+006ED2,"lea.l $dff76.l, a1",a1,0DFF76,ROM,lea,0,
+006ED8,"lea.l $feeb32.l, a0",a0,FEEB32,RAM,lea,0,
+006EE2,"lea.l $feeb38.l, a0",a0,FEEB38,RAM,lea,0,
+006EE8,"lea.l $dff7c.l, a1",a1,0DFF7C,ROM,lea,0,
+007132,"lea.l $dff82.l, a0",a0,0DFF82,ROM,lea,2,"00715E:move.w (a0, d0.w), d1:0:r:.w;007164:move.w $2(a0, d0.w), d2:2:r:.w"
+00730E,"lea.l $dff82.l, a0",a0,0DFF82,ROM,lea,2,"00731C:move.w (a0, d0.w), d1:0:r:.w;007320:move.w $2(a0, d0.w), d2:2:r:.w"
+0073E8,"lea.l $e2098.l, a0",a0,0E2098,ROM,lea,1,"0073EE:move.w (a0, d0.w), d1:0:r:.w"
+0076E2,"lea.l $dfddc.l, a5",a5,0DFDDC,ROM,lea,1,"0076FE:move.w (a5, d1.w), d0:0:r:.w"
+0077A0,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,8,"0077A6:move.w (a0, d5.w), d0:0:r:.w;0077D8:move.w d0, (a0, d5.w):0:w:.w;0077DC:move.w $6(a0, d5.w), d2:6:r:.w;0077E0:move.w $8(a0, d5.w), d3:8:r:.w;0077E8:move.w $2(a0, d5.w), d0:2:r:.w;0077EE:move.w d0, $2(a0, d5.w):2:w:.w;0077F2:move.w $4(a0, d5.w), d0:4:r:.w;0077F8:move.w d0, $4(a0, d5.w):4:w:.w"
+007834,"lea.l $fec28c.l, a1",a1,FEC28C,RAM,lea,0,
+007846,"lea.l $fec58c.l, a1",a1,FEC58C,RAM,lea,0,
+00785E,"lea.l $dfddc.l, a5",a5,0DFDDC,ROM,lea,1,"00787A:move.w (a5, d1.w), d0:0:r:.w"
+0078A8,"lea.l $dfdfc.l, a5",a5,0DFDFC,ROM,lea,1,"0078AE:move.w (a5, d1.w), d0:0:r:.w"
+007A2E,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,3,"007A3E:move.w (a0, d5.w), d0:0:r:.w;007A74:move.w $2(a0, d5.w), d1:2:r:.w;007A78:move.w $4(a0, d5.w), d2:4:r:.w"
+007B1C,"lea.l $feea98.l, a3",a3,FEEA98,RAM,lea,0,
+007B22,"lea.l $dfa54.l, a2",a2,0DFA54,ROM,lea,0,
+007B32,"lea.l $feea98.l, a3",a3,FEEA98,RAM,lea,0,
+007B38,"lea.l $dfaf4.l, a2",a2,0DFAF4,ROM,lea,0,
+007B8A,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,1,"007B98:move.w (a0, d5.w), d0:0:r:.w"
+007B90,"lea.l $feea98.l, a3",a3,FEEA98,RAM,lea,0,
+007C4A,"lea.l $dfaf4.l, a2",a2,0DFAF4,ROM,lea,0,
+007C5C,"lea.l $dfa54.l, a2",a2,0DFA54,ROM,lea,0,
+007D6E,"lea.l $feea4a.l, a0",a0,FEEA4A,RAM,lea,1,"007D76:move.w (a0, d5.w), d1:0:r:.w"
+007DA0,"lea.l $feea98.l, a3",a3,FEEA98,RAM,lea,2,"007DCA:add.w $4(a3), d0:4:r:.w;007DD6:add.w (a3), d1:0:r:.w"
+007E16,"lea.l $dfb94.l, a1",a1,0DFB94,ROM,lea,2,"007E3A:move.w (a1, d4.w), d1:0:r:.w;007E3E:move.w $2(a1, d4.w), d0:2:r:.w"
+007E68,"lea.l $feea4a.l, a0",a0,FEEA4A,RAM,lea,2,"007E6E:move.w (a0, d5.w), d0:0:r:.w;007EBE:move.w d0, (a0, d5.w):0:w:.w"
+007F48,"lea.l $feea6e.l, a0",a0,FEEA6E,RAM,lea,1,"007F50:move.w (a0, d5.w), d1:0:r:.w"
+007F66,"lea.l $feea98.l, a3",a3,FEEA98,RAM,lea,2,"007F92:add.w (a3), d1:0:r:.w;007F94:add.w $4(a3), d0:4:r:.w"
+007FC8,"lea.l $feea6e.l, a0",a0,FEEA6E,RAM,lea,2,"007FCE:move.w (a0, d5.w), d0:0:r:.w;007FF4:move.w d0, (a0, d5.w):0:w:.w"
+00803C,"lea.l $fec88e.l, a1",a1,FEC88E,RAM,lea,0,
+00804C,"lea.l $fecea6.l, a1",a1,FECEA6,RAM,lea,0,
+008058,"lea.l $ee186.l, a5",a5,0EE186,ROM,lea,0,
+0084AE,"lea.l $ee1dc.l, a5",a5,0EE1DC,ROM,lea,0,
+0084BA,"lea.l $ee1fa.l, a5",a5,0EE1FA,ROM,lea,0,
+0084D0,"lea.l $ee036.l, a5",a5,0EE036,ROM,lea,0,
+00851C,"lea.l $ee21e.l, a5",a5,0EE21E,ROM,lea,0,
+008528,"lea.l $ee25b.l, a5",a5,0EE25B,ROM,lea,0,
+008782,"lea.l $fef95e.l, a1",a1,FEF95E,RAM,lea,1,"008792:move.w (a1)+, (a0)+:0:r:.w"
+008788,"lea.l $2008e0.l, a0",a0,2008E0,PAL,lea,1,"008792:move.w (a1)+, (a0)+:0:w:.w"
+0087A0,"lea.l $df486.l, a1",a1,0DF486,ROM,lea,2,"0087B6:move.w (a1), (a0)+:0:r:.w;0087B8:move.w (a1)+, (a2)+:0:r:.w"
+0087A6,"lea.l $2002a0.l, a0",a0,2002A0,PAL,lea,1,"0087B6:move.w (a1), (a0)+:0:w:.w"
+0087AC,"lea.l $fefb1e.l, a2",a2,FEFB1E,RAM,lea,1,"0087B8:move.w (a1)+, (a2)+:0:w:.w"
+0087DA,"lea.l $200b16.l, a0",a0,200B16,PAL,lea,1,"0087EA:move.w (a1)+, (a0)+:0:w:.w"
+0087E0,"lea.l $fefb94.l, a1",a1,FEFB94,RAM,lea,1,"0087EA:move.w (a1)+, (a0)+:0:r:.w"
+0087FA,"lea.l $200400.l, a1",a1,200400,PAL,lea,1,"008830:move.w (a0)+, -(a1):0:w:.w"
+008800,"lea.l $fefc7e.l, a3",a3,FEFC7E,RAM,lea,1,"00882E:move.w (a0), -(a3):0:w:.w"
+008842,"lea.l $200560.l, a1",a1,200560,PAL,lea,1,"00885A:move.w (a0)+, -(a1):0:w:.w"
+008848,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"008858:move.w (a0), -(a2):0:w:.w"
+00884E,"lea.l $de77e.l, a0",a0,0DE77E,ROM,lea,2,"008858:move.w (a0), -(a2):0:r:.w;00885A:move.w (a0)+, -(a1):0:r:.w"
+008902,"lea.l $9268.l, a2",a2,009268,ROM,lea,1,"00890E:add.l (a2), d1:0:r:.l"
+00894A,"lea.l $fef87e.l, a1",a1,FEF87E,RAM,lea,4,"00895C:move.w (a1), d0:0:r:.w;00896A:move.w (a1), d1:0:r:.w;00897A:move.w (a1), d2:0:r:.w;00899A:move.w d0, (a1)+:0:w:.w"
+008950,"lea.l $200000.l, a2",a2,200000,PAL,lea,1,"00899C:move.w d0, (a2)+:0:w:.w"
+008956,"lea.l $200800.l, a3",a3,200800,PAL,lea,1,"0089AA:move.w d0, (a3)+:0:w:.w"
+008A5A,"lea.l $fef87e.l, a1",a1,FEF87E,RAM,lea,2,"008A6C:move.w (a1), d4:0:r:.w;008AA2:move.w d0, (a1)+:0:w:.w"
+008A60,"lea.l $203000.l, a2",a2,203000,PAL,lea,1,"008AA0:move.w d0, (a2)+:0:w:.w"
+008ABE,"lea.l $fef87e.l, a1",a1,FEF87E,RAM,lea,1,"008AD4:move.w (a1), d4:0:r:.w"
+008AC4,"lea.l $200800.l, a2",a2,200800,PAL,lea,1,"008B08:move.w d0, (a2)+:0:w:.w"
+008B38,"lea.l $200000.l, a1",a1,200000,PAL,lea,0,
+008B4C,"lea.l $203800.l, a1",a1,203800,PAL,lea,1,"008B64:move.w (a0)+, (a1)+:0:w:.w"
+008B52,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"008B62:move.w (a0), (a2)+:0:w:.w"
+008B58,"lea.l $ddc3e.l, a0",a0,0DDC3E,ROM,lea,2,"008B62:move.w (a0), (a2)+:0:r:.w;008B64:move.w (a0)+, (a1)+:0:r:.w"
+008B6A,"lea.l $200020.l, a1",a1,200020,PAL,lea,0,
+008B7E,"lea.l $203820.l, a1",a1,203820,PAL,lea,2,"008BA2:move.w (a0)+, (a1)+:0:w:.w;008BBA:move.w (a0)+, -(a1):0:w:.w"
+008B84,"lea.l $fef89e.l, a3",a3,FEF89E,RAM,lea,2,"008BA0:move.w (a0), (a3)+:0:w:.w;008BB8:move.w (a0), -(a3):0:w:.w"
+008BDE,"lea.l $eede0.l, a0",a0,0EEDE0,ROM,lea,1,"008BEE:move.w (a0)+, (a1)+:0:r:.w"
+008BE4,"lea.l $feeb32.l, a1",a1,FEEB32,RAM,lea,1,"008BEE:move.w (a0)+, (a1)+:0:w:.w"
+008C28,"lea.l $e1cc6.l, a0",a0,0E1CC6,ROM,lea,0,
+008C3A,"lea.l $e1cf6.l, a0",a0,0E1CF6,ROM,lea,1,"008C40:move.l (a0, d1.w), $102640.l:0:r:.l"
+008C60,"lea.l $e1c82.l, a0",a0,0E1C82,ROM,lea,1,"008C76:move.l (a0, d0.w), $1020c8.l:0:r:.l"
+008EFA,"lea.l $bd2e.l, a2",a2,00BD2E,ROM,lea,1,"008F06:move.l (a2)+, d2:0:r:.l"
+00906C,"lea.l $df4a6.l, a0",a0,0DF4A6,ROM,lea,1,"009072:move.l (a0, d0.w), $1017b4.l:0:r:.l"
+00920E,"lea.l $df658.l, a3",a3,0DF658,ROM,lea,2,"009214:move.w (a3, d2.w), $fec21e.l:0:r:.w;00921C:move.w $2(a3, d2.w), $fec220.l:2:r:.w"
+009322,"lea.l $feebac.l, a1",a1,FEEBAC,RAM,lea,1,"00932C:move.w #$0, (a1)+:0:w:.w"
+009356,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,1,"009360:move.w #$8000, (a0):0:w:.w"
+009394,"lea.l $feea6e.l, a0",a0,FEEA6E,RAM,lea,1,"00939E:move.w #$8000, (a0):0:w:.w"
+0093B0,"lea.l $feea4a.l, a0",a0,FEEA4A,RAM,lea,1,"0093BA:move.w #$8000, (a0):0:w:.w"
+00944E,"lea.l $feeb5c.l, a0",a0,FEEB5C,RAM,lea,1,"009454:move.w #$0, (a0)+:0:w:.w"
+009464,"lea.l $feebac.l, a1",a1,FEEBAC,RAM,lea,1,"00946E:move.w #$0, (a1)+:0:w:.w"
+00947A,"lea.l $e41f2.l, a0",a0,0E41F2,ROM,lea,1,"00948A:move.l (a0)+, (a1)+:0:r:.l"
+009480,"lea.l $fec10e.l, a1",a1,FEC10E,RAM,lea,1,"00948A:move.l (a0)+, (a1)+:0:w:.l"
+009560,"lea.l $ee1a4.l, a5",a5,0EE1A4,ROM,lea,0,
+009572,"lea.l $ee1c0.l, a5",a5,0EE1C0,ROM,lea,0,
+00957C,"lea.l $ee196.l, a5",a5,0EE196,ROM,lea,0,
+009696,"lea.l $df4d6.l, a0",a0,0DF4D6,ROM,lea,1,"00969C:move.w (a0, d0.w), d1:0:r:.w"
+0098E0,"adda.l #$102000, a1",a1,102000,VRAM,adda#,1,"009916:move.l (a0), (a1):0:w:.l"
+00997C,"adda.l #$102000, a1",a1,102000,VRAM,adda#,1,"0099B2:move.l (a0), (a1):0:w:.l"
+009C1E,"adda.l #$100000, a1",a1,100000,VRAM,adda#,1,"009C4E:move.l (a0), (a1):0:w:.l"
+009CBA,"adda.l #$100000, a1",a1,100000,VRAM,adda#,1,"009CEA:move.l (a0), (a1):0:w:.l"
+009E00,"movea.l #$100000, a0",a0,100000,VRAM,movea#,3,"009E0E:move.l (a0, d0.w), d4:0:r:.l;009E38:move.l (a0, d0.w), d1:0:r:.l;009E56:move.l (a1, d1.w), (a0, d0.w):0:w:.l"
+009E1C,"lea.l $f01fc.l, a1",a1,0F01FC,ROM,lea,0,
+009E2A,"lea.l $f05fc.l, a1",a1,0F05FC,ROM,lea,1,"009E56:move.l (a1, d1.w), (a0, d0.w):0:r:.l"
+009F34,"movea.l #$102000, a0",a0,102000,VRAM,movea#,1,"009F5C:move.l (a0), d0:0:r:.l"
+009F3A,"movea.l #$100000, a3",a3,100000,VRAM,movea#,1,"009F62:move.l (a3), d0:0:r:.l"
+009F4A,"lea.l $feeb5c.l, a1",a1,FEEB5C,RAM,lea,2,"009F60:move.w d0, (a1):0:w:.w;009F6E:move.w d0, (a1):0:w:.w"
+009FE2,"lea.l $e1c42.l, a0",a0,0E1C42,ROM,lea,0,
+009FFA,"lea.l $feeb5c.l, a0",a0,FEEB5C,RAM,lea,0,
+00A008,"lea.l $feebac.l, a1",a1,FEEBAC,RAM,lea,1,"00A012:move.w #$0, (a1)+:0:w:.w"
+00A036,"lea.l $e15b2.l, a1",a1,0E15B2,ROM,lea,0,
+00A044,"lea.l $e1a12.l, a1",a1,0E1A12,ROM,lea,0,
+00A04E,"lea.l $e1382.l, a1",a1,0E1382,ROM,lea,0,
+00A05C,"lea.l $e17e2.l, a1",a1,0E17E2,ROM,lea,2,"00A07A:cmp.w (a1), d0:0:r:.w;00A082:cmpi.w #$ff, (a1):0:r:.w"
+00A08E,"lea.l $feebac.l, a2",a2,FEEBAC,RAM,lea,2,"00A10A:move.w d1, (a2)+:0:w:.w;00A10C:move.w d0, (a2)+:0:w:.w"
+00A0D8,"lea.l $e4236.l, a3",a3,0E4236,ROM,lea,2,"00A0E2:move.w (a3, d2.w), d3:0:r:.w;00A0EE:cmp.w (a3, d2.w), d3:0:r:.w"
+00A23A,"lea.l $feebac.l, a0",a0,FEEBAC,RAM,lea,2,"00A242:cmpi.w #$ff, (a0):0:r:.w;00A24A:cmp.w (a0), d1:0:r:.w"
+00A36A,"lea.l $e1c42.l, a0",a0,0E1C42,ROM,lea,0,
+00A380,"lea.l $e1c62.l, a0",a0,0E1C62,ROM,lea,1,"00A3BE:move.w (a0, d0.w), d1:0:r:.w"
+00A386,"lea.l $feebac.l, a5",a5,FEEBAC,RAM,lea,2,"00A3DC:move.w (a5)+, d0:0:r:.w;00A3DE:move.w (a5)+, d6:0:r:.w"
+00A86E,"lea.l $dfe76.l, a5",a5,0DFE76,ROM,lea,1,"00A874:move.w (a5, d3.w), d1:0:r:.w"
+00A91A,"lea.l $dfdc4.l, a4",a4,0DFDC4,ROM,lea,3,"00A928:move.w (a4, d1.w), d2:0:r:.w;00A950:move.w $2(a4, d1.w), d2:2:r:.w;00A95C:move.w $4(a4, d1.w), d2:4:r:.w"
+00A974,"lea.l $dfe0c.l, a4",a4,0DFE0C,ROM,lea,1,"00A97A:move.w (a4, d4.w), d2:0:r:.w"
+00AA04,"lea.l $dfe56.l, a5",a5,0DFE56,ROM,lea,1,"00AA0A:move.w (a5, d3.w), d1:0:r:.w"
+00AC1C,"lea.l $dfe76.l, a5",a5,0DFE76,ROM,lea,1,"00AC3E:move.w (a5, d0.w), d1:0:r:.w"
+00AC4E,"lea.l $dfe0c.l, a4",a4,0DFE0C,ROM,lea,1,"00AC60:move.w (a4, d4.w), d2:0:r:.w"
+00ADF2,"lea.l $feebac.l, a1",a1,FEEBAC,RAM,lea,1,"00ADFC:move.w #$0, (a1)+:0:w:.w"
+00AFDE,"lea.l $200000.l, a0",a0,200000,PAL,lea,1,"00B01E:move.l d1, (a0)+:0:w:.l"
+00AFE4,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"00B020:move.l d1, (a2)+:0:w:.l"
+00B000,"lea.l $fec10e.l, a1",a1,FEC10E,RAM,lea,1,"00B006:move.l (a1, d0.w), d1:0:r:.l"
+00B04C,"lea.l $feeb5c.l, a0",a0,FEEB5C,RAM,lea,1,"00B052:move.w #$0, (a0)+:0:w:.w"
+00B138,"lea.l $feebac.l, a1",a1,FEEBAC,RAM,lea,2,"00B148:move.w (a1), (a2)+:0:r:.w;00B14A:move.w d7, (a1)+:0:w:.w"
+00B13E,"lea.l $fef7e0.l, a2",a2,FEF7E0,RAM,lea,1,"00B148:move.w (a1), (a2)+:0:w:.w"
+00B168,"lea.l $feebac.l, a1",a1,FEEBAC,RAM,lea,1,"00B178:move.w (a2)+, (a1)+:0:w:.w"
+00B16E,"lea.l $fef7e0.l, a2",a2,FEF7E0,RAM,lea,1,"00B178:move.w (a2)+, (a1)+:0:r:.w"
+00B25E,"lea.l $440000.l, a0",a0,440000,SPR,lea,1,"00B268:move.w #$ffff, (a0)+:0:w:.w"
+00B274,"lea.l $fec100.l, a0",a0,FEC100,RAM,lea,1,"00B27E:move.b #$0, (a0)+:0:w:.b"
+00B31E,"lea.l $efef2.l, a0",a0,0EFEF2,ROM,lea,1,"00B334:move.l (a0)+, (a2):0:r:.l"
+00B324,"lea.l $fef252.l, a1",a1,FEF252,RAM,lea,1,"00B336:move.l (a2)+, (a1)+:0:w:.l"
+00B32A,"lea.l $101100.l, a2",a2,101100,VRAM,lea,2,"00B334:move.l (a0)+, (a2):0:w:.l;00B336:move.l (a2)+, (a1)+:0:r:.l"
+00B33C,"lea.l $ef9aa.l, a0",a0,0EF9AA,ROM,lea,1,"00B34C:move.w (a0)+, (a1)+:0:r:.w"
+00B342,"lea.l $fef558.l, a1",a1,FEF558,RAM,lea,1,"00B34C:move.w (a0)+, (a1)+:0:w:.w"
+00B352,"lea.l $1021bc.l, a0",a0,1021BC,VRAM,lea,1,"00B358:move.l (a0), $fef506.l:0:r:.l"
+00B38E,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,1,"00B398:move.w #$8000, (a0):0:w:.w"
+00B3BA,"lea.l $feea6e.l, a0",a0,FEEA6E,RAM,lea,1,"00B3C4:move.w #$8000, (a0):0:w:.w"
+00B3CE,"lea.l $feea4a.l, a0",a0,FEEA4A,RAM,lea,1,"00B3D8:move.w #$8000, (a0):0:w:.w"
+00B40C,"lea.l $d07d6.l, a0",a0,0D07D6,ROM,lea,0,
+00B42C,"lea.l $e5674.l, a0",a0,0E5674,ROM,lea,0,
+00B44C,"lea.l $ea1be.l, a0",a0,0EA1BE,ROM,lea,0,
+00B4EC,"lea.l $f0a04.l, a0",a0,0F0A04,ROM,lea,1,"00B4F8:move.b (a0)+, (a1)+:0:r:.b"
+00B4F2,"lea.l $fef866.l, a1",a1,FEF866,RAM,lea,1,"00B4F8:move.b (a0)+, (a1)+:0:w:.b"
+00B59C,"lea.l $e1d26.l, a0",a0,0E1D26,ROM,lea,0,
+00B6D2,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00B6E8:move.w (a0), -(a2):0:r:.w;00B6EA:move.w (a0)+, -(a1):0:r:.w"
+00B6D8,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00B6EA:move.w (a0)+, -(a1):0:w:.w"
+00B6DE,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00B6E8:move.w (a0), -(a2):0:w:.w"
+00B6F0,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00B706:move.w (a0), -(a2):0:r:.w;00B708:move.w (a0)+, -(a1):0:r:.w"
+00B6F6,"lea.l $200440.l, a1",a1,200440,PAL,lea,1,"00B708:move.w (a0)+, -(a1):0:w:.w"
+00B6FC,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,1,"00B706:move.w (a0), -(a2):0:w:.w"
+00B70E,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00B724:move.w (a0), -(a2):0:r:.w;00B726:move.w (a0)+, -(a1):0:r:.w"
+00B714,"lea.l $200460.l, a1",a1,200460,PAL,lea,1,"00B726:move.w (a0)+, -(a1):0:w:.w"
+00B71A,"lea.l $fefcde.l, a2",a2,FEFCDE,RAM,lea,1,"00B724:move.w (a0), -(a2):0:w:.w"
+00B72C,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00B742:move.w (a0), -(a2):0:r:.w;00B744:move.w (a0)+, -(a1):0:r:.w"
+00B732,"lea.l $200480.l, a1",a1,200480,PAL,lea,1,"00B744:move.w (a0)+, -(a1):0:w:.w"
+00B738,"lea.l $fefcfe.l, a2",a2,FEFCFE,RAM,lea,1,"00B742:move.w (a0), -(a2):0:w:.w"
+00B74A,"lea.l $e4264.l, a0",a0,0E4264,ROM,lea,2,"00B760:move.w (a0), (a2)+:0:r:.w;00B762:move.w (a0)+, (a1)+:0:r:.w"
+00B750,"lea.l $200000.l, a1",a1,200000,PAL,lea,1,"00B762:move.w (a0)+, (a1)+:0:w:.w"
+00B756,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"00B760:move.w (a0), (a2)+:0:w:.w"
+00B768,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00B77E:move.w (a0), (a2)+:0:r:.w;00B780:move.w (a0)+, (a1)+:0:r:.w"
+00B76E,"lea.l $200040.l, a1",a1,200040,PAL,lea,1,"00B780:move.w (a0)+, (a1)+:0:w:.w"
+00B774,"lea.l $fef8be.l, a2",a2,FEF8BE,RAM,lea,1,"00B77E:move.w (a0), (a2)+:0:w:.w"
+00B786,"lea.l $e42a4.l, a0",a0,0E42A4,ROM,lea,2,"00B79C:move.w (a0), (a2)+:0:r:.w;00B79E:move.w (a0)+, (a1)+:0:r:.w"
+00B78C,"lea.l $200060.l, a1",a1,200060,PAL,lea,1,"00B79E:move.w (a0)+, (a1)+:0:w:.w"
+00B792,"lea.l $fef8de.l, a2",a2,FEF8DE,RAM,lea,1,"00B79C:move.w (a0), (a2)+:0:w:.w"
+00B7A4,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00B7BA:move.w (a0), (a2)+:0:r:.w;00B7BC:move.w (a0)+, (a1)+:0:r:.w"
+00B7AA,"lea.l $2000a0.l, a1",a1,2000A0,PAL,lea,1,"00B7BC:move.w (a0)+, (a1)+:0:w:.w"
+00B7B0,"lea.l $fef91e.l, a2",a2,FEF91E,RAM,lea,1,"00B7BA:move.w (a0), (a2)+:0:w:.w"
+00B7C2,"lea.l $e42e4.l, a0",a0,0E42E4,ROM,lea,2,"00B7D8:move.w (a0), (a2)+:0:r:.w;00B7DA:move.w (a0)+, (a1)+:0:r:.w"
+00B7C8,"lea.l $2000c0.l, a1",a1,2000C0,PAL,lea,1,"00B7DA:move.w (a0)+, (a1)+:0:w:.w"
+00B7CE,"lea.l $fef93e.l, a2",a2,FEF93E,RAM,lea,1,"00B7D8:move.w (a0), (a2)+:0:w:.w"
+00B7E0,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00B7F6:move.w (a0), (a2)+:0:r:.w;00B7F8:move.w (a0)+, (a1)+:0:r:.w"
+00B7E6,"lea.l $200100.l, a1",a1,200100,PAL,lea,1,"00B7F8:move.w (a0)+, (a1)+:0:w:.w"
+00B7EC,"lea.l $fef97e.l, a2",a2,FEF97E,RAM,lea,1,"00B7F6:move.w (a0), (a2)+:0:w:.w"
+00B7FE,"lea.l $e4324.l, a0",a0,0E4324,ROM,lea,2,"00B814:move.w (a0), (a2)+:0:r:.w;00B816:move.w (a0)+, (a1)+:0:r:.w"
+00B804,"lea.l $200120.l, a1",a1,200120,PAL,lea,1,"00B816:move.w (a0)+, (a1)+:0:w:.w"
+00B80A,"lea.l $fef99e.l, a2",a2,FEF99E,RAM,lea,1,"00B814:move.w (a0), (a2)+:0:w:.w"
+00B81C,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00B832:move.w (a0), (a2)+:0:r:.w;00B834:move.w (a0)+, (a1)+:0:r:.w"
+00B822,"lea.l $200160.l, a1",a1,200160,PAL,lea,1,"00B834:move.w (a0)+, (a1)+:0:w:.w"
+00B828,"lea.l $fef9de.l, a2",a2,FEF9DE,RAM,lea,1,"00B832:move.w (a0), (a2)+:0:w:.w"
+00B83A,"lea.l $200000.l, a0",a0,200000,PAL,lea,1,"00B84A:move.w (a0)+, (a1)+:0:r:.w"
+00B840,"lea.l $200180.l, a1",a1,200180,PAL,lea,1,"00B84A:move.w (a0)+, (a1)+:0:w:.w"
+00B850,"lea.l $fef87e.l, a0",a0,FEF87E,RAM,lea,1,"00B860:move.w (a0)+, (a1)+:0:r:.w"
+00B856,"lea.l $fef9fe.l, a1",a1,FEF9FE,RAM,lea,1,"00B860:move.w (a0)+, (a1)+:0:w:.w"
+00B86A,"lea.l $e54aa.l, a0",a0,0E54AA,ROM,lea,2,"00B880:move.w (a0), -(a2):0:r:.w;00B882:move.w (a0)+, -(a1):0:r:.w"
+00B870,"lea.l $2005a0.l, a1",a1,2005A0,PAL,lea,1,"00B882:move.w (a0)+, -(a1):0:w:.w"
+00B876,"lea.l $fefe1e.l, a2",a2,FEFE1E,RAM,lea,1,"00B880:move.w (a0), -(a2):0:w:.w"
+00B88C,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00B8A2:move.w (a0), -(a2):0:r:.w;00B8A4:move.w (a0)+, -(a1):0:r:.w"
+00B892,"lea.l $200520.l, a1",a1,200520,PAL,lea,1,"00B8A4:move.w (a0)+, -(a1):0:w:.w"
+00B898,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"00B8A2:move.w (a0), -(a2):0:w:.w"
+00B8AA,"lea.l $e4384.l, a0",a0,0E4384,ROM,lea,2,"00B8C0:move.w (a0), (a2)+:0:r:.w;00B8C2:move.w (a0)+, (a1)+:0:r:.w"
+00B8B0,"lea.l $2003e0.l, a1",a1,2003E0,PAL,lea,1,"00B8C2:move.w (a0)+, (a1)+:0:w:.w"
+00B8B6,"lea.l $fefc5e.l, a2",a2,FEFC5E,RAM,lea,1,"00B8C0:move.w (a0), (a2)+:0:w:.w"
+00B932,"lea.l $eed64.l, a0",a0,0EED64,ROM,lea,1,"00B940:move.l (a0, d0.w), $fef37c.l:0:r:.l"
+00BA14,"lea.l $edd8a.l, a5",a5,0EDD8A,ROM,lea,0,
+00BA46,"lea.l $200502.l, a0",a0,200502,PAL,lea,0,
+00BA4C,"lea.l $fefd80.l, a1",a1,FEFD80,RAM,lea,0,
+00BA7E,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00BA9A:move.w (a0)+, -(a1):0:w:.w"
+00BA84,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00BA98:move.w (a0), -(a2):0:w:.w"
+00BA8E,"lea.l $e53ea.l, a0",a0,0E53EA,ROM,lea,2,"00BA98:move.w (a0), -(a2):0:r:.w;00BA9A:move.w (a0)+, -(a1):0:r:.w"
+00BB7E,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00BB9A:move.w (a0)+, -(a1):0:w:.w"
+00BB84,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00BB98:move.w (a0), -(a2):0:w:.w"
+00BB8E,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00BB98:move.w (a0), -(a2):0:r:.w;00BB9A:move.w (a0)+, -(a1):0:r:.w"
+00BC04,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00BC20:move.w (a0)+, -(a1):0:w:.w"
+00BC0A,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00BC1E:move.w (a0), -(a2):0:w:.w"
+00BC14,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00BC1E:move.w (a0), -(a2):0:r:.w;00BC20:move.w (a0)+, -(a1):0:r:.w"
+00BC6A,"lea.l $fef370.l, a0",a0,FEF370,RAM,lea,1,"00BC70:move.w #$1, (a0, d0.w):0:w:.w"
+00BC7E,"lea.l $eed74.l, a0",a0,0EED74,ROM,lea,1,"00BC84:move.w (a0, d0.w), d0:0:r:.w"
+00BC8C,"lea.l $200000.l, a0",a0,200000,PAL,lea,0,
+00BC92,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,0,
+00BCE6,"lea.l $eed74.l, a0",a0,0EED74,ROM,lea,1,"00BCEC:move.w (a0, d0.w), d0:0:r:.w"
+00BCF4,"lea.l $200000.l, a0",a0,200000,PAL,lea,0,
+00BCFA,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,0,
+00BD04,"lea.l $fef9fe.l, a1",a1,FEF9FE,RAM,lea,0,
+00BE1A,"lea.l $eed7c.l, a0",a0,0EED7C,ROM,lea,1,"00BE20:move.w (a0, d0.w), d0:0:r:.w"
+00BE74,"lea.l $edda2.l, a5",a5,0EDDA2,ROM,lea,0,
+00BE8E,"lea.l $fef252.l, a5",a5,FEF252,RAM,lea,0,
+00BEAE,"lea.l $eed30.l, a0",a0,0EED30,ROM,lea,1,"00BEB4:move.l (a0, d0.w), $1028c0.l:0:r:.l"
+00BF0E,"lea.l $edd4a.l, a5",a5,0EDD4A,ROM,lea,0,
+00BF1C,"lea.l $edd5a.l, a5",a5,0EDD5A,ROM,lea,0,
+00BF2A,"lea.l $e53ca.l, a0",a0,0E53CA,ROM,lea,2,"00BF40:move.w (a0), -(a2):0:r:.w;00BF42:move.w (a0)+, -(a1):0:r:.w"
+00BF30,"lea.l $200540.l, a1",a1,200540,PAL,lea,1,"00BF42:move.w (a0)+, -(a1):0:w:.w"
+00BF36,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"00BF40:move.w (a0), -(a2):0:w:.w"
+00BF48,"lea.l $e53ca.l, a0",a0,0E53CA,ROM,lea,2,"00BF5E:move.w (a0), -(a2):0:r:.w;00BF60:move.w (a0)+, -(a1):0:r:.w"
+00BF4E,"lea.l $200560.l, a1",a1,200560,PAL,lea,1,"00BF60:move.w (a0)+, -(a1):0:w:.w"
+00BF54,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"00BF5E:move.w (a0), -(a2):0:w:.w"
+00BF66,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"00BF7C:move.w (a0), -(a2):0:r:.w;00BF7E:move.w (a0)+, -(a1):0:r:.w"
+00BF6C,"lea.l $200580.l, a1",a1,200580,PAL,lea,1,"00BF7E:move.w (a0)+, -(a1):0:w:.w"
+00BF72,"lea.l $fefdfe.l, a2",a2,FEFDFE,RAM,lea,1,"00BF7C:move.w (a0), -(a2):0:w:.w"
+00BF84,"lea.l $de09e.l, a0",a0,0DE09E,ROM,lea,2,"00BF9A:move.w (a0), -(a2):0:r:.w;00BF9C:move.w (a0)+, -(a1):0:r:.w"
+00BF8A,"lea.l $2005a0.l, a1",a1,2005A0,PAL,lea,1,"00BF9C:move.w (a0)+, -(a1):0:w:.w"
+00BF90,"lea.l $fefe1e.l, a2",a2,FEFE1E,RAM,lea,1,"00BF9A:move.w (a0), -(a2):0:w:.w"
+00BFAA,"lea.l $e52ea.l, a0",a0,0E52EA,ROM,lea,2,"00BFC0:move.w (a0), (a2)+:0:r:.w;00BFC2:move.w (a0)+, (a1)+:0:r:.w"
+00BFB0,"lea.l $200280.l, a1",a1,200280,PAL,lea,1,"00BFC2:move.w (a0)+, (a1)+:0:w:.w"
+00BFB6,"lea.l $fefafe.l, a2",a2,FEFAFE,RAM,lea,1,"00BFC0:move.w (a0), (a2)+:0:w:.w"
+00BFD0,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00BFE6:move.w (a0), (a2)+:0:r:.w;00BFE8:move.w (a0)+, (a1)+:0:r:.w"
+00BFD6,"lea.l $200040.l, a1",a1,200040,PAL,lea,1,"00BFE8:move.w (a0)+, (a1)+:0:w:.w"
+00BFDC,"lea.l $fef8be.l, a2",a2,FEF8BE,RAM,lea,1,"00BFE6:move.w (a0), (a2)+:0:w:.w"
+00BFEE,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00C004:move.w (a0), (a2)+:0:r:.w;00C006:move.w (a0)+, (a1)+:0:r:.w"
+00BFF4,"lea.l $2000a0.l, a1",a1,2000A0,PAL,lea,1,"00C006:move.w (a0)+, (a1)+:0:w:.w"
+00BFFA,"lea.l $fef91e.l, a2",a2,FEF91E,RAM,lea,1,"00C004:move.w (a0), (a2)+:0:w:.w"
+00C00C,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00C022:move.w (a0), (a2)+:0:r:.w;00C024:move.w (a0)+, (a1)+:0:r:.w"
+00C012,"lea.l $200100.l, a1",a1,200100,PAL,lea,1,"00C024:move.w (a0)+, (a1)+:0:w:.w"
+00C018,"lea.l $fef97e.l, a2",a2,FEF97E,RAM,lea,1,"00C022:move.w (a0), (a2)+:0:w:.w"
+00C02A,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00C040:move.w (a0), (a2)+:0:r:.w;00C042:move.w (a0)+, (a1)+:0:r:.w"
+00C030,"lea.l $200160.l, a1",a1,200160,PAL,lea,1,"00C042:move.w (a0)+, (a1)+:0:w:.w"
+00C036,"lea.l $fef9de.l, a2",a2,FEF9DE,RAM,lea,1,"00C040:move.w (a0), (a2)+:0:w:.w"
+00C048,"lea.l $e4384.l, a0",a0,0E4384,ROM,lea,2,"00C05E:move.w (a0), (a2)+:0:r:.w;00C060:move.w (a0)+, (a1)+:0:r:.w"
+00C04E,"lea.l $2003e0.l, a1",a1,2003E0,PAL,lea,1,"00C060:move.w (a0)+, (a1)+:0:w:.w"
+00C054,"lea.l $fefc5e.l, a2",a2,FEFC5E,RAM,lea,1,"00C05E:move.w (a0), (a2)+:0:w:.w"
+00C066,"lea.l $e43e6.l, a0",a0,0E43E6,ROM,lea,2,"00C07C:move.w (a0), (a2)+:0:r:.w;00C07E:move.w (a0)+, (a1)+:0:r:.w"
+00C06C,"lea.l $200320.l, a1",a1,200320,PAL,lea,1,"00C07E:move.w (a0)+, (a1)+:0:w:.w"
+00C072,"lea.l $fefb9e.l, a2",a2,FEFB9E,RAM,lea,1,"00C07C:move.w (a0), (a2)+:0:w:.w"
+00C084,"lea.l $e43a4.l, a0",a0,0E43A4,ROM,lea,2,"00C09A:move.w (a0), (a2)+:0:r:.w;00C09C:move.w (a0)+, (a1)+:0:r:.w"
+00C08A,"lea.l $200260.l, a1",a1,200260,PAL,lea,1,"00C09C:move.w (a0)+, (a1)+:0:w:.w"
+00C090,"lea.l $fefade.l, a2",a2,FEFADE,RAM,lea,1,"00C09A:move.w (a0), (a2)+:0:w:.w"
+00C0FE,"lea.l $e44e6.l, a0",a0,0E44E6,ROM,lea,2,"00C114:move.w (a0), (a2)+:0:r:.w;00C116:move.w (a0)+, (a1)+:0:r:.w"
+00C104,"lea.l $200020.l, a1",a1,200020,PAL,lea,1,"00C116:move.w (a0)+, (a1)+:0:w:.w"
+00C10A,"lea.l $fef89e.l, a2",a2,FEF89E,RAM,lea,1,"00C114:move.w (a0), (a2)+:0:w:.w"
+00C120,"lea.l $e44c6.l, a0",a0,0E44C6,ROM,lea,2,"00C136:move.w (a0), (a2)+:0:r:.w;00C138:move.w (a0)+, (a1)+:0:r:.w"
+00C126,"lea.l $200020.l, a1",a1,200020,PAL,lea,1,"00C138:move.w (a0)+, (a1)+:0:w:.w"
+00C12C,"lea.l $fef89e.l, a2",a2,FEF89E,RAM,lea,1,"00C136:move.w (a0), (a2)+:0:w:.w"
+00C14C,"lea.l $8fe6.l, a5",a5,008FE6,ROM,lea,1,"00C158:move.l (a5)+, d1:0:r:.l"
+00C172,"lea.l $200020.l, a0",a0,200020,PAL,lea,6,"00C188:move.l #$aaa0aaa, $12(a0):18:w:.l;00C190:move.l #$aaa0aaa, $16(a0):22:w:.l;00C1B4:move.l #$aaa0aaa, $2(a0):2:w:.l;00C1BC:move.l #$aaa0aaa, $6(a0):6:w:.l;00C1E0:move.l #$aaa0aaa, $a(a0):10:w:.l;00C1E8:move.l #$aaa0aaa, $e(a0):14:w:.l"
+00C178,"lea.l $fef89e.l, a2",a2,FEF89E,RAM,lea,6,"00C198:move.l #$aaa0aaa, $12(a2):18:w:.l;00C1A0:move.l #$aaa0aaa, $16(a2):22:w:.l;00C1C4:move.l #$aaa0aaa, $2(a2):2:w:.l;00C1CC:move.l #$aaa0aaa, $6(a2):6:w:.l;00C1F0:move.l #$aaa0aaa, $a(a2):10:w:.l;00C1F8:move.l #$aaa0aaa, $e(a2):14:w:.l"
+00C270,"lea.l $200022.l, a0",a0,200022,PAL,lea,0,
+00C276,"lea.l $fef8a0.l, a1",a1,FEF8A0,RAM,lea,0,
+00C284,"lea.l $20002a.l, a0",a0,20002A,PAL,lea,0,
+00C28A,"lea.l $fef8a8.l, a1",a1,FEF8A8,RAM,lea,0,
+00C298,"lea.l $200032.l, a0",a0,200032,PAL,lea,0,
+00C29E,"lea.l $fef8b0.l, a1",a1,FEF8B0,RAM,lea,0,
+00C2CA,"lea.l $200582.l, a0",a0,200582,PAL,lea,0,
+00C2D0,"lea.l $fefe00.l, a1",a1,FEFE00,RAM,lea,0,
+00C6AE,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,2,"00C6C4:move.w (a0), -(a2):0:r:.w;00C6C6:move.w (a0)+, -(a1):0:r:.w"
+00C6B4,"lea.l $200540.l, a1",a1,200540,PAL,lea,1,"00C6C6:move.w (a0)+, -(a1):0:w:.w"
+00C6BA,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"00C6C4:move.w (a0), -(a2):0:w:.w"
+00C6CC,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"00C6E2:move.w (a0), -(a2):0:r:.w;00C6E4:move.w (a0)+, -(a1):0:r:.w"
+00C6D2,"lea.l $200580.l, a1",a1,200580,PAL,lea,1,"00C6E4:move.w (a0)+, -(a1):0:w:.w"
+00C6D8,"lea.l $fefdfe.l, a2",a2,FEFDFE,RAM,lea,1,"00C6E2:move.w (a0), -(a2):0:w:.w"
+00C6EA,"lea.l $e532a.l, a0",a0,0E532A,ROM,lea,2,"00C700:move.w (a0), -(a2):0:r:.w;00C702:move.w (a0)+, -(a1):0:r:.w"
+00C6F0,"lea.l $2005a0.l, a1",a1,2005A0,PAL,lea,1,"00C702:move.w (a0)+, -(a1):0:w:.w"
+00C6F6,"lea.l $fefe1e.l, a2",a2,FEFE1E,RAM,lea,1,"00C700:move.w (a0), -(a2):0:w:.w"
+00C708,"lea.l $e558a.l, a0",a0,0E558A,ROM,lea,2,"00C71E:move.w (a0), -(a2):0:r:.w;00C720:move.w (a0)+, -(a1):0:r:.w"
+00C70E,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"00C720:move.w (a0)+, -(a1):0:w:.w"
+00C714,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00C71E:move.w (a0), -(a2):0:w:.w"
+00C726,"lea.l $e556a.l, a0",a0,0E556A,ROM,lea,2,"00C73C:move.w (a0), -(a2):0:r:.w;00C73E:move.w (a0)+, -(a1):0:r:.w"
+00C72C,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00C73E:move.w (a0)+, -(a1):0:w:.w"
+00C732,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00C73C:move.w (a0), -(a2):0:w:.w"
+00C744,"lea.l $e55ca.l, a0",a0,0E55CA,ROM,lea,2,"00C75A:move.w (a0), -(a2):0:r:.w;00C75C:move.w (a0)+, -(a1):0:r:.w"
+00C74A,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00C75C:move.w (a0)+, -(a1):0:w:.w"
+00C750,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00C75A:move.w (a0), -(a2):0:w:.w"
+00C762,"lea.l $e552a.l, a0",a0,0E552A,ROM,lea,2,"00C778:move.w (a0), -(a2):0:r:.w;00C77A:move.w (a0)+, -(a1):0:r:.w"
+00C768,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00C77A:move.w (a0)+, -(a1):0:w:.w"
+00C76E,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00C778:move.w (a0), -(a2):0:w:.w"
+00C784,"lea.l $e4384.l, a0",a0,0E4384,ROM,lea,2,"00C79A:move.w (a0), (a2)+:0:r:.w;00C79C:move.w (a0)+, (a1)+:0:r:.w"
+00C78A,"lea.l $200000.l, a1",a1,200000,PAL,lea,1,"00C79C:move.w (a0)+, (a1)+:0:w:.w"
+00C790,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"00C79A:move.w (a0), (a2)+:0:w:.w"
+00C7A2,"lea.l $ddd3e.l, a0",a0,0DDD3E,ROM,lea,2,"00C7B8:move.w (a0), (a2)+:0:r:.w;00C7BA:move.w (a0)+, (a1)+:0:r:.w"
+00C7A8,"lea.l $2000e0.l, a1",a1,2000E0,PAL,lea,1,"00C7BA:move.w (a0)+, (a1)+:0:w:.w"
+00C7AE,"lea.l $fef95e.l, a2",a2,FEF95E,RAM,lea,1,"00C7B8:move.w (a0), (a2)+:0:w:.w"
+00C7C0,"lea.l $e458a.l, a0",a0,0E458A,ROM,lea,2,"00C7D6:move.w (a0), (a2)+:0:r:.w;00C7D8:move.w (a0)+, (a1)+:0:r:.w"
+00C7C6,"lea.l $200200.l, a1",a1,200200,PAL,lea,1,"00C7D8:move.w (a0)+, (a1)+:0:w:.w"
+00C7CC,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,1,"00C7D6:move.w (a0), (a2)+:0:w:.w"
+00C7DE,"lea.l $fed466.l, a1",a1,FED466,RAM,lea,0,
+00C7EE,"lea.l $fed52e.l, a1",a1,FED52E,RAM,lea,0,
+00C82C,"lea.l $ede48.l, a5",a5,0EDE48,ROM,lea,0,
+00C836,"lea.l $e53ca.l, a0",a0,0E53CA,ROM,lea,2,"00C84C:move.w (a0), -(a2):0:r:.w;00C84E:move.w (a0)+, -(a1):0:r:.w"
+00C83C,"lea.l $200560.l, a1",a1,200560,PAL,lea,1,"00C84E:move.w (a0)+, -(a1):0:w:.w"
+00C842,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"00C84C:move.w (a0), -(a2):0:w:.w"
+00C854,"lea.l $de09e.l, a0",a0,0DE09E,ROM,lea,2,"00C86A:move.w (a0), -(a2):0:r:.w;00C86C:move.w (a0)+, -(a1):0:r:.w"
+00C85A,"lea.l $200460.l, a1",a1,200460,PAL,lea,1,"00C86C:move.w (a0)+, -(a1):0:w:.w"
+00C860,"lea.l $fefcde.l, a2",a2,FEFCDE,RAM,lea,1,"00C86A:move.w (a0), -(a2):0:w:.w"
+00C872,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00C888:move.w (a0), -(a2):0:r:.w;00C88A:move.w (a0)+, -(a1):0:r:.w"
+00C878,"lea.l $200480.l, a1",a1,200480,PAL,lea,1,"00C88A:move.w (a0)+, -(a1):0:w:.w"
+00C87E,"lea.l $fefcfe.l, a2",a2,FEFCFE,RAM,lea,1,"00C888:move.w (a0), -(a2):0:w:.w"
+00C942,"lea.l $eddf8.l, a5",a5,0EDDF8,ROM,lea,0,
+00C94C,"lea.l $de09e.l, a0",a0,0DE09E,ROM,lea,2,"00C962:move.w (a0), -(a2):0:r:.w;00C964:move.w (a0)+, -(a1):0:r:.w"
+00C952,"lea.l $200560.l, a1",a1,200560,PAL,lea,1,"00C964:move.w (a0)+, -(a1):0:w:.w"
+00C958,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"00C962:move.w (a0), -(a2):0:w:.w"
+00C96E,"lea.l $eddbe.l, a5",a5,0EDDBE,ROM,lea,0,
+00C978,"lea.l $e53ca.l, a0",a0,0E53CA,ROM,lea,2,"00C98E:move.w (a0), -(a2):0:r:.w;00C990:move.w (a0)+, -(a1):0:r:.w"
+00C97E,"lea.l $200560.l, a1",a1,200560,PAL,lea,1,"00C990:move.w (a0)+, -(a1):0:w:.w"
+00C984,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"00C98E:move.w (a0), -(a2):0:w:.w"
+00C996,"lea.l $de09e.l, a0",a0,0DE09E,ROM,lea,2,"00C9AC:move.w (a0), -(a2):0:r:.w;00C9AE:move.w (a0)+, -(a1):0:r:.w"
+00C99C,"lea.l $200460.l, a1",a1,200460,PAL,lea,1,"00C9AE:move.w (a0)+, -(a1):0:w:.w"
+00C9A2,"lea.l $fefcde.l, a2",a2,FEFCDE,RAM,lea,1,"00C9AC:move.w (a0), -(a2):0:w:.w"
+00C9F4,"lea.l $eddce.l, a5",a5,0EDDCE,ROM,lea,0,
+00CA0A,"lea.l $edde2.l, a5",a5,0EDDE2,ROM,lea,0,
+00CA14,"lea.l $eddec.l, a5",a5,0EDDEC,ROM,lea,0,
+00CA4E,"lea.l $e556a.l, a0",a0,0E556A,ROM,lea,2,"00CA64:move.w (a0), -(a2):0:r:.w;00CA66:move.w (a0)+, -(a1):0:r:.w"
+00CA54,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00CA66:move.w (a0)+, -(a1):0:w:.w"
+00CA5A,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00CA64:move.w (a0), -(a2):0:w:.w"
+00CA6C,"lea.l $e552a.l, a0",a0,0E552A,ROM,lea,2,"00CA82:move.w (a0), -(a2):0:r:.w;00CA84:move.w (a0)+, -(a1):0:r:.w"
+00CA72,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00CA84:move.w (a0)+, -(a1):0:w:.w"
+00CA78,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00CA82:move.w (a0), -(a2):0:w:.w"
+00CA8E,"lea.l $e554a.l, a0",a0,0E554A,ROM,lea,2,"00CAA4:move.w (a0), -(a2):0:r:.w;00CAA6:move.w (a0)+, -(a1):0:r:.w"
+00CA94,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00CAA6:move.w (a0)+, -(a1):0:w:.w"
+00CA9A,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00CAA4:move.w (a0), -(a2):0:w:.w"
+00CAAC,"lea.l $e550a.l, a0",a0,0E550A,ROM,lea,2,"00CAC2:move.w (a0), -(a2):0:r:.w;00CAC4:move.w (a0)+, -(a1):0:r:.w"
+00CAB2,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00CAC4:move.w (a0)+, -(a1):0:w:.w"
+00CAB8,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00CAC2:move.w (a0), -(a2):0:w:.w"
+00CD5A,"lea.l $e532a.l, a0",a0,0E532A,ROM,lea,2,"00CD70:move.w (a0), -(a2):0:r:.w;00CD72:move.w (a0)+, -(a1):0:r:.w"
+00CD60,"lea.l $200540.l, a1",a1,200540,PAL,lea,1,"00CD72:move.w (a0)+, -(a1):0:w:.w"
+00CD66,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"00CD70:move.w (a0), -(a2):0:w:.w"
+00CD78,"lea.l $e550a.l, a0",a0,0E550A,ROM,lea,2,"00CD8E:move.w (a0), -(a2):0:r:.w;00CD90:move.w (a0)+, -(a1):0:r:.w"
+00CD7E,"lea.l $200560.l, a1",a1,200560,PAL,lea,1,"00CD90:move.w (a0)+, -(a1):0:w:.w"
+00CD84,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"00CD8E:move.w (a0), -(a2):0:w:.w"
+00CD96,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"00CDAC:move.w (a0), -(a2):0:r:.w;00CDAE:move.w (a0)+, -(a1):0:r:.w"
+00CD9C,"lea.l $200580.l, a1",a1,200580,PAL,lea,1,"00CDAE:move.w (a0)+, -(a1):0:w:.w"
+00CDA2,"lea.l $fefdfe.l, a2",a2,FEFDFE,RAM,lea,1,"00CDAC:move.w (a0), -(a2):0:w:.w"
+00CDB4,"lea.l $e532a.l, a0",a0,0E532A,ROM,lea,2,"00CDCA:move.w (a0), -(a2):0:r:.w;00CDCC:move.w (a0)+, -(a1):0:r:.w"
+00CDBA,"lea.l $2005a0.l, a1",a1,2005A0,PAL,lea,1,"00CDCC:move.w (a0)+, -(a1):0:w:.w"
+00CDC0,"lea.l $fefe1e.l, a2",a2,FEFE1E,RAM,lea,1,"00CDCA:move.w (a0), -(a2):0:w:.w"
+00CDD2,"lea.l $e55aa.l, a0",a0,0E55AA,ROM,lea,2,"00CDE8:move.w (a0), -(a2):0:r:.w;00CDEA:move.w (a0)+, -(a1):0:r:.w"
+00CDD8,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"00CDEA:move.w (a0)+, -(a1):0:w:.w"
+00CDDE,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00CDE8:move.w (a0), -(a2):0:w:.w"
+00CDF0,"lea.l $e554a.l, a0",a0,0E554A,ROM,lea,2,"00CE06:move.w (a0), -(a2):0:r:.w;00CE08:move.w (a0)+, -(a1):0:r:.w"
+00CDF6,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00CE08:move.w (a0)+, -(a1):0:w:.w"
+00CDFC,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00CE06:move.w (a0), -(a2):0:w:.w"
+00CE0E,"lea.l $e55ea.l, a0",a0,0E55EA,ROM,lea,2,"00CE24:move.w (a0), -(a2):0:r:.w;00CE26:move.w (a0)+, -(a1):0:r:.w"
+00CE14,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00CE26:move.w (a0)+, -(a1):0:w:.w"
+00CE1A,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00CE24:move.w (a0), -(a2):0:w:.w"
+00CE30,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00CE46:move.w (a0), (a2)+:0:r:.w;00CE48:move.w (a0)+, (a1)+:0:r:.w"
+00CE36,"lea.l $200040.l, a1",a1,200040,PAL,lea,1,"00CE48:move.w (a0)+, (a1)+:0:w:.w"
+00CE3C,"lea.l $fef8be.l, a2",a2,FEF8BE,RAM,lea,1,"00CE46:move.w (a0), (a2)+:0:w:.w"
+00CE4E,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00CE64:move.w (a0), (a2)+:0:r:.w;00CE66:move.w (a0)+, (a1)+:0:r:.w"
+00CE54,"lea.l $2000a0.l, a1",a1,2000A0,PAL,lea,1,"00CE66:move.w (a0)+, (a1)+:0:w:.w"
+00CE5A,"lea.l $fef91e.l, a2",a2,FEF91E,RAM,lea,1,"00CE64:move.w (a0), (a2)+:0:w:.w"
+00CE6C,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00CE82:move.w (a0), (a2)+:0:r:.w;00CE84:move.w (a0)+, (a1)+:0:r:.w"
+00CE72,"lea.l $200100.l, a1",a1,200100,PAL,lea,1,"00CE84:move.w (a0)+, (a1)+:0:w:.w"
+00CE78,"lea.l $fef97e.l, a2",a2,FEF97E,RAM,lea,1,"00CE82:move.w (a0), (a2)+:0:w:.w"
+00CE8A,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00CEA0:move.w (a0), (a2)+:0:r:.w;00CEA2:move.w (a0)+, (a1)+:0:r:.w"
+00CE90,"lea.l $200160.l, a1",a1,200160,PAL,lea,1,"00CEA2:move.w (a0)+, (a1)+:0:w:.w"
+00CE96,"lea.l $fef9de.l, a2",a2,FEF9DE,RAM,lea,1,"00CEA0:move.w (a0), (a2)+:0:w:.w"
+00CEA8,"lea.l $e458a.l, a0",a0,0E458A,ROM,lea,2,"00CEBE:move.w (a0), (a2)+:0:r:.w;00CEC0:move.w (a0)+, (a1)+:0:r:.w"
+00CEAE,"lea.l $200200.l, a1",a1,200200,PAL,lea,1,"00CEC0:move.w (a0)+, (a1)+:0:w:.w"
+00CEB4,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,1,"00CEBE:move.w (a0), (a2)+:0:w:.w"
+00CEDE,"lea.l $eed7c.l, a0",a0,0EED7C,ROM,lea,1,"00CEE4:move.w (a0, d0.w), d0:0:r:.w"
+00CEF2,"lea.l $ede82.l, a5",a5,0EDE82,ROM,lea,0,
+00CF08,"lea.l $ede98.l, a5",a5,0EDE98,ROM,lea,0,
+00CF12,"lea.l $edea4.l, a5",a5,0EDEA4,ROM,lea,0,
+00CF52,"lea.l $e55aa.l, a0",a0,0E55AA,ROM,lea,2,"00CF68:move.w (a0), -(a2):0:r:.w;00CF6A:move.w (a0)+, -(a1):0:r:.w"
+00CF58,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"00CF6A:move.w (a0)+, -(a1):0:w:.w"
+00CF5E,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00CF68:move.w (a0), -(a2):0:w:.w"
+00CF70,"lea.l $e55ea.l, a0",a0,0E55EA,ROM,lea,2,"00CF86:move.w (a0), -(a2):0:r:.w;00CF88:move.w (a0)+, -(a1):0:r:.w"
+00CF76,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00CF88:move.w (a0)+, -(a1):0:w:.w"
+00CF7C,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00CF86:move.w (a0), -(a2):0:w:.w"
+00CF92,"lea.l $e558a.l, a0",a0,0E558A,ROM,lea,2,"00CFA8:move.w (a0), -(a2):0:r:.w;00CFAA:move.w (a0)+, -(a1):0:r:.w"
+00CF98,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"00CFAA:move.w (a0)+, -(a1):0:w:.w"
+00CF9E,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00CFA8:move.w (a0), -(a2):0:w:.w"
+00CFB0,"lea.l $e55ca.l, a0",a0,0E55CA,ROM,lea,2,"00CFC6:move.w (a0), -(a2):0:r:.w;00CFC8:move.w (a0)+, -(a1):0:r:.w"
+00CFB6,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00CFC8:move.w (a0)+, -(a1):0:w:.w"
+00CFBC,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00CFC6:move.w (a0), -(a2):0:w:.w"
+00D38E,"lea.l $e54aa.l, a0",a0,0E54AA,ROM,lea,2,"00D3A4:move.w (a0), -(a2):0:r:.w;00D3A6:move.w (a0)+, -(a1):0:r:.w"
+00D394,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00D3A6:move.w (a0)+, -(a1):0:w:.w"
+00D39A,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00D3A4:move.w (a0), -(a2):0:w:.w"
+00D3AC,"lea.l $e53ca.l, a0",a0,0E53CA,ROM,lea,2,"00D3C2:move.w (a0), -(a2):0:r:.w;00D3C4:move.w (a0)+, -(a1):0:r:.w"
+00D3B2,"lea.l $200540.l, a1",a1,200540,PAL,lea,1,"00D3C4:move.w (a0)+, -(a1):0:w:.w"
+00D3B8,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"00D3C2:move.w (a0), -(a2):0:w:.w"
+00D3CA,"lea.l $e532a.l, a0",a0,0E532A,ROM,lea,2,"00D3E0:move.w (a0), -(a2):0:r:.w;00D3E2:move.w (a0)+, -(a1):0:r:.w"
+00D3D0,"lea.l $2005a0.l, a1",a1,2005A0,PAL,lea,1,"00D3E2:move.w (a0)+, -(a1):0:w:.w"
+00D3D6,"lea.l $fefe1e.l, a2",a2,FEFE1E,RAM,lea,1,"00D3E0:move.w (a0), -(a2):0:w:.w"
+00D3E8,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,2,"00D3FE:move.w (a0), -(a2):0:r:.w;00D400:move.w (a0)+, -(a1):0:r:.w"
+00D3EE,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"00D400:move.w (a0)+, -(a1):0:w:.w"
+00D3F4,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00D3FE:move.w (a0), -(a2):0:w:.w"
+00D40A,"lea.l $e522a.l, a0",a0,0E522A,ROM,lea,2,"00D420:move.w (a0), -(a2):0:r:.w;00D422:move.w (a0)+, -(a1):0:r:.w"
+00D410,"lea.l $200500.l, a1",a1,200500,PAL,lea,1,"00D422:move.w (a0)+, -(a1):0:w:.w"
+00D416,"lea.l $fefd7e.l, a2",a2,FEFD7E,RAM,lea,1,"00D420:move.w (a0), -(a2):0:w:.w"
+00D428,"lea.l $e4384.l, a0",a0,0E4384,ROM,lea,2,"00D43E:move.w (a0), (a2)+:0:r:.w;00D440:move.w (a0)+, (a1)+:0:r:.w"
+00D42E,"lea.l $200040.l, a1",a1,200040,PAL,lea,1,"00D440:move.w (a0)+, (a1)+:0:w:.w"
+00D434,"lea.l $fef8be.l, a2",a2,FEF8BE,RAM,lea,1,"00D43E:move.w (a0), (a2)+:0:w:.w"
+00D446,"lea.l $e4364.l, a0",a0,0E4364,ROM,lea,2,"00D45C:move.w (a0), (a2)+:0:r:.w;00D45E:move.w (a0)+, (a1)+:0:r:.w"
+00D44C,"lea.l $200020.l, a1",a1,200020,PAL,lea,1,"00D45E:move.w (a0)+, (a1)+:0:w:.w"
+00D452,"lea.l $fef89e.l, a2",a2,FEF89E,RAM,lea,1,"00D45C:move.w (a0), (a2)+:0:w:.w"
+00D464,"lea.l $e562a.l, a0",a0,0E562A,ROM,lea,2,"00D47A:move.w (a0), (a2)+:0:r:.w;00D47C:move.w (a0)+, (a1)+:0:r:.w"
+00D46A,"lea.l $200200.l, a1",a1,200200,PAL,lea,1,"00D47C:move.w (a0)+, (a1)+:0:w:.w"
+00D470,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,1,"00D47A:move.w (a0), (a2)+:0:w:.w"
+00D482,"lea.l $e53ea.l, a0",a0,0E53EA,ROM,lea,2,"00D49C:move.w (a0), -(a2):0:r:.w;00D49E:move.w (a0)+, -(a1):0:r:.w"
+00D488,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00D49E:move.w (a0)+, -(a1):0:w:.w"
+00D48E,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00D49C:move.w (a0), -(a2):0:w:.w"
+00D4B0,"lea.l $e53ea.l, a0",a0,0E53EA,ROM,lea,2,"00D4C6:move.w (a0), -(a2):0:r:.w;00D4C8:move.w (a0)+, -(a1):0:r:.w"
+00D4B6,"lea.l $2004a0.l, a1",a1,2004A0,PAL,lea,1,"00D4C8:move.w (a0)+, -(a1):0:w:.w"
+00D4BC,"lea.l $fefd1e.l, a2",a2,FEFD1E,RAM,lea,1,"00D4C6:move.w (a0), -(a2):0:w:.w"
+00D4DE,"lea.l $200482.l, a0",a0,200482,PAL,lea,0,
+00D4E4,"lea.l $fefd00.l, a1",a1,FEFD00,RAM,lea,0,
+00D4FC,"lea.l $e530a.l, a0",a0,0E530A,ROM,lea,1,"00D502:movea.l (a0, d0.w), a0:0:r:.l"
+00D506,"lea.l $2005a0.l, a1",a1,2005A0,PAL,lea,1,"00D518:move.w (a0)+, -(a1):0:w:.w"
+00D50C,"lea.l $fefe1e.l, a2",a2,FEFE1E,RAM,lea,1,"00D516:move.w (a0), -(a2):0:w:.w"
+00D544,"lea.l $e531a.l, a0",a0,0E531A,ROM,lea,1,"00D54A:movea.l (a0, d0.w), a0:0:r:.l"
+00D54E,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00D560:move.w (a0)+, -(a1):0:w:.w"
+00D554,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00D55E:move.w (a0), -(a2):0:w:.w"
+00D566,"lea.l $e544a.l, a0",a0,0E544A,ROM,lea,2,"00D57C:move.w (a0), -(a2):0:r:.w;00D57E:move.w (a0)+, -(a1):0:r:.w"
+00D56C,"lea.l $200440.l, a1",a1,200440,PAL,lea,1,"00D57E:move.w (a0)+, -(a1):0:w:.w"
+00D572,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,1,"00D57C:move.w (a0), -(a2):0:w:.w"
+00D592,"lea.l $e531a.l, a0",a0,0E531A,ROM,lea,1,"00D598:movea.l (a0, d0.w), a0:0:r:.l"
+00D59C,"lea.l $200440.l, a1",a1,200440,PAL,lea,1,"00D5AE:move.w (a0)+, -(a1):0:w:.w"
+00D5A2,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,1,"00D5AC:move.w (a0), -(a2):0:w:.w"
+00D5B4,"lea.l $e544a.l, a0",a0,0E544A,ROM,lea,2,"00D5CA:move.w (a0), -(a2):0:r:.w;00D5CC:move.w (a0)+, -(a1):0:r:.w"
+00D5BA,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00D5CC:move.w (a0)+, -(a1):0:w:.w"
+00D5C0,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00D5CA:move.w (a0), -(a2):0:w:.w"
+00D63E,"lea.l $ee0b2.l, a5",a5,0EE0B2,ROM,lea,0,
+00D654,"lea.l $ee0ca.l, a5",a5,0EE0CA,ROM,lea,0,
+00D674,"lea.l $ee128.l, a5",a5,0EE128,ROM,lea,0,
+00D682,"lea.l $ee104.l, a5",a5,0EE104,ROM,lea,0,
+00D74C,"lea.l $ee150.l, a5",a5,0EE150,ROM,lea,0,
+00D75A,"lea.l $edef0.l, a5",a5,0EDEF0,ROM,lea,0,
+00DA14,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00DA2A:move.w (a0), -(a2):0:r:.w;00DA2C:move.w (a0)+, -(a1):0:r:.w"
+00DA1A,"lea.l $200520.l, a1",a1,200520,PAL,lea,1,"00DA2C:move.w (a0)+, -(a1):0:w:.w"
+00DA20,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"00DA2A:move.w (a0), -(a2):0:w:.w"
+00DA44,"lea.l $1900a.l, a4",a4,01900A,ROM,lea,1,"00DA50:add.l (a4)+, d0:0:r:.l"
+00DA6A,"lea.l $e4384.l, a0",a0,0E4384,ROM,lea,1,"00DA7A:move.w (a0)+, (a1)+:0:r:.w"
+00DA70,"lea.l $fef02c.l, a1",a1,FEF02C,RAM,lea,1,"00DA7A:move.w (a0)+, (a1)+:0:w:.w"
+00DA80,"lea.l $200000.l, a0",a0,200000,PAL,lea,1,"00DA90:move.w #$0, (a0)+:0:w:.w"
+00DA86,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"00DA94:move.w #$0, (a2)+:0:w:.w"
+00DAAC,"lea.l $e472a.l, a0",a0,0E472A,ROM,lea,1,"00DABC:move.w (a0)+, (a1)+:0:r:.w"
+00DAB2,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,1,"00DABC:move.w (a0)+, (a1)+:0:w:.w"
+00DAC2,"lea.l $e486a.l, a0",a0,0E486A,ROM,lea,1,"00DAD2:move.w (a0)+, (a1)+:0:r:.w"
+00DAC8,"lea.l $feee4c.l, a1",a1,FEEE4C,RAM,lea,1,"00DAD2:move.w (a0)+, (a1)+:0:w:.w"
+00DB46,"lea.l $200000.l, a0",a0,200000,PAL,lea,0,
+00DB4C,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,0,
+00DB52,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,0,
+00DB8E,"lea.l $e51ea.l, a0",a0,0E51EA,ROM,lea,1,"00DBA2:move.w (a0)+, -(a1):0:r:.w"
+00DB94,"lea.l $feec6c.l, a1",a1,FEEC6C,RAM,lea,1,"00DBA2:move.w (a0)+, -(a1):0:w:.w"
+00DBB0,"lea.l $2004e0.l, a0",a0,2004E0,PAL,lea,1,"00DBC0:move.w #$fff, (a0)+:0:w:.w"
+00DBB6,"lea.l $fefd5e.l, a2",a2,FEFD5E,RAM,lea,1,"00DBC4:move.w #$fff, (a2)+:0:w:.w"
+00DBEC,"lea.l $2004e0.l, a0",a0,2004E0,PAL,lea,0,
+00DBF2,"lea.l $fefd5e.l, a2",a2,FEFD5E,RAM,lea,0,
+00DBF8,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,0,
+00DC42,"lea.l $ee05a.l, a5",a5,0EE05A,ROM,lea,0,
+00DC4C,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,2,"00DC62:move.w (a0), -(a2):0:r:.w;00DC64:move.w (a0)+, -(a1):0:r:.w"
+00DC52,"lea.l $200520.l, a1",a1,200520,PAL,lea,1,"00DC64:move.w (a0)+, -(a1):0:w:.w"
+00DC58,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"00DC62:move.w (a0), -(a2):0:w:.w"
+00DCFC,"lea.l $e4a2a.l, a0",a0,0E4A2A,ROM,lea,2,"00DD12:move.w (a0), (a2)+:0:r:.w;00DD14:move.w (a0)+, (a1)+:0:r:.w"
+00DD02,"lea.l $200000.l, a1",a1,200000,PAL,lea,1,"00DD14:move.w (a0)+, (a1)+:0:w:.w"
+00DD08,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"00DD12:move.w (a0), (a2)+:0:w:.w"
+00DD38,"lea.l $e4bca.l, a0",a0,0E4BCA,ROM,lea,2,"00DD4E:move.w (a0), (a2)+:0:r:.w;00DD50:move.w (a0)+, (a1)+:0:r:.w"
+00DD3E,"lea.l $200200.l, a1",a1,200200,PAL,lea,1,"00DD50:move.w (a0)+, (a1)+:0:w:.w"
+00DD44,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,1,"00DD4E:move.w (a0), (a2)+:0:w:.w"
+00DD74,"lea.l $e4daa.l, a0",a0,0E4DAA,ROM,lea,2,"00DD8A:move.w (a0), (a2)+:0:r:.w;00DD8C:move.w (a0)+, (a1)+:0:r:.w"
+00DD7A,"lea.l $200000.l, a1",a1,200000,PAL,lea,1,"00DD8C:move.w (a0)+, (a1)+:0:w:.w"
+00DD80,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"00DD8A:move.w (a0), (a2)+:0:w:.w"
+00DDB4,"lea.l $e502a.l, a0",a0,0E502A,ROM,lea,1,"00DDC4:move.w (a0)+, (a1)+:0:r:.w"
+00DDBA,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,1,"00DDC4:move.w (a0)+, (a1)+:0:w:.w"
+00DDCA,"lea.l $200200.l, a0",a0,200200,PAL,lea,1,"00DDDA:move.w #$fff, (a0)+:0:w:.w"
+00DDD0,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,1,"00DDDE:move.w #$fff, (a2)+:0:w:.w"
+00DDF6,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,1,"00DE06:move.w (a0)+, (a1)+:0:r:.w"
+00DDFC,"lea.l $fef14c.l, a1",a1,FEF14C,RAM,lea,1,"00DE06:move.w (a0)+, (a1)+:0:w:.w"
+00DE24,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,1,"00DE34:move.w (a0)+, (a1)+:0:r:.w"
+00DE2A,"lea.l $fef16c.l, a1",a1,FEF16C,RAM,lea,1,"00DE34:move.w (a0)+, (a1)+:0:w:.w"
+00DE52,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00DE68:move.w (a0), -(a2):0:r:.w;00DE6A:move.w (a0)+, -(a1):0:r:.w"
+00DE58,"lea.l $200560.l, a1",a1,200560,PAL,lea,1,"00DE6A:move.w (a0)+, -(a1):0:w:.w"
+00DE5E,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"00DE68:move.w (a0), -(a2):0:w:.w"
+00DE94,"lea.l $e4222.l, a0",a0,0E4222,ROM,lea,1,"00DE9A:move.w (a0, d0.w), d0:0:r:.w"
+00DEA8,"lea.l $ededa.l, a5",a5,0EDEDA,ROM,lea,0,
+00DEDA,"lea.l $edebc.l, a5",a5,0EDEBC,ROM,lea,0,
+00DEFC,"lea.l $200200.l, a0",a0,200200,PAL,lea,0,
+00DF02,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,0,
+00DF08,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,0,
+00DF22,"lea.l $200500.l, a0",a0,200500,PAL,lea,0,
+00DF28,"lea.l $fefd7e.l, a2",a2,FEFD7E,RAM,lea,0,
+00DF2E,"lea.l $fef14c.l, a1",a1,FEF14C,RAM,lea,0,
+00DF48,"lea.l $edebc.l, a5",a5,0EDEBC,ROM,lea,0,
+00DF5E,"lea.l $e524a.l, a0",a0,0E524A,ROM,lea,1,"00DF72:move.w (a0)+, -(a1):0:r:.w"
+00DF64,"lea.l $feec6c.l, a1",a1,FEEC6C,RAM,lea,1,"00DF72:move.w (a0)+, -(a1):0:w:.w"
+00DF80,"lea.l $2004e0.l, a0",a0,2004E0,PAL,lea,1,"00DF90:move.w #$fff, (a0)+:0:w:.w"
+00DF86,"lea.l $fefd5e.l, a2",a2,FEFD5E,RAM,lea,1,"00DF94:move.w #$fff, (a2)+:0:w:.w"
+00DFB8,"lea.l $2004e0.l, a0",a0,2004E0,PAL,lea,0,
+00DFBE,"lea.l $fefd5e.l, a2",a2,FEFD5E,RAM,lea,0,
+00DFC4,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,0,
+00E028,"lea.l $eebd4.l, a0",a0,0EEBD4,ROM,lea,0,
+00E038,"lea.l $eec28.l, a0",a0,0EEC28,ROM,lea,1,"00E03E:move.l (a0, d0.w), $1034c8.l:0:r:.l"
+00E068,"lea.l $e528a.l, a0",a0,0E528A,ROM,lea,2,"00E07E:move.w (a0), -(a2):0:r:.w;00E080:move.w (a0)+, -(a1):0:r:.w"
+00E06E,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00E080:move.w (a0)+, -(a1):0:w:.w"
+00E074,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00E07E:move.w (a0), -(a2):0:w:.w"
+00E086,"lea.l $e548a.l, a0",a0,0E548A,ROM,lea,2,"00E09C:move.w (a0), -(a2):0:r:.w;00E09E:move.w (a0)+, -(a1):0:r:.w"
+00E08C,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00E09E:move.w (a0)+, -(a1):0:w:.w"
+00E092,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00E09C:move.w (a0), -(a2):0:w:.w"
+00E0B0,"lea.l $ee13a.l, a5",a5,0EE13A,ROM,lea,0,
+00E0C6,"lea.l $2005c0.l, a0",a0,2005C0,PAL,lea,1,"00E0D6:move.w #$fff, (a0)+:0:w:.w"
+00E0CC,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00E0DA:move.w #$fff, (a2)+:0:w:.w"
+00E0F2,"lea.l $e528a.l, a0",a0,0E528A,ROM,lea,1,"00E106:move.w (a0)+, -(a1):0:r:.w"
+00E0F8,"lea.l $feec6c.l, a1",a1,FEEC6C,RAM,lea,1,"00E106:move.w (a0)+, -(a1):0:w:.w"
+00E114,"lea.l $e548a.l, a0",a0,0E548A,ROM,lea,1,"00E128:move.w (a0)+, -(a1):0:r:.w"
+00E11A,"lea.l $feec8c.l, a1",a1,FEEC8C,RAM,lea,1,"00E128:move.w (a0)+, -(a1):0:w:.w"
+00E14E,"lea.l $2005c0.l, a0",a0,2005C0,PAL,lea,0,
+00E154,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,0,
+00E15A,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,0,
+00E1DA,"lea.l $eebfc.l, a0",a0,0EEBFC,ROM,lea,0,
+00E1EA,"lea.l $eec50.l, a0",a0,0EEC50,ROM,lea,1,"00E1F0:move.l (a0, d0.w), $1024d0.l:0:r:.l"
+00E20E,"lea.l $ee13a.l, a5",a5,0EE13A,ROM,lea,0,
+00E224,"lea.l $e52ca.l, a0",a0,0E52CA,ROM,lea,2,"00E23A:move.w (a0), -(a2):0:r:.w;00E23C:move.w (a0)+, -(a1):0:r:.w"
+00E22A,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00E23C:move.w (a0)+, -(a1):0:w:.w"
+00E230,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00E23A:move.w (a0), -(a2):0:w:.w"
+00E242,"lea.l $e52aa.l, a0",a0,0E52AA,ROM,lea,2,"00E258:move.w (a0), -(a2):0:r:.w;00E25A:move.w (a0)+, -(a1):0:r:.w"
+00E248,"lea.l $200440.l, a1",a1,200440,PAL,lea,1,"00E25A:move.w (a0)+, -(a1):0:w:.w"
+00E24E,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,1,"00E258:move.w (a0), -(a2):0:w:.w"
+00E2C2,"lea.l $e470a.l, a0",a0,0E470A,ROM,lea,2,"00E2D8:move.w (a0), (a2)+:0:r:.w;00E2DA:move.w (a0)+, (a1)+:0:r:.w"
+00E2C8,"lea.l $2001c0.l, a1",a1,2001C0,PAL,lea,1,"00E2DA:move.w (a0)+, (a1)+:0:w:.w"
+00E2CE,"lea.l $fefa3e.l, a2",a2,FEFA3E,RAM,lea,1,"00E2D8:move.w (a0), (a2)+:0:w:.w"
+00E2F0,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00E30A:move.w (a0), -(a2):0:r:.w;00E30C:move.w (a0)+, -(a1):0:r:.w"
+00E2F6,"lea.l $200520.l, a1",a1,200520,PAL,lea,1,"00E30C:move.w (a0)+, -(a1):0:w:.w"
+00E2FC,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"00E30A:move.w (a0), -(a2):0:w:.w"
+00E322,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00E338:move.w (a0), -(a2):0:r:.w;00E33A:move.w (a0)+, -(a1):0:r:.w"
+00E328,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00E33A:move.w (a0)+, -(a1):0:w:.w"
+00E32E,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00E338:move.w (a0), -(a2):0:w:.w"
+00E350,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"00E366:move.w (a0), -(a2):0:r:.w;00E368:move.w (a0)+, -(a1):0:r:.w"
+00E356,"lea.l $200440.l, a1",a1,200440,PAL,lea,1,"00E368:move.w (a0)+, -(a1):0:w:.w"
+00E35C,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,1,"00E366:move.w (a0), -(a2):0:w:.w"
+00E3D4,"lea.l $ede66.l, a5",a5,0EDE66,ROM,lea,0,
+00E3DE,"lea.l $ed50e.l, a5",a5,0ED50E,ROM,lea,0,
+00E3E8,"lea.l $ed55d.l, a5",a5,0ED55D,ROM,lea,0,
+00E528,"lea.l $e51aa.l, a0",a0,0E51AA,ROM,lea,2,"00E53E:move.w (a0), -(a2):0:r:.w;00E540:move.w (a0)+, -(a1):0:r:.w"
+00E52E,"lea.l $200440.l, a1",a1,200440,PAL,lea,1,"00E540:move.w (a0)+, -(a1):0:w:.w"
+00E534,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,1,"00E53E:move.w (a0), -(a2):0:w:.w"
+00E5B6,"lea.l $ed6fc.l, a5",a5,0ED6FC,ROM,lea,0,
+00E5C4,"lea.l $ed68e.l, a5",a5,0ED68E,ROM,lea,0,
+00E5CE,"lea.l $ed764.l, a5",a5,0ED764,ROM,lea,0,
+00E5DC,"lea.l $de09e.l, a0",a0,0DE09E,ROM,lea,2,"00E5F6:move.w (a0), -(a2):0:r:.w;00E5F8:move.w (a0)+, -(a1):0:r:.w"
+00E5E2,"lea.l $200520.l, a1",a1,200520,PAL,lea,1,"00E5F8:move.w (a0)+, -(a1):0:w:.w"
+00E5E8,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"00E5F6:move.w (a0), -(a2):0:w:.w"
+00E60A,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,2,"00E624:move.w (a0), -(a2):0:r:.w;00E626:move.w (a0)+, -(a1):0:r:.w"
+00E610,"lea.l $200540.l, a1",a1,200540,PAL,lea,1,"00E626:move.w (a0)+, -(a1):0:w:.w"
+00E616,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"00E624:move.w (a0), -(a2):0:w:.w"
+00E69A,"lea.l $ed838.l, a5",a5,0ED838,ROM,lea,0,
+00E6A8,"lea.l $de09e.l, a0",a0,0DE09E,ROM,lea,2,"00E6C2:move.w (a0), -(a2):0:r:.w;00E6C4:move.w (a0)+, -(a1):0:r:.w"
+00E6AE,"lea.l $200520.l, a1",a1,200520,PAL,lea,1,"00E6C4:move.w (a0)+, -(a1):0:w:.w"
+00E6B4,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"00E6C2:move.w (a0), -(a2):0:w:.w"
+00E6D6,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,2,"00E6F0:move.w (a0), -(a2):0:r:.w;00E6F2:move.w (a0)+, -(a1):0:r:.w"
+00E6DC,"lea.l $200540.l, a1",a1,200540,PAL,lea,1,"00E6F2:move.w (a0)+, -(a1):0:w:.w"
+00E6E2,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"00E6F0:move.w (a0), -(a2):0:w:.w"
+00E75E,"lea.l $ed5b0.l, a5",a5,0ED5B0,ROM,lea,0,
+00E76C,"lea.l $200000.l, a0",a0,200000,PAL,lea,1,"00E77C:move.w #$0, (a0)+:0:w:.w"
+00E772,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"00E780:move.w #$0, (a2)+:0:w:.w"
+00E798,"lea.l $1020d8.l, a0",a0,1020D8,VRAM,lea,3,"00E79E:move.l #$1, (a0):0:w:.l;00E7A4:move.l (a0), d0:0:r:.l;00E7AC:move.l #$2, (a0):0:w:.l"
+00E7B2,"lea.l $e4faa.l, a0",a0,0E4FAA,ROM,lea,1,"00E7C2:move.w (a0)+, (a1)+:0:r:.w"
+00E7B8,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,1,"00E7C2:move.w (a0)+, (a1)+:0:w:.w"
+00E7C8,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,1,"00E7DC:move.w (a0)+, -(a1):0:r:.w"
+00E7CE,"lea.l $fef16c.l, a1",a1,FEF16C,RAM,lea,1,"00E7DC:move.w (a0)+, -(a1):0:w:.w"
+00E7EA,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,1,"00E7FE:move.w (a0)+, -(a1):0:r:.w"
+00E7F0,"lea.l $fef18c.l, a1",a1,FEF18C,RAM,lea,1,"00E7FE:move.w (a0)+, -(a1):0:w:.w"
+00E80C,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,1,"00E820:move.w (a0)+, -(a1):0:r:.w"
+00E812,"lea.l $fef1ac.l, a1",a1,FEF1AC,RAM,lea,1,"00E820:move.w (a0)+, -(a1):0:w:.w"
+00E82E,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,1,"00E842:move.w (a0)+, -(a1):0:r:.w"
+00E834,"lea.l $fef1cc.l, a1",a1,FEF1CC,RAM,lea,1,"00E842:move.w (a0)+, -(a1):0:w:.w"
+00E850,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,1,"00E864:move.w (a0)+, -(a1):0:r:.w"
+00E856,"lea.l $fef1ec.l, a1",a1,FEF1EC,RAM,lea,1,"00E864:move.w (a0)+, -(a1):0:w:.w"
+00E872,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,1,"00E886:move.w (a0)+, -(a1):0:r:.w"
+00E878,"lea.l $fef20c.l, a1",a1,FEF20C,RAM,lea,1,"00E886:move.w (a0)+, -(a1):0:w:.w"
+00E894,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,1,"00E8A8:move.w (a0)+, -(a1):0:r:.w"
+00E89A,"lea.l $fef22c.l, a1",a1,FEF22C,RAM,lea,1,"00E8A8:move.w (a0)+, -(a1):0:w:.w"
+00E8B6,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,1,"00E8CA:move.w (a0)+, -(a1):0:r:.w"
+00E8BC,"lea.l $fef24c.l, a1",a1,FEF24C,RAM,lea,1,"00E8CA:move.w (a0)+, -(a1):0:w:.w"
+00E94A,"lea.l $200260.l, a0",a0,200260,PAL,lea,0,
+00E950,"lea.l $fefade.l, a2",a2,FEFADE,RAM,lea,0,
+00E956,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,0,
+00E970,"lea.l $200500.l, a0",a0,200500,PAL,lea,0,
+00E976,"lea.l $fefd7e.l, a2",a2,FEFD7E,RAM,lea,0,
+00E97C,"lea.l $fef14c.l, a1",a1,FEF14C,RAM,lea,0,
+00E9AA,"lea.l $ed5b0.l, a5",a5,0ED5B0,ROM,lea,0,
+00E9B4,"lea.l $ed5e4.l, a5",a5,0ED5E4,ROM,lea,0,
+00E9E2,"lea.l $200260.l, a0",a0,200260,PAL,lea,0,
+00E9E8,"lea.l $fefade.l, a2",a2,FEFADE,RAM,lea,0,
+00E9F6,"lea.l $200500.l, a0",a0,200500,PAL,lea,0,
+00E9FC,"lea.l $fefd7e.l, a2",a2,FEFD7E,RAM,lea,0,
+00EA16,"lea.l $200240.l, a0",a0,200240,PAL,lea,0,
+00EA1C,"lea.l $fefabe.l, a2",a2,FEFABE,RAM,lea,0,
+00EA22,"lea.l $feec6c.l, a1",a1,FEEC6C,RAM,lea,0,
+00EA3C,"lea.l $200540.l, a0",a0,200540,PAL,lea,0,
+00EA42,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,0,
+00EA48,"lea.l $fef18c.l, a1",a1,FEF18C,RAM,lea,0,
+00EA76,"lea.l $ed5e4.l, a5",a5,0ED5E4,ROM,lea,0,
+00EA80,"lea.l $ed606.l, a5",a5,0ED606,ROM,lea,0,
+00EAAE,"lea.l $200240.l, a0",a0,200240,PAL,lea,0,
+00EAB4,"lea.l $fefabe.l, a2",a2,FEFABE,RAM,lea,0,
+00EAC2,"lea.l $200540.l, a0",a0,200540,PAL,lea,0,
+00EAC8,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,0,
+00EAE2,"lea.l $2002a0.l, a0",a0,2002A0,PAL,lea,0,
+00EAE8,"lea.l $fefb1e.l, a2",a2,FEFB1E,RAM,lea,0,
+00EAEE,"lea.l $feec8c.l, a1",a1,FEEC8C,RAM,lea,0,
+00EB08,"lea.l $200580.l, a0",a0,200580,PAL,lea,0,
+00EB0E,"lea.l $fefdfe.l, a2",a2,FEFDFE,RAM,lea,0,
+00EB14,"lea.l $fef1cc.l, a1",a1,FEF1CC,RAM,lea,0,
+00EB42,"lea.l $ed606.l, a5",a5,0ED606,ROM,lea,0,
+00EB4C,"lea.l $ed624.l, a5",a5,0ED624,ROM,lea,0,
+00EB7A,"lea.l $2002a0.l, a0",a0,2002A0,PAL,lea,0,
+00EB80,"lea.l $fefb1e.l, a2",a2,FEFB1E,RAM,lea,0,
+00EB8E,"lea.l $200580.l, a0",a0,200580,PAL,lea,0,
+00EB94,"lea.l $fefdfe.l, a2",a2,FEFDFE,RAM,lea,0,
+00EBAE,"lea.l $200280.l, a0",a0,200280,PAL,lea,0,
+00EBB4,"lea.l $fefafe.l, a2",a2,FEFAFE,RAM,lea,0,
+00EBBA,"lea.l $feecac.l, a1",a1,FEECAC,RAM,lea,0,
+00EBD4,"lea.l $2005c0.l, a0",a0,2005C0,PAL,lea,0,
+00EBDA,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,0,
+00EBE0,"lea.l $fef20c.l, a1",a1,FEF20C,RAM,lea,0,
+00EC0E,"lea.l $ed624.l, a5",a5,0ED624,ROM,lea,0,
+00EC18,"lea.l $ed65c.l, a5",a5,0ED65C,ROM,lea,0,
+00EC46,"lea.l $200280.l, a0",a0,200280,PAL,lea,0,
+00EC4C,"lea.l $fefafe.l, a2",a2,FEFAFE,RAM,lea,0,
+00EC5A,"lea.l $2005c0.l, a0",a0,2005C0,PAL,lea,0,
+00EC60,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,0,
+00EC6E,"lea.l $200500.l, a0",a0,200500,PAL,lea,0,
+00EC74,"lea.l $fefd7e.l, a2",a2,FEFD7E,RAM,lea,0,
+00EC7A,"lea.l $fef14c.l, a1",a1,FEF14C,RAM,lea,0,
+00ECAA,"lea.l $e2060.l, a0",a0,0E2060,ROM,lea,6,"00ECB2:move.w (a0)+, $fec176.l:0:r:.w;00ECB8:move.w (a0)+, $fec178.l:0:r:.w;00ECBE:move.w (a0)+, $fec17a.l:0:r:.w;00ECC4:move.w (a0)+, $fec17c.l:0:r:.w;00ECCA:move.w (a0)+, $fef37a.l:0:r:.w;00ECD0:move.l (a0), $fec184.l:0:r:.l"
+00EEB2,"lea.l $e532a.l, a0",a0,0E532A,ROM,lea,2,"00EEC8:move.w (a0), -(a2):0:r:.w;00EECA:move.w (a0)+, -(a1):0:r:.w"
+00EEB8,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00EECA:move.w (a0)+, -(a1):0:w:.w"
+00EEBE,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00EEC8:move.w (a0), -(a2):0:w:.w"
+00EED0,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"00EEE6:move.w (a0), -(a2):0:r:.w;00EEE8:move.w (a0)+, -(a1):0:r:.w"
+00EED6,"lea.l $200540.l, a1",a1,200540,PAL,lea,1,"00EEE8:move.w (a0)+, -(a1):0:w:.w"
+00EEDC,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"00EEE6:move.w (a0), -(a2):0:w:.w"
+00EEFE,"lea.l $e532a.l, a0",a0,0E532A,ROM,lea,2,"00EF14:move.w (a0), -(a2):0:r:.w;00EF16:move.w (a0)+, -(a1):0:r:.w"
+00EF04,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00EF16:move.w (a0)+, -(a1):0:w:.w"
+00EF0A,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00EF14:move.w (a0), -(a2):0:w:.w"
+00EF1C,"lea.l $e532a.l, a0",a0,0E532A,ROM,lea,2,"00EF32:move.w (a0), -(a2):0:r:.w;00EF34:move.w (a0)+, -(a1):0:r:.w"
+00EF22,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"00EF34:move.w (a0)+, -(a1):0:w:.w"
+00EF28,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00EF32:move.w (a0), -(a2):0:w:.w"
+00EF3A,"lea.l $e560a.l, a0",a0,0E560A,ROM,lea,2,"00EF50:move.w (a0), (a2)+:0:r:.w;00EF52:move.w (a0)+, (a1)+:0:r:.w"
+00EF40,"lea.l $200200.l, a1",a1,200200,PAL,lea,1,"00EF52:move.w (a0)+, (a1)+:0:w:.w"
+00EF46,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,1,"00EF50:move.w (a0), (a2)+:0:w:.w"
+00EF8E,"lea.l $e530a.l, a0",a0,0E530A,ROM,lea,1,"00EF94:movea.l (a0, d0.w), a0:0:r:.l"
+00EF98,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00EFAA:move.w (a0)+, -(a1):0:w:.w"
+00EF9E,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00EFA8:move.w (a0), -(a2):0:w:.w"
+00EFB0,"lea.l $e538a.l, a0",a0,0E538A,ROM,lea,2,"00EFC6:move.w (a0), -(a2):0:r:.w;00EFC8:move.w (a0)+, -(a1):0:r:.w"
+00EFB6,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"00EFC8:move.w (a0)+, -(a1):0:w:.w"
+00EFBC,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00EFC6:move.w (a0), -(a2):0:w:.w"
+00EFDC,"lea.l $e530a.l, a0",a0,0E530A,ROM,lea,1,"00EFE2:movea.l (a0, d0.w), a0:0:r:.l"
+00EFE6,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"00EFF8:move.w (a0)+, -(a1):0:w:.w"
+00EFEC,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00EFF6:move.w (a0), -(a2):0:w:.w"
+00EFFE,"lea.l $e538a.l, a0",a0,0E538A,ROM,lea,2,"00F014:move.w (a0), -(a2):0:r:.w;00F016:move.w (a0)+, -(a1):0:r:.w"
+00F004,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00F016:move.w (a0)+, -(a1):0:w:.w"
+00F00A,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00F014:move.w (a0), -(a2):0:w:.w"
+00F1B8,"lea.l $ee072.l, a5",a5,0EE072,ROM,lea,0,
+00F1C6,"lea.l $ee08a.l, a5",a5,0EE08A,ROM,lea,0,
+00F1DA,"lea.l $edac8.l, a5",a5,0EDAC8,ROM,lea,0,
+00F2D0,"lea.l $e560a.l, a0",a0,0E560A,ROM,lea,2,"00F2E6:move.w (a0), (a2)+:0:r:.w;00F2E8:move.w (a0)+, (a1)+:0:r:.w"
+00F2D6,"lea.l $200200.l, a1",a1,200200,PAL,lea,1,"00F2E8:move.w (a0)+, (a1)+:0:w:.w"
+00F2DC,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,1,"00F2E6:move.w (a0), (a2)+:0:w:.w"
+00F4C2,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,1,"00F4CC:move.w #$8000, (a0):0:w:.w"
+00F530,"lea.l $de15e.l, a0",a0,0DE15E,ROM,lea,2,"00F54A:move.w (a0), -(a2):0:r:.w;00F54C:move.w (a0)+, -(a1):0:r:.w"
+00F536,"lea.l $200520.l, a1",a1,200520,PAL,lea,1,"00F54C:move.w (a0)+, -(a1):0:w:.w"
+00F53C,"lea.l $fefd9e.l, a2",a2,FEFD9E,RAM,lea,1,"00F54A:move.w (a0), -(a2):0:w:.w"
+00F55E,"lea.l $ded5e.l, a0",a0,0DED5E,ROM,lea,2,"00F574:move.w (a0), -(a2):0:r:.w;00F576:move.w (a0)+, -(a1):0:r:.w"
+00F564,"lea.l $200560.l, a1",a1,200560,PAL,lea,1,"00F576:move.w (a0)+, -(a1):0:w:.w"
+00F56A,"lea.l $fefdde.l, a2",a2,FEFDDE,RAM,lea,1,"00F574:move.w (a0), -(a2):0:w:.w"
+00F57C,"lea.l $df422.l, a0",a0,0DF422,ROM,lea,2,"00F592:move.w (a0), -(a2):0:r:.w;00F594:move.w (a0)+, -(a1):0:r:.w"
+00F582,"lea.l $200540.l, a1",a1,200540,PAL,lea,1,"00F594:move.w (a0)+, -(a1):0:w:.w"
+00F588,"lea.l $fefdbe.l, a2",a2,FEFDBE,RAM,lea,1,"00F592:move.w (a0), -(a2):0:w:.w"
+00F59A,"lea.l $ddc7e.l, a0",a0,0DDC7E,ROM,lea,2,"00F5B0:move.w (a0), (a2)+:0:r:.w;00F5B2:move.w (a0)+, (a1)+:0:r:.w"
+00F5A0,"lea.l $200000.l, a1",a1,200000,PAL,lea,1,"00F5B2:move.w (a0)+, (a1)+:0:w:.w"
+00F5A6,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"00F5B0:move.w (a0), (a2)+:0:w:.w"
+00F5BC,"lea.l $df462.l, a0",a0,0DF462,ROM,lea,1,"00F5CC:move.w (a0)+, (a1)+:0:r:.w"
+00F5C2,"lea.l $200bc0.l, a1",a1,200BC0,PAL,lea,1,"00F5CC:move.w (a0)+, (a1)+:0:w:.w"
+00F618,"lea.l $e2110.l, a0",a0,0E2110,ROM,lea,8,"00F624:move.w (a0, d0.w), d1:0:r:.w;00F636:move.w $2(a0, d0.w), $fef39a.l:2:r:.w;00F63E:move.w $4(a0, d0.w), $fef39c.l:4:r:.w;00F646:move.w $6(a0, d0.w), $fef38c.l:6:r:.w;00F64E:move.w $8(a0, d0.w), $fef398.l:8:r:.w;00F656:move.w $a(a0, d0.w), $fef396.l:10:r:.w;00F65E:move.w $c(a0, d0.w), $fef394.l:12:r:.w;00F666:move.w $e(a0, d0.w), $fef392.l:14:r:.w"
+00F69C,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,2,"00F6A2:move.w (a0, d5.w), d0:0:r:.w;00F6C4:move.w d0, (a0, d5.w):0:w:.w"
+00F712,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,1,"00F720:move.w (a0, d5.w), d0:0:r:.w"
+00F718,"lea.l $fef39a.l, a3",a3,FEF39A,RAM,lea,0,
+00F73A,"lea.l $dfa54.l, a2",a2,0DFA54,ROM,lea,0,
+00F76C,"lea.l $dfaf4.l, a2",a2,0DFAF4,ROM,lea,2,"00F77E:move.w (a2, d4.w), d1:0:r:.w;00F784:move.w $2(a2, d4.w), d2:2:r:.w"
+00F802,"lea.l $fec28c.l, a1",a1,FEC28C,RAM,lea,0,
+00F814,"lea.l $fec58c.l, a1",a1,FEC58C,RAM,lea,10,"00F820:move.w $fef394.l, (a1)+:0:w:.w;00F826:move.w $fef39a.l, (a1)+:0:w:.w;00F834:move.w d1, (a1)+:0:w:.w;00F85E:move.w d0, (a1, d6.w):0:w:.w;00F862:move.w d1, $2(a1, d6.w):2:w:.w;00F866:move.w d2, $4(a1, d6.w):4:w:.w;00F878:move.w $fef39e.l, (a1)+:0:w:.w;00F87E:move.w $fef39a.l, (a1)+:0:w:.w;00F884:move.w $fef39c.l, (a1)+:0:w:.w;00F88A:move.w #$8000, (a1):0:w:.w"
+00F840,"lea.l $fee8f0.l, a0",a0,FEE8F0,RAM,lea,3,"00F84A:move.w (a0, d5.w), d0:0:r:.w;00F856:move.w $2(a0, d5.w), d1:2:r:.w;00F85A:move.w $4(a0, d5.w), d2:4:r:.w"
+00F946,"lea.l $e53ea.l, a0",a0,0E53EA,ROM,lea,2,"00F95C:move.w (a0), -(a2):0:r:.w;00F95E:move.w (a0)+, -(a1):0:r:.w"
+00F94C,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00F95E:move.w (a0)+, -(a1):0:w:.w"
+00F952,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00F95C:move.w (a0), -(a2):0:w:.w"
+00F964,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"00F97A:move.w (a0), -(a2):0:r:.w;00F97C:move.w (a0)+, -(a1):0:r:.w"
+00F96A,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00F97C:move.w (a0)+, -(a1):0:w:.w"
+00F970,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00F97A:move.w (a0), -(a2):0:w:.w"
+00F982,"lea.l $e51ca.l, a0",a0,0E51CA,ROM,lea,2,"00F998:move.w (a0), (a2)+:0:r:.w;00F99A:move.w (a0)+, (a1)+:0:r:.w"
+00F988,"lea.l $2002a0.l, a1",a1,2002A0,PAL,lea,1,"00F99A:move.w (a0)+, (a1)+:0:w:.w"
+00F98E,"lea.l $fefb1e.l, a2",a2,FEFB1E,RAM,lea,1,"00F998:move.w (a0), (a2)+:0:w:.w"
+00F9A0,"lea.l $e518a.l, a0",a0,0E518A,ROM,lea,2,"00F9B6:move.w (a0), -(a2):0:r:.w;00F9B8:move.w (a0)+, -(a1):0:r:.w"
+00F9A6,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"00F9B8:move.w (a0)+, -(a1):0:w:.w"
+00F9AC,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"00F9B6:move.w (a0), -(a2):0:w:.w"
+00FA90,"lea.l $edf1a.l, a5",a5,0EDF1A,ROM,lea,0,
+00FAEA,"lea.l $edf30.l, a5",a5,0EDF30,ROM,lea,0,
+00FAF8,"lea.l $edf7a.l, a5",a5,0EDF7A,ROM,lea,0,
+00FE6A,"lea.l $e458a.l, a0",a0,0E458A,ROM,lea,2,"00FE80:move.w (a0), (a2)+:0:r:.w;00FE82:move.w (a0)+, (a1)+:0:r:.w"
+00FE70,"lea.l $200200.l, a1",a1,200200,PAL,lea,1,"00FE82:move.w (a0)+, (a1)+:0:w:.w"
+00FE76,"lea.l $fefa7e.l, a2",a2,FEFA7E,RAM,lea,1,"00FE80:move.w (a0), (a2)+:0:w:.w"
+00FF58,"lea.l $edfa4.l, a5",a5,0EDFA4,ROM,lea,0,
+00FF66,"lea.l $edfc4.l, a5",a5,0EDFC4,ROM,lea,0,
+00FF74,"lea.l $edf04.l, a5",a5,0EDF04,ROM,lea,0,
+00FF7E,"lea.l $edfe4.l, a5",a5,0EDFE4,ROM,lea,0,
+00FFAC,"lea.l $e532a.l, a0",a0,0E532A,ROM,lea,2,"00FFC2:move.w (a0), -(a2):0:r:.w;00FFC4:move.w (a0)+, -(a1):0:r:.w"
+00FFB2,"lea.l $200600.l, a1",a1,200600,PAL,lea,1,"00FFC4:move.w (a0)+, -(a1):0:w:.w"
+00FFB8,"lea.l $fefe7e.l, a2",a2,FEFE7E,RAM,lea,1,"00FFC2:move.w (a0), -(a2):0:w:.w"
+00FFCA,"lea.l $e53aa.l, a0",a0,0E53AA,ROM,lea,2,"00FFE0:move.w (a0), -(a2):0:r:.w;00FFE2:move.w (a0)+, -(a1):0:r:.w"
+00FFD0,"lea.l $2005e0.l, a1",a1,2005E0,PAL,lea,1,"00FFE2:move.w (a0)+, -(a1):0:w:.w"
+00FFD6,"lea.l $fefe5e.l, a2",a2,FEFE5E,RAM,lea,1,"00FFE0:move.w (a0), -(a2):0:w:.w"
+00FFE8,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"00FFFE:move.w (a0), -(a2):0:r:.w;010000:move.w (a0)+, -(a1):0:r:.w"
+00FFEE,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"010000:move.w (a0)+, -(a1):0:w:.w"
+00FFF4,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"00FFFE:move.w (a0), -(a2):0:w:.w"
+010006,"lea.l $e53ca.l, a0",a0,0E53CA,ROM,lea,2,"01001C:move.w (a0), -(a2):0:r:.w;01001E:move.w (a0)+, -(a1):0:r:.w"
+01000C,"lea.l $2005a0.l, a1",a1,2005A0,PAL,lea,1,"01001E:move.w (a0)+, -(a1):0:w:.w"
+010012,"lea.l $fefe1e.l, a2",a2,FEFE1E,RAM,lea,1,"01001C:move.w (a0), -(a2):0:w:.w"
+010024,"lea.l $e53ea.l, a0",a0,0E53EA,ROM,lea,2,"01003A:move.w (a0), -(a2):0:r:.w;01003C:move.w (a0)+, -(a1):0:r:.w"
+01002A,"lea.l $200420.l, a1",a1,200420,PAL,lea,1,"01003C:move.w (a0)+, -(a1):0:w:.w"
+010030,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"01003A:move.w (a0), -(a2):0:w:.w"
+010042,"lea.l $e546a.l, a0",a0,0E546A,ROM,lea,2,"010058:move.w (a0), -(a2):0:r:.w;01005A:move.w (a0)+, -(a1):0:r:.w"
+010048,"lea.l $200440.l, a1",a1,200440,PAL,lea,1,"01005A:move.w (a0)+, -(a1):0:w:.w"
+01004E,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,1,"010058:move.w (a0), -(a2):0:w:.w"
+0100DA,"lea.l $fef262.l, a0",a0,FEF262,RAM,lea,3,"0100E0:addq.b #$1, $5(a0, d0.w):5:rw:.b;0100E4:cmpi.b #$5b, $5(a0, d0.w):5:r:.b;0100EE:move.b #$41, $5(a0, d0.w):5:w:.b"
+010130,"lea.l $fef262.l, a0",a0,FEF262,RAM,lea,3,"010136:subq.b #$1, $5(a0, d0.w):5:rw:.b;01013A:cmpi.b #$40, $5(a0, d0.w):5:r:.b;010144:move.b #$5a, $5(a0, d0.w):5:w:.b"
+0101E2,"lea.l $fef7e0.l, a0",a0,FEF7E0,RAM,lea,1,"0101FE:move.w -(a1), -(a0):0:w:.w"
+0101E8,"lea.l $fef7ce.l, a1",a1,FEF7CE,RAM,lea,3,"0101FE:move.w -(a1), -(a0):0:r:.w;010208:move.l $fef2e8.l, (a1)+:0:w:.l;010226:move.l $fef3b2.l, (a1)+:0:w:.l"
+01025E,"lea.l $fef2f6.l, a0",a0,FEF2F6,RAM,lea,0,
+010268,"lea.l $fef300.l, a0",a0,FEF300,RAM,lea,0,
+010272,"lea.l $fef2ec.l, a0",a0,FEF2EC,RAM,lea,1,"01027C:move.w (a0)+, (a1)+:0:r:.w"
+01028E,"lea.l $fef262.l, a0",a0,FEF262,RAM,lea,1,"010294:move.b #$8, $4(a0, d0.w):4:w:.b"
+01029A,"lea.l $fef262.l, a5",a5,FEF262,RAM,lea,0,
+0102AE,"lea.l $fef262.l, a0",a0,FEF262,RAM,lea,1,"0102B4:move.b #$9, $4(a0, d0.w):4:w:.b"
+0103D6,"lea.l $e456a.l, a0",a0,0E456A,ROM,lea,2,"0103EC:move.w (a0), (a2)+:0:r:.w;0103EE:move.w (a0)+, (a1)+:0:r:.w"
+0103DC,"lea.l $200000.l, a1",a1,200000,PAL,lea,1,"0103EE:move.w (a0)+, (a1)+:0:w:.w"
+0103E2,"lea.l $fef87e.l, a2",a2,FEF87E,RAM,lea,1,"0103EC:move.w (a0), (a2)+:0:w:.w"
+010404,"lea.l $ddc3e.l, a0",a0,0DDC3E,ROM,lea,2,"01041A:move.w (a0), (a2)+:0:r:.w;01041C:move.w (a0)+, (a1)+:0:r:.w"
+01040A,"lea.l $2000e0.l, a1",a1,2000E0,PAL,lea,1,"01041C:move.w (a0)+, (a1)+:0:w:.w"
+010410,"lea.l $fef95e.l, a2",a2,FEF95E,RAM,lea,1,"01041A:move.w (a0), (a2)+:0:w:.w"
+010422,"lea.l $e526a.l, a0",a0,0E526A,ROM,lea,2,"010438:move.w (a0), -(a2):0:r:.w;01043A:move.w (a0)+, -(a1):0:r:.w"
+010428,"lea.l $2005c0.l, a1",a1,2005C0,PAL,lea,1,"01043A:move.w (a0)+, -(a1):0:w:.w"
+01042E,"lea.l $fefe3e.l, a2",a2,FEFE3E,RAM,lea,1,"010438:move.w (a0), -(a2):0:w:.w"
+010440,"lea.l $e546a.l, a0",a0,0E546A,ROM,lea,2,"010456:move.w (a0), -(a2):0:r:.w;010458:move.w (a0)+, -(a1):0:r:.w"
+010446,"lea.l $200460.l, a1",a1,200460,PAL,lea,1,"010458:move.w (a0)+, -(a1):0:w:.w"
+01044C,"lea.l $fefcde.l, a2",a2,FEFCDE,RAM,lea,1,"010456:move.w (a0), -(a2):0:w:.w"
+01045E,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"010474:move.w (a0), -(a2):0:r:.w;010476:move.w (a0)+, -(a1):0:r:.w"
+010464,"lea.l $200480.l, a1",a1,200480,PAL,lea,1,"010476:move.w (a0)+, -(a1):0:w:.w"
+01046A,"lea.l $fefcfe.l, a2",a2,FEFCFE,RAM,lea,1,"010474:move.w (a0), -(a2):0:w:.w"
+0104BC,"lea.l $fec88e.l, a1",a1,FEC88E,RAM,lea,0,
+0104CC,"lea.l $fecea6.l, a1",a1,FECEA6,RAM,lea,3,"0104D2:move.w #$273, (a1)+:0:w:.w;0104D6:move.w #$a0, (a1)+:0:w:.w;0104DA:move.w #$30, (a1)+:0:w:.w"
+010502,"lea.l $edd7a.l, a5",a5,0EDD7A,ROM,lea,0,
+010510,"lea.l $edd6a.l, a5",a5,0EDD6A,ROM,lea,0,
+01051A,"lea.l $200462.l, a0",a0,200462,PAL,lea,0,
+010520,"lea.l $fefce0.l, a1",a1,FEFCE0,RAM,lea,0,
+010730,"lea.l $fec88e.l, a1",a1,FEC88E,RAM,lea,0,
+010740,"lea.l $fecea6.l, a1",a1,FECEA6,RAM,lea,3,"010746:move.w #$271, (a1)+:0:w:.w;01074A:move.w #$9c, (a1)+:0:w:.w;01074E:move.w #$b0, (a1)+:0:w:.w"
+01078C,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"0107A2:move.w (a0), -(a2):0:r:.w;0107A4:move.w (a0)+, -(a1):0:r:.w"
+010792,"lea.l $200480.l, a1",a1,200480,PAL,lea,1,"0107A4:move.w (a0)+, -(a1):0:w:.w"
+010798,"lea.l $fefcfe.l, a2",a2,FEFCFE,RAM,lea,1,"0107A2:move.w (a0), -(a2):0:w:.w"
+0107B6,"lea.l $edd7a.l, a5",a5,0EDD7A,ROM,lea,0,
+0107C4,"lea.l $edd6a.l, a5",a5,0EDD6A,ROM,lea,0,
+01092A,"lea.l $fef280.l, a5",a5,FEF280,RAM,lea,0,
+010942,"lea.l $fef2a0.l, a5",a5,FEF2A0,RAM,lea,0,
+010954,"lea.l $fef2c2.l, a5",a5,FEF2C2,RAM,lea,4,"010974:move.b d0, (a5):0:w:.b;010982:move.b d0, $1(a5):1:w:.b;01098C:move.b d0, $3(a5):3:w:.b;0109D6:cmp.l (a5), d6:0:r:.l"
+0109A2,"lea.l $ef920.l, a0",a0,0EF920,ROM,lea,0,
+0109B4,"lea.l $ef950.l, a0",a0,0EF950,ROM,lea,1,"0109BA:movea.l (a0, d0.w), a0:0:r:.l"
+010A0E,"lea.l $fef3bc.l, a0",a0,FEF3BC,RAM,lea,1,"010A18:move.w (a0), d2:0:r:.w"
+010A32,"lea.l $fef3c6.l, a0",a0,FEF3C6,RAM,lea,10,"010A38:move.l $e(a0), d2:14:r:.l;010A3C:cmp.l $4(a0), d2:4:r:.l;010A44:move.w (a0), d2:0:r:.w;010A46:move.w $a(a0), (a0):10:r:.w;010A46:move.w $a(a0), (a0):0:w:.w;010A4A:move.w d2, $a(a0):10:w:.w;010A4E:move.l $4(a0), d2:4:r:.l;010A52:move.l $e(a0), $4(a0):14:r:.l;010A52:move.l $e(a0), $4(a0):4:w:.l;010A58:move.l d2, $e(a0):14:w:.l"
+010A68,"lea.l $fef280.l, a1",a1,FEF280,RAM,lea,0,
+010A6E,"lea.l $fef28e.l, a0",a0,FEF28E,RAM,lea,0,
+010A86,"lea.l $fef2a0.l, a1",a1,FEF2A0,RAM,lea,0,
+010A8C,"lea.l $fef2b0.l, a0",a0,FEF2B0,RAM,lea,0,
+010A9E,"lea.l $fef2c2.l, a1",a1,FEF2C2,RAM,lea,0,
+010AA4,"lea.l $fef2d2.l, a0",a0,FEF2D2,RAM,lea,2,"010AC8:cmp.b (a0), d6:0:r:.b;010AD0:cmp.l $2(a0), d6:2:r:.l"
+010AAE,"lea.l $fef3c0.l, a5",a5,FEF3C0,RAM,lea,2,"010AC4:move.b -$2(a5), d6:-2:r:.b;010ACE:move.l (a5), d6:0:r:.l"
+010B48,"lea.l $fef3c6.l, a0",a0,FEF3C6,RAM,lea,1,"010B58:move.w (a0), (a1):0:r:.w"
+010B4E,"lea.l $fef478.l, a1",a1,FEF478,RAM,lea,1,"010B58:move.w (a0), (a1):0:w:.w"
+010B64,"lea.l $fef3c6.l, a1",a1,FEF3C6,RAM,lea,0,
+010B6A,"lea.l $ef986.l, a3",a3,0EF986,ROM,lea,0,
+010B78,"lea.l $fef474.l, a0",a0,FEF474,RAM,lea,0,
+010BD0,"lea.l $fef478.l, a0",a0,FEF478,RAM,lea,6,"010BD6:move.w $2(a0), d2:2:r:.w;010BDA:cmp.w $6(a0), d2:6:r:.w;010BE2:move.l (a0), d2:0:r:.l;010BE4:move.l $4(a0), (a0):4:r:.l;010BE4:move.l $4(a0), (a0):0:w:.l;010BE8:move.l d2, $4(a0):4:w:.l"
+010C1C,"lea.l $fef2f6.l, a0",a0,FEF2F6,RAM,lea,0,
+010C54,"lea.l $fef300.l, a0",a0,FEF300,RAM,lea,0,
+010CB4,"lea.l $fef2ec.l, a0",a0,FEF2EC,RAM,lea,0,
+010D2E,"lea.l $fef476.l, a1",a1,FEF476,RAM,lea,1,"010D48:cmp.w (a1), d6:0:r:.w"
+010D72,"lea.l $fef54a.l, a0",a0,FEF54A,RAM,lea,1,"010D94:cmp.l (a0), d6:0:r:.l"
+010DA2,"lea.l $ef980.l, a0",a0,0EF980,ROM,lea,8,"010DBA:move.w (a0), $2(a1):0:r:.w;010DBE:move.l $2(a0), $4(a1):2:r:.l;010DD8:move.w (a0), (a1):0:r:.w;010DDA:move.l $2(a0), $2(a1):2:r:.l;010DE6:move.w (a0), (a1):0:r:.w;010DE8:move.l $2(a0), $2(a1):2:r:.l;010DF4:move.w (a0), (a1):0:r:.w;010DF6:move.l $2(a0), $2(a1):2:r:.l"
+010DA8,"lea.l $fef3c6.l, a1",a1,FEF3C6,RAM,lea,4,"010DB8:move.w d1, (a1):0:w:.w;010DBA:move.w (a0), $2(a1):2:w:.w;010DBE:move.l $2(a0), $4(a1):4:w:.l;010DC4:move.w #$300, $8(a1):8:w:.w"
+010DD2,"lea.l $fef28e.l, a1",a1,FEF28E,RAM,lea,2,"010DD8:move.w (a0), (a1):0:w:.w;010DDA:move.l $2(a0), $2(a1):2:w:.l"
+010DE0,"lea.l $fef2b0.l, a1",a1,FEF2B0,RAM,lea,2,"010DE6:move.w (a0), (a1):0:w:.w;010DE8:move.l $2(a0), $2(a1):2:w:.l"
+010DEE,"lea.l $fef2d2.l, a1",a1,FEF2D2,RAM,lea,2,"010DF4:move.w (a0), (a1):0:w:.w;010DF6:move.l $2(a0), $2(a1):2:w:.l"
+010E1E,"lea.l $fef478.l, a0",a0,FEF478,RAM,lea,2,"010E2E:move.w d1, (a0):0:w:.w;010E30:clr.w $2(a0):2:w:.w"
+010E3A,"lea.l $fef2ec.l, a1",a1,FEF2EC,RAM,lea,1,"010E44:move.w #$ff, (a1)+:0:w:.w"
+010E4C,"lea.l $fef2f6.l, a1",a1,FEF2F6,RAM,lea,1,"010E56:move.w #$ff, (a1)+:0:w:.w"
+010E5E,"lea.l $fef300.l, a1",a1,FEF300,RAM,lea,1,"010E68:move.w #$ff, (a1)+:0:w:.w"
+010F86,"lea.l $fef30a.l, a5",a5,FEF30A,RAM,lea,0,
+010F98,"lea.l $efc38.l, a5",a5,0EFC38,ROM,lea,0,
+011008,"lea.l $fef296.l, a6",a6,FEF296,RAM,lea,0,
+011018,"lea.l $fef2b8.l, a6",a6,FEF2B8,RAM,lea,0,
+01102C,"lea.l $fef278.l, a6",a6,FEF278,RAM,lea,0,
+011044,"lea.l $fef30a.l, a5",a5,FEF30A,RAM,lea,0,
+011068,"lea.l $fef30a.l, a5",a5,FEF30A,RAM,lea,0,
+011080,"lea.l $eeda0.l, a1",a1,0EEDA0,ROM,lea,1,"011086:lea.l (a1, d4.w), a5:0:addr:.l"
+011092,"lea.l $fef314.l, a5",a5,FEF314,RAM,lea,0,
+011186,"lea.l $fef3c6.l, a0",a0,FEF3C6,RAM,lea,0,
+0111D0,"lea.l $fef31c.l, a5",a5,FEF31C,RAM,lea,0,
+0111E2,"lea.l $efc38.l, a5",a5,0EFC38,ROM,lea,0,
+011252,"lea.l $fef2a6.l, a6",a6,FEF2A6,RAM,lea,0,
+011262,"lea.l $fef2c8.l, a6",a6,FEF2C8,RAM,lea,0,
+011276,"lea.l $fef286.l, a6",a6,FEF286,RAM,lea,0,
+01128E,"lea.l $fef31c.l, a5",a5,FEF31C,RAM,lea,0,
+0112B2,"lea.l $fef31c.l, a5",a5,FEF31C,RAM,lea,0,
+0112CA,"lea.l $eeda0.l, a1",a1,0EEDA0,ROM,lea,1,"0112D0:lea.l (a1, d4.w), a5:0:addr:.l"
+0112DC,"lea.l $fef326.l, a5",a5,FEF326,RAM,lea,0,
+0113D2,"lea.l $fef3c6.l, a0",a0,FEF3C6,RAM,lea,0,
+01141C,"lea.l $fef30a.l, a5",a5,FEF30A,RAM,lea,0,
+01142E,"lea.l $efc38.l, a5",a5,0EFC38,ROM,lea,0,
+01149E,"lea.l $f0010.l, a6",a6,0F0010,ROM,lea,0,
+0114AE,"lea.l $f001c.l, a6",a6,0F001C,ROM,lea,0,
+0114C2,"lea.l $fef2da.l, a6",a6,FEF2DA,RAM,lea,0,
+0114DA,"lea.l $fef30a.l, a5",a5,FEF30A,RAM,lea,0,
+01150C,"lea.l $fef30a.l, a5",a5,FEF30A,RAM,lea,0,
+011524,"lea.l $eeda0.l, a1",a1,0EEDA0,ROM,lea,1,"01152A:lea.l (a1, d4.w), a5:0:addr:.l"
+011542,"lea.l $fef318.l, a5",a5,FEF318,RAM,lea,0,
+011550,"lea.l $ef986.l, a5",a5,0EF986,ROM,lea,1,"01155A:lea.l (a5, d4.w), a5:0:addr:.l"
+01163E,"lea.l $fef478.l, a0",a0,FEF478,RAM,lea,0,
+011686,"lea.l $fef31c.l, a5",a5,FEF31C,RAM,lea,0,
+011698,"lea.l $efc38.l, a5",a5,0EFC38,ROM,lea,0,
+011706,"lea.l $f0010.l, a6",a6,0F0010,ROM,lea,0,
+011716,"lea.l $f001c.l, a6",a6,0F001C,ROM,lea,0,
+01172A,"lea.l $fef2da.l, a6",a6,FEF2DA,RAM,lea,0,
+011742,"lea.l $fef31c.l, a5",a5,FEF31C,RAM,lea,0,
+01177A,"lea.l $fef470.l, a5",a5,FEF470,RAM,lea,0,
+011784,"lea.l $fef46e.l, a5",a5,FEF46E,RAM,lea,0,
+01178E,"lea.l $fef46c.l, a5",a5,FEF46C,RAM,lea,0,
+0117A0,"lea.l $fef31c.l, a5",a5,FEF31C,RAM,lea,0,
+0117B8,"lea.l $eeda0.l, a1",a1,0EEDA0,ROM,lea,1,"0117BE:lea.l (a1, d4.w), a5:0:addr:.l"
+0117CA,"lea.l $fef32a.l, a5",a5,FEF32A,RAM,lea,0,
+01181E,"lea.l $fef2e4.l, a5",a5,FEF2E4,RAM,lea,0,
+01182A,"lea.l $efc32.l, a5",a5,0EFC32,ROM,lea,0,
+011888,"lea.l $fef342.l, a5",a5,FEF342,RAM,lea,0,
+0118C0,"lea.l $fef25a.l, a5",a5,FEF25A,RAM,lea,0,
+011942,"lea.l $fef558.l, a0",a0,FEF558,RAM,lea,0,
+0119F8,"lea.l $fef32e.l, a5",a5,FEF32E,RAM,lea,0,
+011A0E,"lea.l $fef336.l, a5",a5,FEF336,RAM,lea,0,
+011A30,"lea.l $fef33a.l, a5",a5,FEF33A,RAM,lea,0,
+011A6C,"lea.l $fef33e.l, a5",a5,FEF33E,RAM,lea,0,
+011B22,"lea.l $eed84.l, a0",a0,0EED84,ROM,lea,1,"011B2E:move.w (a0, d0.w), d0:0:r:.w"
+011B3E,"lea.l $eed8c.l, a0",a0,0EED8C,ROM,lea,2,"011B46:move.w (a0, d0.w), d4:0:r:.w;011B4A:move.w $2(a0, d0.w), d0:2:r:.w"
+011B9E,"lea.l $eed64.l, a0",a0,0EED64,ROM,lea,2,"011BAC:move.w (a0, d0.w), d1:0:r:.w;011BBE:move.w $2(a0, d0.w), d1:2:r:.w"
+011BE4,"lea.l $b25e.l, a6",a6,00B25E,ROM,lea,1,"011BF0:add.l (a6)+, d0:0:r:.l"
+011C46,"lea.l $fec28c.l, a0",a0,FEC28C,RAM,lea,0,
+011C56,"lea.l $fec58c.l, a0",a0,FEC58C,RAM,lea,2,"011C5C:move.w #$149, (a0)+:0:w:.w;011C66:move.l d1, (a0)+:0:w:.l"
+011C90,"lea.l $fef370.l, a0",a0,FEF370,RAM,lea,1,"011C96:tst.w (a0, d0.w):0:r:.w"
+011CB8,"lea.l $fef370.l, a0",a0,FEF370,RAM,lea,1,"011CBE:tst.w (a0, d0.w):0:r:.w"
+011CF6,"lea.l $e5674.l, a1",a1,0E5674,ROM,lea,1,"011D02:move.l (a1, d0.w), $1030c0.l:0:r:.l"
+011D64,"lea.l $ea1be.l, a1",a1,0EA1BE,ROM,lea,1,"011D70:move.l (a1, d0.w), $1010a0.l:0:r:.l"
+011FE0,"lea.l $102000.l, a0",a0,102000,VRAM,lea,1,"011FE6:move.l $df64c.l, (a0)+:0:w:.l"
+011FF6,"lea.l $100000.l, a0",a0,100000,VRAM,lea,1,"011FFC:move.l $df650.l, (a0)+:0:w:.l"
+012030,"lea.l $fefc7e.l, a0",a0,FEFC7E,RAM,lea,0,
+012036,"lea.l $200400.l, a1",a1,200400,PAL,lea,0,
+012044,"lea.l $fef99e.l, a0",a0,FEF99E,RAM,lea,0,
+01204A,"lea.l $200120.l, a1",a1,200120,PAL,lea,0,
+012080,"lea.l $fefc9e.l, a0",a0,FEFC9E,RAM,lea,0,
+012086,"lea.l $200420.l, a1",a1,200420,PAL,lea,0,
+012094,"lea.l $fef87e.l, a0",a0,FEF87E,RAM,lea,0,
+01209A,"lea.l $200000.l, a1",a1,200000,PAL,lea,0,
+0120D0,"lea.l $fefcbe.l, a0",a0,FEFCBE,RAM,lea,0,
+0120D6,"lea.l $200440.l, a1",a1,200440,PAL,lea,0,
+0120E4,"lea.l $fef93e.l, a0",a0,FEF93E,RAM,lea,0,
+0120EA,"lea.l $2000c0.l, a1",a1,2000C0,PAL,lea,0,
+012120,"lea.l $fefcde.l, a0",a0,FEFCDE,RAM,lea,0,
+012126,"lea.l $200460.l, a1",a1,200460,PAL,lea,0,
+012134,"lea.l $fef8de.l, a0",a0,FEF8DE,RAM,lea,0,
+01213A,"lea.l $200060.l, a1",a1,200060,PAL,lea,0,
+01227E,"lea.l $efc46.l, a1",a1,0EFC46,ROM,lea,1,"01228A:add.w (a1, d0.w), d1:0:r:.w"
+0122B8,"lea.l $fef52a.l, a1",a1,FEF52A,RAM,lea,1,"0122C0:move.l (a1), $fef4ee.l:0:r:.l"
+012320,"lea.l $fef546.l, a1",a1,FEF546,RAM,lea,3,"012328:move.b (a1), d0:0:r:.b;012332:move.b $1(a1), d0:1:r:.b;01233E:move.b $2(a1), $fef515.l:2:r:.b"
+012352,"lea.l $fef546.l, a1",a1,FEF546,RAM,lea,3,"01235A:move.b (a1), d0:0:r:.b;012364:move.b $1(a1), d0:1:r:.b;012370:move.b $2(a1), $fef517.l:2:r:.b"
+0123B4,"lea.l $ee172.l, a5",a5,0EE172,ROM,lea,0,
+012408,"lea.l $de09e.l, a0",a0,0DE09E,ROM,lea,2,"01241E:move.w (a0), -(a2):0:r:.w;012420:move.w (a0)+, -(a1):0:r:.w"
+01240E,"lea.l $200460.l, a1",a1,200460,PAL,lea,1,"012420:move.w (a0)+, -(a1):0:w:.w"
+012414,"lea.l $fefcde.l, a2",a2,FEFCDE,RAM,lea,1,"01241E:move.w (a0), -(a2):0:w:.w"
+012428,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,2,"01243E:move.w (a0), -(a2):0:r:.w;012440:move.w (a0)+, -(a1):0:r:.w"
+01242E,"lea.l $200460.l, a1",a1,200460,PAL,lea,1,"012440:move.w (a0)+, -(a1):0:w:.w"
+012434,"lea.l $fefcde.l, a2",a2,FEFCDE,RAM,lea,1,"01243E:move.w (a0), -(a2):0:w:.w"
+012474,"lea.l $ee29a.l, a5",a5,0EE29A,ROM,lea,0,
+012480,"lea.l $e53ea.l, a0",a0,0E53EA,ROM,lea,2,"012496:move.w (a0), -(a2):0:r:.w;012498:move.w (a0)+, -(a1):0:r:.w"
+012486,"lea.l $200500.l, a1",a1,200500,PAL,lea,1,"012498:move.w (a0)+, -(a1):0:w:.w"
+01248C,"lea.l $fefd7e.l, a2",a2,FEFD7E,RAM,lea,1,"012496:move.w (a0), -(a2):0:w:.w"
+01249E,"lea.l $e53ca.l, a0",a0,0E53CA,ROM,lea,2,"0124B4:move.w (a0), -(a2):0:r:.w;0124B6:move.w (a0)+, -(a1):0:r:.w"
+0124A4,"lea.l $2004e0.l, a1",a1,2004E0,PAL,lea,1,"0124B6:move.w (a0)+, -(a1):0:w:.w"
+0124AA,"lea.l $fefd5e.l, a2",a2,FEFD5E,RAM,lea,1,"0124B4:move.w (a0), -(a2):0:w:.w"
+0124BC,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,2,"0124D2:move.w (a0), -(a2):0:r:.w;0124D4:move.w (a0)+, -(a1):0:r:.w"
+0124C2,"lea.l $2004c0.l, a1",a1,2004C0,PAL,lea,1,"0124D4:move.w (a0)+, -(a1):0:w:.w"
+0124C8,"lea.l $fefd3e.l, a2",a2,FEFD3E,RAM,lea,1,"0124D2:move.w (a0), -(a2):0:w:.w"
+0124DC,"lea.l $fed466.l, a1",a1,FED466,RAM,lea,0,
+0124EC,"lea.l $fed52e.l, a1",a1,FED52E,RAM,lea,0,
+012512,"lea.l $fec88e.l, a1",a1,FEC88E,RAM,lea,0,
+012522,"lea.l $fecea6.l, a1",a1,FECEA6,RAM,lea,0,
+012554,"lea.l $ee116.l, a5",a5,0EE116,ROM,lea,0,
+012562,"lea.l $ee0f2.l, a5",a5,0EE0F2,ROM,lea,0,
+0126DA,"lea.l $ed32a.l, a5",a5,0ED32A,ROM,lea,0,
+0126F2,"lea.l $ed3a4.l, a5",a5,0ED3A4,ROM,lea,0,
+01270A,"lea.l $ed41e.l, a5",a5,0ED41E,ROM,lea,0,
+012716,"lea.l $ed496.l, a5",a5,0ED496,ROM,lea,0,
+012736,"lea.l $e4222.l, a0",a0,0E4222,ROM,lea,1,"01273C:move.w (a0, d0.w), d0:0:r:.w"
+012758,"lea.l $e422e.l, a0",a0,0E422E,ROM,lea,1,"01275E:move.w (a0, d0.w), d0:0:r:.w"
+012768,"lea.l $e54ca.l, a0",a0,0E54CA,ROM,lea,1,"01277C:move.w (a0)+, -(a1):0:r:.w"
+01276E,"lea.l $feec6c.l, a1",a1,FEEC6C,RAM,lea,1,"01277C:move.w (a0)+, -(a1):0:w:.w"
+01278A,"lea.l $200440.l, a0",a0,200440,PAL,lea,1,"01279A:move.w #$fff, (a0)+:0:w:.w"
+012790,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,1,"01279E:move.w #$fff, (a2)+:0:w:.w"
+0127F4,"lea.l $200440.l, a0",a0,200440,PAL,lea,0,
+0127FA,"lea.l $fefcbe.l, a2",a2,FEFCBE,RAM,lea,0,
+012800,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,0,
+012824,"lea.l $de09e.l, a0",a0,0DE09E,ROM,lea,1,"012838:move.w (a0)+, -(a1):0:r:.w"
+01282A,"lea.l $feec6c.l, a1",a1,FEEC6C,RAM,lea,1,"012838:move.w (a0)+, -(a1):0:w:.w"
+012846,"lea.l $e54ea.l, a0",a0,0E54EA,ROM,lea,1,"01285A:move.w (a0)+, -(a1):0:r:.w"
+01284C,"lea.l $feec8c.l, a1",a1,FEEC8C,RAM,lea,1,"01285A:move.w (a0)+, -(a1):0:w:.w"
+012868,"lea.l $200480.l, a0",a0,200480,PAL,lea,1,"012878:move.w #$fff, (a0)+:0:w:.w"
+01286E,"lea.l $fefcfe.l, a2",a2,FEFCFE,RAM,lea,1,"01287C:move.w #$fff, (a2)+:0:w:.w"
+012884,"lea.l $200420.l, a0",a0,200420,PAL,lea,1,"012894:move.w #$fff, (a0)+:0:w:.w"
+01288A,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,1,"012898:move.w #$fff, (a2)+:0:w:.w"
+0128CA,"lea.l $200480.l, a0",a0,200480,PAL,lea,0,
+0128D0,"lea.l $fefcfe.l, a2",a2,FEFCFE,RAM,lea,0,
+0128D6,"lea.l $feec4c.l, a1",a1,FEEC4C,RAM,lea,0,
+0128F0,"lea.l $200420.l, a0",a0,200420,PAL,lea,0,
+0128F6,"lea.l $fefc9e.l, a2",a2,FEFC9E,RAM,lea,0,
+0128FC,"lea.l $feec6c.l, a1",a1,FEEC6C,RAM,lea,0,
+01400C,"lea.l $feebea.l, a0",a0,FEEBEA,RAM,lea,1,014016:clr.b (a0)+:0:w:.b
+014020,"lea.l $feebfc.l, a0",a0,FEEBFC,RAM,lea,1,014026:clr.b (a0)+:0:w:.b
+014054,"lea.l $feebfc.l, a0",a0,FEEBFC,RAM,lea,3,"014062:clr.b $7(a0):7:w:.b;014066:clr.b $8(a0):8:w:.b;01406A:lea.l (a0, d1.w), a0:0:addr:.l"
+01407E,"lea.l $e1df0.l, a0",a0,0E1DF0,ROM,lea,1,"014084:movea.l (a0, d1.w), a1:0:r:.l"
+0140C2,"lea.l $e1e88.l, a0",a0,0E1E88,ROM,lea,1,"0140C8:movea.l (a0, d1.w), a1:0:r:.l"
+0140E8,"lea.l $feebec.l, a0",a0,FEEBEC,RAM,lea,3,"0140F0:move.b -$2(a0), d1:-2:r:.b;0140F4:move.b d0, (a0, d1.w):0:w:.b;0140FE:move.b d1, -$2(a0):-2:w:.b"
+014168,"lea.l $feebec.l, a0",a0,FEEBEC,RAM,lea,4,"01416E:move.b -$1(a0), d1:-1:r:.b;014172:cmp.b -$2(a0), d1:-2:r:.b;014178:move.b (a0, d1.w), d0:0:r:.b;014182:move.b d1, -$1(a0):-1:w:.b"
+01419A,"lea.l $14c02.l, a1",a1,014C02,ROM,lea,0,
+0141B2,"lea.l $14c9a.l, a1",a1,014C9A,ROM,lea,0,
+0141C8,"lea.l $14d32.l, a1",a1,014D32,ROM,lea,1,"0141CE:lea.l (a1, d0.w), a1:0:addr:.l"
+0141FA,"lea.l $14524.l, a1",a1,014524,ROM,lea,0,
+014212,"lea.l $145f0.l, a1",a1,0145F0,ROM,lea,0,
+014228,"lea.l $146bc.l, a1",a1,0146BC,ROM,lea,1,"01422E:movea.l (a1, d0.w), a1:0:r:.l"
+014240,"lea.l $feebfc.l, a0",a0,FEEBFC,RAM,lea,5,"014254:btst.b #$7, $7(a0):7:r:.b;01425C:cmp.b $8(a0), d6:8:r:.b;014264:move.b $8(a0), d6:8:r:.b;014268:lea.l (a0), a2:0:addr:.l;01426C:lea.l $10(a0), a0:16:addr:.l"
+0142EA,"lea.l $feebfc.l, a0",a0,FEEBFC,RAM,lea,3,"0142F0:btst.b #$7, $7(a0):7:r:.b;0142F8:btst.b #$0, $7(a0):7:r:.b;01430E:lea.l $10(a0), a0:16:addr:.l"
+014354,"lea.l $144ac.l, a2",a2,0144AC,ROM,lea,2,"01435A:move.b (a2, d1.w), d4:0:r:.b;01435E:move.b $1(a2, d1.w), d1:1:r:.b"

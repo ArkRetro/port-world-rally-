@@ -1,0 +1,380 @@
+WRally neogeo final - World Rally (Gaelco 1993), port a Neo Geo por arkretro. SOLO USO PERSONAL.
+No incluye BIOS: usa la tuya (neogeo.zip / BIOS de tu consola). Hecho a partir de las ROM de tu
+propia placa: no lo distribuyas (para Patreon, mejor el video y el codigo fuente).
+
+TRANSICIONES MAS RAPIDAS (final + t1)
+  - Las pantallas fijas (titulo, menus, mapa, "The Competition Car") se dibujan con una copia
+    nativa (0x11D30 / 0x11D9A): los graficos ya descifrados salen de maptab, sin trampa A-line ni
+    descifrado por long. La pausa en negro entre pantallas se acorta de 50 a 20 (0x3302, 0x89FE).
+    En MAME el negro entre pantallas baja de 32-46 cuadros a 26-28 (antes de la carrera, de 76 a
+    60); la VRAM del juego queda identica.
+
+CAMBIO PARA NEOSD (sobre la version final)
+  - Todo el codigo del port, sus interrupciones y sus tablas pasan al primer mega de la ROM P
+    (0x19000-0x68FFF y 0x99000-0xCEFFF, paginas de los mapas cifrados del original, que el port ya
+    lee descifrados de maptab y el original no lee nunca). En el segundo mega (ventana con bancos
+    en 0x200000) solo quedan los mapas descifrados, leidos como datos. Es lo que hace el port wrng,
+    que si carga en NeoSD: en AES + NeoSD la zona P2 deja de responder a ratos (bus abierto, ver
+    tools/INFORME_reset_hardware.md) y con codigo alli la consola se reiniciaba.
+  - Comprobado en MAME: 0 instrucciones ejecutadas desde P2 y la misma imagen, byte a byte, que la
+    version final en atraccion y carrera.
+
+CONTENIDO
+  neosd_mister/WRally_neogeo_final.neo   NeoSD / NeoSD Pro y MiSTer (formato .neo de TerraOnion)
+  backbit/wrallyng/                      BackBit Platinum (MVS): ROM sueltas al estilo MAME
+  src/WRally_neogeo_final_src/           codigo fuente (ver COMPILAR.txt dentro)
+
+NOVEDADES DE LA VERSION FINAL (desde la 4j)
+  - Faros con tramado abierto: el haz enciende solo 1-3 pixeles de cada 16 (antes la mitad o
+    mas), en todas las direcciones del coche (el juego tiene un grafico de haz distinto para
+    cada direccion). Se ve la carretera debajo y los puntos son mas suaves: suben el doble de
+    lo que sube la luz en el original, sin llegar al blanco puro. El tono se toma del suelo bajo
+    el haz (blanco en Sisteron, amarillo en las etapas de faros amarillos).
+  - Las sombras de dia no cambian (tramado al 50%).
+  - Intro de Neo Geo: "MAX 330 MEGA" -> "PORT ARKRETRO" y "PRO-GEAR SPEC" -> "PRO BLOSTE SPEC".
+    Se redibujan los tiles que pone la BIOS; las letras salen de tu propia ROM (T, L, B y K
+    dibujadas a mano en el mismo estilo). Ningun grafico original va en el codigo fuente.
+  - Nombre del juego en el .neo: "WRally neogeo final".
+Comprobado en MAME (etapas de noche conduciendo y girando, etapas de dia, intro con BIOS
+europea). Probado por ti en MiSTer hasta la 4i; los faros nuevos y la intro, sin probar en
+MiSTer, NeoSD ni BackBit.
+Pendiente conocido: en la tabla "Best Drivers" de la demo solo salen 2,5 de las 5 filas (cupo de
+sprites de textos lleno).
+
+INSTALACION
+MiSTer: copia el .neo en la carpeta de juegos del nucleo NeoGeo.
+NeoSD / NeoSD Pro (AES o MVS): copia el .neo en la microSD.
+BackBit Platinum (MVS): copia la carpeta "wrallyng" entera (las 6 ROM sin comprimir: p1, s1, m1,
+  v1, c1, c2, con nombres al estilo MAME) en la microSD. El fabricante dice que carga los juegos
+  sin cifrar en formato MAME descomprimido y que admite homebrew; no he podido confirmar como
+  reconoce un homebrew que no esta en su base de datos. Si no lo detecta, dime que muestra.
+  Tamanos: P 2 MB (primer mega fijo, segundo por banco en 0x200000; el juego fija el banco 0),
+  S 128 KB, M 128 KB, V 3 MB (solo V1, ADPCM-A), C 8 MB (C1 + C2).
+
+Controles (como la recreativa, que no tiene freno: se frena soltando el acelerador):
+  palanca = direccion, A = acelerar, B = cambio de marcha (corta/larga)
+  SELECT = meter moneda (en modo MVS tambien sirven las ranuras de monedas)
+  START = empezar
+
+------------------------------------------------------------------------------------------
+HISTORIAL DE FASES ANTERIORES
+------------------------------------------------------------------------------------------
+World Rally (Gaelco 1993) - port a Neo Geo, fase 4j (historial). SOLO USO PERSONAL.
+No incluye BIOS: usa la tuya (neogeo.zip / BIOS de tu consola). Hecho a partir de las ROM de tu
+propia placa: no lo distribuyas (para Patreon, mejor el video y el codigo fuente).
+
+NOVEDADES 4g-4j (desde la 4f)
+  - Proteccion anticopia del original (causa de "el coche gira solo y no choca con los
+    margenes" a partir de la segunda etapa o tras continuar): el juego suma siete zonas de su
+    propio codigo y lo comprueba en mas de 25 sitios; si no cuadra, se sabotea solo (agarre,
+    direccion, marcas permanentes). El port modifica ese codigo, asi que ahora las siete sumas
+    devuelven el valor del programa original (FEF502, FEF53C, FEF520, FEF846, FEF80C, FEF81E,
+    FEF540) y la suma de la ROM del arranque tambien (0E56).
+  - Escena final (trompos del campeon): solo se veia la sombra del coche. Con todo el publico en
+    pantalla se llenaba el cupo de sprites de prioridad baja (48); lo que no cabe pasa ahora al
+    de prioridad alta.
+  - Faros: ya no salen rosados. El fondo aporta solo el brillo y el tono sale del propio banco de
+    luz del juego (blancos en Sisteron, amarillos donde el original los tiene amarillos).
+  - Retirado el parche de prueba de la 4g (coche fijo hasta el GO): era un sintoma de la
+    proteccion.
+Comprobado en MAME (las 12 salidas identicas al original, tres carreras seguidas con "Continue"
+siguiendo la trayectoria del original, escena final, faros) y el juego de FBNeo arrancando en el
+nucleo de FinalBurn Neo. Probado por ti en MiSTer hasta la 4i. Sin probar en NeoSD ni BackBit.
+Pendiente conocido: en la tabla "Best Drivers" de la demo solo salen 2,5 de las 5 filas (cupo de
+sprites de textos lleno).
+
+------------------------------------------------------------------------------------------
+World Rally (Gaelco 1993) - port a Neo Geo, fase 4f. SOLO USO PERSONAL.
+No incluye BIOS: usa la tuya (neogeo.zip). Contiene todo lo de la 4e (fundidos, transiciones,
+fotos sin huecos) y corrige su error grave.
+
+Fase 4f: corrige los glitches graficos masivos de la 4e en MiSTer / hardware real
+  - Causa: en la 4e cambie la rutina que escribe las columnas de tiles en la VRAM (para las
+    variantes con el pen 0 opaco) y dejo las dos escrituras de cada tile (codigo y atributo)
+    seguidas, sin nada en medio. La VRAM del Neo Geo necesita mas de 12 ciclos entre escrituras;
+    si van mas rapido se pierden y los tiles salen con el atributo o el codigo equivocado. MAME
+    no lo emula, por eso en mis pruebas se veia bien.
+  - Ahora el atributo se calcula entre las dos escrituras, como antes (mismo espaciado que la 4d).
+  - Herramienta nueva tools/vramgap.sh: revisa el binario buscando escrituras seguidas al mismo
+    registro; en esta version no hay ninguna en el codigo (solo coincidencias en tablas de datos).
+Comprobado en MAME (presentacion y carrera iguales que la 4e). Sin verificar en MiSTer ni NeoSD.
+
+------------------------------------------------------------------------------------------
+World Rally (Gaelco 1993) - port a Neo Geo, fase 4e. SOLO USO PERSONAL.
+No incluye BIOS: usa la tuya (neogeo.zip). Incluye los arreglos de la 4c (NeoSD) y la 4d (temblor).
+
+Novedades de la fase 4e (transiciones entre pantallas y pantallas de inicio):
+  - Fundidos: fuera de la carrera las paletas solo se revisaban con un cuadro nuevo del juego, y
+    durante sus fundidos el juego no publica cuadros. El fundido no se veia: la imagen se quedaba
+    con todo su color mientras el juego la borraba (se veian bloques negros, textos sueltos y
+    basura de la pantalla nueva). Ahora el fundido a negro se ve como en la recreativa.
+  - Pantalla nueva entera de golpe: con la pantalla en negro, las paletas nuevas no se encienden
+    hasta que las dos capas estan escritas, a la vista y en la posicion de desplazamiento actual del
+    juego (o como mucho 30 cuadros). Lo mismo con las cargas de paletas enteras fuera de la carrera,
+    y el color de fondo y los efectos esperan con ellas. Antes aparecian piezas a destiempo (fotos
+    sin el marco, marco sin fotos, coches a trozos) y, al empezar la carrera, 2-3 cuadros con la
+    zona del mapa anterior y colores nuevos.
+  - Capa de fondo con el pen 0 opaco: en el original el color 0 de la capa de fondo se pinta; en
+    Neo Geo es transparente y solo habia un color de fondo para todo. En las fotos de la
+    presentacion (publico, polvo, coche en el aire) salian huecos de otro color. Ahora los 3922
+    tiles que usan el pen 0 y no el 15 tienen una variante (pen 0 -> 15, en el C-ROM libre desde
+    0xC100) con una paleta gemela (Neo 128-159) igual a la del juego salvo el pen 15 = color 0.
+    En las pantallas de presentacion cubre ~83% de esos pixeles; el resto (tiles que usan los 16
+    colores) sigue con el color de fondo comun. Tambien se aplica en carrera.
+
+Comprobado en MAME, cuadro a cuadro contra la recreativa original en las transiciones de la
+presentacion (test -> Gaelco, foto -> titulo, titulo -> coche, coche -> mapa, mapa -> carrera de
+demostracion) y del juego (moneda -> "Press 1P", seleccion de rally, mapa de etapa, salida).
+Ninguna escritura en la RAM de paletas con la imagen visible (0 de ~140.000 en 6000 cuadros).
+Carrera: temblor coche/fondo igual que en la 4d (2 desajustes en 1000 cuadros, ruido de la
+medida). Queda: al recolocar la camara al final ("Time Exceeded") la pantalla pasa ~12 cuadros a
+un color liso (fundido del propio juego) y se ve la sombra del coche encima; sin comparar con la
+recreativa en ese punto. Sin verificar en MiSTer ni NeoSD.
+
+------------------------------------------------------------------------------------------
+World Rally (Gaelco 1993) - port a Neo Geo, fase 4d. SOLO USO PERSONAL.
+No incluye BIOS: usa la tuya (neogeo.zip). Incluye el arreglo de arranque de la 4c (NeoSD).
+
+Novedades de la fase 4d (el coche "temblaba", adelante y atras respecto a la carretera):
+  - Causa: el juego construye las listas de sprites en su interrupcion, a partir de los objetos
+    que el bucle principal deja preparados al acabar cada cuadro. El port convertia el cuadro al
+    terminar el bucle, con el desplazamiento del fondo de ese cuadro, pero las listas eran unas
+    veces de ese cuadro y otras del anterior, segun hubiera llegado o no una interrupcion entre
+    medias. Cuando eran del anterior, el coche (y su sombra, el publico, las flechas...) se
+    quedaban atras unos 10 px respecto al fondo, y al cuadro siguiente se adelantaban de golpe.
+  - Ahora las listas se construyen en ese mismo momento, con los mismos constructores del
+    juego, y siempre corresponden al mismo cuadro que el fondo. La interrupcion ve los objetos
+    ya gastados y no las repite.
+
+Medido en MAME, 1000 cuadros de carrera con el mismo guion de mandos (posicion del coche en la
+VRAM del Neo Geo frente al desplazamiento real del fondo en la imagen):
+    desajustes coche/fondo: 4c = 49, 4d = 1
+    cuadros repetidos enteros (el juego no llega a tiempo): 4c = 19, 4d = 10
+Sin cambios en el numero de sprites ni cuadros sin objetos; carrera completa hasta "Time
+Exceeded" sin cuelgues. Sin verificar en MiSTer ni en NeoSD.
+
+------------------------------------------------------------------------------------------
+World Rally (Gaelco 1993) - port a Neo Geo, fase 4c. SOLO USO PERSONAL.
+No incluye BIOS: usa la tuya (neogeo.zip).
+
+Novedades de la fase 4c (corrige el arranque en cartucho real / NeoSD: la intro de Neo Geo se
+repetia en bucle y la consola se quedaba colgada):
+  - Causa: todo el codigo del port esta en el segundo mega de la ROM P, que la consola ve por una
+    ventana con bancos en 0x200000. El juego nunca fijaba ese banco. MAME y MiSTer lo ponen a 0 al
+    arrancar y por eso funcionaba, pero en un cartucho real (y en la NeoSD, cuyo menu tambien usa
+    esa ventana) puede quedar con otro valor. Entonces la BIOS saltaba al juego, encontraba otra
+    cosa en esa direccion, el programa se perdia, el watchdog reiniciaba la consola y volvia a
+    salir la intro, una y otra vez.
+  - Ahora la entrada del juego esta en el primer mega: fija el banco 0 y despues salta al codigo.
+    El resto del juego no cambia (la ROM P es identica a la 4b salvo esos bytes de la cabecera).
+
+Comprobado en MAME con BIOS AES Asia, AES Japon, MVS Europa y UniBIOS 4.0: intro, test de
+arranque y presentacion de Gaelco. En MVS Europa, ademas, moneda, START y ~35 s de carrera,
+vigilando las escrituras en 0x200000-0x2FFFFF: solo hay una, la del banco.
+Sin verificar: NeoSD real (no puedo reproducir su estado del banco). Si sigue colgandose, dime si
+tu NeoSD es AES o MVS, que BIOS usa y la version del firmware.
+
+------------------------------------------------------------------------------------------
+World Rally (Gaelco 1993) - port a Neo Geo, fase 4b. SOLO USO PERSONAL.
+No incluye BIOS: usa la tuya (neogeo.zip).
+
+Novedades de la fase 4b (corrige la 4 en MiSTer: menus en negro o con colores erroneos, puntos y
+rayas en las etapas de noche):
+  - Causa: en el Neo Geo real (y en el nucleo de MiSTer) cada acceso de la CPU a la RAM de paletas
+    con la imagen visible hace que el pixel que se esta dibujando salga con el color de esa
+    direccion. MAME no lo emula, por eso no se veia en mis pruebas. La 4 usaba RAM de paletas libre
+    como memoria de trabajo (bufer de los faros, copia de paletas) y escribia paletas en cualquier
+    momento.
+  - Ahora las paletas se preparan en RAM normal y solo se copian a la RAM de paletas durante el
+    VBLANK. Medido en una etapa de noche: de ~25.000 accesos con la imagen visible por cada 1.500
+    cuadros a ~30 (unas pocas palabras de los efectos tras un cambio de escena).
+  - Corregido un fallo de la 4 que podia perder una carga de paletas entera (o pisar paletas nuevas
+    con otras viejas) segun el ritmo exacto de la maquina: pantallas en negro o con colores
+    equivocados. Ademas, una paleta se revisa entera cada pocos cuadros aunque no haya cambiado: si
+    algo la dejara mal, se corrige sola en ~3 s.
+  - El fundido del juego va dentro de su interrupcion y convertia las paletas con el VBLANK cortado:
+    el VBLANK siguiente llegaba hasta 15 lineas tarde. Ahora 0 lineas de retraso en la prueba.
+  - Cola de cuadros: nunca se pasa de su espacio aunque la interrupcion rehaga la lista a mitad.
+
+Comprobado en MAME: capas de las 12 etapas cuadro a cuadro (sin fallos salvo columnas del borde),
+menus y carrera como la 2s, el juego no toca la RAM nueva que uso. 2 cuadros de cada ~1.400 con la
+altura de algun sprite escrita 1-3 lineas tarde (arriba del todo, en un cambio de escena).
+Sin verificar: MiSTer. Esta version esta hecha para corregir lo que describiste, pero solo lo
+sabremos cuando la pruebes.
+
+------------------------------------------------------------------------------------------
+World Rally (Gaelco 1993) - port a Neo Geo, fase 4. SOLO USO PERSONAL.
+No incluye BIOS: usa la tuya (neogeo.zip).
+
+Novedades de la fase 4 (une la fase 3 del usuario con los arreglos posteriores a la 2s):
+  - Reparto de sprites de la fase 3 (48 para la prioridad baja / 94 para la alta): se mantiene.
+    Medido en las 12 etapas: la baja necesita como mucho 42; la alta llega a 77.
+  - Faros y efectos de las etapas de noche: antes se perdian casi todos (el bufer se llenaba
+    con un sprite por baldosa). Ahora las baldosas de efecto se juntan en columnas y el bufer
+    es mayor (va en RAM de paletas libre). El haz se ve completo y sin sprites perdidos
+    (contado en todas las etapas probadas, tambien las de noche).
+    Limite real: es una aproximacion con tramado. La Neo Geo no puede recolorear pixel a pixel
+    lo que hay debajo como hace la placa original.
+  - Paletas de los efectos: se calculan en el tiempo libre del bucle principal (7 bancos por
+    cuadro), no en el VBLANK. Si falta tiempo libre, hay una via de reserva limitada.
+  - Cambio de la fase 3 descartado: marcar los efectos con el bit 15 de la palabra 3. Esos bits
+    no los usa el hardware y los sprites de efecto ya se distinguen por la tabla de atributos.
+  - Cambios de paleta al chocar o al cambiar de escena: antes se veian el marcador rojo/oliva,
+    la escena nueva antes del fundido, o contornos azules en el blanco de la nieve. Ahora la
+    paleta se prepara fuera del VBLANK y se copia de una vez cuando las capas estan completas.
+    Antes, copiarla en el VBLANK costaba ~50.000 ciclos y rasgaba la parte de arriba.
+  - Capas: a veces se aplicaba la posicion del cuadro siguiente (saltos de 8-13 px) o una
+    columna quedaba con contenido de otra columna del mapa. Corregidas las dos carreras.
+  - Puntuacion: un registro alterado por una rutina nueva inflaba los puntos ~36 %. Corregido:
+    misma partida, 2016 frente a 2015 en la recreativa.
+  - Colisiones y aceleracion: como en la 2s (bien).
+
+Medido en MAME (todas las etapas forzadas una a una, con piloto automatico y reloj parado):
+  - Capas baja, alta y de objetos comparadas cuadro a cuadro (~4800 comprobaciones por etapa):
+    solo discrepan columnas del borde (las 1-2 de cada extremo, fuera de la imagen original).
+  - Como mucho 90 sprites en una linea (limite 96). Ninguna escritura de video con imagen
+    visible, VBLANK siempre a tiempo, 0 infracciones de tiempos de VRAM.
+  - Cuadros repetidos en la partida de referencia: 81 (recreativa 24). 59 son en los fundidos
+    de los choques.
+
+Peor que la recreativa (conocido, no corregido):
+  - El fundido al chocar dura ~13 cuadros en vez de ~4. El port espera a tener las capas
+    completas antes de mostrar la escena nueva, para que no se vea a medias.
+  - Mandos ~1 cuadro mas tarde que la recreativa (como desde la 2r).
+  - Sin verificar: MiSTer y NeoSD (solo puedo probar en MAME).
+
+Contenido de la fase 4 que no hice yo: en el arbol aparecieron eff_idle_step y la
+compensacion de los efectos (2*luz - fondo, 6 muestras, suavizado 3:1). Los he mantenido y
+he limitado la via de reserva, que se ejecutaba en cada VBLANK y subia las repeticiones a 94.
+
+------------------------------------------------------------------------------------------
+
+Novedades de la fase 2s (corrige un fallo grave de la 2r):
+  - En la 2r el coche atravesaba los muros y aceleraba mal. Lo causaba una optimizacion nueva
+    de la 2r (una busqueda en tablas hecha con un indice): daba el resultado correcto pero
+    alteraba un registro del procesador que el juego usa despues para saber que hay bajo el
+    coche (asfalto, tierra, muro). Ahora se conserva y la busqueda sigue siendo rapida.
+  - Comprobado contra la recreativa con la misma partida (acelerar y girar a ratos): el coche
+    hace el mismo recorrido y choca en los mismos cuadros del juego que en el original. En la
+    2r se salia de la carretera desde el principio.
+  - Cuadros repetidos en esa partida: recreativa 24 (todos al chocar: el juego se detiene
+    3 cuadros a proposito), 2s 76. De ellos ~50 tambien son en los choques (el port tarda
+    algo mas en recolocar la camara) y ~25 sueltos en los tramos mas cargados.
+    La 2q, en esa misma prueba, repetia mas de 300.
+  - Lo demas, como en la 2r (cola de cuadros corregida; respuesta a los mandos ~1 cuadro
+    mas tarde que la recreativa).
+
+Novedades de la fase 2r (el temblor del coche; el resultado de esta version estaba mal, ver 2s):
+  - Causa: el coche esta fijo en pantalla y la carretera avanza unos 6 px por cuadro. Cada vez
+    que un cuadro del juego no estaba listo a tiempo se repetia el anterior: la carretera se
+    paraba un instante y parecia que el coche daba un tiron. En la 2q pasaba en ~9 % de los
+    cuadros de carrera (320 repeticiones en la prueba de referencia).
+  - Habia tres problemas, y ninguno era falta de velocidad del juego:
+      1. La cola de cuadros tenia una carrera entre el bucle principal y el VBLANK (el
+         compilador guardaba el contador de la cola en un registro): a veces se perdia la
+         cuenta. Corregido.
+      2. Si el VBLANK llegaba mientras el juego adelantaba un cuadro, nadie preparaba el
+         siguiente cuadro de la cola hasta el VBLANK siguiente: habia cuadro, pero se repetia
+         el anterior. Ahora el cuadro se prepara en cuanto hay hueco.
+      3. Ahora el juego adelanta hasta dos cuadros en el tiempo libre de los cuadros ligeros,
+         y asi los pesados no dejan la pantalla sin cuadro nuevo.
+  - Resultado en la prueba de referencia (3400 cuadros de juego, misma partida):
+      recreativa original 24 repeticiones (3425 VBLANK), 2q 320, 2r 17 (3419 VBLANK).
+    Es decir, ahora va tan fluido como la recreativa (que tambien repite alguno en los cambios
+    de tramo). Medido tambien sobre el desplazamiento real de la carretera, VBLANK a VBLANK:
+    38 tirones en el port frente a 40 en la recreativa.
+  - Coste: como el juego va uno o dos cuadros por delante de lo que se ve, la respuesta a los
+    mandos tiene de media ~1 cuadro (~17 ms) mas de retraso que en la recreativa.
+  - Comprobado de nuevo: ninguna escritura de sprites ni de posiciones con la imagen visible,
+    VBLANK siempre a tiempo, tiempos de VRAM correctos (0 infracciones), capa alta correcta,
+    como mucho 93 sprites por linea (limite 96), cuadros siempre en orden.
+  - Sin verificar: MiSTer (solo puedo probar en MAME).
+
+Novedades de la fase 2q:
+  - Sin bordes negros a los lados: la imagen ocupa los 320 px (los ~10 px de cada extremo son
+    mapa un poco mas alla del borde de la recreativa; ahi el juego no siempre dibuja objetos).
+  - Temblor del coche: cuando el juego tardaba mas de un cuadro y luego terminaba dos seguidos,
+    uno de ellos no llegaba a verse (1 de cada 4-5 cuadros en carrera) y otro se repetia; el
+    movimiento iba a saltos. Ahora se ven todos los cuadros del juego, uno por VBLANK, sin
+    saltarse ninguno (comprobado en una carrera: 3400 de 3400).
+  - Al recolocar la camara tras un choque, las columnas que se reescriben se ocultan en el
+    VBLANK, nunca a mitad de imagen. Comprobado: ninguna escritura de alturas ni posiciones de
+    sprites con la imagen visible y la interrupcion de VBLANK siempre a tiempo.
+  - Mas rapido: el marcador (casi siempre igual) ya no se vuelve a convertir ni a escribir cada
+    cuadro; escrituras de tiles sin la excepcion de linea A; menos trabajo en el VBLANK.
+    En la prueba de referencia (3400 cuadros de carrera): recreativa 3424 VBLANK, 2p 3662 pero
+    saltandose ~700 cuadros, 2q 3720 mostrando los 3400.
+
+Novedades de la fase 2p (revision a fondo del dibujado; la causa de los fallos en MiSTer):
+  - El chip de video del Neo Geo dibuja la imagen linea a linea mientras el programa corre.
+    MAME, en cambio, pinta el cuadro entero al final, asi que todo lo que se escribia en la VRAM
+    con la imagen ya en marcha no se veia en el emulador pero si en MiSTer: columnas del
+    decorado cambiadas a medio dibujar (el publico "encima" de la carretera un instante) y
+    sprites del coche de dos cuadros distintos en la misma imagen (el coche que parpadea y
+    salta hacia atras). Ademas la interrupcion de VBLANK llegaba a veces tarde porque se
+    cortaban las interrupciones durante copias largas.
+  - Rediseño: los sprites y las columnas nuevas se escriben siempre en ranuras ocultas, con
+    doble juego de sprites; durante el VBLANK solo se cambian alturas y posiciones, ya
+    calculadas, y fondo, sprites y desplazamiento de un mismo cuadro del juego se muestran a
+    la vez. Comprobado con un detector durante una carrera: ninguna escritura de sprites ni de
+    posiciones en la imagen visible (solo quedan los cambios de tiles que el propio juego hace
+    a mitad de cuadro, igual que en la recreativa), interrupcion siempre a tiempo, tiempos de
+    escritura en VRAM correctos y como mucho 92 sprites por linea (limite 96).
+  - Paletas: antes se convertian por partes a lo largo de 6 cuadros, y al cambiar de tramo o
+    tras un choque se veian zonas de color plano (marcador, arboles) durante varios cuadros.
+    Ahora un cambio general de paletas se aplica entero en el mismo cuadro.
+  - Saltos grandes de la camara: las columnas que faltan se escriben todas antes de mostrar
+    el cuadro, en lugar de ir apareciendo de dos en dos.
+  - Velocidad: misma prueba de referencia que antes, ~7 % por debajo de la recreativa en los
+    tramos mas cargados (la 2o estaba igual, pero escribia en la VRAM sin estas garantias).
+
+Novedades de la fase 2o:
+  - Coche que "salta hacia atras" y decorado que cambia de sitio un instante: cuando el juego
+    tardaba varios cuadros seguidos en terminar uno (choques, tramos cargados), el fondo pasaba
+    a moverse por su cuenta mientras el coche se quedaba quieto, y al llegar el siguiente cuadro
+    todo volvia a encajar de golpe. Ahora, mientras el juego siga en marcha, fondo y sprites
+    esperan juntos al cuadro completo; el desplazamiento independiente solo se usa en pantallas
+    donde el juego no manda sprites.
+
+Novedades de la fase 2n:
+  - Coche y publico descolocados en las curvas: cuando el juego iba retrasado, el fondo se
+    movia con el desplazamiento nuevo pero los sprites seguian siendo los del cuadro anterior,
+    asi que el coche y los objetos "resbalaban" sobre el decorado (el publico parecia ponerse
+    delante) y el coche temblaba. Ahora fondo, sprites y la capa de primer plano se actualizan
+    siempre juntos, con los valores del mismo cuadro del juego.
+  - La capa de primer plano (postes, arboles, pancartas por encima del coche) usa tambien la
+    posicion del mismo cuadro, sin el cuadro de retraso que la hacia aparecer y desaparecer.
+
+Novedades de la fase 2m:
+  - Parpadeo del coche, del publico y de capas en el hardware real: el chip de video del Neo Geo
+    (LSPC) pierde escrituras en la VRAM si no pasan mas de 12 ciclos desde la anterior (dato
+    documentado en wiki.neogeodev.org; MAME no lo emula). El volcado de sprites (coche, publico,
+    marcador) y la capa alta escribian justo a 12 ciclos. Ahora todas las escrituras respetan
+    los tiempos (comprobado con un detector durante una carrera completa: 0 infracciones).
+  - Codigo limpio: fuera el convertidor de sprites antiguo, los stubs de la copia de mapa por
+    long y otras rutinas sin uso.
+
+Novedades de la fase 2l:
+  - Borde negro izquierdo de 16 px (antes 8); el derecho sigue en 8 px.
+
+Novedades de la fase 2k:
+  - Zonas sin pintar en el hardware real (MiSTer), causa probable: tres rutinas borraban
+    registros de la VRAM con la instruccion CLR, que en el 68000 lee antes de escribir; en el
+    hardware esa lectura puede descolocar el autoincremento y desordenar que columnas y sprites
+    se ven (en MAME no se nota). Ahora se escribe siempre con MOVE.
+  - Mas rapido: una carrera completa pasa de ~11 % a ~8 % de cuadros perdidos respecto a la
+    recreativa (columnas fuera de pantalla sin trabajo, conversion de sprites y capa alta
+    mas ligeras).
+
+Novedades de la fase 2j:
+  - Al estrellarte ya no suena la musica del principio (protocolo de sonido 68000/Z80
+    nuevo, que no se puede desincronizar). Ademas vuelve un efecto que no sonaba nunca
+    (la frase 1 del OKI, usada durante la carrera).
+  - Sin zonas sin pintar: el fondo cubre todo el ancho y los bordes de 8 px son negros.
+  - Copia de mapas nativa (por bloques ya descifrados): tras un choque la pantalla
+    vuelve en unos 6 cuadros en lugar de ~30; en carrera tambien gana velocidad.
+  - Sin sprites perdidos por linea (antes se pasaba de 96 en la zona del marcador):
+    la capa "alta" solo se usa encima de los objetos que van por debajo.
+  - Menos desgarros: primero el desplazamiento y los sprites, luego las columnas nuevas.
+  - Velocidad en la prueba de referencia: ~53,5 cuadros de juego/s (antes ~47; el original
+    va a 59). Todavia algo mas lento que la recreativa en los tramos con muchos sprites.

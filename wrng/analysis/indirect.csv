@@ -1,0 +1,11 @@
+pc,insn
+002082,jmp (a2)
+00209E,jmp (a2)
+00215C,jmp (a2)
+0021C8,jmp (a2)
+0033E0,jsr (a0)
+00340A,jsr (a0)
+0035D2,jsr (a0)
+00604A,jmp (a0)
+00FD86,jmp (a6)
+0143EC,jmp (a2)

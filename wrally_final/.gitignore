@@ -1,0 +1,6 @@
+build_final/
+neo/build/
+neo/mame/
+neo/snd/adpcma_enc
+__pycache__/
+build_final_out/

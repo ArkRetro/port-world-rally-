@@ -1,0 +1,1481 @@
+bases: 0960 0D90 11A6 157C 193E 1D82 2160 2524 28B4 2D10 30D6 3466
+=== STAGE 0  base=0960 (len 1072)
+  off=0000 @0960  trig EAA4           <  1E38 : SETDIR(14) ; CHECKPOINT x=2180 y=1E0C (EB1C=x-18h) nextoff=000A
+  off=000A @096A  trig EAA4           <  1C58 : SIGN(00 03 02)
+  off=0010 @0970  trig EAA4           <  1B38 : MSG(C14B)(01) ; CHECKPOINT x=2180 y=1B20 (EB1C=x-18h) nextoff=001A
+  off=001A @097A  trig EAA4           <  1B38 : SIGN(00 03 02)
+  off=0020 @0980  trig EAA4           <  1AB8 : C271=1(00) ; GOTO_PT(02 20 60 1A B8)
+  off=002A @098A  trig EA9C+18h&3FFF  <  3B18 : SETDIR(19) ; CHECKPOINT x=2120 y=19E0 (EB1C=x-18h) nextoff=0034
+  off=0034 @0994  trig EA9C+18h&3FFF  <  3A98 : SIGN(01 03 02)
+  off=003A @099A  trig EA9C+18h&3FFF  <  3958 : CHECKPOINT x=2040 y=1900 (EB1C=x-18h) nextoff=0042
+  off=0042 @09A2  trig EA9C+18h&3FFF  <  3958 : SIGN(01 03 02)
+  off=0048 @09A8  trig EA9C+18h&3FFF  <  3898 : MSG(C14B)(02) ; C271=1(00) ; GOTO_PT(02 1F 08 19 60) ; NOPC(00)
+  off=0056 @09B6  trig EAA0+18h       <  1F38 : SETDIR(1E) ; CHECKPOINT x=1F20 y=1840 (EB1C=x-18h) nextoff=0060
+  off=0060 @09C0  trig EAA0+18h       <  1F18 : SIGN(02 02 03)
+  off=0066 @09C6  trig EAA0+18h       <  1E18 : CHECKPOINT x=1E00 y=1840 (EB1C=x-18h) nextoff=006E
+  off=006E @09CE  trig EAA0+18h       <  1E18 : SIGN(02 02 03)
+  off=0074 @09D4  trig EAA0+18h       <  1D98 : MSG(C14B)(03) ; C271=1(00) ; GOTO_PT(01 1D 90 19 00)
+  off=0080 @09E0  trig EA98+30h&FFF   <  0A30 : SIGN(03 02 03)
+  off=0086 @09E6  trig EA98+30h&FFF   <  0930 : SETDIR(23) ; CHECKPOINT x=1D20 y=1860 (EB1C=x-18h) nextoff=0090
+  off=0090 @09F0  trig EA98+30h&FFF   <  0930 : SIGN(03 02 03)
+  off=0096 @09F6  trig EA98+30h&FFF   <  0830 : CHECKPOINT x=1CC0 y=18C0 (EB1C=x-18h) nextoff=009E
+  off=009E @09FE  trig EA98+30h&FFF   <  0830 : SIGN(03 02 03)
+  off=00A4 @0A04  trig EA98+30h&FFF   <  06B0 : C271=1(00) ; GOTO_PT(81 1B F0 18 80)
+  off=00AE @0A0E  trig EAA0+18h       <  1BF8 : MSG(C14B)(04) ; SETDIR(1E) ; CHECKPOINT x=1C00 y=1940 (EB1C=x-18h) nextoff=00BA
+  off=00BA @0A1A  trig EAA0+18h       <  1BF8 : SIGN(04 03 02)
+  off=00C0 @0A20  trig EAA0+18h       <  1B18 : CHECKPOINT x=1B00 y=1940 (EB1C=x-18h) nextoff=00C8
+  off=00C8 @0A28  trig EAA0+18h       <  1B18 : SIGN(04 03 02)
+  off=00CE @0A2E  trig EAA0+18h       <  1A98 : C271=1(00) ; GOTO_PT(81 1A 90 18 80) ; NOPC(01)
+  off=00DA @0A3A  trig EA9C+18h&3FFF  <  3318 : GOTO_PT(82 1A C0 18 28)
+  off=00E2 @0A42  trig EAA4           <  1858 : MSG(C14B)(05) ; SIGN(0F 00 05) ; SETDIR(14) ; CHECKPOINT x=19A0 y=1840 (EB1C=x-18h) nextoff=00F2
+  off=00F2 @0A52  trig EAA4           <  173D : C271=1(00)
+  off=00F6 @0A56  trig EAA4           <  1738 : SIGN(05 03 03)
+  off=00FC @0A5C  trig EAA4           <  1618 : MSG(C14B)(06) ; CHECKPOINT x=19A0 y=1600 (EB1C=x-18h) nextoff=0106
+  off=0106 @0A66  trig EAA4           <  1618 : SIGN(05 03 03)
+  off=010C @0A6C  trig EAA4           <  1598 : C271=1(00) ; GOTO_PT(02 18 80 15 98) ; NOPC(00)
+  off=0118 @0A78  trig EA9C+18h&3FFF  <  2E18 : GOTO_PT(02 18 68 15 80)
+  off=0120 @0A80  trig EAA0+18h       <  1898 : GOTO_PT(02 18 98 15 80)
+  off=0128 @0A88  trig EA98+30h&FFF   <  0730 : SIGN(06 03 03)
+  off=012E @0A8E  trig EA98+30h&FFF   <  06B0 : SETDIR(23) ; CHECKPOINT x=17E0 y=14A0 (EB1C=x-18h) nextoff=0138
+  off=0138 @0A98  trig EA98+30h&FFF   <  0630 : SIGN(06 03 03)
+  off=013E @0A9E  trig EA98+30h&FFF   <  04B0 : MSG(C14B)(07) ; CHECKPOINT x=1760 y=1520 (EB1C=x-18h) nextoff=0148
+  off=0148 @0AA8  trig EA98+30h&FFF   <  04B0 : SIGN(06 03 03)
+  off=014E @0AAE  trig EA98+30h&FFF   <  0330 : C271=1(00) ; GOTO_PT(81 16 90 14 E0)
+  off=0158 @0AB8  trig EAA0+18h       <  16B8 : GOTO_PT(81 16 B0 14 E0)
+  off=0160 @0AC0  trig EA9C+18h&3FFF  <  2B98 : SETDIR(19) ; CHECKPOINT x=1620 y=1560 (EB1C=x-18h) nextoff=016A
+  off=016A @0ACA  trig EA9C+18h&3FFF  <  2B98 : SIGN(07 03 02)
+  off=0170 @0AD0  trig EA9C+18h&3FFF  <  2A58 : CHECKPOINT x=1580 y=14C0 (EB1C=x-18h) nextoff=0178
+  off=0178 @0AD8  trig EA9C+18h&3FFF  <  2A58 : SIGN(07 03 02)
+  off=017E @0ADE  trig EA9C+18h&3FFF  <  2998 : C271=1(00) ; GOTO_PT(80 15 60 14 1A)
+  off=0188 @0AE8  trig EAA4           <  13F8 : MSG(C14B)(08) ; SETDIR(14) ; CHECKPOINT x=1500 y=1420 (EB1C=x-18h) nextoff=0194
+  off=0194 @0AF4  trig EAA4           <  1398 : SIGN(08 04 03)
+  off=019A @0AFA  trig EAA4           <  1278 : CHECKPOINT x=1500 y=1260 (EB1C=x-18h) nextoff=01A2
+  off=01A2 @0B02  trig EAA4           <  1278 : SIGN(08 04 03)
+  off=01A8 @0B08  trig EAA4           <  11F8 : C271=1(00) ; GOTO_PT(82 16 20 11 F8)
+  off=01B2 @0B12  trig EA98+30h&FFF   >= 07D0 : SETDIR(0F) ; CHECKPOINT x=1540 y=1140 (EB1C=x-18h) nextoff=01BC
+  off=01BC @0B1C  trig EA98+30h&FFF   >= 08D0 : GOTO_PT(02 14 A0 10 48) ; NOPC(01)
+  off=01C6 @0B26  trig EAA4           <  1078 : MSG(C14B)(09) ; SETDIR(14) ; CHECKPOINT x=15C0 y=1060 (EB1C=x-18h) nextoff=01D2
+  off=01D2 @0B32  trig EAA4           <  1078 : SIGN(09 03 02)
+  off=01D8 @0B38  trig EAA4           <  0F78 : CHECKPOINT x=15C0 y=0F60 (EB1C=x-18h) nextoff=01E0
+  off=01E0 @0B40  trig EAA4           <  0F78 : SIGN(09 03 02)
+  off=01E6 @0B46  trig EAA4           <  0EF8 : C271=1(00) ; GOTO_PT(02 14 A0 0E F8) ; NOPC(00)
+  off=01F2 @0B52  trig EA9C+18h&3FFF  <  2398 : GOTO_PT(02 14 88 0E E0)
+  off=01FA @0B5A  trig EAA0+18h       <  14B8 : SETDIR(1E) ; CHECKPOINT x=14A0 y=0DC0 (EB1C=x-18h) nextoff=0204
+  off=0204 @0B64  trig EAA0+18h       <  14B8 : MSG(C14B)(0A) ; SIGN(1F 03 05)
+  off=020C @0B6C  trig EAA0+18h       <  1318 : C271=1(00)
+  off=0210 @0B70  trig EAA0+18h       <  12D8 : CHECKPOINT x=12C0 y=0DC0 (EB1C=x-18h) nextoff=0218
+  off=0218 @0B78  trig EAA0+18h       <  10B8 : MSG(C14B)(0B) ; SIGN(0A 03 03)
+  off=0220 @0B80  trig EAA0+18h       <  0F98 : CHECKPOINT x=0F80 y=0DC0 (EB1C=x-18h) nextoff=0228
+  off=0228 @0B88  trig EAA0+18h       <  0F98 : SIGN(0A 03 03)
+  off=022E @0B8E  trig EAA0+18h       <  0F18 : C271=1(00) ; GOTO_PT(81 0F 10 0D 00) ; NOPC(01)
+  off=023A @0B9A  trig EA9C+18h&3FFF  <  1C18 : MSG(C14B)(0C) ; GOTO_PT(81 0F 00 0C F0)
+  off=0244 @0BA4  trig EAA4           <  0D18 : GOTO_PT(81 0F 00 0D 10)
+  off=024C @0BAC  trig EA98+30h&FFF   >= 02D0 : SIGN(0B 02 02)
+  off=0252 @0BB2  trig EA98+30h&FFF   >= 0350 : SETDIR(0F) ; CHECKPOINT x=0E60 y=0CA0 (EB1C=x-18h) nextoff=025C
+  off=025C @0BBC  trig EA98+30h&FFF   >= 03D0 : SIGN(0B 02 02)
+  off=0262 @0BC2  trig EA98+30h&FFF   >= 0550 : MSG(C14B)(0D) ; CHECKPOINT x=0EE0 y=0C20 (EB1C=x-18h) nextoff=026C
+  off=026C @0BCC  trig EA98+30h&FFF   >= 0550 : SIGN(0B 02 02)
+  off=0272 @0BD2  trig EA98+30h&FFF   >= 06D0 : C271=1(00) ; GOTO_PT(00 0F 00 0B 78)
+  off=027C @0BDC  trig EAA4           <  0B58 : SETDIR(14) ; CHECKPOINT x=0F60 y=0B80 (EB1C=x-18h) nextoff=0286
+  off=0286 @0BE6  trig EAA4           <  0A98 : NOPC(00)
+  off=028A @0BEA  trig EAA4           <  0A78 : RACE_START(B6 00 B4)
+  off=0290 @0BF0  trig EAA4           <  0A58 : RACE_START2(14 00 8C)
+  off=0296 @0BF6  trig EAA4           <  0A18 : MSG(C14B)(0E) ; SIGN(09 03 02)
+  off=029E @0BFE  trig EAA4           <  0AEC : CHECKPOINT x=0F60 y=08E0 (EB1C=x-18h) nextoff=02A6
+  off=02A6 @0C06  trig EAA4           <  0AEC : SIGN(09 03 02)
+  off=02AC @0C0C  trig EAA4           <  0878 : C271=1(00) ; GOTO_PT(01 0E A0 08 70)
+  off=02B6 @0C16  trig EA9C+18h&3FFF  <  1718 : MSG(C14B)(0F) ; GOTO_PT(01 0E 90 08 60)
+  off=02C0 @0C20  trig EAA0+18h       <  0EB8 : SETDIR(1E) ; CHECKPOINT x=0EA0 y=07A0 (EB1C=x-18h) nextoff=02CA
+  off=02CA @0C2A  trig EAA0+18h       <  0EA4 : SIGN(22 03 04)
+  off=02D0 @0C30  trig EAA0+18h       <  0D18 : C271=1(00)
+  off=02D4 @0C34  trig EAA0+18h       <  0CB8 : CHECKPOINT x=0CA0 y=07A0 (EB1C=x-18h) nextoff=02DC
+  off=02DC @0C3C  trig EAA0+18h       <  0CB8 : MSG(C14B)(10) ; SIGN(0C 03 04)
+  off=02E4 @0C44  trig EAA0+18h       <  0B98 : CHECKPOINT x=0B80 y=07A0 (EB1C=x-18h) nextoff=02EC
+  off=02EC @0C4C  trig EAA0+18h       <  0B98 : SIGN(0C 03 04)
+  off=02F2 @0C52  trig EAA0+18h       <  0B18 : C271=1(00) ; GOTO_PT(82 0B 18 06 80) ; NOPC(01)
+  off=02FE @0C5E  trig EA9C+18h&3FFF  <  1198 : GOTO_PT(02 09 70 08 00)
+  off=0306 @0C66  trig EAA0+18h       <  0998 : MSG(C14B)(11) ; SETDIR(1E) ; CHECKPOINT x=0980 y=06E0 (EB1C=x-18h) nextoff=0312
+  off=0312 @0C72  trig EAA0+18h       <  0998 : SIGN(0A 03 03)
+  off=0318 @0C78  trig EAA0+18h       <  0878 : CHECKPOINT x=0860 y=06E0 (EB1C=x-18h) nextoff=0320
+  off=0320 @0C80  trig EAA0+18h       <  0878 : SIGN(0A 03 03)
+  off=0326 @0C86  trig EAA0+18h       <  07F8 : C271=1(00) ; GOTO_PT(81 07 F0 06 20)
+  off=0330 @0C90  trig EA9C+18h&3FFF  <  0E18 : GOTO_PT(81 07 E0 06 10)
+  off=0338 @0C98  trig EAA4           <  0638 : GOTO_PT(81 07 E0 06 30)
+  off=0340 @0CA0  trig EA98+30h&FFF   >= 0250 : SIGN(42 02 04)
+  off=0346 @0CA6  trig EA98+30h&FFF   >= 02D0 : MSG(C14B)(12) ; SETDIR(0F) ; CHECKPOINT x=0740 y=05C0 (EB1C=x-18h) nextoff=0352
+  off=0352 @0CB2  trig EA98+30h&FFF   >= 02D0 : SIGN(42 02 04)
+  off=0358 @0CB8  trig EA98+30h&FFF   >= 0650 : C271=1(00)
+  off=035C @0CBC  trig EA98+30h&FFF   >= 07D0 : CHECKPOINT x=08A0 y=0460 (EB1C=x-18h) nextoff=0364
+  off=0364 @0CC4  trig EA98+30h&FFF   >= 0850 : MSG(C14B)(13) ; SIGN(0D 03 03)
+  off=036C @0CCC  trig EA98+30h&FFF   >= 09D0 : CHECKPOINT x=0900 y=0400 (EB1C=x-18h) nextoff=0374
+  off=0374 @0CD4  trig EA98+30h&FFF   >= 09D0 : SIGN(0D 03 03)
+  off=037A @0CDA  trig EA98+30h&FFF   >= 0B50 : C271=1(00) ; GOTO_PT(01 08 C0 03 30) ; NOPC(00)
+  off=0386 @0CE6  trig EAA4           <  0358 : GOTO_PT(01 08 C0 03 50)
+  off=038E @0CEE  trig EA9C+18h&3FFF  <  0C18 : MSG(C14B)(14) ; GOTO_PT(01 08 B0 03 40)
+  off=0398 @0CF8  trig EAA0+18h       <  08D8 : SETDIR(1E) ; CHECKPOINT x=08C0 y=0280 (EB1C=x-18h) nextoff=03A2
+  off=03A2 @0D02  trig EAA0+18h       <  0898 : SIGN(04 03 02)
+  off=03A8 @0D08  trig EAA0+18h       <  0778 : MSG(C14B)(15) ; CHECKPOINT x=0760 y=0280 (EB1C=x-18h) nextoff=03B2
+  off=03B2 @0D12  trig EAA0+18h       <  0778 : SIGN(04 03 02)
+  off=03B8 @0D18  trig EAA0+18h       <  06F8 : C271=1(00) ; GOTO_PT(80 06 E8 02 20)
+  off=03C2 @0D22  trig EA9C+18h&3FFF  <  0918 : GOTO_PT(80 06 E0 02 18)
+  off=03CA @0D2A  trig EAA4           <  0238 : SETDIR(14) ; CHECKPOINT x=0680 y=0220 (EB1C=x-18h) nextoff=03D4
+  off=03D4 @0D34  trig EAA4           <  01D8 : SIGN(0E 05 02)
+  off=03DA @0D3A  trig EAA4           <  00B8 : CHECKPOINT x=0680 y=00A0 (EB1C=x-18h) nextoff=03E2
+  off=03E2 @0D42  trig EAA4           <  00B8 : SIGN(0E 05 02)
+  off=03E8 @0D48  trig EAA4           <  0038 : MSG(C14B)(16) ; C271=1(00) ; GOTO_PT(02 05 60 00 38)
+  off=03F4 @0D54  trig EA9C+18h&3FFF  <  0598 : GOTO_PT(02 05 48 00 20)
+  off=03FC @0D5C  trig EAA0+18h       <  0578 : SETDIR(1E) ; CHECKPOINT x=0560 y=FF00 (EB1C=x-18h) nextoff=0406
+  off=0406 @0D66  trig EAA0+18h       <  0538 : GOTO_PT(82 05 38 FD E0) ; NOPC(01)
+  off=0410 @0D70  trig EA9C+18h&3FFF  <  0318 : GOTO_PT(82 05 20 FD C8)
+  off=0418 @0D78  trig EAA4           <  FDF8 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=0400 y=FDE0 (EB1C=x-18h) nextoff=0424
+  off=0424 @0D84  trig EAA4           <  FC98 : MSG(C14B)(18) ; FINISH(00)
+  off=042A @0D8A  trig EAA4           <  FCB8 : C105=1(00) ; SIGN(00 DF 58) ; SETDIR(14) ; CHECKPOINT x=2060 y=1F2C (EB1C=x-18h) nextoff=043A
+  (end offset 043A, next base 0D9A)
+=== STAGE 1  base=0D90 (len 1046)
+  off=0000 @0D90  trig EAA4           <  1F58 : SETDIR(14) ; CHECKPOINT x=2060 y=1F2C (EB1C=x-18h) nextoff=000A
+  off=000A @0D9A  trig EAA4           <  1DF8 : SIGN(00 03 02)
+  off=0010 @0DA0  trig EAA4           <  1CD8 : MSG(C14B)(01) ; CHECKPOINT x=2060 y=1CC0 (EB1C=x-18h) nextoff=001A
+  off=001A @0DAA  trig EAA4           <  1CD8 : SIGN(00 03 02)
+  off=0020 @0DB0  trig EAA4           <  1C58 : C271=1(00) ; GOTO_PT(02 1F 40 1C 58)
+  off=002A @0DBA  trig EA9C+18h&3FFF  <  3B98 : SETDIR(19) ; CHECKPOINT x=2000 y=1B80 (EB1C=x-18h) nextoff=0034
+  off=0034 @0DC4  trig EA9C+18h&3FFF  <  3A98 : SIGN(07 03 02)
+  off=003A @0DCA  trig EA9C+18h&3FFF  <  3958 : MSG(C14B)(02) ; CHECKPOINT x=1EE0 y=1A60 (EB1C=x-18h) nextoff=0044
+  off=0044 @0DD4  trig EA9C+18h&3FFF  <  3958 : SIGN(07 03 02)
+  off=004A @0DDA  trig EA9C+18h&3FFF  <  3898 : C271=1(00) ; GOTO_PT(82 1F 40 19 28)
+  off=0054 @0DE4  trig EAA4           <  1958 : SETDIR(14) ; CHECKPOINT x=1E20 y=1940 (EB1C=x-18h) nextoff=005E
+  off=005E @0DEE  trig EAA4           <  18D8 : MSG(C14B)(03) ; SIGN(09 03 02)
+  off=0066 @0DF6  trig EAA4           <  17EA : CHECKPOINT x=1E20 y=17A0 (EB1C=x-18h) nextoff=006E
+  off=006E @0DFE  trig EAA4           <  17EA : SIGN(09 03 02)
+  off=0074 @0E04  trig EAA4           <  1738 : C271=1(00) ; GOTO_PT(01 1D 60 17 30) ; NOPC(00)
+  off=0080 @0E10  trig EA9C+18h&3FFF  <  3498 : MSG(C14B)(04) ; GOTO_PT(01 1D 50 17 20)
+  off=008A @0E1A  trig EAA0+18h       <  1D78 : SETDIR(1E) ; CHECKPOINT x=1D60 y=1660 (EB1C=x-18h) nextoff=0094
+  off=0094 @0E24  trig EAA0+18h       <  1D38 : SIGN(02 02 03)
+  off=009A @0E2A  trig EAA0+18h       <  1C18 : MSG(C14B)(05) ; CHECKPOINT x=1C00 y=1660 (EB1C=x-18h) nextoff=00A4
+  off=00A4 @0E34  trig EAA0+18h       <  1C18 : SIGN(02 02 03)
+  off=00AA @0E3A  trig EAA0+18h       <  1B98 : C271=1(00) ; GOTO_PT(02 1B 98 17 80)
+  off=00B4 @0E44  trig EA98+30h&FFF   <  08B0 : SETDIR(23) ; CHECKPOINT x=1AE0 y=16A0 (EB1C=x-18h) nextoff=00BE
+  off=00BE @0E4E  trig EAA4           >= 16D8 : RACE_START(B4 00 8C)
+  off=00C4 @0E54  trig EAA4           >= 16E8 : RACE_START2(23 00 64)
+  off=00CA @0E5A  trig EA98+30h&FFF   <  0730 : MSG(C14B)(06) ; SIGN(91 04 04)
+  off=00D2 @0E62  trig EA98+30h&FFF   <  04B0 : CHECKPOINT x=19E0 y=17A0 (EB1C=x-18h) nextoff=00DA
+  off=00DA @0E6A  trig EA98+30h&FFF   <  04B0 : SIGN(91 04 04)
+  off=00E0 @0E70  trig EA98+30h&FFF   <  02B0 : C271=1(00) ; GOTO_PT(81 18 F0 17 80) ; NOPC(01)
+  off=00EC @0E7C  trig EAA0+18h       <  1918 : GOTO_PT(81 19 10 17 80)
+  off=00F4 @0E84  trig EA9C+18h&3FFF  <  3098 : GOTO_PT(81 19 00 17 70)
+  off=00FC @0E8C  trig EAA4           <  1798 : GOTO_PT(81 19 00 17 90)
+  off=0104 @0E94  trig EA98+30h&FFF   >= 0250 : GOTO_PT(01 17 C0 16 C0)
+  off=010C @0E9C  trig EAA4           <  16D8 : MSG(C14B)(07) ; SETDIR(14) ; CHECKPOINT x=1880 y=16C0 (EB1C=x-18h) nextoff=0118
+  off=0118 @0EA8  trig EAA4           <  15D8 : SIGN(05 03 03)
+  off=011E @0EAE  trig EAA4           <  14B8 : CHECKPOINT x=1880 y=14A0 (EB1C=x-18h) nextoff=0126
+  off=0126 @0EB6  trig EAA4           <  14B8 : SIGN(05 03 03)
+  off=012C @0EBC  trig EAA4           <  1438 : C271=1(00) ; GOTO_PT(02 17 60 14 38) ; NOPC(00)
+  off=0138 @0EC8  trig EA9C+18h&3FFF  <  2B98 : MSG(C14B)(08) ; GOTO_PT(02 17 48 14 20)
+  off=0142 @0ED2  trig EAA0+18h       <  1778 : GOTO_PT(02 17 78 14 20)
+  off=014A @0EDA  trig EA98+30h&FFF   <  0730 : SETDIR(23) ; CHECKPOINT x=16C0 y=1340 (EB1C=x-18h) nextoff=0154
+  off=0154 @0EE4  trig EA98+30h&FFF   <  0730 : MSG(C14B)(09) ; SIGN(11 03 03)
+  off=015C @0EEC  trig EA98+30h&FFF   <  04B0 : CHECKPOINT x=1620 y=13E0 (EB1C=x-18h) nextoff=0164
+  off=0164 @0EF4  trig EA98+30h&FFF   <  04B0 : SIGN(11 03 03)
+  off=016A @0EFA  trig EA98+30h&FFF   <  0330 : C271=1(00) ; GOTO_PT(81 15 50 13 A0) ; NOPC(01)
+  off=0176 @0F06  trig EAA0+18h       <  1578 : GOTO_PT(81 15 70 13 A0)
+  off=017E @0F0E  trig EA9C+18h&3FFF  <  2918 : GOTO_PT(81 15 60 13 90)
+  off=0186 @0F16  trig EAA4           <  13B8 : SETDIR(14) ; CHECKPOINT x=14A0 y=13A0 (EB1C=x-18h) nextoff=0190
+  off=0190 @0F20  trig EAA4           <  12F8 : MSG(C14B)(0A) ; SIGN(00 03 02)
+  off=0198 @0F28  trig EAA4           <  11D8 : CHECKPOINT x=14A0 y=11C0 (EB1C=x-18h) nextoff=01A0
+  off=01A0 @0F30  trig EAA4           <  11D8 : SIGN(00 03 02)
+  off=01A6 @0F36  trig EAA4           <  1158 : C271=1(00) ; GOTO_PT(00 14 40 11 48)
+  off=01B0 @0F40  trig EA9C+18h&3FFF  <  2558 : SETDIR(19) ; CHECKPOINT x=1480 y=1100 (EB1C=x-18h) nextoff=01BA
+  off=01BA @0F4A  trig EA9C+18h&3FFF  <  2518 : MSG(C14B)(0B) ; SIGN(12 02 03)
+  off=01C2 @0F52  trig EA9C+18h&3FFF  <  23D8 : CHECKPOINT x=13A0 y=1020 (EB1C=x-18h) nextoff=01CA
+  off=01CA @0F5A  trig EA9C+18h&3FFF  <  23D8 : SIGN(12 02 03)
+  off=01D0 @0F60  trig EA9C+18h&3FFF  <  22E6 : C271=1(00) ; GOTO_PT(81 13 C0 0F 30) ; NOPC(00)
+  off=01DC @0F6C  trig EAA4           <  0F58 : GOTO_PT(81 13 C0 0F 50)
+  off=01E4 @0F74  trig EA98+30h&FFF   >= 07D0 : SIGN(13 03 03)
+  off=01EA @0F7A  trig EA98+30h&FFF   >= 0850 : SETDIR(0F) ; CHECKPOINT x=1320 y=0EE0 (EB1C=x-18h) nextoff=01F4
+  off=01F4 @0F84  trig EA98+30h&FFF   >= 0850 : MSG(C14B)(0C) ; SIGN(13 03 03)
+  off=01FC @0F8C  trig EA98+30h&FFF   >= 0A50 : CHECKPOINT x=13A0 y=0E60 (EB1C=x-18h) nextoff=0204
+  off=0204 @0F94  trig EA98+30h&FFF   >= 0A50 : SIGN(13 03 03)
+  off=020A @0F9A  trig EA98+30h&FFF   >= 0BD0 : C271=1(00) ; GOTO_PT(02 13 20 0D 48) ; NOPC(01)
+  off=0216 @0FA6  trig EAA4           <  0D78 : GOTO_PT(02 13 20 0D 78)
+  off=021E @0FAE  trig EA9C+18h&3FFF  <  2080 : MSG(C14B)(0D) ; GOTO_PT(02 13 08 0D 60)
+  off=0228 @0FB8  trig EAA0+18h       <  1338 : GOTO_PT(02 13 38 0D 60)
+  off=0230 @0FC0  trig EA98+30h&FFF   <  0CB0 : SIGN(03 02 03)
+  off=0236 @0FC6  trig EA98+30h&FFF   <  0C30 : SETDIR(23) ; CHECKPOINT x=1280 y=0C80 (EB1C=x-18h) nextoff=0240
+  off=0240 @0FD0  trig EA98+30h&FFF   <  0C30 : SIGN(03 02 03)
+  off=0246 @0FD6  trig EA98+30h&FFF   <  0A30 : CHECKPOINT x=1200 y=0D00 (EB1C=x-18h) nextoff=024E
+  off=024E @0FDE  trig EA98+30h&FFF   <  0A30 : SIGN(03 02 03)
+  off=0254 @0FE4  trig EA98+30h&FFF   <  08B0 : C271=1(00) ; GOTO_PT(82 10 E8 0C 80)
+  off=025E @0FEE  trig EAA0+18h       <  1118 : MSG(C14B)(0E) ; SETDIR(1E) ; CHECKPOINT x=1100 y=0DA0 (EB1C=x-18h) nextoff=026A
+  off=026A @0FFA  trig EAA0+18h       <  105A : SIGN(04 03 02)
+  off=0270 @1000  trig EAA0+18h       <  0F38 : CHECKPOINT x=0F20 y=0DA0 (EB1C=x-18h) nextoff=0278
+  off=0278 @1008  trig EAA0+18h       <  0F38 : SIGN(04 03 02)
+  off=027E @100E  trig EAA0+18h       <  0EB8 : C271=1(00) ; GOTO_PT(81 0E B0 0C E0) ; NOPC(01)
+  off=028A @101A  trig EA9C+18h&3FFF  <  1B98 : GOTO_PT(81 0E A0 0C D0)
+  off=0292 @1022  trig EAA4           <  0CF8 : MSG(C14B)(0F) ; SETDIR(14) ; CHECKPOINT x=0DE0 y=0CE0 (EB1C=x-18h) nextoff=029E
+  off=029E @102E  trig EAA4           <  0C98 : SIGN(21 03 04)
+  off=02A4 @1034  trig EAA4           <  0AF8 : C271=1(00)
+  off=02A8 @1038  trig EAA4           <  0A86 : SIGN(20 03 05)
+  off=02AE @103E  trig EAA4           <  0918 : C271=1(00)
+  off=02B2 @1042  trig EAA4           <  08F8 : MSG(C14B)(10) ; SIGN(09 03 02)
+  off=02BA @104A  trig EAA4           <  07D8 : CHECKPOINT x=0DE0 y=07C0 (EB1C=x-18h) nextoff=02C2
+  off=02C2 @1052  trig EAA4           <  07D8 : SIGN(09 03 02)
+  off=02C8 @1058  trig EAA4           <  0758 : C271=1(00) ; GOTO_PT(02 0C C0 07 58) ; NOPC(00)
+  off=02D4 @1064  trig EA9C+18h&3FFF  <  1418 : MSG(C14B)(11) ; GOTO_PT(02 0C A8 07 40)
+  off=02DE @106E  trig EAA0+18h       <  0CD8 : SETDIR(1E) ; CHECKPOINT x=0CC0 y=0620 (EB1C=x-18h) nextoff=02E8
+  off=02E8 @1078  trig EAA0+18h       <  0BD8 : SIGN(14 03 04)
+  off=02EE @107E  trig EAA0+18h       <  0AD8 : MSG(C14B)(12) ; CHECKPOINT x=0AC0 y=0620 (EB1C=x-18h) nextoff=02F8
+  off=02F8 @1088  trig EAA0+18h       <  0AD8 : SIGN(14 03 04)
+  off=02FE @108E  trig EAA0+18h       <  0A38 : C271=1(00) ; GOTO_PT(01 0A 30 06 E0) ; NOPC(01)
+  off=030A @109A  trig EA98+30h&FFF   <  06F0 : SETDIR(23) ; CHECKPOINT x=09C0 y=0640 (EB1C=x-18h) nextoff=0314
+  off=0314 @10A4  trig EA98+30h&FFF   <  0630 : GOTO_PT(81 09 10 05 E0)
+  off=031C @10AC  trig EAA0+18h       <  0938 : SIGN(04 03 02)
+  off=0322 @10B2  trig EAA0+18h       <  0918 : MSG(C14B)(13) ; SETDIR(1E) ; CHECKPOINT x=0920 y=06A0 (EB1C=x-18h) nextoff=032E
+  off=032E @10BE  trig EAA0+18h       <  0918 : SIGN(04 03 02)
+  off=0334 @10C4  trig EAA0+18h       <  0838 : CHECKPOINT x=0820 y=06A0 (EB1C=x-18h) nextoff=033C
+  off=033C @10CC  trig EAA0+18h       <  0838 : SIGN(04 03 02)
+  off=0342 @10D2  trig EAA0+18h       <  07B8 : C271=1(00) ; GOTO_PT(81 07 B0 05 E0)
+  off=034C @10DC  trig EA9C+18h&3FFF  <  0D98 : GOTO_PT(82 07 E0 05 88)
+  off=0354 @10E4  trig EAA4           <  05B8 : SETDIR(14) ; CHECKPOINT x=06C0 y=05A0 (EB1C=x-18h) nextoff=035E
+  off=035E @10EE  trig EAA4           <  0518 : MSG(C14B)(14) ; SIGN(09 03 02) ; RACE_START(B6 00 AA)
+  off=036A @10FA  trig EAA4           <  04F8 : RACE_START2(14 00 87)
+  off=0370 @1100  trig EAA4           <  03F8 : CHECKPOINT x=06C0 y=03E0 (EB1C=x-18h) nextoff=0378
+  off=0378 @1108  trig EAA4           <  03F8 : SIGN(09 03 02)
+  off=037E @110E  trig EAA4           <  0378 : C271=1(00) ; GOTO_PT(02 05 A0 03 78) ; NOPC(00)
+  off=038A @111A  trig EA9C+18h&3FFF  <  08E4 : GOTO_PT(01 05 D0 03 20)
+  off=0392 @1122  trig EAA0+18h       <  05F8 : MSG(C14B)(15) ; SETDIR(1E) ; CHECKPOINT x=05E0 y=0260 (EB1C=x-18h) nextoff=039E
+  off=039E @112E  trig EAA0+18h       <  0518 : SIGN(0A 03 03)
+  off=03A4 @1134  trig EAA0+18h       <  03F8 : CHECKPOINT x=03E0 y=0260 (EB1C=x-18h) nextoff=03AC
+  off=03AC @113C  trig EAA0+18h       <  03F7 : SIGN(0A 03 03)
+  off=03B2 @1142  trig EAA0+18h       <  0378 : MSG(C14B)(16) ; C271=1(00) ; GOTO_PT(81 03 70 01 A0) ; NOPC(01)
+  off=03C0 @1150  trig EA9C+18h&3FFF  <  0518 : GOTO_PT(81 03 60 01 90)
+  off=03C8 @1158  trig EAA4           <  01B8 : GOTO_PT(81 03 60 01 B0)
+  off=03D0 @1160  trig EA98+30h&FFF   >= 01D0 : SIGN(0B 02 02)
+  off=03D6 @1166  trig EA98+30h&FFF   >= 02D0 : SETDIR(0F) ; CHECKPOINT x=02C0 y=0140 (EB1C=x-18h) nextoff=03E0
+  off=03E0 @1170  trig EA98+30h&FFF   >= 02D0 : SIGN(0B 02 02)
+  off=03E6 @1176  trig EA98+30h&FFF   >= 0450 : CHECKPOINT x=0320 y=00E0 (EB1C=x-18h) nextoff=03EE
+  off=03EE @117E  trig EA98+30h&FFF   >= 0450 : SIGN(0B 02 02)
+  off=03F4 @1184  trig EA98+30h&FFF   >= 05D0 : C271=1(00) ; GOTO_PT(02 02 A0 FF C8)
+  off=03FE @118E  trig EAA4           <  FFF8 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=03C0 y=FFE0 (EB1C=x-18h) nextoff=040A
+  off=040A @119A  trig EAA4           <  FDD8 : MSG(C14B)(18) ; FINISH(00)
+  off=0410 @11A0  trig EAA4           <  FD98 : C105=1(00) ; SIGN(00 DF D8) ; SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=0420
+  (end offset 0420, next base 11B0)
+=== STAGE 2  base=11A6 (len 982)
+  off=0000 @11A6  trig EAA4           <  1FD8 : SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=000A
+  off=000A @11B0  trig EAA4           <  1F58 : NOPC(00)
+  off=000E @11B4  trig EAA4           <  1E38 : SIGN(15 02 03)
+  off=0014 @11BA  trig EAA4           <  1D18 : CHECKPOINT x=1FE0 y=1D00 (EB1C=x-18h) nextoff=001C
+  off=001C @11C2  trig EAA4           <  1D18 : SIGN(15 02 03)
+  off=0022 @11C8  trig EAA4           <  1C98 : C271=1(00) ; MSG(C14B)(01) ; GOTO_PT(82 21 00 1C 98)
+  off=002E @11D4  trig EA98+30h&FFF   >= 07D0 : SIGN(0D 03 02)
+  off=0034 @11DA  trig EA98+30h&FFF   >= 0850 : SETDIR(0F) ; CHECKPOINT x=2020 y=1BE0 (EB1C=x-18h) nextoff=003E
+  off=003E @11E4  trig EA98+30h&FFF   >= 08D0 : SIGN(0D 03 02)
+  off=0044 @11EA  trig EA98+30h&FFF   >= 0A50 : CHECKPOINT x=20A0 y=1B60 (EB1C=x-18h) nextoff=004C
+  off=004C @11F2  trig EA98+30h&FFF   >= 0A50 : SIGN(0D 03 02)
+  off=0052 @11F8  trig EA98+30h&FFF   >= 0BD0 : C271=1(00) ; MSG(C14B)(02) ; GOTO_PT(02 20 20 1A 48) ; NOPC(01)
+  off=0060 @1206  trig EAA4           <  1A78 : GOTO_PT(02 20 20 1A 78)
+  off=0068 @120E  trig EA9C+18h&3FFF  <  3A98 : GOTO_PT(02 20 08 1A 60)
+  off=0070 @1216  trig EAA0+18h       <  2038 : MSG(C14B)(03) ; SETDIR(1E) ; CHECKPOINT x=2020 y=1940 (EB1C=x-18h) nextoff=007C
+  off=007C @1222  trig EAA0+18h       <  2038 : SIGN(10 02 04)
+  off=0082 @1228  trig EAA0+18h       <  1E98 : C271=1(00)
+  off=0086 @122C  trig EAA0+18h       <  1D98 : MSG(C14B)(04) ; SIGN(16 03 02)
+  off=008E @1234  trig EAA0+18h       <  1C78 : CHECKPOINT x=1C60 y=1940 (EB1C=x-18h) nextoff=0096
+  off=0096 @123C  trig EAA0+18h       <  1C78 : SIGN(16 03 02)
+  off=009C @1242  trig EAA0+18h       <  1BF8 : C271=1(00) ; GOTO_PT(82 1B F8 18 20) ; NOPC(00)
+  off=00A8 @124E  trig EA9C+18h&3FFF  <  3418 : MSG(C14B)(05) ; SETDIR(19) ; CHECKPOINT x=1B20 y=18E0 (EB1C=x-18h) nextoff=00B4
+  off=00B4 @125A  trig EA9C+18h&3FFF  <  3218 : SIGN(17 04 02)
+  off=00BA @1260  trig EA9C+18h&3FFF  <  30D8 : CHECKPOINT x=1980 y=1740 (EB1C=x-18h) nextoff=00C2
+  off=00C2 @1268  trig EA9C+18h&3FFF  <  30D8 : SIGN(17 04 02)
+  off=00C8 @126E  trig EA9C+18h&3FFF  <  3018 : MSG(C14B)(06) ; C271=1(00) ; GOTO_PT(02 18 48 17 A0) ; NOPC(01)
+  off=00D6 @127C  trig EAA0+18h       <  1878 : SETDIR(1E) ; CHECKPOINT x=1860 y=1680 (EB1C=x-18h) nextoff=00E0
+  off=00E0 @1286  trig EAA0+18h       <  1838 : GOTO_PT(82 18 38 15 60)
+  off=00E8 @128E  trig EA9C+18h&3FFF  <  2D98 : GOTO_PT(82 18 20 15 48)
+  off=00F0 @1296  trig EAA4           <  1578 : MSG(C14B)(07) ; SETDIR(14) ; CHECKPOINT x=1700 y=1560 (EB1C=x-18h) nextoff=00FC
+  off=00FC @12A2  trig EAA4           <  1518 : SIGN(15 02 03)
+  off=0102 @12A8  trig EAA4           <  13F8 : CHECKPOINT x=1700 y=13E0 (EB1C=x-18h) nextoff=010A
+  off=010A @12B0  trig EAA4           <  13F8 : SIGN(15 02 03)
+  off=0110 @12B6  trig EAA4           <  1378 : MSG(C14B)(08) ; C271=1(00) ; GOTO_PT(82 18 20 13 78)
+  off=011C @12C2  trig EA98+30h&FFF   >= 0850 : SIGN(13 03 03)
+  off=0122 @12C8  trig EA98+30h&FFF   >= 08D0 : SETDIR(0F) ; CHECKPOINT x=1740 y=12C0 (EB1C=x-18h) nextoff=012C
+  off=012C @12D2  trig EA98+30h&FFF   >= 0950 : SIGN(13 03 03)
+  off=0132 @12D8  trig EA98+30h&FFF   >= 0AD0 : CHECKPOINT x=17C0 y=1240 (EB1C=x-18h) nextoff=013A
+  off=013A @12E0  trig EA98+30h&FFF   >= 0AD0 : SIGN(13 03 03)
+  off=0140 @12E6  trig EA98+30h&FFF   >= 0C50 : MSG(C14B)(09) ; C271=1(00) ; GOTO_PT(02 17 40 11 28) ; NOPC(00)
+  off=014E @12F4  trig EAA4           <  1158 : GOTO_PT(02 17 40 11 58)
+  off=0156 @12FC  trig EA9C+18h&3FFF  <  2898 : GOTO_PT(02 17 28 11 40)
+  off=015E @1304  trig EAA0+18h       <  1758 : GOTO_PT(02 17 58 11 40)
+  off=0166 @130C  trig EA98+30h&FFF   <  0CB0 : MSG(C14B)(0A) ; SETDIR(23) ; CHECKPOINT x=16A0 y=1060 (EB1C=x-18h) nextoff=0172
+  off=0172 @1318  trig EA98+30h&FFF   <  0CB0 : SIGN(43 02 04)
+  off=0178 @131E  trig EA98+30h&FFF   <  08B0 : C271=1(00)
+  off=017C @1322  trig EA98+30h&FFF   <  0830 : SIGN(11 03 03)
+  off=0182 @1328  trig EA98+30h&FFF   <  05B0 : CHECKPOINT x=14E0 y=1220 (EB1C=x-18h) nextoff=018A
+  off=018A @1330  trig EA98+30h&FFF   <  05B0 : SIGN(11 03 03)
+  off=0190 @1336  trig EA98+30h&FFF   <  0430 : MSG(C14B)(0B) ; C271=1(00) ; GOTO_PT(82 13 C8 11 A0) ; NOPC(01)
+  off=019E @1344  trig EAA0+18h       <  13F8 : GOTO_PT(82 13 F8 11 A0)
+  off=01A6 @134C  trig EA9C+18h&3FFF  <  2E18 : GOTO_PT(82 13 E0 11 88)
+  off=01AE @1354  trig EAA4           <  11B8 : MSG(C14B)(0C) ; SETDIR(14) ; CHECKPOINT x=12C0 y=11A0 (EB1C=x-18h) nextoff=01BA
+  off=01BA @1360  trig EAA4           <  1098 : SIGN(18 04 02)
+  off=01C0 @1366  trig EAA4           <  0F78 : CHECKPOINT x=12C0 y=0F60 (EB1C=x-18h) nextoff=01C8
+  off=01C8 @136E  trig EAA4           <  0F78 : SIGN(18 04 02)
+  off=01CE @1374  trig EAA4           <  0EF8 : C271=1(00) ; GOTO_PT(02 11 A0 0E F8) ; NOPC(00)
+  off=01DA @1380  trig EA9C+18h&3FFF  <  2098 : GOTO_PT(82 13 20 0D 48)
+  off=01E2 @1388  trig EAA4           <  0D78 : MSG(C14B)(0D) ; SETDIR(14) ; CHECKPOINT x=1200 y=0D60 (EB1C=x-18h) nextoff=01EE
+  off=01EE @1394  trig EAA4           <  0CD8 : SIGN(00 03 02)
+  off=01F4 @139A  trig EAA4           <  0BB8 : CHECKPOINT x=1200 y=0BA0 (EB1C=x-18h) nextoff=01FC
+  off=01FC @13A2  trig EAA4           <  0BB8 : SIGN(00 03 02)
+  off=0202 @13A8  trig EAA4           <  0B38 : C271=1(00) ; GOTO_PT(02 10 E0 0B 38) ; NOPC(00)
+  off=020E @13B4  trig EA9C+18h&3FFF  <  1C18 : SETDIR(19) ; CHECKPOINT x=11A0 y=0A60 (EB1C=x-18h) nextoff=0218
+  off=0218 @13BE  trig EA9C+18h&3FFF  <  1B18 : SIGN(4A 03 04)
+  off=021E @13C4  trig EA9C+18h&3FFF  <  19D8 : CHECKPOINT x=1080 y=0940 (EB1C=x-18h) nextoff=0226
+  off=0226 @13CC  trig EA9C+18h&3FFF  <  19D8 : MSG(C14B)(0E) ; SIGN(4A 03 04)
+  off=022E @13D4  trig EA9C+18h&3FFF  <  1918 : C271=1(00) ; GOTO_PT(02 0F 48 09 A0) ; NOPC(01)
+  off=023A @13E0  trig EAA0+18h       <  0F78 : GOTO_PT(02 0F 78 09 A0)
+  off=0242 @13E8  trig EA98+30h&FFF   <  0C30 : GOTO_PT(82 0E 08 07 E0)
+  off=024A @13F0  trig EAA0+18h       <  0E38 : SETDIR(1E) ; CHECKPOINT x=0E20 y=0900 (EB1C=x-18h) nextoff=0254
+  off=0254 @13FA  trig EAA0+18h       <  0D98 : MSG(C14B)(0F) ; SIGN(29 04 04)
+  off=025C @1402  trig EAA0+18h       <  0D58 : RACE_START(B5 00 AF)
+  off=0262 @1408  trig EAA0+18h       <  0D38 : RACE_START2(1E 00 82)
+  off=0268 @140E  trig EAA0+18h       <  0C78 : CHECKPOINT x=0C60 y=0900 (EB1C=x-18h) nextoff=0270
+  off=0270 @1416  trig EAA0+18h       <  0C78 : SIGN(29 04 04)
+  off=0276 @141C  trig EAA0+18h       <  0BF8 : C271=1(00) ; GOTO_PT(02 0B F8 0A 20)
+  off=0280 @1426  trig EA98+30h&FFF   <  0430 : GOTO_PT(82 0A 88 08 60)
+  off=0288 @142E  trig EAA0+18h       <  0AB8 : MSG(C14B)(10) ; GOTO_PT(82 0A B8 08 60) ; NOPC(00)
+  off=0294 @143A  trig EA9C+18h&3FFF  <  1318 : GOTO_PT(82 0A A0 08 48)
+  off=029C @1442  trig EAA4           <  0878 : SETDIR(14) ; CHECKPOINT x=0980 y=0860 (EB1C=x-18h) nextoff=02A6
+  off=02A6 @144C  trig EAA4           <  0798 : SIGN(1D 05 05)
+  off=02AC @1452  trig EAA4           <  0778 : NOPC(01)
+  off=02B0 @1456  trig EAA4           <  0758 : RACE_START(B6 00 AA)
+  off=02B6 @145C  trig EAA4           <  0738 : RACE_START2(14 00 82)
+  off=02BC @1462  trig EAA4           <  0678 : CHECKPOINT x=0980 y=0660 (EB1C=x-18h) nextoff=02C4
+  off=02C4 @146A  trig EAA4           <  0678 : MSG(C14B)(11) ; SIGN(1D 05 05)
+  off=02CC @1472  trig EAA4           <  05F8 : C271=1(00) ; GOTO_PT(82 0A A0 05 F8)
+  off=02D6 @147C  trig EA98+30h&FFF   >= 08D0 : GOTO_PT(02 08 E0 04 88)
+  off=02DE @1484  trig EAA4           <  04B8 : MSG(C14B)(12) ; GOTO_PT(02 08 E0 04 B8) ; NOPC(00)
+  off=02EA @1490  trig EA9C+18h&3FFF  <  0D98 : GOTO_PT(82 0A 60 03 08)
+  off=02F2 @1498  trig EAA4           <  0378 : SIGN(05 03 03)
+  off=02F8 @149E  trig EAA4           <  0338 : SETDIR(14) ; CHECKPOINT x=0940 y=0320 (EB1C=x-18h) nextoff=0302
+  off=0302 @14A8  trig EAA4           <  0338 : SIGN(05 03 03)
+  off=0308 @14AE  trig EAA4           <  0278 : MSG(C14B)(13) ; CHECKPOINT x=0940 y=0260 (EB1C=x-18h) nextoff=0312
+  off=0312 @14B8  trig EAA4           <  0278 : SIGN(05 03 03)
+  off=0318 @14BE  trig EAA4           <  01F8 : C271=1(00) ; GOTO_PT(02 08 20 01 F8)
+  off=0322 @14C8  trig EA9C+18h&3FFF  <  0A18 : GOTO_PT(02 08 08 01 E0) ; NOPC(01)
+  off=032C @14D2  trig EAA0+18h       <  0838 : GOTO_PT(02 08 38 01 E0)
+  off=0334 @14DA  trig EA98+30h&FFF   <  0E30 : SIGN(1B 02 04)
+  off=033A @14E0  trig EA98+30h&FFF   <  0D30 : MSG(C14B)(14) ; SETDIR(23) ; CHECKPOINT x=0780 y=0100 (EB1C=x-18h) nextoff=0346
+  off=0346 @14EC  trig EA98+30h&FFF   <  0D30 : SIGN(1B 02 04)
+  off=034C @14F2  trig EA98+30h&FFF   <  0BB0 : CHECKPOINT x=0720 y=0160 (EB1C=x-18h) nextoff=0354
+  off=0354 @14FA  trig EA98+30h&FFF   <  0BB0 : SIGN(1B 02 04)
+  off=035A @1500  trig EA98+30h&FFF   <  0A30 : C271=1(00) ; GOTO_PT(82 06 08 00 E0)
+  off=0364 @150A  trig EAA0+18h       <  0638 : SETDIR(1E) ; CHECKPOINT x=0620 y=0200 (EB1C=x-18h) nextoff=036E
+  off=036E @1514  trig EAA0+18h       <  05F8 : MSG(C14B)(15) ; GOTO_PT(02 05 F8 03 20)
+  off=0378 @151E  trig EA98+30h&FFF   <  0630 : SETDIR(23) ; CHECKPOINT x=0540 y=0240 (EB1C=x-18h) nextoff=0382
+  off=0382 @1528  trig EA98+30h&FFF   <  0630 : SIGN(11 03 03)
+  off=0388 @152E  trig EA98+30h&FFF   <  04B0 : CHECKPOINT x=04E0 y=02A0 (EB1C=x-18h) nextoff=0390
+  off=0390 @1536  trig EA98+30h&FFF   <  04B0 : SIGN(11 03 03)
+  off=0396 @153C  trig EA98+30h&FFF   <  0330 : MSG(C14B)(16) ; C271=1(00) ; GOTO_PT(82 03 C8 02 20) ; NOPC(00)
+  off=03A4 @154A  trig EAA0+18h       <  03F8 : GOTO_PT(82 03 F8 02 20)
+  off=03AC @1552  trig EA9C+18h&3FFF  <  0618 : GOTO_PT(82 03 E0 02 08)
+  off=03B4 @155A  trig EAA4           <  0238 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=02C0 y=0220 (EB1C=x-18h) nextoff=03C0
+  off=03C0 @1566  trig EAA4           <  0238 : SIGN(20 03 05)
+  off=03C6 @156C  trig EAA4           <  0098 : C271=1(00)
+  off=03CA @1570  trig EAA4           <  FED8 : MSG(C14B)(18) ; FINISH(00)
+  off=03D0 @1576  trig EAA4           <  FEB8 : C105=1(00) ; SIGN(00 DF D8) ; SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=03E0
+  (end offset 03E0, next base 1586)
+=== STAGE 3  base=157C (len 962)
+  off=0000 @157C  trig EAA4           <  1FD8 : SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=000A
+  off=000A @1586  trig EAA4           <  1DD8 : SIGN(09 03 02)
+  off=0010 @158C  trig EAA4           <  1CD8 : MSG(C14B)(01) ; CHECKPOINT x=1FE0 y=1CC0 (EB1C=x-18h) nextoff=001A
+  off=001A @1596  trig EAA4           <  1CD8 : SIGN(09 03 02)
+  off=0020 @159C  trig EAA4           <  1C58 : C271=1(00) ; GOTO_PT(02 1E C0 1C 58) ; NOPC(00)
+  off=002C @15A8  trig EA9C+18h&3FFF  <  3B18 : GOTO_PT(02 1E A8 1C 40)
+  off=0034 @15B0  trig EAA0+18h       <  1ED8 : SETDIR(1E) ; CHECKPOINT x=1EC0 y=1B20 (EB1C=x-18h) nextoff=003E
+  off=003E @15BA  trig EAA0+18h       <  1E58 : MSG(C14B)(02) ; SIGN(02 02 03)
+  off=0046 @15C2  trig EAA0+18h       <  1D58 : CHECKPOINT x=1D50 y=1B10 (EB1C=x-18h) nextoff=004E
+  off=004E @15CA  trig EAA0+18h       <  1D58 : SIGN(02 02 03)
+  off=0054 @15D0  trig EAA0+18h       <  1CD8 : C271=1(00) ; GOTO_PT(02 1C D8 1C 40)
+  off=005E @15DA  trig EA98+30h&FFF   <  0230 : SIGN(03 02 02)
+  off=0064 @15E0  trig EA98+30h&FFF   <  01B0 : MSG(C14B)(03) ; SETDIR(23) ; CHECKPOINT x=1C20 y=1B60 (EB1C=x-18h) nextoff=0070
+  off=0070 @15EC  trig EA98+30h&FFF   <  0130 : SIGN(03 02 02)
+  off=0076 @15F2  trig EA98+30h&FFF   >= 0F50 : C105=1(00)
+  off=007A @15F6  trig EA98+30h&FFF   <  0FB0 : CHECKPOINT x=1FA0 y=17E0 (EB1C=x-18h) nextoff=0082
+  off=0082 @15FE  trig EA98+30h&FFF   <  0FB0 : SIGN(03 02 02)
+  off=0088 @1604  trig EA98+30h&FFF   <  0E30 : C271=1(00) ; GOTO_PT(82 1E 88 17 60)
+  off=0092 @160E  trig EAA0+18h       <  1EB8 : MSG(C14B)(04) ; SETDIR(1E) ; CHECKPOINT x=1EA0 y=1880 (EB1C=x-18h) nextoff=009E
+  off=009E @161A  trig EAA0+18h       <  1EB8 : SIGN(22 03 04)
+  off=00A4 @1620  trig EAA0+18h       <  1D18 : C271=1(00)
+  off=00A8 @1624  trig EAA0+18h       <  1D18 : SIGN(29 04 04)
+  off=00AE @162A  trig EAA0+18h       <  1BF8 : MSG(C14B)(05) ; CHECKPOINT x=1BE0 y=1880 (EB1C=x-18h) nextoff=00B8
+  off=00B8 @1634  trig EAA0+18h       <  1BF8 : SIGN(29 04 04)
+  off=00BE @163A  trig EAA0+18h       <  1B78 : C271=1(00) ; GOTO_PT(02 1B 78 19 A0)
+  off=00C8 @1644  trig EA98+30h&FFF   <  0430 : GOTO_PT(82 1A 08 17 E0)
+  off=00D0 @164C  trig EAA0+18h       <  1A38 : MSG(C14B)(06) ; GOTO_PT(82 1A 38 17 E0) ; NOPC(01)
+  off=00DC @1658  trig EA9C+18h&3FFF  <  3218 : GOTO_PT(82 1A 20 17 C8)
+  off=00E4 @1660  trig EAA4           <  17DA : SETDIR(14) ; CHECKPOINT x=1900 y=17E0 (EB1C=x-18h) nextoff=00EE
+  off=00EE @166A  trig EAA4           <  17DA : SIGN(20 03 05)
+  off=00F4 @1670  trig EAA4           <  1658 : C271=1(00)
+  off=00F8 @1674  trig EAA4           <  15D8 : MSG(C14B)(07) ; SIGN(00 03 02)
+  off=0100 @167C  trig EAA4           <  14B8 : CHECKPOINT x=1900 y=14A0 (EB1C=x-18h) nextoff=0108
+  off=0108 @1684  trig EAA4           <  14B8 : SIGN(00 03 02)
+  off=010E @168A  trig EAA4           <  1438 : C271=1(00) ; GOTO_PT(02 17 E0 14 38)
+  off=0118 @1694  trig EA9C+18h&3FFF  <  2C18 : MSG(C14B)(08) ; SETDIR(19) ; CHECKPOINT x=18A0 y=1360 (EB1C=x-18h) nextoff=0124
+  off=0124 @16A0  trig EA9C+18h&3FFF  <  2B98 : SIGN(2A 04 03)
+  off=012A @16A6  trig EA9C+18h&3FFF  <  2A58 : CHECKPOINT x=17C0 y=1280 (EB1C=x-18h) nextoff=0132
+  off=0132 @16AE  trig EA9C+18h&3FFF  <  2A58 : SIGN(2A 04 03)
+  off=0138 @16B4  trig EA9C+18h&3FFF  <  2998 : C271=1(00) ; GOTO_PT(82 18 20 11 48)
+  off=0142 @16BE  trig EAA4           <  1178 : SETDIR(14) ; CHECKPOINT x=1700 y=1160 (EB1C=x-18h) nextoff=014C
+  off=014C @16C8  trig EAA4           <  1138 : MSG(C14B)(09) ; GOTO_PT(02 15 E0 11 38) ; NOPC(00)
+  off=0158 @16D4  trig EA9C+18h&3FFF  <  2718 : SETDIR(19) ; CHECKPOINT x=16A0 y=1060 (EB1C=x-18h) nextoff=0162
+  off=0162 @16DE  trig EA9C+18h&3FFF  <  2718 : SIGN(01 02 02)
+  off=0168 @16E4  trig EA9C+18h&3FFF  <  25D8 : CHECKPOINT x=1600 y=0FC0 (EB1C=x-18h) nextoff=0170
+  off=0170 @16EC  trig EA9C+18h&3FFF  <  25D8 : SIGN(01 02 02)
+  off=0176 @16F2  trig EA9C+18h&3FFF  <  2518 : C271=1(00) ; GOTO_PT(02 14 C8 10 20)
+  off=0180 @16FC  trig EAA0+18h       <  14F8 : MSG(C14B)(0A) ; SETDIR(1E) ; CHECKPOINT x=14E0 y=0F00 (EB1C=x-18h) nextoff=018C
+  off=018C @1708  trig EAA0+18h       <  14F8 : SIGN(02 02 03)
+  off=0192 @170E  trig EAA0+18h       <  13F8 : CHECKPOINT x=13E0 y=0F00 (EB1C=x-18h) nextoff=019A
+  off=019A @1716  trig EAA0+18h       <  13F8 : SIGN(02 02 03)
+  off=01A0 @171C  trig EAA0+18h       <  1378 : C271=1(00) ; GOTO_PT(02 13 78 10 20)
+  off=01AA @1726  trig EA98+30h&FFF   <  0830 : SIGN(11 03 02)
+  off=01B0 @172C  trig EA98+30h&FFF   <  0730 : MSG(C14B)(0B) ; SETDIR(23) ; CHECKPOINT x=12C0 y=0F40 (EB1C=x-18h) nextoff=01BC
+  off=01BC @1738  trig EA98+30h&FFF   <  0730 : SIGN(11 03 02)
+  off=01C2 @173E  trig EA98+30h&FFF   <  05B0 : CHECKPOINT x=1260 y=0FA0 (EB1C=x-18h) nextoff=01CA
+  off=01CA @1746  trig EA98+30h&FFF   <  05B0 : SIGN(11 03 02)
+  off=01D0 @174C  trig EA98+30h&FFF   <  0430 : C271=1(00) ; GOTO_PT(82 11 48 0F 20) ; NOPC(01)
+  off=01DC @1758  trig EAA0+18h       <  1178 : GOTO_PT(82 11 78 0F 20)
+  off=01E4 @1760  trig EA9C+18h&3FFF  <  2098 : GOTO_PT(82 11 60 0F 08)
+  off=01EC @1768  trig EAA4           <  0F38 : MSG(C14B)(0C) ; SETDIR(14) ; CHECKPOINT x=1040 y=0F20 (EB1C=x-18h) nextoff=01F8
+  off=01F8 @1774  trig EAA4           <  0E98 : SIGN(2B 04 04)
+  off=01FE @177A  trig EAA4           <  0D78 : CHECKPOINT x=1040 y=0D60 (EB1C=x-18h) nextoff=0206
+  off=0206 @1782  trig EAA4           <  0D78 : SIGN(2B 04 04)
+  off=020C @1788  trig EAA4           <  0CF8 : MSG(C14B)(0D) ; C271=1(00) ; GOTO_PT(02 0F 20 0C F8)
+  off=0218 @1794  trig EA9C+18h&3FFF  <  1C18 : GOTO_PT(82 10 A0 0B 48)
+  off=0220 @179C  trig EAA4           <  0B78 : GOTO_PT(82 10 A0 0B 78)
+  off=0228 @17A4  trig EA98+30h&FFF   >= 08D0 : SIGN(42 02 04)
+  off=022E @17AA  trig EA98+30h&FFF   >= 09D0 : MSG(C14B)(0E) ; SETDIR(0F) ; CHECKPOINT x=0FC0 y=0AC0 (EB1C=x-18h) nextoff=023A
+  off=023A @17B6  trig EA98+30h&FFF   >= 09D0 : SIGN(42 02 04)
+  off=0240 @17BC  trig EA98+30h&FFF   >= 0DD0 : C271=1(00)
+  off=0244 @17C0  trig EA98+30h&FFF   >= 0F50 : MSG(C14B)(0F) ; SIGN(1A 03 03)
+  off=024C @17C8  trig EA98+30h&FFF   <  0230 : C105=1(00)
+  off=0250 @17CC  trig EA98+30h&FFF   >= 01D0 : CHECKPOINT x=0DC0 y=0CC0 (EB1C=x-18h) nextoff=0258
+  off=0258 @17D4  trig EA98+30h&FFF   >= 01D0 : SIGN(1A 03 03)
+  off=025E @17DA  trig EA98+30h&FFF   >= 0350 : C271=1(00) ; GOTO_PT(02 0D 40 0B A8)
+  off=0268 @17E4  trig EAA4           <  0BD8 : C271=1(00) ; GOTO_PT(02 0D 40 0B D8)
+  off=0272 @17EE  trig EA9C+18h&3FFF  <  1918 : MSG(C14B)(10) ; SETDIR(19) ; CHECKPOINT x=0E00 y=0B00 (EB1C=x-18h) nextoff=027E
+  off=027E @17FA  trig EA9C+18h&3FFF  <  1918 : SIGN(07 02 02)
+  off=0284 @1800  trig EA9C+18h&3FFF  <  17D8 : CHECKPOINT x=0D60 y=0A60 (EB1C=x-18h) nextoff=028C
+  off=028C @1808  trig EA9C+18h&3FFF  <  17D8 : SIGN(07 02 02)
+  off=0292 @180E  trig EA9C+18h&3FFF  <  1718 : C271=1(00) ; GOTO_PT(82 0D C0 09 28)
+  off=029C @1818  trig EAA4           <  0958 : SETDIR(14) ; CHECKPOINT x=0CA0 y=0940 (EB1C=x-18h) nextoff=02A6
+  off=02A6 @1822  trig EAA4           <  0938 : SIGN(09 03 02)
+  off=02AC @1828  trig EAA4           <  0818 : MSG(C14B)(11) ; CHECKPOINT x=0CA0 y=0800 (EB1C=x-18h) nextoff=02B6
+  off=02B6 @1832  trig EAA4           <  0818 : SIGN(09 03 02)
+  off=02BC @1838  trig EAA4           <  0798 : C271=1(00) ; GOTO_PT(02 0B 80 07 98) ; NOPC(00)
+  off=02C8 @1844  trig EA9C+18h&3FFF  <  1318 : GOTO_PT(02 0B 68 07 80)
+  off=02D0 @184C  trig EAA0+18h       <  0B98 : SETDIR(1E) ; CHECKPOINT x=0B80 y=0660 (EB1C=x-18h) nextoff=02DA
+  off=02DA @1856  trig EAA0+18h       <  0B78 : SIGN(4E 05 05)
+  off=02E0 @185C  trig EAA0+18h       <  0A58 : MSG(C14B)(12) ; CHECKPOINT x=0A40 y=0660 (EB1C=x-18h) nextoff=02EA
+  off=02EA @1866  trig EAA0+18h       <  0A58 : SIGN(4E 05 05)
+  off=02F0 @186C  trig EAA0+18h       <  09D8 : C271=1(00) ; GOTO_PT(82 09 D8 05 40) ; NOPC(00)
+  off=02FC @1878  trig EA9C+18h&3FFF  <  0F18 : GOTO_PT(02 08 28 06 C0)
+  off=0304 @1880  trig EAA0+18h       <  0858 : MSG(C14B)(13) ; GOTO_PT(02 08 58 06 C0)
+  off=030E @188A  trig EA98+30h&FFF   <  03B0 : GOTO_PT(82 06 E8 05 00)
+  off=0316 @1892  trig EAA0+18h       <  0718 : GOTO_PT(82 07 18 05 00)
+  off=031E @189A  trig EA9C+18h&3FFF  <  0C18 : MSG(C14B)(14) ; SETDIR(19) ; CHECKPOINT x=0640 y=05C0 (EB1C=x-18h) nextoff=032A
+  off=032A @18A6  trig EA9C+18h&3FFF  <  0A98 : MSG(C14B)(14) ; SIGN(12 02 03)
+  off=0332 @18AE  trig EA9C+18h&3FFF  <  0958 : CHECKPOINT x=04E0 y=0460 (EB1C=x-18h) nextoff=033A
+  off=033A @18B6  trig EA9C+18h&3FFF  <  0958 : SIGN(12 02 03)
+  off=0340 @18BC  trig EA9C+18h&3FFF  <  0898 : C271=1(00) ; GOTO_PT(82 05 40 03 28) ; NOPC(00)
+  off=034C @18C8  trig EAA4           <  0358 : GOTO_PT(82 05 40 03 58)
+  off=0354 @18D0  trig EA98+30h&FFF   >= 0350 : SIGN(2D 05 03) ; MSG(C14B)(15) ; SETDIR(0F) ; CHECKPOINT x=04A0 y=0260 (EB1C=x-18h) nextoff=0364
+  off=0364 @18E0  trig EA98+30h&FFF   >= 05D0 : CHECKPOINT x=0500 y=0200 (EB1C=x-18h) nextoff=036C
+  off=036C @18E8  trig EA98+30h&FFF   >= 05D0 : SIGN(2D 05 03)
+  off=0372 @18EE  trig EA98+30h&FFF   >= 0750 : C271=1(00) ; GOTO_PT(02 04 80 00 E8) ; NOPC(01)
+  off=037E @18FA  trig EAA4           <  0118 : GOTO_PT(02 04 80 01 18)
+  off=0386 @1902  trig EA9C+18h&3FFF  <  0598 : MSG(C14B)(16) ; GOTO_PT(02 04 68 01 00)
+  off=0390 @190C  trig EAA0+18h       <  0498 : SETDIR(1E) ; CHECKPOINT x=0480 y=FFE0 (EB1C=x-18h) nextoff=039A
+  off=039A @1916  trig EAA0+18h       <  0458 : GOTO_PT(82 04 58 FE C0)
+  off=03A2 @191E  trig EA9C+18h&3FFF  <  0318 : MSG(C14B)(17) ; GOTO_PT(82 04 40 FE A8)
+  off=03AC @1928  trig EAA4           <  FED8 : SETDIR(14) ; CHECKPOINT x=0320 y=FEC0 (EB1C=x-18h) nextoff=03B6
+  off=03B6 @1932  trig EAA4           <  FD78 : MSG(C14B)(18) ; FINISH(00)
+  off=03BC @1938  trig EAA4           <  FD38 : C105=1(00) ; SIGN(00 DF D8) ; SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=03CC
+  (end offset 03CC, next base 1948)
+=== STAGE 4  base=193E (len 1092)
+  off=0000 @193E  trig EAA4           <  1FD8 : SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=000A
+  off=000A @1948  trig EAA4           <  1E18 : SIGN(00 03 02)
+  off=0010 @194E  trig EAA4           <  1CF8 : CHECKPOINT x=1FE0 y=1CE0 (EB1C=x-18h) nextoff=0018
+  off=0018 @1956  trig EAA4           <  1CF8 : SIGN(00 03 02)
+  off=001E @195C  trig EAA4           <  1C78 : C271=1(00) ; MSG(C14B)(01) ; GOTO_PT(01 1F 20 1C 70)
+  off=002A @1968  trig EA9C+18h&3FFF  <  3B98 : SETDIR(19) ; CHECKPOINT x=1FA0 y=1BE0 (EB1C=x-18h) nextoff=0034
+  off=0034 @1972  trig EA9C+18h&3FFF  <  3B98 : SIGN(07 02 02)
+  off=003A @1978  trig EA9C+18h&3FFF  <  3A58 : CHECKPOINT x=1F00 y=1B40 (EB1C=x-18h) nextoff=0042
+  off=0042 @1980  trig EA9C+18h&3FFF  <  3A58 : SIGN(07 02 02)
+  off=0048 @1986  trig EA9C+18h&3FFF  <  3998 : C271=1(00) ; MSG(C14B)(02) ; GOTO_PT(82 1F 60 1A 08)
+  off=0054 @1992  trig EAA4           <  1A38 : SETDIR(14) ; CHECKPOINT x=1E40 y=1A20 (EB1C=x-18h) nextoff=005E
+  off=005E @199C  trig EAA4           <  19D8 : SIGN(15 02 03)
+  off=0064 @19A2  trig EAA4           <  18B8 : CHECKPOINT x=1E40 y=18A0 (EB1C=x-18h) nextoff=006C
+  off=006C @19AA  trig EAA4           <  18B8 : SIGN(15 02 03)
+  off=0072 @19B0  trig EAA4           <  1838 : MSG(C14B)(03) ; C271=1(00) ; GOTO_PT(82 1F 60 18 38)
+  off=007E @19BC  trig EA98+30h&FFF   >= 0DD0 : SETDIR(0F) ; CHECKPOINT x=1E80 y=1780 (EB1C=x-18h) nextoff=0088
+  off=0088 @19C6  trig EA98+30h&FFF   >= 0DD0 : SIGN(0B 02 03)
+  off=008E @19CC  trig EA98+30h&FFF   <  00B0 : C105=1(00)
+  off=0092 @19D0  trig EA98+30h&FFF   >= 0050 : CHECKPOINT x=1B20 y=1AE0 (EB1C=x-18h) nextoff=009A
+  off=009A @19D8  trig EA98+30h&FFF   >= 0050 : SIGN(0B 02 03)
+  off=00A0 @19DE  trig EA98+30h&FFF   >= 01D0 : C271=1(00) ; GOTO_PT(01 1A E0 1A 10)
+  off=00AA @19E8  trig EAA4           <  1A38 : SIGN(20 03 05)
+  off=00B0 @19EE  trig EAA4           <  1A18 : MSG(C14B)(04) ; SETDIR(14) ; CHECKPOINT x=1BA0 y=1A20 (EB1C=x-18h) nextoff=00BC
+  off=00BC @19FA  trig EAA4           <  1A18 : SIGN(20 03 05)
+  off=00C2 @1A00  trig EAA4           <  18B8 : C271=1(00)
+  off=00C6 @1A04  trig EAA4           <  1838 : CHECKPOINT x=1BA8 y=1820 (EB1C=x-18h) nextoff=00CE
+  off=00CE @1A0C  trig EAA4           <  17B8 : RACE_START(B6 00 AF)
+  off=00D4 @1A12  trig EAA4           <  1798 : RACE_START2(14 00 82)
+  off=00DA @1A18  trig EAA4           <  1758 : SIGN(50 05 04)
+  off=00E0 @1A1E  trig EAA4           <  1638 : MSG(C14B)(05) ; CHECKPOINT x=1BA0 y=1620 (EB1C=x-18h) nextoff=00EA
+  off=00EA @1A28  trig EAA4           <  1638 : SIGN(50 05 04)
+  off=00F0 @1A2E  trig EAA4           <  15B8 : C271=1(00) ; GOTO_PT(01 1A E0 15 B0)
+  off=00FA @1A38  trig EA9C+18h&3FFF  <  3098 : GOTO_PT(01 1A D0 15 A0)
+  off=0102 @1A40  trig EAA0+18h       <  1AF8 : GOTO_PT(01 1A F0 15 A0)
+  off=010A @1A48  trig EA98+30h&FFF   <  0B30 : GOTO_PT(81 1A 10 14 60)
+  off=0112 @1A50  trig EAA0+18h       <  1A38 : GOTO_PT(81 1A 30 14 60)
+  off=011A @1A58  trig EA9C+18h&3FFF  <  2E98 : MSG(C14B)(06) ; SETDIR(19) ; CHECKPOINT x=19A0 y=14E0 (EB1C=x-18h) nextoff=0126
+  off=0126 @1A64  trig EA9C+18h&3FFF  <  2D98 : SIGN(07 02 02)
+  off=012C @1A6A  trig EA9C+18h&3FFF  <  2C58 : CHECKPOINT x=1880 y=13C0 (EB1C=x-18h) nextoff=0134
+  off=0134 @1A72  trig EA9C+18h&3FFF  <  2BD8 : SIGN(07 02 02)
+  off=013A @1A78  trig EA9C+18h&3FFF  <  2B98 : C271=1(00) ; GOTO_PT(81 18 A0 12 D0)
+  off=0144 @1A82  trig EAA4           <  12F8 : MSG(C14B)(07) ; SETDIR(14) ; CHECKPOINT x=17E0 y=12E0 (EB1C=x-18h) nextoff=0150
+  off=0150 @1A8E  trig EAA4           <  1178 : RACE_START(B6 00 B4)
+  off=0156 @1A94  trig EAA4           <  1158 : RACE_START2(14 00 8C)
+  off=015C @1A9A  trig EAA4           <  1118 : SIGN(08 02 04)
+  off=0162 @1AA0  trig EAA4           <  1038 : MSG(C14B)(08) ; CHECKPOINT x=17D8 y=1028 (EB1C=x-18h) nextoff=016C
+  off=016C @1AAA  trig EAA4           <  1038 : SIGN(08 02 04)
+  off=0172 @1AB0  trig EAA4           >= 1378 : C105=1(00)
+  off=0176 @1AB4  trig EAA4           <  1378 : C271=1(00) ; GOTO_PT(81 14 A0 13 70) ; NOPC(01)
+  off=0182 @1AC0  trig EA98+30h&FFF   >= 01D0 : GOTO_PT(01 13 60 12 90)
+  off=018A @1AC8  trig EAA4           <  12B8 : MSG(C14B)(09) ; SETDIR(14) ; CHECKPOINT x=1420 y=12A0 (EB1C=x-18h) nextoff=0196
+  off=0196 @1AD4  trig EAA4           <  12B8 : SIGN(15 02 03)
+  off=019C @1ADA  trig EAA4           <  1198 : MSG(C14B)(0A) ; CHECKPOINT x=1420 y=1180 (EB1C=x-18h) nextoff=01A6
+  off=01A6 @1AE4  trig EAA4           <  1198 : SIGN(15 02 03)
+  off=01AC @1AEA  trig EAA4           <  1118 : C271=1(00) ; GOTO_PT(80 14 80 11 08)
+  off=01B6 @1AF4  trig EA98+30h&FFF   >= 06D0 : SETDIR(0F) ; CHECKPOINT x=1440 y=10C0 (EB1C=x-18h) nextoff=01C0
+  off=01C0 @1AFE  trig EA98+30h&FFF   >= 0850 : SIGN(0B 02 03)
+  off=01C6 @1B04  trig EA98+30h&FFF   >= 09D0 : CHECKPOINT x=1500 y=1000 (EB1C=x-18h) nextoff=01CE
+  off=01CE @1B0C  trig EA98+30h&FFF   >= 09D0 : SIGN(0B 02 03)
+  off=01D4 @1B12  trig EA98+30h&FFF   >= 0B50 : MSG(C14B)(0B) ; C271=1(00) ; GOTO_PT(02 14 80 0E E8) ; NOPC(00)
+  off=01E2 @1B20  trig EAA4           <  0F18 : LIGHT(C1A1)(00) ; SETDIR(14) ; CHECKPOINT x=15A0 y=0F00 (EB1C=x-18h) nextoff=01EE
+  off=01EE @1B2C  trig EAA4           <  0EB8 : SIGN(21 03 04)
+  off=01F4 @1B32  trig EAA4           >= 1118 : C105=1(00)
+  off=01F8 @1B36  trig EAA4           <  1118 : C271=1(00)
+  off=01FC @1B3A  trig EAA4           <  10F8 : MSG(C14B)(0C) ; SIGN(1D 05 05)
+  off=0204 @1B42  trig EAA4           <  0FD8 : CHECKPOINT x=11A0 y=0FC0 (EB1C=x-18h) nextoff=020C
+  off=020C @1B4A  trig EAA4           <  0FD8 : SIGN(1D 05 05)
+  off=0212 @1B50  trig EAA4           <  0F58 : C271=1(00) ; GOTO_PT(82 12 C0 0F 58)
+  off=021C @1B5A  trig EA98+30h&FFF   >= 0650 : MSG(C14B)(0D) ; GOTO_PT(01 11 40 0E 30)
+  off=0226 @1B64  trig EAA4           <  0E58 : GOTO_PT(01 11 40 0E 50)
+  off=022E @1B6C  trig EA9C+18h&3FFF  <  1F98 : GOTO_PT(80 12 00 0D 78)
+  off=0236 @1B74  trig EAA4           <  0D68 : SETDIR(14) ; CHECKPOINT x=11A0 y=0D80 (EB1C=x-18h) nextoff=0240
+  off=0240 @1B7E  trig EAA4           <  0BD8 : MSG(C14B)(0E) ; SIGN(09 03 02)
+  off=0248 @1B86  trig EAA4           <  0AB8 : CHECKPOINT x=11A0 y=0AA0 (EB1C=x-18h) nextoff=0250
+  off=0250 @1B8E  trig EAA4           <  0AB8 : SIGN(09 03 02)
+  off=0256 @1B94  trig EAA4           <  0A38 : C271=1(00) ; GOTO_PT(01 10 E0 0A 30) ; NOPC(01)
+  off=0262 @1BA0  trig EA9C+18h&3FFF  <  1B18 : GOTO_PT(01 10 D0 0A 20)
+  off=026A @1BA8  trig EAA0+18h       <  10F8 : MSG(C14B)(0F) ; SETDIR(1E) ; CHECKPOINT x=10E0 y=0960 (EB1C=x-18h) nextoff=0276
+  off=0276 @1BB4  trig EAA0+18h       <  1078 : SIGN(8F 05 03)
+  off=027C @1BBA  trig EAA0+18h       <  0F58 : CHECKPOINT x=0F40 y=0960 (EB1C=x-18h) nextoff=0284
+  off=0284 @1BC2  trig EAA0+18h       <  0F58 : SIGN(8F 05 03)
+  off=028A @1BC8  trig EAA0+18h       <  0ED8 : C271=1(00) ; GOTO_PT(82 0E D8 08 40)
+  off=0294 @1BD2  trig EA9C+18h&3FFF  <  1718 : GOTO_PT(81 0E 80 08 70)
+  off=029C @1BDA  trig EAA4           <  0898 : SETDIR(14) ; CHECKPOINT x=0DC0 y=0880 (EB1C=x-18h) nextoff=02A6
+  off=02A6 @1BE4  trig EAA4           <  0838 : MSG(C14B)(10) ; GOTO_PT(00 0D 60 08 28) ; NOPC(00)
+  off=02B2 @1BF0  trig EA9C+18h&3FFF  <  1598 : GOTO_PT(00 0D 60 08 18)
+  off=02BA @1BF8  trig EAA0+18h       <  0D78 : SETDIR(1E) ; CHECKPOINT x=0D60 y=07C0 (EB1C=x-18h) nextoff=02C4
+  off=02C4 @1C02  trig EAA0+18h       <  0D18 : SIGN(02 02 03)
+  off=02CA @1C08  trig EAA0+18h       <  0BF8 : CHECKPOINT x=0BE0 y=07C0 (EB1C=x-18h) nextoff=02D2
+  off=02D2 @1C10  trig EAA0+18h       <  0BF8 : SIGN(02 02 03)
+  off=02D8 @1C16  trig EAA0+18h       <  0B78 : C271=1(00) ; GOTO_PT(00 0B 60 08 28)
+  off=02E2 @1C20  trig EA98+30h&FFF   <  0730 : SIGN(03 02 02)
+  off=02E8 @1C26  trig EA98+30h&FFF   <  06B0 : SIGN(03 02 02)
+  off=02EE @1C2C  trig EA98+30h&FFF   <  0630 : MSG(C14B)(11) ; SETDIR(23) ; CHECKPOINT x=0B20 y=07E0 (EB1C=x-18h) nextoff=02FA
+  off=02FA @1C38  trig EA98+30h&FFF   <  0630 : SIGN(03 02 02)
+  off=0300 @1C3E  trig EA98+30h&FFF   <  0530 : CHECKPOINT x=0AC0 y=0840 (EB1C=x-18h) nextoff=0308
+  off=0308 @1C46  trig EA98+30h&FFF   <  0530 : SIGN(03 02 02)
+  off=030E @1C4C  trig EA98+30h&FFF   <  03B0 : C271=1(00) ; GOTO_PT(80 0A 18 08 60)
+  off=0318 @1C56  trig EAA0+18h       <  09F8 : SETDIR(1E) ; CHECKPOINT x=0A20 y=08C0 (EB1C=x-18h) nextoff=0322
+  off=0322 @1C60  trig EAA0+18h       >= 0C98 : C105=1(00)
+  off=0326 @1C64  trig EAA0+18h       <  0C98 : SIGN(04 03 02)
+  off=032C @1C6A  trig EAA0+18h       <  0B98 : MSG(C14B)(12) ; CHECKPOINT x=0B80 y=04C0 (EB1C=x-18h) nextoff=0336
+  off=0336 @1C74  trig EAA0+18h       <  0B98 : SIGN(04 03 02)
+  off=033C @1C7A  trig EAA0+18h       <  0B18 : LIGHT(C1A1)(01) ; C271=1(00) ; GOTO_PT(81 0B 10 04 00) ; NOPC(01)
+  off=034A @1C88  trig EA9C+18h&3FFF  <  0F18 : GOTO_PT(81 0B 00 03 F0)
+  off=0352 @1C90  trig EAA4           <  0418 : SETDIR(14) ; CHECKPOINT x=0A40 y=0400 (EB1C=x-18h) nextoff=035C
+  off=035C @1C9A  trig EAA4           <  0318 : RACE_START(B6 00 B4)
+  off=0362 @1CA0  trig EAA4           <  02F8 : RACE_START2(14 00 8C)
+  off=0368 @1CA6  trig EAA4           <  02D8 : MSG(C14B)(13) ; SIGN(15 02 03)
+  off=0370 @1CAE  trig EAA4           >= 05B8 : C105=1(00)
+  off=0374 @1CB2  trig EAA4           <  05B8 : CHECKPOINT x=0640 y=05A0 (EB1C=x-18h) nextoff=037C
+  off=037C @1CBA  trig EAA4           <  05B8 : SIGN(15 02 03)
+  off=0382 @1CC0  trig EAA4           <  0538 : C271=1(00) ; GOTO_PT(82 07 60 05 38) ; NOPC(00)
+  off=038E @1CCC  trig EA98+30h&FFF   >= 03D0 : SETDIR(0F) ; CHECKPOINT x=0680 y=0480 (EB1C=x-18h) nextoff=0398
+  off=0398 @1CD6  trig EA98+30h&FFF   >= 03D0 : SIGN(0D 03 03)
+  off=039E @1CDC  trig EA98+30h&FFF   >= 0550 : MSG(C14B)(14) ; CHECKPOINT x=06E0 y=0420 (EB1C=x-18h) nextoff=03A8
+  off=03A8 @1CE6  trig EA98+30h&FFF   >= 0550 : SIGN(0D 03 03)
+  off=03AE @1CEC  trig EA98+30h&FFF   >= 0650 : C271=1(00) ; GOTO_PT(00 07 00 03 78)
+  off=03B8 @1CF6  trig EA9C+18h&3FFF  <  0A98 : GOTO_PT(00 06 F8 03 80)
+  off=03C0 @1CFE  trig EAA0+18h       <  0718 : SETDIR(1E) ; CHECKPOINT x=0700 y=0320 (EB1C=x-18h) nextoff=03CA
+  off=03CA @1D08  trig EAA0+18h       <  05D8 : MSG(C14B)(15) ; SIGN(1E 04 04)
+  off=03D2 @1D10  trig EAA0+18h       <  05B8 : RACE_START(B5 00 AF)
+  off=03D8 @1D16  trig EAA0+18h       <  0598 : RACE_START2(1E 00 7F)
+  off=03DE @1D1C  trig EAA0+18h       <  04B8 : CHECKPOINT x=04A0 y=0320 (EB1C=x-18h) nextoff=03E6
+  off=03E6 @1D24  trig EAA0+18h       <  04B8 : SIGN(1E 04 04)
+  off=03EC @1D2A  trig EAA0+18h       <  0438 : C271=1(00) ; GOTO_PT(81 04 20 02 70) ; NOPC(01)
+  off=03F8 @1D36  trig EA9C+18h&3FFF  <  0698 : GOTO_PT(82 04 60 02 08)
+  off=0400 @1D3E  trig EAA4           <  0238 : MSG(C14B)(16) ; GOTO_PT(82 04 60 02 38)
+  off=040A @1D48  trig EA98+30h&FFF   >= 03D0 : SETDIR(0F) ; CHECKPOINT x=0380 y=0180 (EB1C=x-18h) nextoff=0414
+  off=0414 @1D52  trig EA98+30h&FFF   >= 0450 : GOTO_PT(01 03 00 00 F0)
+  off=041C @1D5A  trig EAA4           <  00D8 : SIGN(0F 02 05)
+  off=0422 @1D60  trig EAA4           <  00F8 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=03C0 y=0100 (EB1C=x-18h) nextoff=042E
+  off=042E @1D6C  trig EAA4           <  00F8 : SIGN(0F 02 05)
+  off=0434 @1D72  trig EAA4           <  FF78 : C271=1(00)
+  off=0438 @1D76  trig EAA4           <  FED8 : MSG(C14B)(18) ; FINISH(00)
+  off=043E @1D7C  trig EAA4           <  FED8 : C105=1(00) ; SIGN(00 DF 24) ; SETDIR(14) ; CHECKPOINT x=1F80 y=1F0C (EB1C=x-18h) nextoff=044E
+  (end offset 044E, next base 1D8C)
+=== STAGE 5  base=1D82 (len 990)
+  off=0000 @1D82  trig EAA4           <  1F24 : SETDIR(14) ; CHECKPOINT x=1F80 y=1F0C (EB1C=x-18h) nextoff=000A
+  off=000A @1D8C  trig EAA4           <  1E98 : SIGN(15 02 03)
+  off=0010 @1D92  trig EAA4           <  1D78 : CHECKPOINT x=1F80 y=1D60 (EB1C=x-18h) nextoff=0018
+  off=0018 @1D9A  trig EAA4           <  1D78 : SIGN(15 02 03)
+  off=001E @1DA0  trig EAA4           <  1CF8 : MSG(C14B)(01) ; C271=1(00) ; GOTO_PT(82 20 A0 1C F8) ; NOPC(00)
+  off=002C @1DAE  trig EA98+30h&FFF   >= 06D0 : SETDIR(0F) ; CHECKPOINT x=1FC0 y=1C40 (EB1C=x-18h) nextoff=0036
+  off=0036 @1DB8  trig EA98+30h&FFF   >= 07D0 : SIGN(1A 03 03)
+  off=003C @1DBE  trig EA98+30h&FFF   >= 0A50 : CHECKPOINT x=20A0 y=1B60 (EB1C=x-18h) nextoff=0044
+  off=0044 @1DC6  trig EA98+30h&FFF   >= 0A50 : SIGN(1A 03 03)
+  off=004A @1DCC  trig EA98+30h&FFF   >= 0BD0 : C271=1(00) ; GOTO_PT(02 20 20 1A 48)
+  off=0054 @1DD6  trig EAA4           <  1A78 : MSG(C14B)(02) ; GOTO_PT(02 20 20 1A 78)
+  off=005E @1DE0  trig EA9C+18h&3FFF  <  3A98 : SETDIR(19) ; CHECKPOINT x=20E0 y=19A0 (EB1C=x-18h) nextoff=0068
+  off=0068 @1DEA  trig EA9C+18h&3FFF  <  3998 : SIGN(01 02 02)
+  off=006E @1DF0  trig EA9C+18h&3FFF  <  3858 : CHECKPOINT x=1FC0 y=1880 (EB1C=x-18h) nextoff=0076
+  off=0076 @1DF8  trig EA9C+18h&3FFF  <  3858 : SIGN(01 02 02)
+  off=007C @1DFE  trig EA9C+18h&3FFF  <  3798 : MSG(C14B)(03) ; C271=1(00) ; GOTO_PT(01 1E D0 18 A0)
+  off=0088 @1E0A  trig EAA0+18h       <  1EF8 : SIGN(16 03 02)
+  off=008E @1E10  trig EAA0+18h       <  1ED8 : SETDIR(1E) ; CHECKPOINT x=1EE0 y=17E0 (EB1C=x-18h) nextoff=0098
+  off=0098 @1E1A  trig EAA0+18h       <  1ED8 : SIGN(16 03 02)
+  off=009E @1E20  trig EAA0+18h       <  1DD8 : CHECKPOINT x=1DC0 y=17E0 (EB1C=x-18h) nextoff=00A6
+  off=00A6 @1E28  trig EAA0+18h       <  1DD8 : SIGN(16 03 02)
+  off=00AC @1E2E  trig EAA0+18h       <  1D58 : MSG(C14B)(04) ; C271=1(00) ; GOTO_PT(82 1D 58 16 C0)
+  off=00B8 @1E3A  trig EA9C+18h&3FFF  <  3418 : SETDIR(19) ; CHECKPOINT x=1C80 y=1780 (EB1C=x-18h) nextoff=00C2
+  off=00C2 @1E44  trig EA9C+18h&3FFF  <  3398 : SIGN(01 02 02)
+  off=00C8 @1E4A  trig EA9C+18h&3FFF  <  3258 : CHECKPOINT x=1BA0 y=16A0 (EB1C=x-18h) nextoff=00D0
+  off=00D0 @1E52  trig EA9C+18h&3FFF  <  3258 : SIGN(01 02 02)
+  off=00D6 @1E58  trig EA9C+18h&3FFF  <  3198 : MSG(C14B)(05) ; C271=1(00) ; GOTO_PT(02 1A 68 17 00) ; NOPC(01)
+  off=00E4 @1E66  trig EAA0+18h       <  1A98 : SETDIR(1E) ; CHECKPOINT x=1A80 y=15E0 (EB1C=x-18h) nextoff=00EE
+  off=00EE @1E70  trig EAA0+18h       <  1898 : SIGN(0A 03 03)
+  off=00F4 @1E76  trig EAA0+18h       <  1778 : MSG(C14B)(06) ; CHECKPOINT x=1760 y=15E0 (EB1C=x-18h) nextoff=00FE
+  off=00FE @1E80  trig EAA0+18h       <  1778 : SIGN(0A 03 03)
+  off=0104 @1E86  trig EAA0+18h       <  16F8 : C271=1(00) ; GOTO_PT(81 16 F0 15 20)
+  off=010E @1E90  trig EA9C+18h&3FFF  <  2C18 : GOTO_PT(81 16 E0 15 10) ; NOPC(01)
+  off=0118 @1E9A  trig EAA4           <  1518 : GOTO_PT(81 16 E0 15 30)
+  off=0120 @1EA2  trig EA98+30h&FFF   >= 02D0 : MSG(C14B)(07) ; SETDIR(0F) ; CHECKPOINT x=1640 y=14C0 (EB1C=x-18h) nextoff=012C
+  off=012C @1EAE  trig EA98+30h&FFF   >= 06D0 : RACE_START(B7 00 B4)
+  off=0132 @1EB4  trig EA98+30h&FFF   >= 0710 : RACE_START2(0F 00 8C)
+  off=0138 @1EBA  trig EA98+30h&FFF   >= 07D0 : SIGN(1A 03 02)
+  off=013E @1EC0  trig EA98+30h&FFF   >= 0A50 : MSG(C14B)(08) ; CHECKPOINT x=1820 y=12E0 (EB1C=x-18h) nextoff=0148
+  off=0148 @1ECA  trig EA98+30h&FFF   >= 0A50 : SIGN(1A 03 02)
+  off=014E @1ED0  trig EA98+30h&FFF   >= 0BD0 : C271=1(00) ; GOTO_PT(02 17 A0 11 C8)
+  off=0158 @1EDA  trig EAA4           <  11F8 : GOTO_PT(02 17 A0 11 F8)
+  off=0160 @1EE2  trig EA9C+18h&3FFF  <  2998 : MSG(C14B)(09) ; SETDIR(19) ; CHECKPOINT x=1860 y=1120 (EB1C=x-18h) nextoff=016C
+  off=016C @1EEE  trig EA9C+18h&3FFF  <  2998 : SIGN(19 02 03)
+  off=0172 @1EF4  trig EA9C+18h&3FFF  <  2858 : CHECKPOINT x=17C0 y=1080 (EB1C=x-18h) nextoff=017A
+  off=017A @1EFC  trig EA9C+18h&3FFF  <  2858 : SIGN(19 02 03)
+  off=0180 @1F02  trig EA9C+18h&3FFF  <  2798 : MSG(C14B)(0A) ; C271=1(00) ; GOTO_PT(02 16 88 10 E0) ; NOPC(00)
+  off=018E @1F10  trig EAA0+18h       <  16B8 : GOTO_PT(02 16 B8 10 E0)
+  off=0196 @1F18  trig EA98+30h&FFF   <  0C30 : SETDIR(23) ; CHECKPOINT x=1600 y=1000 (EB1C=x-18h) nextoff=01A0
+  off=01A0 @1F22  trig EA98+30h&FFF   <  0A30 : SIGN(03 02 02)
+  off=01A6 @1F28  trig EA98+30h&FFF   <  07B0 : CHECKPOINT x=14E0 y=1120 (EB1C=x-18h) nextoff=01AE
+  off=01AE @1F30  trig EA98+30h&FFF   <  07B0 : SIGN(03 02 02)
+  off=01B4 @1F36  trig EA98+30h&FFF   <  0630 : C271=1(00) ; GOTO_PT(82 13 C8 10 A0)
+  off=01BE @1F40  trig EAA0+18h       <  1418 : SIGN(04 03 02)
+  off=01C4 @1F46  trig EAA0+18h       <  13F8 : MSG(C14B)(0B) ; SETDIR(1E) ; CHECKPOINT x=1400 y=11C0 (EB1C=x-18h) nextoff=01D0
+  off=01D0 @1F52  trig EAA0+18h       <  13F8 : SIGN(04 03 02)
+  off=01D6 @1F58  trig EAA0+18h       <  12F8 : CHECKPOINT x=12E0 y=11C0 (EB1C=x-18h) nextoff=01DE
+  off=01DE @1F60  trig EAA0+18h       <  12F8 : SIGN(04 03 02)
+  off=01E4 @1F66  trig EAA0+18h       <  1278 : C271=1(00) ; GOTO_PT(82 12 78 10 A0)
+  off=01EE @1F70  trig EA9C+18h&3FFF  <  2318 : MSG(C14B)(0C) ; GOTO_PT(82 12 60 10 88) ; NOPC(01)
+  off=01FA @1F7C  trig EAA4           <  10B8 : SETDIR(14) ; CHECKPOINT x=1140 y=10A0 (EB1C=x-18h) nextoff=0204
+  off=0204 @1F86  trig EA9C+18h&3FFF  <  2118 : C105=1(00)
+  off=0208 @1F8A  trig EAA4           <  0F18 : NOPC(00)
+  off=020C @1F8E  trig EAA4           <  0F08 : RACE_START(B6 00 A0)
+  off=0212 @1F94  trig EAA4           <  0EE8 : RACE_START2(14 00 82)
+  off=0218 @1F9A  trig EAA4           <  0D08 : RACE_START(B6 00 B4)
+  off=021E @1FA0  trig EAA4           <  0CE8 : RACE_START2(14 00 8C)
+  off=0224 @1FA6  trig EAA4           <  0CB8 : MSG(C14B)(0D) ; SIGN(09 03 02)
+  off=022C @1FAE  trig EAA4           <  0B98 : CHECKPOINT x=1140 y=0B80 (EB1C=x-18h) nextoff=0234
+  off=0234 @1FB6  trig EAA4           <  0B98 : SIGN(09 03 02)
+  off=023A @1FBC  trig EAA4           <  0B18 : C271=1(00) ; GOTO_PT(01 10 80 0B 10)
+  off=0244 @1FC6  trig EA9C+18h&3FFF  <  1B98 : MSG(C14B)(0E) ; GOTO_PT(01 10 70 0B 00) ; NOPC(01)
+  off=0250 @1FD2  trig EAA0+18h       <  1098 : SETDIR(1E) ; CHECKPOINT x=1080 y=0A40 (EB1C=x-18h) nextoff=025A
+  off=025A @1FDC  trig EAA0+18h       <  1038 : SIGN(0A 03 03)
+  off=0260 @1FE2  trig EAA0+18h       <  0F18 : MSG(C14B)(0F) ; CHECKPOINT x=0F00 y=0A40 (EB1C=x-18h) nextoff=026A
+  off=026A @1FEC  trig EAA0+18h       <  0F18 : SIGN(0A 03 03)
+  off=0270 @1FF2  trig EAA0+18h       <  0E98 : C271=1(00) ; GOTO_PT(81 0E 90 09 80)
+  off=027A @1FFC  trig EA9C+18h&3FFF  <  1818 : GOTO_PT(81 0E 80 09 70)
+  off=0282 @2004  trig EAA4           <  0998 : GOTO_PT(81 0E 80 09 90)
+  off=028A @200C  trig EA98+30h&FFF   >= 0950 : SETDIR(0F) ; CHECKPOINT x=0DE0 y=0920 (EB1C=x-18h) nextoff=0294
+  off=0294 @2016  trig EA98+30h&FFF   >= 0950 : SIGN(0D 03 03)
+  off=029A @201C  trig EA98+30h&FFF   >= 0BD0 : MSG(C14B)(10) ; CHECKPOINT x=0E80 y=0880 (EB1C=x-18h) nextoff=02A4
+  off=02A4 @2026  trig EA98+30h&FFF   >= 0BD0 : SIGN(0D 03 03)
+  off=02AA @202C  trig EA98+30h&FFF   >= 0D50 : C271=1(00) ; GOTO_PT(01 0E 40 07 B0)
+  off=02B4 @2036  trig EAA4           <  07D8 : GOTO_PT(01 0E 40 07 D0) ; NOPC(00)
+  off=02BE @2040  trig EA9C+18h&3FFF  <  1618 : GOTO_PT(02 0D E8 08 00)
+  off=02C6 @2048  trig EAA0+18h       <  0E18 : SETDIR(1E) ; CHECKPOINT x=0E00 y=06E0 (EB1C=x-18h) nextoff=02D0
+  off=02D0 @2052  trig EAA0+18h       <  0D78 : SIGN(0C 03 03)
+  off=02D6 @2058  trig EAA0+18h       <  0C58 : CHECKPOINT x=0C40 y=06E0 (EB1C=x-18h) nextoff=02DE
+  off=02DE @2060  trig EAA0+18h       <  0C58 : SIGN(0C 03 03)
+  off=02E4 @2066  trig EAA0+18h       <  0BD8 : C271=1(00) ; GOTO_PT(82 0B D8 05 C0)
+  off=02EE @2070  trig EA9C+18h&3FFF  <  1198 : MSG(C14B)(12) ; SETDIR(19) ; CHECKPOINT x=0B00 y=0680 (EB1C=x-18h) nextoff=02FA
+  off=02FA @207C  trig EA9C+18h&3FFF  <  1098 : GOTO_PT(02 09 A8 06 C0) ; NOPC(01)
+  off=0304 @2086  trig EAA0+18h       <  09D8 : SETDIR(1E) ; CHECKPOINT x=09C0 y=05A0 (EB1C=x-18h) nextoff=030E
+  off=030E @2090  trig EAA0+18h       <  09D8 : SIGN(1F 03 05)
+  off=0314 @2096  trig EAA0+18h       <  0858 : C271=1(00)
+  off=0318 @209A  trig EAA0+18h       <  0858 : CHECKPOINT x=0840 y=05A0 (EB1C=x-18h) nextoff=0320
+  off=0320 @20A2  trig EAA0+18h       <  0858 : MSG(C14B)(13) ; SIGN(04 03 02)
+  off=0328 @20AA  trig EAA0+18h       <  06B8 : C271=1(00) ; GOTO_PT(81 06 B0 04 E0)
+  off=0332 @20B4  trig EA9C+18h&3FFF  <  0B98 : GOTO_PT(81 06 A0 04 D0)
+  off=033A @20BC  trig EAA4           <  04F8 : SETDIR(14) ; CHECKPOINT x=05E0 y=04E0 (EB1C=x-18h) nextoff=0344
+  off=0344 @20C6  trig EAA4           <  0498 : MSG(C14B)(14) ; SIGN(00 03 02)
+  off=034C @20CE  trig EAA4           <  0378 : CHECKPOINT x=05E0 y=0360 (EB1C=x-18h) nextoff=0354
+  off=0354 @20D6  trig EAA4           <  0378 : SIGN(00 03 02)
+  off=035A @20DC  trig EAA4           <  02F8 : C271=1(00) ; GOTO_PT(01 05 20 02 F0)
+  off=0364 @20E6  trig EA9C+18h&3FFF  <  0818 : SETDIR(19) ; CHECKPOINT x=05A0 y=0260 (EB1C=x-18h) nextoff=036E
+  off=036E @20F0  trig EA9C+18h&3FFF  <  0618 : MSG(C14B)(15) ; SIGN(12 02 03)
+  off=0376 @20F8  trig EA9C+18h&3FFF  <  04D8 : CHECKPOINT x=0400 y=00C0 (EB1C=x-18h) nextoff=037E
+  off=037E @2100  trig EA9C+18h&3FFF  <  04D8 : SIGN(12 02 03)
+  off=0384 @2106  trig EA9C+18h&3FFF  <  0418 : C271=1(00) ; GOTO_PT(81 04 20 FF D0)
+  off=038E @2110  trig EAA4           <  FFF8 : GOTO_PT(81 04 20 FF F0) ; NOPC(00)
+  off=0398 @211A  trig EA98+30h&FFF   >= 07D0 : SETDIR(0F) ; CHECKPOINT x=0380 y=FF80 (EB1C=x-18h) nextoff=03A2
+  off=03A2 @2124  trig EA98+30h&FFF   >= 08D0 : MSG(C14B)(16) ; SIGN(0B 02 03)
+  off=03AA @212C  trig EA98+30h&FFF   >= 0B50 : CHECKPOINT x=0460 y=FEA0 (EB1C=x-18h) nextoff=03B2
+  off=03B2 @2134  trig EA98+30h&FFF   >= 0B50 : SIGN(0B 02 03)
+  off=03B8 @213A  trig EA98+30h&FFF   >= 0CD0 : C271=1(00) ; GOTO_PT(02 03 E0 FD 88)
+  off=03C2 @2144  trig EAA4           <  FDB8 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=0500 y=FDA0 (EB1C=x-18h) nextoff=03CE
+  off=03CE @2150  trig EAA4           >= 0018 : C105=1(00)
+  off=03D2 @2154  trig EAA4           <  0018 : MSG(C14B)(18) ; FINISH(00)
+  off=03D8 @215A  trig EAA4           <  0018 : C105=1(00) ; SIGN(00 DF 88) ; SETDIR(14) ; CHECKPOINT x=2020 y=1F6C (EB1C=x-18h) nextoff=03E8
+  (end offset 03E8, next base 216A)
+=== STAGE 6  base=2160 (len 964)
+  off=0000 @2160  trig EAA4           <  1F88 : SETDIR(14) ; CHECKPOINT x=2020 y=1F6C (EB1C=x-18h) nextoff=000A
+  off=000A @216A  trig EAA4           <  1F58 : MSG(C14B)(01) ; NOPC(00)
+  off=0010 @2170  trig EAA4           <  1CD8 : SIGN(09 03 02)
+  off=0016 @2176  trig EAA4           <  1BB8 : CHECKPOINT x=2020 y=1BA0 (EB1C=x-18h) nextoff=001E
+  off=001E @217E  trig EAA4           <  1BB8 : MSG(C14B)(02) ; SIGN(09 03 02)
+  off=0026 @2186  trig EAA4           <  1B38 : C271=1(00) ; GOTO_PT(01 1F 60 1B 30) ; NOPC(01)
+  off=0032 @2192  trig EA9C+18h&3FFF  <  3A98 : GOTO_PT(01 1F 50 1B 20)
+  off=003A @219A  trig EAA0+18h       <  1F78 : SETDIR(1E) ; CHECKPOINT x=1F60 y=1A60 (EB1C=x-18h) nextoff=0044
+  off=0044 @21A4  trig EAA0+18h       <  1EFA : SIGN(22 03 04)
+  off=004A @21AA  trig EAA0+18h       <  1D58 : MSG(C14B)(03) ; C271=1(00)
+  off=0050 @21B0  trig EAA0+18h       <  1CB8 : SIGN(04 03 02)
+  off=0056 @21B6  trig EAA0+18h       <  1B98 : CHECKPOINT x=1B80 y=1A60 (EB1C=x-18h) nextoff=005E
+  off=005E @21BE  trig EAA0+18h       <  1B98 : SIGN(04 03 02)
+  off=0064 @21C4  trig EAA0+18h       <  1B18 : C271=1(00) ; GOTO_PT(80 1B 0C 1A 00)
+  off=006E @21CE  trig EA9C+18h&3FFF  <  3518 : GOTO_PT(80 1B 00 19 F8)
+  off=0076 @21D6  trig EAA4           <  1A18 : MSG(C14B)(04) ; SETDIR(14) ; CHECKPOINT x=1AA0 y=1A00 (EB1C=x-18h) nextoff=0082
+  off=0082 @21E2  trig EAA4           <  19B8 : SIGN(4B 03 03)
+  off=0088 @21E8  trig EAA4           <  1898 : CHECKPOINT x=1AA0 y=1880 (EB1C=x-18h) nextoff=0090
+  off=0090 @21F0  trig EAA4           <  1898 : SIGN(4B 03 03)
+  off=0096 @21F6  trig EAA4           <  1818 : C271=1(00) ; GOTO_PT(80 1B 00 18 08) ; NOPC(00)
+  off=00A2 @2202  trig EA98+30h&FFF   >= 0590 : GOTO_PT(00 1A 80 17 78)
+  off=00AA @220A  trig EAA4           <  1768 : MSG(C14B)(05) ; SETDIR(14) ; CHECKPOINT x=1AE0 y=1780 (EB1C=x-18h) nextoff=00B6
+  off=00B6 @2216  trig EAA4           <  15B8 : SIGN(4C 06 04)
+  off=00BC @221C  trig EAA4           <  1498 : CHECKPOINT x=1AE0 y=1480 (EB1C=x-18h) nextoff=00C4
+  off=00C4 @2224  trig EAA4           <  1498 : MSG(C14B)(06) ; SIGN(4C 06 04)
+  off=00CC @222C  trig EAA4           <  1418 : C271=1(00) ; GOTO_PT(00 1A 80 14 08)
+  off=00D6 @2236  trig EA9C+18h&3FFF  <  2E98 : GOTO_PT(80 1B 00 13 78) ; NOPC(01)
+  off=00E0 @2240  trig EAA4           <  1398 : GOTO_PT(02 19 80 13 98)
+  off=00E8 @2248  trig EA9C+18h&3FFF  <  2D18 : GOTO_PT(02 19 68 13 80)
+  off=00F0 @2250  trig EAA0+18h       <  1978 : MSG(C14B)(07) ; GOTO_PT(81 19 70 11 A0)
+  off=00FA @225A  trig EA9C+18h&3FFF  <  2B18 : GOTO_PT(82 19 A0 11 48)
+  off=0102 @2262  trig EAA4           <  1178 : GOTO_PT(82 19 A0 11 78)
+  off=010A @226A  trig EA98+30h&FFF   >= 0F90 : SETDIR(0F) ; CHECKPOINT x=18B0 y=10D0 (EB1C=x-18h) nextoff=0114
+  off=0114 @2274  trig EA98+30h&FFF   <  0330 : C105=1(00)
+  off=0118 @2278  trig EA98+30h&FFF   >= 0050 : SIGN(4D 03 03)
+  off=011E @227E  trig EA98+30h&FFF   >= 02D0 : MSG(C14B)(08) ; CHECKPOINT x=1580 y=1400 (EB1C=x-18h) nextoff=0128
+  off=0128 @2288  trig EA98+30h&FFF   >= 02D0 : SIGN(4D 03 03)
+  off=012E @228E  trig EA98+30h&FFF   >= 0450 : C271=1(00) ; GOTO_PT(01 15 40 13 30) ; NOPC(00)
+  off=013A @229A  trig EAA4           <  1358 : GOTO_PT(01 15 40 13 50)
+  off=0142 @22A2  trig EA9C+18h&3FFF  <  2898 : GOTO_PT(81 16 40 12 30)
+  off=014A @22AA  trig EAA4           <  1258 : GOTO_PT(81 16 40 12 50)
+  off=0152 @22B2  trig EA98+30h&FFF   >= 0750 : GOTO_PT(01 15 00 11 70)
+  off=015A @22BA  trig EAA4           <  1198 : MSG(C14B)(09) ; SETDIR(14) ; CHECKPOINT x=15C0 y=1180 (EB1C=x-18h) nextoff=0166
+  off=0166 @22C6  trig EAA4           <  1098 : SIGN(09 03 02)
+  off=016C @22CC  trig EAA4           <  0F78 : MSG(C14B)(0A) ; CHECKPOINT x=15C0 y=0F60 (EB1C=x-18h) nextoff=0176
+  off=0176 @22D6  trig EAA4           <  0F78 : SIGN(09 03 02)
+  off=017C @22DC  trig EAA4           <  0EF8 : C271=1(00) ; GOTO_PT(02 14 A0 0E F8) ; NOPC(01)
+  off=0188 @22E8  trig EA9C+18h&3FFF  <  2398 : GOTO_PT(02 14 88 0E E0)
+  off=0190 @22F0  trig EAA0+18h       <  14B8 : SETDIR(1E) ; CHECKPOINT x=14A0 y=0DC0 (EB1C=x-18h) nextoff=019A
+  off=019A @22FA  trig EAA0+18h       <  1498 : SIGN(22 03 04)
+  off=01A0 @2300  trig EAA0+18h       <  12F8 : C271=1(00)
+  off=01A4 @2304  trig EAA0+18h       <  12B8 : MSG(C14B)(0B) ; SIGN(30 04 05)
+  off=01AC @230C  trig EA98+30h&FFF   <  09B0 : RACE_START(B5 00 87)
+  off=01B2 @2312  trig EA98+30h&FFF   <  0930 : RACE_START2(1E 00 69)
+  off=01B8 @2318  trig EAA0+18h       <  1198 : NOPC(00) ; CHECKPOINT x=1180 y=0DC0 (EB1C=x-18h) nextoff=01C2
+  off=01C2 @2322  trig EAA0+18h       <  1198 : SIGN(30 04 05)
+  off=01C8 @2328  trig EAA0+18h       <  1118 : C271=1(00) ; GOTO_PT(81 11 10 0D 00)
+  off=01D2 @2332  trig EA9C+18h&3FFF  <  1E18 : MSG(C14B)(0C) ; GOTO_PT(01 0F F0 0E 00)
+  off=01DC @233C  trig EAA0+18h       <  1018 : GOTO_PT(01 10 10 0E 00)
+  off=01E4 @2344  trig EA98+30h&FFF   <  04B0 : GOTO_PT(81 0F 10 0C E0)
+  off=01EC @234C  trig EAA0+18h       <  0F38 : MSG(C14B)(0D) ; SETDIR(1E) ; CHECKPOINT x=0F20 y=0DA0 (EB1C=x-18h) nextoff=01F8
+  off=01F8 @2358  trig EAA0+18h       <  0ED8 : SIGN(10 03 04)
+  off=01FE @235E  trig EAA0+18h       >= 1138 : C105=1(00)
+  off=0202 @2362  trig EAA0+18h       <  1138 : MSG(C14B)(0E) ; C271=1(00)
+  off=0208 @2368  trig EAA0+18h       <  10D8 : SIGN(02 02 03)
+  off=020E @236E  trig EAA0+18h       <  0FB8 : CHECKPOINT x=0FA0 y=09A0 (EB1C=x-18h) nextoff=0216
+  off=0216 @2376  trig EAA0+18h       <  0FB8 : SIGN(02 02 03)
+  off=021C @237C  trig EAA0+18h       <  0F38 : C271=1(00) ; GOTO_PT(01 0F 30 0A 60)
+  off=0226 @2386  trig EA98+30h&FFF   <  09F0 : SETDIR(23) ; CHECKPOINT x=0EC0 y=09C0 (EB1C=x-18h) nextoff=0230
+  off=0230 @2390  trig EA98+30h&FFF   <  09B0 : MSG(C14B)(0F) ; SIGN(06 03 02)
+  off=0238 @2398  trig EA98+30h&FFF   <  0730 : CHECKPOINT x=0E00 y=0A80 (EB1C=x-18h) nextoff=0240
+  off=0240 @23A0  trig EA98+30h&FFF   <  0730 : SIGN(06 03 02)
+  off=0246 @23A6  trig EA98+30h&FFF   <  05B0 : C271=1(00) ; GOTO_PT(82 0C E8 0A 00)
+  off=0250 @23B0  trig EAA0+18h       <  0D18 : GOTO_PT(82 0D 18 0A 00)
+  off=0258 @23B8  trig EA9C+18h&3FFF  <  1718 : SETDIR(19) ; CHECKPOINT x=0C40 y=0AC0 (EB1C=x-18h) nextoff=0262
+  off=0262 @23C2  trig EA9C+18h&3FFF  <  1618 : MSG(C14B)(10) ; SIGN(01 02 02)
+  off=026A @23CA  trig EA9C+18h&3FFF  <  14D8 : CHECKPOINT x=0B20 y=09A0 (EB1C=x-18h) nextoff=0272
+  off=0272 @23D2  trig EA9C+18h&3FFF  <  14D8 : SIGN(01 02 02)
+  off=0278 @23D8  trig EA9C+18h&3FFF  <  1418 : C271=1(00) ; GOTO_PT(00 0A 78 09 80)
+  off=0282 @23E2  trig EAA0+18h       <  0A98 : SIGN(3D 03 06)
+  off=0288 @23E8  trig EAA0+18h       <  0A58 : MSG(C14B)(11) ; SETDIR(1E) ; CHECKPOINT x=0A80 y=0920 (EB1C=x-18h) nextoff=0294
+  off=0294 @23F4  trig EAA0+18h       <  0A58 : SIGN(3D 03 06)
+  off=029A @23FA  trig EAA0+18h       >= 0BD8 : C105=1(00)
+  off=029E @23FE  trig EAA0+18h       <  0C98 : C271=1(00)
+  off=02A2 @2402  trig EAA0+18h       <  0BD8 : SIGN(31 03 05)
+  off=02A8 @2408  trig EAA0+18h       <  0AB8 : MSG(C14B)(12) ; CHECKPOINT x=0AA0 y=0520 (EB1C=x-18h) nextoff=02B2
+  off=02B2 @2412  trig EAA0+18h       <  0AB8 : SIGN(31 03 05)
+  off=02B8 @2418  trig EAA0+18h       <  0A38 : C271=1(00) ; GOTO_PT(01 0A 30 05 E0) ; NOPC(01)
+  off=02C4 @2424  trig EA98+30h&FFF   <  08B0 : GOTO_PT(81 09 30 04 C0)
+  off=02CC @242C  trig EAA0+18h       <  0958 : MSG(C14B)(13) ; SETDIR(1E) ; CHECKPOINT x=0940 y=0580 (EB1C=x-18h) nextoff=02D8
+  off=02D8 @2438  trig EAA0+18h       <  08D8 : GOTO_PT(01 08 DA 06 40)
+  off=02E0 @2440  trig EA98+30h&FFF   <  0630 : SIGN(11 03 02)
+  off=02E6 @2446  trig EA98+30h&FFF   <  0570 : SETDIR(23) ; CHECKPOINT x=0860 y=05A0 (EB1C=x-18h) nextoff=02F0
+  off=02F0 @2450  trig EA98+30h&FFF   <  0570 : SIGN(11 03 02)
+  off=02F6 @2456  trig EA98+30h&FFF   <  0430 : CHECKPOINT x=0800 y=0600 (EB1C=x-18h) nextoff=02FE
+  off=02FE @245E  trig EA98+30h&FFF   <  0430 : SIGN(11 03 02)
+  off=0304 @2464  trig EA98+30h&FFF   <  02B0 : MSG(C14B)(14) ; C271=1(00) ; GOTO_PT(81 07 30 05 C0)
+  off=0310 @2470  trig EAA0+18h       <  0758 : GOTO_PT(81 07 50 05 C0)
+  off=0318 @2478  trig EA9C+18h&3FFF  <  0D18 : GOTO_PT(81 07 40 05 B0)
+  off=0320 @2480  trig EAA4           <  05D8 : SETDIR(14) ; CHECKPOINT x=0680 y=05C0 (EB1C=x-18h) nextoff=032A
+  off=032A @248A  trig EAA4           <  05D8 : SIGN(00 03 02)
+  off=0330 @2490  trig EAA4           <  04B8 : CHECKPOINT x=0680 y=04A0 (EB1C=x-18h) nextoff=0338
+  off=0338 @2498  trig EAA4           <  04B8 : SIGN(00 03 02)
+  off=033E @249E  trig EAA4           <  0438 : MSG(C14B)(15) ; C271=1(00) ; GOTO_PT(02 05 60 04 38)
+  off=034A @24AA  trig EA9C+18h&3FFF  <  0998 : SETDIR(19) ; CHECKPOINT x=0620 y=0360 (EB1C=x-18h) nextoff=0354
+  off=0354 @24B4  trig EA9C+18h&3FFF  <  0998 : SIGN(07 02 02)
+  off=035A @24BA  trig EA9C+18h&3FFF  <  0858 : CHECKPOINT x=0580 y=02C0 (EB1C=x-18h) nextoff=0362
+  off=0362 @24C2  trig EA9C+18h&3FFF  <  0858 : SIGN(07 02 02)
+  off=0368 @24C8  trig EA9C+18h&3FFF  <  0798 : C271=1(00) ; GOTO_PT(81 05 A0 01 E0)
+  off=0372 @24D2  trig EAA4           <  01F8 : SIGN(18 04 03)
+  off=0378 @24D8  trig EAA4           <  01D8 : MSG(C14B)(16) ; SETDIR(14) ; CHECKPOINT x=04E0 y=01E0 (EB1C=x-18h) nextoff=0384
+  off=0384 @24E4  trig EAA4           <  01D8 : SIGN(18 04 03)
+  off=038A @24EA  trig EAA4           <  00D8 : CHECKPOINT x=04E0 y=00C0 (EB1C=x-18h) nextoff=0392
+  off=0392 @24F2  trig EAA4           <  00D8 : SIGN(18 04 03)
+  off=0398 @24F8  trig EAA4           <  0058 : C271=1(00) ; GOTO_PT(02 03 C0 00 58)
+  off=03A2 @2502  trig EA9C+18h&3FFF  <  0418 : MSG(C14B)(17) ; GOTO_PT(82 05 40 FE A8) ; NOPC(00)
+  off=03AE @250E  trig EAA4           <  FED8 : SETDIR(14) ; CHECKPOINT x=0420 y=FEC0 (EB1C=x-18h) nextoff=03B8
+  off=03B8 @2518  trig EAA4           <  FCF8 : MSG(C14B)(18) ; FINISH(00)
+  off=03BE @251E  trig EAA4           <  FCF8 : C105=1(00) ; SIGN(00 DF D8) ; SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=03CE
+  (end offset 03CE, next base 252E)
+=== STAGE 7  base=2524 (len 912)
+  off=0000 @2524  trig EAA4           <  1FD8 : SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=000A
+  off=000A @252E  trig EAA4           <  1F58 : NOPC(00)
+  off=000E @2532  trig EAA4           <  1E38 : MSG(C14B)(01) ; SIGN(15 02 03)
+  off=0016 @253A  trig EAA4           <  1D18 : CHECKPOINT x=1FE0 y=1D00 (EB1C=x-18h) nextoff=001E
+  off=001E @2542  trig EAA4           <  1D18 : SIGN(15 02 03)
+  off=0024 @2548  trig EAA4           <  1C98 : C271=1(00) ; GOTO_PT(82 21 00 1C 98)
+  off=002E @2552  trig EA98+30h&FFF   >= 0850 : SETDIR(0F) ; CHECKPOINT x=2020 y=1BE0 (EB1C=x-18h) nextoff=0038
+  off=0038 @255C  trig EA98+30h&FFF   >= 0850 : MSG(C14B)(02) ; SIGN(0B 02 03)
+  off=0040 @2564  trig EA98+30h&FFF   >= 0AD0 : CHECKPOINT x=20C0 y=1B40 (EB1C=x-18h) nextoff=0048
+  off=0048 @256C  trig EA98+30h&FFF   >= 0AD0 : SIGN(0B 02 03)
+  off=004E @2572  trig EA98+30h&FFF   >= 0C50 : C271=1(00) ; GOTO_PT(02 20 40 1A 28)
+  off=0058 @257C  trig EAA4           <  1A58 : MSG(C14B)(03) ; SETDIR(14) ; CHECKPOINT x=2160 y=1A40 (EB1C=x-18h) nextoff=0064
+  off=0064 @2588  trig EAA4           >= 1B98 : C105=1(00)
+  off=0068 @258C  trig EAA4           <  1B98 : SIGN(09 03 02)
+  off=006E @2592  trig EAA4           <  1A78 : MSG(C14B)(04) ; CHECKPOINT x=1D60 y=1A60 (EB1C=x-18h) nextoff=0078
+  off=0078 @259C  trig EAA4           <  1A78 : SIGN(09 03 02)
+  off=007E @25A2  trig EAA4           <  19F8 : C271=1(00) ; GOTO_PT(01 1C A0 19 F0) ; NOPC(01)
+  off=008A @25AE  trig EA9C+18h&3FFF  <  3698 : GOTO_PT(01 1C B0 19 E0)
+  off=0092 @25B6  trig EAA0+18h       <  1CB8 : SETDIR(1E) ; CHECKPOINT x=1CA0 y=1920 (EB1C=x-18h) nextoff=009C
+  off=009C @25C0  trig EAA0+18h       <  1BD8 : SIGN(16 03 02)
+  off=00A2 @25C6  trig EAA0+18h       <  1AB8 : MSG(C14B)(05) ; CHECKPOINT x=1AA0 y=1920 (EB1C=x-18h) nextoff=00AC
+  off=00AC @25D0  trig EAA0+18h       <  1AB8 : SIGN(16 03 02)
+  off=00B2 @25D6  trig EAA0+18h       <  1A38 : C271=1(00) ; GOTO_PT(81 1A 30 18 60) ; NOPC(00)
+  off=00BE @25E2  trig EA9C+18h&3FFF  <  3298 : SETDIR(19) ; CHECKPOINT x=19A0 y=18E0 (EB1C=x-18h) nextoff=00C8
+  off=00C8 @25EC  trig EA9C+18h&3FFF  <  3198 : SIGN(07 02 02)
+  off=00CE @25F2  trig EA9C+18h&3FFF  <  3058 : NOPC(01) ; MSG(C14B)(06) ; CHECKPOINT x=1880 y=17C0 (EB1C=x-18h) nextoff=00DA
+  off=00DA @25FE  trig EA9C+18h&3FFF  <  3058 : SIGN(07 02 02)
+  off=00E0 @2604  trig EA9C+18h&3FFF  <  2F98 : C271=1(00) ; GOTO_PT(82 18 E0 16 88)
+  off=00EA @260E  trig EAA4           <  16B8 : SETDIR(14) ; CHECKPOINT x=17C0 y=16A0 (EB1C=x-18h) nextoff=00F4
+  off=00F4 @2618  trig EAA4           <  1698 : SIGN(21 03 04)
+  off=00FA @261E  trig EAA4           <  14F8 : C271=1(00)
+  off=00FE @2622  trig EAA4           <  14B8 : MSG(C14B)(07) ; SIGN(15 02 03)
+  off=0106 @262A  trig EAA4           <  1398 : CHECKPOINT x=17C0 y=1380 (EB1C=x-18h) nextoff=010E
+  off=010E @2632  trig EAA4           <  1398 : SIGN(15 02 03)
+  off=0114 @2638  trig EAA4           <  1318 : MSG(C14B)(08) ; C271=1(00) ; GOTO_PT(81 18 80 13 10)
+  off=0120 @2644  trig EA98+30h&FFF   >= 0A90 : SETDIR(0F) ; CHECKPOINT x=17E0 y=12A0 (EB1C=x-18h) nextoff=012A
+  off=012A @264E  trig EA98+30h&FFF   >= 0CD0 : MSG(C14B)(09) ; SIGN(1A 03 02)
+  off=0132 @2656  trig EA98+30h&FFF   >= 0F50 : CHECKPOINT x=1920 y=1160 (EB1C=x-18h) nextoff=013A
+  off=013A @265E  trig EA98+30h&FFF   >= 0F50 : SIGN(1A 03 02)
+  off=0140 @2664  trig EA98+30h&FFF   <  0130 : C105=1(00)
+  off=0144 @2668  trig EA98+30h&FFF   >= 00D0 : C271=1(00) ; GOTO_PT(01 14 E0 14 90) ; NOPC(00)
+  off=0150 @2674  trig EAA4           <  14B8 : GOTO_PT(01 14 E0 14 B0)
+  off=0158 @267C  trig EA9C+18h&3FFF  <  2998 : MSG(C14B)(0A) ; SETDIR(19) ; CHECKPOINT x=1560 y=1420 (EB1C=x-18h) nextoff=0164
+  off=0164 @2688  trig EA9C+18h&3FFF  <  2898 : SIGN(07 02 02)
+  off=016A @268E  trig EA9C+18h&3FFF  <  2758 : NOPC(01) ; CHECKPOINT x=1440 y=1300 (EB1C=x-18h) nextoff=0174
+  off=0174 @2698  trig EA9C+18h&3FFF  <  2758 : SIGN(07 02 02)
+  off=017A @269E  trig EA9C+18h&3FFF  <  2698 : C271=1(00) ; GOTO_PT(82 14 A0 11 C8)
+  off=0184 @26A8  trig EAA4           <  11F8 : MSG(C14B)(0B) ; SETDIR(14) ; CHECKPOINT x=1380 y=11E0 (EB1C=x-18h) nextoff=0190
+  off=0190 @26B4  trig EAA4           <  1118 : SIGN(09 03 02)
+  off=0196 @26BA  trig EAA4           <  0FF8 : MSG(C14B)(0C) ; CHECKPOINT x=1380 y=0FE0 (EB1C=x-18h) nextoff=01A0
+  off=01A0 @26C4  trig EAA4           <  0FF8 : SIGN(09 03 02)
+  off=01A6 @26CA  trig EAA4           <  0F78 : C271=1(00) ; GOTO_PT(00 13 20 0F 68)
+  off=01B0 @26D4  trig EA9C+18h&3FFF  <  2298 : GOTO_PT(00 13 18 0F 60)
+  off=01B8 @26DC  trig EAA0+18h       <  1338 : SETDIR(1E) ; CHECKPOINT x=1320 y=0F00 (EB1C=x-18h) nextoff=01C2
+  off=01C2 @26E6  trig EAA0+18h       <  11D8 : MSG(C14B)(0D) ; SIGN(16 03 02)
+  off=01CA @26EE  trig EAA0+18h       <  11D8 : RACE_START(B5 00 B4)
+  off=01D0 @26F4  trig EAA0+18h       <  11B8 : RACE_START2(1E 00 8C)
+  off=01D6 @26FA  trig EAA0+18h       <  10B8 : NOPC(00) ; CHECKPOINT x=10A0 y=0F00 (EB1C=x-18h) nextoff=01E0
+  off=01E0 @2704  trig EAA0+18h       <  10B8 : SIGN(16 03 02)
+  off=01E6 @270A  trig EAA0+18h       <  1038 : MSG(C14B)(0E) ; C271=1(00) ; GOTO_PT(82 10 38 0D E0)
+  off=01F2 @2716  trig EA9C+18h&3FFF  <  1E18 : SETDIR(19) ; CHECKPOINT x=0F60 y=0EA0 (EB1C=x-18h) nextoff=01FC
+  off=01FC @2720  trig EA9C+18h&3FFF  <  1D18 : SIGN(32 03 04)
+  off=0202 @2726  trig EA9C+18h&3FFF  <  1BD8 : MSG(C14B)(0F) ; CHECKPOINT x=0E40 y=0D80 (EB1C=x-18h) nextoff=020C
+  off=020C @2730  trig EA9C+18h&3FFF  <  1BD8 : SIGN(32 03 04)
+  off=0212 @2736  trig EA9C+18h&3FFF  <  1B18 : C271=1(00) ; GOTO_PT(81 0E 60 0C 90) ; NOPC(01)
+  off=021E @2742  trig EAA4           <  0CB8 : GOTO_PT(81 0E 60 0C B0)
+  off=0226 @274A  trig EA98+30h&FFF   >= 02D0 : GOTO_PT(02 0C E0 0B 88)
+  off=022E @2752  trig EAA4           <  0BB8 : MSG(C14B)(10) ; SETDIR(14) ; CHECKPOINT x=0E00 y=0BA0 (EB1C=x-18h) nextoff=023A
+  off=023A @275E  trig EAA4           <  0B18 : SIGN(40 04 06)
+  off=0240 @2764  trig EAA4           <  0978 : C271=1(00)
+  off=0244 @2768  trig EAA4           <  0878 : CHECKPOINT x=0E00 y=0860 (EB1C=x-18h) nextoff=024C
+  off=024C @2770  trig EAA4           <  0878 : MSG(C14B)(11) ; SIGN(05 03 03)
+  off=0254 @2778  trig EAA4           <  0758 : CHECKPOINT x=0E00 y=0740 (EB1C=x-18h) nextoff=025C
+  off=025C @2780  trig EAA4           <  0758 : SIGN(05 03 03)
+  off=0262 @2786  trig EAA4           <  06D8 : C271=1(00) ; GOTO_PT(01 0D 40 06 D0) ; NOPC(00)
+  off=026E @2792  trig EA9C+18h&3FFF  <  1418 : GOTO_PT(01 0D 30 06 C0)
+  off=0276 @279A  trig EAA0+18h       <  0D58 : GOTO_PT(01 0D 50 06 C0)
+  off=027E @27A2  trig EA98+30h&FFF   <  0E30 : SIGN(03 02 02)
+  off=0284 @27A8  trig EA98+30h&FFF   <  0DB0 : SETDIR(23) ; CHECKPOINT x=0CE0 y=0620 (EB1C=x-18h) nextoff=028E
+  off=028E @27B2  trig EA98+30h&FFF   <  0D30 : SIGN(03 02 02)
+  off=0294 @27B8  trig EA98+30h&FFF   <  0BB0 : MSG(C14B)(12) ; CHECKPOINT x=0C60 y=06A0 (EB1C=x-18h) nextoff=029E
+  off=029E @27C2  trig EA98+30h&FFF   <  0BB0 : SIGN(03 02 02)
+  off=02A4 @27C8  trig EA98+30h&FFF   <  0A30 : C271=1(00) ; GOTO_PT(81 0B 90 06 60)
+  off=02AE @27D2  trig EAA0+18h       <  0B98 : SETDIR(1E) ; CHECKPOINT x=0BA0 y=0720 (EB1C=x-18h) nextoff=02B8
+  off=02B8 @27DC  trig EAA0+18h       <  0AD8 : SIGN(33 04 04)
+  off=02BE @27E2  trig EAA0+18h       <  09B8 : MSG(C14B)(13) ; CHECKPOINT x=09A0 y=0720 (EB1C=x-18h) nextoff=02C8
+  off=02C8 @27EC  trig EAA0+18h       <  09B8 : SIGN(33 04 04)
+  off=02CE @27F2  trig EAA0+18h       <  0938 : C271=1(00) ; GOTO_PT(01 09 30 07 E0)
+  off=02D8 @27FC  trig EA98+30h&FFF   <  0330 : GOTO_PT(82 08 08 06 60)
+  off=02E0 @2804  trig EAA0+18h       <  0838 : GOTO_PT(82 08 38 06 60) ; NOPC(01)
+  off=02EA @280E  trig EA9C+18h&3FFF  <  0E98 : MSG(C14B)(14) ; SETDIR(19) ; CHECKPOINT x=0760 y=0720 (EB1C=x-18h) nextoff=02F6
+  off=02F6 @281A  trig EA9C+18h&3FFF  <  0E18 : SIGN(07 02 02)
+  off=02FC @2820  trig EA9C+18h&3FFF  <  0CD8 : CHECKPOINT x=0680 y=0640 (EB1C=x-18h) nextoff=0304
+  off=0304 @2828  trig EA9C+18h&3FFF  <  0CD8 : SIGN(07 02 02)
+  off=030A @282E  trig EA9C+18h&3FFF  <  0C18 : C271=1(00) ; GOTO_PT(80 06 60 05 98)
+  off=0314 @2838  trig EAA4           <  0578 : SETDIR(14) ; CHECKPOINT x=0600 y=05A0 (EB1C=x-18h) nextoff=031E
+  off=031E @2842  trig EAA4           <  0558 : SIGN(00 03 02)
+  off=0324 @2848  trig EAA4           <  0438 : MSG(C14B)(15) ; CHECKPOINT x=0600 y=0420 (EB1C=x-18h) nextoff=032E
+  off=032E @2852  trig EAA4           <  0438 : SIGN(00 03 02)
+  off=0334 @2858  trig EAA4           <  03B8 : C271=1(00) ; GOTO_PT(02 04 E0 03 B8) ; NOPC(00)
+  off=0340 @2864  trig EA9C+18h&3FFF  <  0898 : SETDIR(19) ; CHECKPOINT x=05A0 y=02E0 (EB1C=x-18h) nextoff=034A
+  off=034A @286E  trig EA9C+18h&3FFF  <  0798 : MSG(C14B)(16) ; SIGN(07 02 02)
+  off=0352 @2876  trig EA9C+18h&3FFF  <  0658 : CHECKPOINT x=0480 y=01C0 (EB1C=x-18h) nextoff=035A
+  off=035A @287E  trig EA9C+18h&3FFF  <  0658 : SIGN(07 02 02)
+  off=0360 @2884  trig EA9C+18h&3FFF  <  0598 : C271=1(00) ; GOTO_PT(81 04 A0 00 D0) ; NOPC(01)
+  off=036C @2890  trig EAA4           <  00D8 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=03E0 y=00E0 (EB1C=x-18h) nextoff=0378
+  off=0378 @289C  trig EAA4           <  FFF8 : RACE_START(B6 00 BE)
+  off=037E @28A2  trig EAA4           <  FFD8 : RACE_START2(14 00 91)
+  off=0384 @28A8  trig EAA4           <  FDB8 : MSG(C14B)(18) ; FINISH(00)
+  off=038A @28AE  trig EAA4           <  FDB8 : C105=1(00) ; SIGN(00 DF D8) ; SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=039A
+  (end offset 039A, next base 28BE)
+=== STAGE 8  base=28B4 (len 1116)
+  off=0000 @28B4  trig EAA4           <  1FD8 : SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=000A
+  off=000A @28BE  trig EAA4           <  1F58 : NOPC(00)
+  off=000E @28C2  trig EAA4           <  1E38 : SIGN(08 02 04)
+  off=0014 @28C8  trig EAA4           <  1DF8 : MSG(C14B)(01) ; RACE_START(B6 00 AA)
+  off=001C @28D0  trig EAA4           <  1DD8 : RACE_START2(14 00 7C)
+  off=0022 @28D6  trig EAA4           <  1D18 : CHECKPOINT x=1FE0 y=1D00 (EB1C=x-18h) nextoff=002A
+  off=002A @28DE  trig EAA4           <  1D18 : SIGN(08 02 04)
+  off=0030 @28E4  trig EAA4           <  1C98 : C271=1(00) ; GOTO_PT(82 21 00 1C 98)
+  off=003A @28EE  trig EA98+30h&FFF   >= 0850 : MSG(C14B)(02) ; GOTO_PT(02 1F 40 1B 28)
+  off=0044 @28F8  trig EAA4           <  1B58 : SETDIR(14) ; CHECKPOINT x=2060 y=1B40 (EB1C=x-18h) nextoff=004E
+  off=004E @2902  trig EAA4           <  1B18 : SIGN(0E 04 03)
+  off=0054 @2908  trig EAA4           <  19F8 : CHECKPOINT x=2060 y=19E0 (EB1C=x-18h) nextoff=005C
+  off=005C @2910  trig EAA4           <  19F8 : MSG(C14B)(03) ; SIGN(0E 04 03)
+  off=0064 @2918  trig EAA4           <  1978 : C271=1(00) ; GOTO_PT(01 1F A0 19 70)
+  off=006E @2922  trig EA9C+18h&3FFF  <  3918 : GOTO_PT(01 1F 90 19 60)
+  off=0076 @292A  trig EAA0+18h       <  1FB8 : SETDIR(1E) ; CHECKPOINT x=1FA0 y=18A0 (EB1C=x-18h) nextoff=0080
+  off=0080 @2934  trig EAA0+18h       <  1F38 : GOTO_PT(81 1F 30 17 E0) ; NOPC(01)
+  off=008A @293E  trig EA9C+18h&3FFF  <  3718 : GOTO_PT(81 1F 20 17 D0)
+  off=0092 @2946  trig EAA4           <  17F8 : MSG(C14B)(04) ; SETDIR(14) ; CHECKPOINT x=1E60 y=17E0 (EB1C=x-18h) nextoff=009E
+  off=009E @2952  trig EAA4           <  1778 : RACE_START(B6 00 AF)
+  off=00A4 @2958  trig EAA4           <  1758 : RACE_START2(14 00 82)
+  off=00AA @295E  trig EAA4           <  1738 : SIGN(00 03 02)
+  off=00B0 @2964  trig EAA4           >= 1A18 : C105=1(00)
+  off=00B4 @2968  trig EAA4           <  1A18 : CHECKPOINT x=1A60 y=1A00 (EB1C=x-18h) nextoff=00BC
+  off=00BC @2970  trig EAA4           <  1A18 : SIGN(00 03 02)
+  off=00C2 @2976  trig EAA4           <  1998 : C271=1(00) ; GOTO_PT(00 1A 00 19 88) ; NOPC(00)
+  off=00CE @2982  trig EA9C+18h&3FFF  <  3398 : SIGN(12 02 03)
+  off=00D4 @2988  trig EA9C+18h&3FFF  <  3358 : SETDIR(19) ; CHECKPOINT x=1A40 y=1940 (EB1C=x-18h) nextoff=00DE
+  off=00DE @2992  trig EA9C+18h&3FFF  <  3358 : SIGN(12 02 03)
+  off=00E4 @2998  trig EA9C+18h&3FFF  <  3258 : MSG(C14B)(05) ; CHECKPOINT x=19A0 y=18A0 (EB1C=x-18h) nextoff=00EE
+  off=00EE @29A2  trig EA9C+18h&3FFF  <  3258 : SIGN(12 02 03)
+  off=00F4 @29A8  trig EA9C+18h&3FFF  <  3198 : C271=1(00) ; GOTO_PT(82 1A 00 17 68)
+  off=00FE @29B2  trig EAA4           <  1798 : GOTO_PT(82 1A 00 17 98)
+  off=0106 @29BA  trig EA98+30h&FFF   >= 0350 : SIGN(0B 02 03)
+  off=010C @29C0  trig EA98+30h&FFF   >= 0450 : SETDIR(0F) ; CHECKPOINT x=1920 y=16E0 (EB1C=x-18h) nextoff=0116
+  off=0116 @29CA  trig EA98+30h&FFF   >= 0450 : SIGN(0B 02 03)
+  off=011C @29D0  trig EA98+30h&FFF   >= 05D0 : CHECKPOINT x=1980 y=1680 (EB1C=x-18h) nextoff=0124
+  off=0124 @29D8  trig EA98+30h&FFF   >= 05D0 : SIGN(0B 02 03)
+  off=012A @29DE  trig EA98+30h&FFF   >= 0750 : MSG(C14B)(06) ; C271=1(00) ; GOTO_PT(01 19 40 15 B0)
+  off=0136 @29EA  trig EAA4           <  15B8 : SETDIR(14) ; CHECKPOINT x=1A00 y=15C0 (EB1C=x-18h) nextoff=0140
+  off=0140 @29F4  trig EAA4           <  1598 : SIGN(23 03 03)
+  off=0146 @29FA  trig EAA4           <  1478 : CHECKPOINT x=1A00 y=1460 (EB1C=x-18h) nextoff=014E
+  off=014E @2A02  trig EAA4           <  1478 : SIGN(23 03 03)
+  off=0154 @2A08  trig EAA4           <  13D8 : C271=1(00) ; GOTO_PT(00 19 A0 13 E8)
+  off=015E @2A12  trig EA9C+18h&3FFF  <  2D98 : GOTO_PT(80 19 A0 13 D8)
+  off=0166 @2A1A  trig EAA4           <  1378 : MSG(C14B)(07) ; SETDIR(14) ; CHECKPOINT x=19C0 y=1360 (EB1C=x-18h) nextoff=0172
+  off=0172 @2A26  trig EAA4           <  12F8 : SIGN(21 03 04)
+  off=0178 @2A2C  trig EAA4           >= 1558 : C105=1(00)
+  off=017C @2A30  trig EAA4           >= 1558 : C271=1(00)
+  off=0180 @2A34  trig EAA4           <  1538 : SIGN(24 05 04)
+  off=0186 @2A3A  trig EAA4           <  1418 : MSG(C14B)(08) ; CHECKPOINT x=15B4 y=1400 (EB1C=x-18h) nextoff=0190
+  off=0190 @2A44  trig EAA4           <  1418 : SIGN(24 05 04)
+  off=0196 @2A4A  trig EAA4           <  1398 : C271=1(00) ; GOTO_PT(81 16 80 13 90)
+  off=01A0 @2A54  trig EA98+30h&FFF   >= 0550 : GOTO_PT(01 15 40 12 B0) ; NOPC(01)
+  off=01AA @2A5E  trig EAA4           <  12D8 : GOTO_PT(01 15 40 12 D0)
+  off=01B2 @2A66  trig EA9C+18h&3FFF  <  2818 : GOTO_PT(02 14 E8 13 00)
+  off=01BA @2A6E  trig EAA0+18h       <  1518 : GOTO_PT(81 14 F0 11 20)
+  off=01C2 @2A76  trig EA9C+18h&3FFF  <  2618 : MSG(C14B)(09) ; SETDIR(19) ; CHECKPOINT x=1460 y=11A0 (EB1C=x-18h) nextoff=01CE
+  off=01CE @2A82  trig EA9C+18h&3FFF  <  2618 : SIGN(07 02 02)
+  off=01D4 @2A88  trig EA9C+18h&3FFF  <  24D8 : CHECKPOINT x=13C0 y=1100 (EB1C=x-18h) nextoff=01DC
+  off=01DC @2A90  trig EA9C+18h&3FFF  <  24D8 : SIGN(07 02 02)
+  off=01E2 @2A96  trig EA9C+18h&3FFF  <  2418 : C271=1(00) ; GOTO_PT(82 14 20 0F C8) ; NOPC(01)
+  off=01EE @2AA2  trig EAA4           <  0FF8 : SETDIR(14) ; CHECKPOINT x=1300 y=0FE0 (EB1C=x-18h) nextoff=01F8
+  off=01F8 @2AAC  trig EAA4           <  0FB8 : SIGN(0F 02 05)
+  off=01FE @2AB2  trig EAA4           <  0E18 : C271=1(00)
+  off=0202 @2AB6  trig EAA4           <  0DD8 : MSG(C14B)(0A) ; SIGN(15 02 03)
+  off=020A @2ABE  trig EAA4           <  0C98 : CHECKPOINT x=1300 y=0CA0 (EB1C=x-18h) nextoff=0212
+  off=0212 @2AC6  trig EAA4           <  0C98 : SIGN(15 02 03)
+  off=0218 @2ACC  trig EAA4           <  0C38 : C271=1(00) ; GOTO_PT(80 13 60 0C 28)
+  off=0222 @2AD6  trig EA98+30h&FFF   >= 0ED0 : SETDIR(0F) ; CHECKPOINT x=1320 y=0BE0 (EB1C=x-18h) nextoff=022C
+  off=022C @2AE0  trig EA98+30h&FFF   <  0130 : C105=1(00)
+  off=0230 @2AE4  trig EA98+30h&FFF   >= 00D0 : SIGN(0B 02 03)
+  off=0236 @2AEA  trig EA98+30h&FFF   >= 0350 : CHECKPOINT x=1060 y=0EA0 (EB1C=x-18h) nextoff=023E
+  off=023E @2AF2  trig EA98+30h&FFF   >= 0350 : SIGN(0B 02 03)
+  off=0244 @2AF8  trig EA98+30h&FFF   >= 04D0 : MSG(C14B)(0B) ; C271=1(00) ; GOTO_PT(02 0F E0 0D 88)
+  off=0250 @2B04  trig EAA4           <  0DB8 : SETDIR(14) ; CHECKPOINT x=1100 y=0DA0 (EB1C=x-18h) nextoff=025A
+  off=025A @2B0E  trig EAA4           <  0CD8 : RACE_START(B6 00 B4)
+  off=0260 @2B14  trig EAA4           <  0CB8 : RACE_START2(14 00 8C)
+  off=0266 @2B1A  trig EAA4           <  0CD8 : NOPC(00)
+  off=026A @2B1E  trig EAA4           <  0C78 : SIGN(25 05 04)
+  off=0270 @2B24  trig EAA4           <  0B58 : CHECKPOINT x=1100 y=0B40 (EB1C=x-18h) nextoff=0278
+  off=0278 @2B2C  trig EAA4           <  0B58 : MSG(C14B)(0C) ; SIGN(25 05 04)
+  off=0280 @2B34  trig EAA4           <  0AD8 : C271=1(00) ; GOTO_PT(01 10 40 0A D0)
+  off=028A @2B3E  trig EA9C+18h&3FFF  <  1B18 : GOTO_PT(01 10 30 0A C0) ; NOPC(01)
+  off=0294 @2B48  trig EAA0+18h       <  1058 : LIGHT(C1A1)(00) ; GOTO_PT(01 10 40 0A D0)
+  off=029E @2B52  trig EA98+30h&FFF   <  0BB0 : SETDIR(23) ; CHECKPOINT x=0FE0 y=0A20 (EB1C=x-18h) nextoff=02A8
+  off=02A8 @2B5C  trig EA98+30h&FFF   <  0AB0 : GOTO_PT(81 0F 30 09 C0)
+  off=02B0 @2B64  trig EAA0+18h       <  0F58 : LIGHT(C1A1)(01) ; GOTO_PT(81 0F 50 09 C0)
+  off=02BA @2B6E  trig EA9C+18h&3FFF  <  1918 : GOTO_PT(81 0F 40 09 B0)
+  off=02C2 @2B76  trig EAA4           <  09D8 : SETDIR(14) ; CHECKPOINT x=0E80 y=09C0 (EB1C=x-18h) nextoff=02CC
+  off=02CC @2B80  trig EAA4           <  09D8 : SIGN(00 03 02)
+  off=02D2 @2B86  trig EAA4           <  08B8 : MSG(C14B)(0E) ; CHECKPOINT x=0E80 y=08A0 (EB1C=x-18h) nextoff=02DC
+  off=02DC @2B90  trig EAA4           <  08B8 : SIGN(00 03 02)
+  off=02E2 @2B96  trig EAA4           <  0838 : C271=1(00) ; GOTO_PT(02 0D 60 08 38) ; NOPC(00)
+  off=02EE @2BA2  trig EA9C+18h&3FFF  <  1598 : SETDIR(19) ; CHECKPOINT x=0E20 y=0760 (EB1C=x-18h) nextoff=02F8
+  off=02F8 @2BAC  trig EA9C+18h&3FFF  <  1598 : SIGN(26 05 03)
+  off=02FE @2BB2  trig EA9C+18h&3FFF  <  1458 : MSG(C14B)(0F) ; CHECKPOINT x=0D80 y=06C0 (EB1C=x-18h) nextoff=0308
+  off=0308 @2BBC  trig EA9C+18h&3FFF  <  1458 : SIGN(26 05 03)
+  off=030E @2BC2  trig EA9C+18h&3FFF  <  1398 : C271=1(00) ; GOTO_PT(01 0C 90 06 E0)
+  off=0318 @2BCC  trig EAA0+18h       <  0CB8 : GOTO_PT(82 0C 98 05 00) ; NOPC(01)
+  off=0322 @2BD6  trig EA9C+18h&3FFF  <  1198 : GOTO_PT(81 0C 40 05 30)
+  off=032A @2BDE  trig EAA4           <  0558 : GOTO_PT(81 0C 40 05 50)
+  off=0332 @2BE6  trig EA98+30h&FFF   >= 0D10 : GOTO_PT(01 0B 00 04 70)
+  off=033A @2BEE  trig EAA4           <  0498 : MSG(C14B)(10) ; SETDIR(14) ; CHECKPOINT x=0BC0 y=0498 (EB1C=x-18h) nextoff=0346
+  off=0346 @2BFA  trig EAA4           <  0498 : SIGN(21 03 04)
+  off=034C @2C00  trig EAA4           >= 0718 : C105=1(00)
+  off=0350 @2C04  trig EAA4           <  0718 : C271=1(00)
+  off=0354 @2C08  trig EAA4           <  0718 : SIGN(27 05 05)
+  off=035A @2C0E  trig EAA4           <  05F8 : MSG(C14B)(11) ; CHECKPOINT x=07C0 y=05E0 (EB1C=x-18h) nextoff=0364
+  off=0364 @2C18  trig EAA4           <  05F8 : SIGN(27 05 05)
+  off=036A @2C1E  trig EAA4           <  0578 : C271=1(00) ; GOTO_PT(02 06 A0 05 78) ; NOPC(00)
+  off=0376 @2C2A  trig EA9C+18h&3FFF  <  0C18 : GOTO_PT(82 08 20 03 C8)
+  off=037E @2C32  trig EAA4           <  03F8 : GOTO_PT(82 08 20 03 F8)
+  off=0386 @2C3A  trig EA98+30h&FFF   >= 07D0 : GOTO_PT(01 06 A0 02 D0)
+  off=038E @2C42  trig EAA4           <  02F8 : GOTO_PT(01 06 A0 02 F0)
+  off=0396 @2C4A  trig EA9C+18h&3FFF  <  0998 : MSG(C14B)(13) ; GOTO_PT(81 07 A0 01 D0)
+  off=03A0 @2C54  trig EAA4           <  01F8 : GOTO_PT(81 07 A0 01 F0)
+  off=03A8 @2C5C  trig EA98+30h&FFF   >= 0AD0 : SETDIR(0F) ; CHECKPOINT x=0700 y=0180 (EB1C=x-18h) nextoff=03B2
+  off=03B2 @2C66  trig EA98+30h&FFF   >= 0BD0 : RACE_START(B7 00 A5)
+  off=03B8 @2C6C  trig EA98+30h&FFF   >= 0C10 : RACE_START2(0F 00 78)
+  off=03BE @2C72  trig EA98+30h&FFF   >= 0DD0 : MSG(C14B)(14) ; SIGN(1A 03 03)
+  off=03C6 @2C7A  trig EA98+30h&FFF   <  00B0 : C105=1(00)
+  off=03CA @2C7E  trig EA98+30h&FFF   >= 0050 : CHECKPOINT x=0460 y=0420 (EB1C=x-18h) nextoff=03D2
+  off=03D2 @2C86  trig EA98+30h&FFF   >= 0050 : SIGN(1A 03 03)
+  off=03D8 @2C8C  trig EA98+30h&FFF   >= 0150 : C271=1(00) ; GOTO_PT(00 04 80 03 78)
+  off=03E2 @2C96  trig EAA4           <  0398 : MSG(C14B)(15) ; GOTO_PT(00 04 80 03 88)
+  off=03EC @2CA0  trig EA9C+18h&3FFF  <  0818 : SETDIR(19) ; CHECKPOINT x=04C0 y=0340 (EB1C=x-18h) nextoff=03F6
+  off=03F6 @2CAA  trig EA9C+18h&3FFF  <  0818 : SIGN(28 04 04)
+  off=03FC @2CB0  trig EA9C+18h&3FFF  <  06D8 : CHECKPOINT x=0420 y=02A0 (EB1C=x-18h) nextoff=0404
+  off=0404 @2CB8  trig EA9C+18h&3FFF  <  06D8 : SIGN(28 04 04)
+  off=040A @2CBE  trig EA9C+18h&3FFF  <  0618 : C271=1(00) ; GOTO_PT(81 04 40 01 B0) ; NOPC(01)
+  off=0416 @2CCA  trig EAA4           <  01D8 : MSG(C14B)(16) ; GOTO_PT(81 04 40 01 D0)
+  off=0420 @2CD4  trig EA98+30h&FFF   >= 0450 : GOTO_PT(01 03 00 00 F0)
+  off=0428 @2CDC  trig EAA4           <  0118 : GOTO_PT(01 03 00 01 10)
+  off=0430 @2CE4  trig EA9C+18h&3FFF  <  0418 : GOTO_PT(82 04 40 FF A8)
+  off=0438 @2CEC  trig EAA4           <  FFD8 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=0320 y=FFC0 (EB1C=x-18h) nextoff=0444
+  off=0444 @2CF8  trig EAA4           <  FF38 : RACE_START(B6 00 B4)
+  off=044A @2CFE  trig EAA4           <  FF18 : RACE_START2(14 00 8C)
+  off=0450 @2D04  trig EAA4           <  FD78 : MSG(C14B)(18) ; FINISH(00)
+  off=0456 @2D0A  trig EAA4           <  FD78 : C105=1(00) ; SIGN(00 DF D8) ; SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=0466
+  (end offset 0466, next base 2D1A)
+=== STAGE 9  base=2D10 (len 966)
+  off=0000 @2D10  trig EAA4           <  1FD8 : SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=000A
+  off=000A @2D1A  trig EAA4           <  1E18 : SIGN(09 03 02)
+  off=0010 @2D20  trig EAA4           <  1CF8 : MSG(C14B)(01) ; CHECKPOINT x=1FE0 y=1CE0 (EB1C=x-18h) nextoff=001A
+  off=001A @2D2A  trig EAA4           <  1CF8 : SIGN(09 03 02)
+  off=0020 @2D30  trig EAA4           <  1C78 : C271=1(00) ; GOTO_PT(01 1F 20 1C 70)
+  off=002A @2D3A  trig EA9C+18h&3FFF  <  3B98 : C271=1(00) ; GOTO_PT(02 1E C8 1C A0)
+  off=0034 @2D44  trig EAA0+18h       <  1EF8 : SETDIR(1E) ; CHECKPOINT x=1EE0 y=1B80 (EB1C=x-18h) nextoff=003E
+  off=003E @2D4E  trig EAA0+18h       <  1E58 : MSG(C14B)(02) ; SIGN(0A 03 03)
+  off=0046 @2D56  trig EAA0+18h       <  1D38 : CHECKPOINT x=1D20 y=1B80 (EB1C=x-18h) nextoff=004E
+  off=004E @2D5E  trig EAA0+18h       <  1D38 : SIGN(0A 03 03)
+  off=0054 @2D64  trig EAA0+18h       <  1CB8 : C271=1(00) ; GOTO_PT(82 1C B8 1A 60) ; NOPC(00)
+  off=0060 @2D70  trig EA9C+18h&3FFF  <  3718 : MSG(C14B)(03) ; GOTO_PT(82 1C A0 1A 48)
+  off=006A @2D7A  trig EAA4           <  1A78 : GOTO_PT(82 1C A0 1A 78)
+  off=0072 @2D82  trig EA98+30h&FFF   >= 02D0 : SIGN(0D 03 02)
+  off=0078 @2D88  trig EA98+30h&FFF   >= 03D0 : SETDIR(0F) ; CHECKPOINT x=1BC0 y=19C0 (EB1C=x-18h) nextoff=0082
+  off=0082 @2D92  trig EA98+30h&FFF   >= 03D0 : SIGN(0D 03 02)
+  off=0088 @2D98  trig EA98+30h&FFF   >= 0550 : MSG(C14B)(04) ; CHECKPOINT x=1C20 y=1960 (EB1C=x-18h) nextoff=0092
+  off=0092 @2DA2  trig EA98+30h&FFF   >= 0550 : SIGN(0D 03 02)
+  off=0098 @2DA8  trig EA98+30h&FFF   >= 06D0 : C271=1(00) ; GOTO_PT(01 1B E0 18 90)
+  off=00A2 @2DB2  trig EAA4           <  18B8 : GOTO_PT(01 1B E0 18 B0)
+  off=00AA @2DBA  trig EA9C+18h&3FFF  <  3498 : GOTO_PT(02 1B B8 18 E0)
+  off=00B2 @2DC2  trig EAA0+18h       <  1BB8 : MSG(C14B)(05) ; SETDIR(1E) ; CHECKPOINT x=1BA0 y=17C0 (EB1C=x-18h) nextoff=00BE
+  off=00BE @2DCE  trig EAA0+18h       <  1B58 : SIGN(02 02 03)
+  off=00C4 @2DD4  trig EAA0+18h       <  1A38 : CHECKPOINT x=1A20 y=17C0 (EB1C=x-18h) nextoff=00CC
+  off=00CC @2DDC  trig EAA0+18h       <  1A38 : SIGN(02 02 03)
+  off=00D2 @2DE2  trig EAA0+18h       <  19B8 : MSG(C14B)(06) ; C271=1(00) ; GOTO_PT(02 19 B8 18 E0)
+  off=00DE @2DEE  trig EA98+30h&FFF   <  0230 : SETDIR(23) ; CHECKPOINT x=1900 y=1800 (EB1C=x-18h) nextoff=00E8
+  off=00E8 @2DF8  trig EA98+30h&FFF   <  00B0 : SIGN(06 03 02)
+  off=00EE @2DFE  trig EA98+30h&FFF   >= 0DD0 : C105=1(00)
+  off=00F2 @2E02  trig EA98+30h&FFF   <  0E30 : MSG(C14B)(07) ; CHECKPOINT x=1C00 y=1500 (EB1C=x-18h) nextoff=00FC
+  off=00FC @2E0C  trig EA98+30h&FFF   <  0E30 : SIGN(06 03 02)
+  off=0102 @2E12  trig EA98+30h&FFF   <  0CB0 : C271=1(00) ; GOTO_PT(82 1A E8 14 80)
+  off=010C @2E1C  trig EAA0+18h       <  1B18 : GOTO_PT(82 1B 18 14 80)
+  off=0114 @2E24  trig EA9C+18h&3FFF  <  2F98 : SETDIR(19) ; CHECKPOINT x=1A40 y=1540 (EB1C=x-18h) nextoff=011E
+  off=011E @2E2E  trig EA9C+18h&3FFF  <  2E98 : MSG(C14B)(08) ; SIGN(01 02 02)
+  off=0126 @2E36  trig EA9C+18h&3FFF  <  2D58 : CHECKPOINT x=1920 y=1420 (EB1C=x-18h) nextoff=012E
+  off=012E @2E3E  trig EA9C+18h&3FFF  <  2D58 : SIGN(01 02 02)
+  off=0134 @2E44  trig EA9C+18h&3FFF  <  2C98 : C271=1(00) ; GOTO_PT(01 18 30 14 40) ; NOPC(01)
+  off=0140 @2E50  trig EAA0+18h       <  1838 : SETDIR(1E) ; CHECKPOINT x=1840 y=1380 (EB1C=x-18h) nextoff=014A
+  off=014A @2E5A  trig EAA0+18h       <  16D8 : MSG(C14B)(09) ; SIGN(0C 03 03) ; RACE_START(B5 00 AA)
+  off=0156 @2E66  trig EAA0+18h       <  16B8 : RACE_START2(1E 00 82)
+  off=015C @2E6C  trig EAA0+18h       <  15B8 : CHECKPOINT x=15A0 y=1380 (EB1C=x-18h) nextoff=0164
+  off=0164 @2E74  trig EAA0+18h       <  15B8 : SIGN(0C 03 03)
+  off=016A @2E7A  trig EAA0+18h       <  1538 : C271=1(00) ; GOTO_PT(82 15 38 12 60)
+  off=0174 @2E84  trig EA9C+18h&3FFF  <  2798 : MSG(C14B)(0A) ; SETDIR(19) ; CHECKPOINT x=1460 y=1320 (EB1C=x-18h) nextoff=0180
+  off=0180 @2E90  trig EA9C+18h&3FFF  <  2718 : GOTO_PT(02 13 48 13 A0)
+  off=0188 @2E98  trig EAA0+18h       <  1378 : SETDIR(1E) ; CHECKPOINT x=1360 y=1280 (EB1C=x-18h) nextoff=0192
+  off=0192 @2EA2  trig EAA0+18h       <  1338 : SIGN(22 03 04)
+  off=0198 @2EA8  trig EAA0+18h       >= 1598 : C105=1(00)
+  off=019C @2EAC  trig EAA0+18h       <  1598 : C271=1(00)
+  off=01A0 @2EB0  trig EAA0+18h       <  1598 : SIGN(10 03 05)
+  off=01A6 @2EB6  trig EAA0+18h       <  13F8 : C271=1(00)
+  off=01AA @2EBA  trig EAA0+18h       <  13D8 : MSG(C14B)(0B) ; SIGN(16 03 02)
+  off=01B2 @2EC2  trig EA9C+18h&3FFF  <  2198 : RACE_START(B5 00 5F)
+  off=01B8 @2EC8  trig EA9C+18h&3FFF  <  2158 : RACE_START2(1E 00 46)
+  off=01BE @2ECE  trig EAA0+18h       <  12B8 : CHECKPOINT x=12A0 y=0E80 (EB1C=x-18h) nextoff=01C6
+  off=01C6 @2ED6  trig EAA0+18h       <  12B8 : SIGN(16 03 02)
+  off=01CC @2EDC  trig EAA0+18h       <  1238 : C271=1(00) ; GOTO_PT(82 12 38 0D 60)
+  off=01D6 @2EE6  trig EA9C+18h&3FFF  <  1F98 : MSG(C14B)(0C) ; SETDIR(19) ; CHECKPOINT x=1160 y=0E20 (EB1C=x-18h) nextoff=01E2
+  off=01E2 @2EF2  trig EA9C+18h&3FFF  <  1E98 : SIGN(34 04 03)
+  off=01E8 @2EF8  trig EA9C+18h&3FFF  <  1D58 : CHECKPOINT x=1040 y=0D00 (EB1C=x-18h) nextoff=01F0
+  off=01F0 @2F00  trig EA9C+18h&3FFF  <  1D58 : SIGN(34 04 03)
+  off=01F6 @2F06  trig EA9C+18h&3FFF  <  1C98 : C271=1(00) ; GOTO_PT(01 0F 50 0D 20) ; NOPC(00)
+  off=0202 @2F12  trig EAA0+18h       <  0F78 : MSG(C14B)(0D) ; GOTO_PT(82 0F 58 0B 40)
+  off=020C @2F1C  trig EA9C+18h&3FFF  <  1A98 : SETDIR(19) ; CHECKPOINT x=0E80 y=0C00 (EB1C=x-18h) nextoff=0216
+  off=0216 @2F26  trig EA9C+18h&3FFF  <  1A98 : SIGN(01 02 02)
+  off=021C @2F2C  trig EA9C+18h&3FFF  <  1958 : CHECKPOINT x=0DE0 y=0B60 (EB1C=x-18h) nextoff=0224
+  off=0224 @2F34  trig EA9C+18h&3FFF  <  19BC : SIGN(01 02 02)
+  off=022A @2F3A  trig EA9C+18h&3FFF  <  1898 : C271=1(00) ; GOTO_PT(00 0D 38 0B 40)
+  off=0234 @2F44  trig EAA0+18h       <  0D18 : SETDIR(1E) ; CHECKPOINT x=0D40 y=0AE0 (EB1C=x-18h) nextoff=023E
+  off=023E @2F4E  trig EAA0+18h       <  0D18 : MSG(C14B)(0E) ; SIGN(0A 03 03)
+  off=0246 @2F56  trig EAA0+18h       <  0BF8 : CHECKPOINT x=0BE0 y=0AE0 (EB1C=x-18h) nextoff=024E
+  off=024E @2F5E  trig EAA0+18h       <  0BF8 : SIGN(0A 03 03)
+  off=0254 @2F64  trig EAA0+18h       <  0B78 : C271=1(00) ; GOTO_PT(81 0B 70 0A 20) ; NOPC(01)
+  off=0260 @2F70  trig EA9C+18h&3FFF  <  1598 : GOTO_PT(81 0B 60 0A 10)
+  off=0268 @2F78  trig EAA4           <  0A38 : MSG(C14B)(0F) ; GOTO_PT(81 0B 60 0A 30)
+  off=0272 @2F82  trig EA98+30h&FFF   >= 01D0 : SETDIR(0F) ; CHECKPOINT x=0AC0 y=09C0 (EB1C=x-18h) nextoff=027C
+  off=027C @2F8C  trig EA98+30h&FFF   >= 0450 : RACE_START(B7 00 6E)
+  off=0282 @2F92  trig EA98+30h&FFF   >= 0490 : RACE_START2(0F 00 5A)
+  off=0288 @2F98  trig EA98+30h&FFF   >= 07D0 : SIGN(2F 03 04) ; RACE_START(B7 00 8C)
+  off=0292 @2FA2  trig EA98+30h&FFF   >= 0810 : RACE_START2(0F 00 78)
+  off=0298 @2FA8  trig EA98+30h&FFF   >= 0A50 : MSG(C14B)(10) ; CHECKPOINT x=0CE0 y=07A0 (EB1C=x-18h) nextoff=02A2
+  off=02A2 @2FB2  trig EA98+30h&FFF   >= 0A50 : SIGN(2F 03 04)
+  off=02A8 @2FB8  trig EA98+30h&FFF   >= 0BD0 : C271=1(00) ; GOTO_PT(02 0C 60 06 88)
+  off=02B2 @2FC2  trig EAA4           <  06B8 : GOTO_PT(02 0C 60 06 B8)
+  off=02BA @2FCA  trig EA9C+18h&3FFF  <  1318 : GOTO_PT(82 0D E0 05 08)
+  off=02C2 @2FD2  trig EAA4           <  0538 : MSG(C14B)(11) ; SETDIR(14) ; CHECKPOINT x=0CC0 y=0520 (EB1C=x-18h) nextoff=02CE
+  off=02CE @2FDE  trig EAA4           >= 0818 : C105=1(00)
+  off=02D2 @2FE2  trig EAA4           <  0818 : RACE_START(B6 00 BE)
+  off=02D8 @2FE8  trig EAA4           <  07F8 : RACE_START2(14 00 96)
+  off=02DE @2FEE  trig EAA4           <  0658 : MSG(C14B)(12) ; SIGN(00 03 02)
+  off=02E6 @2FF6  trig EAA4           <  0538 : CHECKPOINT x=08C0 y=0520 (EB1C=x-18h) nextoff=02EE
+  off=02EE @2FFE  trig EAA4           <  0538 : SIGN(00 03 02)
+  off=02F4 @3004  trig EAA4           <  04B8 : C271=1(00) ; GOTO_PT(00 08 60 04 A8) ; NOPC(00)
+  off=0300 @3010  trig EA9C+18h&3FFF  <  0D18 : SIGN(07 02 02)
+  off=0306 @3016  trig EA9C+18h&3FFF  <  0CD8 : MSG(C14B)(13) ; SETDIR(19) ; CHECKPOINT x=08A0 y=0460 (EB1C=x-18h) nextoff=0312
+  off=0312 @3022  trig EA9C+18h&3FFF  <  0CD8 : SIGN(07 02 02)
+  off=0318 @3028  trig EA9C+18h&3FFF  <  0BD8 : CHECKPOINT x=0800 y=03C0 (EB1C=x-18h) nextoff=0320
+  off=0320 @3030  trig EA9C+18h&3FFF  <  0BD8 : SIGN(07 02 02)
+  off=0326 @3036  trig EA9C+18h&3FFF  <  0B18 : C271=1(00) ; GOTO_PT(81 08 20 02 D0)
+  off=0330 @3040  trig EAA4           <  02F8 : SIGN(21 03 04)
+  off=0336 @3046  trig EAA4           <  02D8 : MSG(C14B)(14) ; SETDIR(14) ; CHECKPOINT x=0760 y=02E0 (EB1C=x-18h) nextoff=0342
+  off=0342 @3052  trig EAA4           <  02D8 : SIGN(21 03 04)
+  off=0348 @3058  trig EAA4           <  0158 : C271=1(00)
+  off=034C @305C  trig EAA4           <  0078 : RACE_START(B6 00 B4)
+  off=0352 @3062  trig EAA4           <  0058 : RACE_START2(14 00 8C)
+  off=0358 @3068  trig EAA4           <  0038 : MSG(C14B)(15) ; SIGN(15 02 03)
+  off=0360 @3070  trig EAA4           >= 0318 : C105=1(00)
+  off=0364 @3074  trig EAA4           <  0318 : CHECKPOINT x=0360 y=0300 (EB1C=x-18h) nextoff=036C
+  off=036C @307C  trig EAA4           <  0318 : SIGN(15 02 03)
+  off=0372 @3082  trig EAA4           <  0298 : C271=1(00) ; GOTO_PT(82 04 80 02 98) ; NOPC(01)
+  off=037E @308E  trig EA98+30h&FFF   >= 0250 : SIGN(0B 02 03)
+  off=0384 @3094  trig EA98+30h&FFF   >= 0350 : MSG(C14B)(16) ; SETDIR(0F) ; CHECKPOINT x=03A0 y=01E0 (EB1C=x-18h) nextoff=0390
+  off=0390 @30A0  trig EA98+30h&FFF   >= 0350 : SIGN(0B 02 03)
+  off=0396 @30A6  trig EA98+30h&FFF   >= 04D0 : CHECKPOINT x=0400 y=0180 (EB1C=x-18h) nextoff=039E
+  off=039E @30AE  trig EA98+30h&FFF   >= 04D0 : SIGN(0B 02 03)
+  off=03A4 @30B4  trig EA98+30h&FFF   >= 0650 : C271=1(00) ; GOTO_PT(01 03 C0 00 B0)
+  off=03AE @30BE  trig EAA4           <  00B8 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=0480 y=00C0 (EB1C=x-18h) nextoff=03BA
+  off=03BA @30CA  trig EAA4           <  FD98 : MSG(C14B)(18) ; FINISH(00)
+  off=03C0 @30D0  trig EAA4           <  FD58 : C105=1(00) ; SIGN(00 DF D8) ; SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=03D0
+  (end offset 03D0, next base 30E0)
+=== STAGE 10  base=30D6 (len 912)
+  off=0000 @30D6  trig EAA4           <  1FD8 : SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=000A
+  off=000A @30E0  trig EAA4           <  1D78 : MSG(C14B)(01) ; SIGN(00 03 02)
+  off=0012 @30E8  trig EAA4           <  1C58 : CHECKPOINT x=1FE0 y=1C40 (EB1C=x-18h) nextoff=001A
+  off=001A @30F0  trig EAA4           <  1C58 : SIGN(00 03 02)
+  off=0020 @30F6  trig EAA4           <  1BD8 : C271=1(00) ; GOTO_PT(02 1E C0 1B D8)
+  off=002A @3100  trig EA9C+18h&3FFF  <  3A98 : MSG(C14B)(02) ; SETDIR(19) ; CHECKPOINT x=1F80 y=1B00 (EB1C=x-18h) nextoff=0036
+  off=0036 @310C  trig EA9C+18h&3FFF  <  3A98 : SIGN(07 02 02)
+  off=003C @3112  trig EA9C+18h&3FFF  <  3958 : CHECKPOINT x=1EE0 y=1A60 (EB1C=x-18h) nextoff=0044
+  off=0044 @311A  trig EA9C+18h&3FFF  <  3958 : SIGN(07 02 02)
+  off=004A @3120  trig EA9C+18h&3FFF  <  3898 : C271=1(00) ; GOTO_PT(82 1F 40 19 28)
+  off=0054 @312A  trig EAA4           <  1958 : MSG(C14B)(03) ; SETDIR(14) ; CHECKPOINT x=1E20 y=1940 (EB1C=x-18h) nextoff=0060
+  off=0060 @3136  trig EAA4           <  18B8 : SIGN(35 04 04)
+  off=0066 @313C  trig EAA4           <  1798 : CHECKPOINT x=1E20 y=1780 (EB1C=x-18h) nextoff=006E
+  off=006E @3144  trig EAA4           <  1798 : SIGN(35 04 04)
+  off=0074 @314A  trig EAA4           <  1718 : MSG(C14B)(04) ; C271=1(00) ; GOTO_PT(02 1D 00 17 18) ; NOPC(00)
+  off=0082 @3158  trig EA9C+18h&3FFF  <  3418 : GOTO_PT(02 1C E8 17 00)
+  off=008A @3160  trig EAA0+18h       <  1D18 : GOTO_PT(02 1D 18 17 00)
+  off=0092 @3168  trig EA98+30h&FFF   <  0CB0 : MSG(C14B)(05) ; SETDIR(23) ; CHECKPOINT x=1C60 y=1620 (EB1C=x-18h) nextoff=009E
+  off=009E @3174  trig EA98+30h&FFF   <  0C30 : GOTO_PT(82 1B A8 15 40)
+  off=00A6 @317C  trig EAA0+18h       <  1BD8 : SETDIR(1E) ; CHECKPOINT x=1BC0 y=1660 (EB1C=x-18h) nextoff=00B0
+  off=00B0 @3186  trig EAA0+18h       <  1BB8 : SIGN(02 02 03)
+  off=00B6 @318C  trig EAA0+18h       <  1A98 : MSG(C14B)(06) ; CHECKPOINT x=1A80 y=1660 (EB1C=x-18h) nextoff=00C0
+  off=00C0 @3196  trig EAA0+18h       <  1A98 : SIGN(02 02 03)
+  off=00C6 @319C  trig EAA0+18h       <  1A18 : C271=1(00) ; GOTO_PT(02 1A 18 17 80)
+  off=00D0 @31A6  trig EA98+30h&FFF   <  06B0 : SIGN(03 02 02)
+  off=00D6 @31AC  trig EA98+30h&FFF   <  05B0 : SETDIR(23) ; CHECKPOINT x=1960 y=16A0 (EB1C=x-18h) nextoff=00E0
+  off=00E0 @31B6  trig EA98+30h&FFF   <  05B0 : SIGN(03 02 02)
+  off=00E6 @31BC  trig EA98+30h&FFF   <  0430 : CHECKPOINT x=1900 y=1700 (EB1C=x-18h) nextoff=00EE
+  off=00EE @31C4  trig EA98+30h&FFF   <  0430 : SIGN(03 02 02)
+  off=00F4 @31CA  trig EA98+30h&FFF   <  02B0 : C271=1(00) ; GOTO_PT(82 17 E8 16 80)
+  off=00FE @31D4  trig EAA0+18h       <  1818 : SETDIR(1E) ; CHECKPOINT x=1800 y=17A0 (EB1C=x-18h) nextoff=0108
+  off=0108 @31DE  trig EAA0+18h       >= 1B38 : C105=1(00)
+  off=010C @31E2  trig EAA0+18h       <  1B38 : MSG(C14B)(07) ; SIGN(36 05 03)
+  off=0114 @31EA  trig EAA0+18h       <  1A18 : CHECKPOINT x=1A10 y=13B0 (EB1C=x-18h) nextoff=011C
+  off=011C @31F2  trig EAA0+18h       <  1A18 : SIGN(36 05 03)
+  off=0122 @31F8  trig EAA0+18h       <  1998 : C271=1(00) ; GOTO_PT(82 19 98 12 80) ; NOPC(01)
+  off=012E @3204  trig EA9C+18h&3FFF  <  2C18 : GOTO_PT(82 19 80 12 68)
+  off=0136 @320C  trig EAA4           <  1298 : SETDIR(14) ; CHECKPOINT x=1860 y=1280 (EB1C=x-18h) nextoff=0140
+  off=0140 @3216  trig EAA4           <  1258 : GOTO_PT(02 17 40 12 58)
+  off=0148 @321E  trig EA9C+18h&3FFF  <  2998 : GOTO_PT(02 17 28 12 40)
+  off=0150 @3226  trig EAA0+18h       <  1758 : GOTO_PT(02 17 58 12 40)
+  off=0158 @322E  trig EA98+30h&FFF   <  0BB0 : SIGN(03 02 02)
+  off=015E @3234  trig EA98+30h&FFF   <  0AB0 : SETDIR(23) ; CHECKPOINT x=16A0 y=1160 (EB1C=x-18h) nextoff=0168
+  off=0168 @323E  trig EA98+30h&FFF   <  0AB0 : SIGN(03 02 02)
+  off=016E @3244  trig EA98+30h&FFF   <  0930 : MSG(C14B)(09) ; CHECKPOINT x=1640 y=11C0 (EB1C=x-18h) nextoff=0178
+  off=0178 @324E  trig EA98+30h&FFF   <  0930 : SIGN(03 02 02)
+  off=017E @3254  trig EA98+30h&FFF   <  07B0 : C271=1(00) ; GOTO_PT(82 15 28 11 40)
+  off=0188 @325E  trig EAA0+18h       <  1558 : SETDIR(1E) ; CHECKPOINT x=1540 y=1260 (EB1C=x-18h) nextoff=0192
+  off=0192 @3268  trig EAA0+18h       <  14F8 : SIGN(04 03 02)
+  off=0198 @326E  trig EAA0+18h       <  13D8 : MSG(C14B)(0A) ; CHECKPOINT x=13C0 y=1260 (EB1C=x-18h) nextoff=01A2
+  off=01A2 @3278  trig EAA0+18h       <  13D8 : SIGN(04 03 02)
+  off=01A8 @327E  trig EAA0+18h       <  1358 : C271=1(00) ; GOTO_PT(82 13 58 11 40) ; NOPC(00)
+  off=01B4 @328A  trig EA9C+18h&3FFF  <  2498 : GOTO_PT(82 13 40 11 28)
+  off=01BC @3292  trig EAA4           <  1158 : SETDIR(14) ; CHECKPOINT x=1220 y=1140 (EB1C=x-18h) nextoff=01C6
+  off=01C6 @329C  trig EAA4           <  1078 : MSG(C14B)(0B) ; SIGN(37 04 04)
+  off=01CE @32A4  trig EAA4           <  0F58 : CHECKPOINT x=1220 y=0F40 (EB1C=x-18h) nextoff=01D6
+  off=01D6 @32AC  trig EAA4           <  0F58 : SIGN(37 04 04)
+  off=01DC @32B2  trig EAA4           <  0EB8 : C271=1(00) ; GOTO_PT(82 13 40 0E D8)
+  off=01E6 @32BC  trig EA98+30h&FFF   >= 0850 : GOTO_PT(02 11 80 0D 68)
+  off=01EE @32C4  trig EAA4           <  0D98 : MSG(C14B)(0C) ; GOTO_PT(02 11 80 0D 98) ; NOPC(01)
+  off=01FA @32D0  trig EA9C+18h&3FFF  <  1F18 : GOTO_PT(02 11 68 0D 80)
+  off=0202 @32D8  trig EAA0+18h       <  1198 : GOTO_PT(02 11 98 0D 80)
+  off=020A @32E0  trig EA98+30h&FFF   <  08B0 : GOTO_PT(82 10 28 0B C0)
+  off=0212 @32E8  trig EAA0+18h       <  1058 : SETDIR(1E) ; CHECKPOINT x=1040 y=0CE0 (EB1C=x-18h) nextoff=021C
+  off=021C @32F2  trig EAA0+18h       <  1038 : SIGN(02 03 02)
+  off=0222 @32F8  trig EAA0+18h       <  0F18 : MSG(C14B)(0D) ; CHECKPOINT x=0F00 y=0CE0 (EB1C=x-18h) nextoff=022C
+  off=022C @3302  trig EAA0+18h       <  0F18 : SIGN(02 03 02)
+  off=0232 @3308  trig EAA0+18h       <  0E98 : C271=1(00) ; GOTO_PT(02 0E 98 0E 00)
+  off=023C @3312  trig EA98+30h&FFF   <  01B0 : SETDIR(23) ; CHECKPOINT x=0DE0 y=0D20 (EB1C=x-18h) nextoff=0246
+  off=0246 @331C  trig EA98+30h&FFF   <  00B0 : SIGN(03 02 02)
+  off=024C @3322  trig EA98+30h&FFF   >= 0DD0 : C105=1(00)
+  off=0250 @3326  trig EA98+30h&FFF   <  0E30 : MSG(C14B)(0E) ; CHECKPOINT x=1100 y=0A00 (EB1C=x-18h) nextoff=025A
+  off=025A @3330  trig EA98+30h&FFF   <  0E30 : SIGN(03 02 02)
+  off=0260 @3336  trig EA98+30h&FFF   <  0CB0 : C271=1(00) ; GOTO_PT(82 0F E8 09 80)
+  off=026A @3340  trig EAA0+18h       <  1058 : SIGN(22 03 04)
+  off=0270 @3346  trig EAA0+18h       <  1018 : SETDIR(1E) ; CHECKPOINT x=1000 y=0AA0 (EB1C=x-18h) nextoff=027A
+  off=027A @3350  trig EAA0+18h       <  1018 : SIGN(22 03 04)
+  off=0280 @3356  trig EAA0+18h       <  0EB8 : C271=1(00)
+  off=0284 @335A  trig EAA0+18h       <  0EB8 : SIGN(0C 03 03)
+  off=028A @3360  trig EAA0+18h       <  0D98 : MSG(C14B)(0F) ; CHECKPOINT x=0D80 y=0AA0 (EB1C=x-18h) nextoff=0294
+  off=0294 @336A  trig EAA0+18h       <  0D98 : SIGN(0C 03 03)
+  off=029A @3370  trig EAA0+18h       <  0D18 : C271=1(00) ; GOTO_PT(82 0D 18 09 80)
+  off=02A4 @337A  trig EA9C+18h&3FFF  <  1698 : GOTO_PT(02 0B 68 0B 00)
+  off=02AC @3382  trig EAA0+18h       <  0B98 : SETDIR(1E) ; CHECKPOINT x=0B80 y=09E0 (EB1C=x-18h) nextoff=02B6
+  off=02B6 @338C  trig EAA0+18h       >= 0DB8 : C105=1(00)
+  off=02BA @3390  trig EAA0+18h       <  0DB8 : MSG(C14B)(11) ; SIGN(38 04 05)
+  off=02C2 @3398  trig EAA0+18h       <  0C98 : CHECKPOINT x=0C80 y=05E0 (EB1C=x-18h) nextoff=02CA
+  off=02CA @33A0  trig EAA0+18h       <  0C98 : SIGN(38 04 05)
+  off=02D0 @33A6  trig EAA0+18h       <  0C18 : C271=1(00) ; GOTO_PT(02 0C 18 07 00)
+  off=02DA @33B0  trig EA98+30h&FFF   <  0AB0 : MSG(C14B)(12) ; GOTO_PT(82 0A A8 05 40)
+  off=02E4 @33BA  trig EAA0+18h       <  0AD8 : GOTO_PT(82 0A D8 05 40)
+  off=02EC @33C2  trig EA9C+18h&3FFF  <  1018 : GOTO_PT(02 09 28 06 C0)
+  off=02F4 @33CA  trig EAA0+18h       <  0958 : MSG(C14B)(13) ; SETDIR(1E) ; CHECKPOINT x=0940 y=05A0 (EB1C=x-18h) nextoff=0300
+  off=0300 @33D6  trig EAA0+18h       <  0838 : SIGN(04 03 02)
+  off=0306 @33DC  trig EAA0+18h       <  0718 : MSG(C14B)(14) ; CHECKPOINT x=0700 y=05A0 (EB1C=x-18h) nextoff=0310
+  off=0310 @33E6  trig EAA0+18h       <  0718 : SIGN(04 03 02)
+  off=0316 @33EC  trig EAA0+18h       <  0698 : C271=1(00) ; GOTO_PT(82 06 98 04 80) ; NOPC(00)
+  off=0322 @33F8  trig EA9C+18h&3FFF  <  0B18 : GOTO_PT(82 06 80 04 68)
+  off=032A @3400  trig EAA4           <  0498 : SETDIR(14) ; CHECKPOINT x=0560 y=0480 (EB1C=x-18h) nextoff=0334
+  off=0334 @340A  trig EAA4           <  0478 : MSG(C14B)(15) ; SIGN(39 05 04)
+  off=033C @3412  trig EAA4           <  0358 : CHECKPOINT x=0560 y=0340 (EB1C=x-18h) nextoff=0344
+  off=0344 @341A  trig EAA4           <  0358 : SIGN(39 05 04)
+  off=034A @3420  trig EAA4           <  02D8 : C271=1(00) ; GOTO_PT(02 04 40 02 D8)
+  off=0354 @342A  trig EA9C+18h&3FFF  <  0718 : MSG(C14B)(16) ; GOTO_PT(82 05 C0 01 28)
+  off=035E @3434  trig EAA4           <  0158 : SETDIR(14) ; CHECKPOINT x=04A0 y=0140 (EB1C=x-18h) nextoff=0368
+  off=0368 @343E  trig EAA4           <  0118 : GOTO_PT(02 03 80 01 18)
+  off=0370 @3446  trig EA9C+18h&3FFF  <  0498 : GOTO_PT(82 05 00 FF 68)
+  off=0378 @344E  trig EAA4           <  FF98 : MSG(C14B)(17) ; SETDIR(14) ; CHECKPOINT x=03E0 y=FF80 (EB1C=x-18h) nextoff=0384
+  off=0384 @345A  trig EAA4           <  FDB8 : MSG(C14B)(18) ; FINISH(00)
+  off=038A @3460  trig EAA4           <  FDB8 : C105=1(00) ; SIGN(00 DF D8) ; SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=039A
+  (end offset 039A, next base 3470)
+=== STAGE 11  base=3466 (len 922)
+  off=0000 @3466  trig EAA4           <  1FD8 : SETDIR(14) ; CHECKPOINT x=1FE0 y=1FAC (EB1C=x-18h) nextoff=000A
+  off=000A @3470  trig EAA4           <  1F58 : NOPC(00)
+  off=000E @3474  trig EAA4           <  1D98 : MSG(C14B)(01) ; SIGN(15 02 04)
+  off=0016 @347C  trig EAA4           <  1C78 : CHECKPOINT x=1FE0 y=1C60 (EB1C=x-18h) nextoff=001E
+  off=001E @3484  trig EAA4           <  1C78 : SIGN(15 02 04)
+  off=0024 @348A  trig EAA4           <  1BF8 : C271=1(00) ; GOTO_PT(81 20 A0 1B F0)
+  off=002E @3494  trig EA98+30h&FFF   >= 0850 : SIGN(1A 03 03)
+  off=0034 @349A  trig EA98+30h&FFF   >= 0910 : SETDIR(0F) ; CHECKPOINT x=2000 y=1B80 (EB1C=x-18h) nextoff=003E
+  off=003E @34A4  trig EA98+30h&FFF   >= 0910 : MSG(C14B)(02) ; SIGN(1A 03 03)
+  off=0046 @34AC  trig EA98+30h&FFF   >= 0A50 : CHECKPOINT x=2060 y=1B20 (EB1C=x-18h) nextoff=004E
+  off=004E @34B4  trig EA98+30h&FFF   >= 0A50 : SIGN(1A 03 03)
+  off=0054 @34BA  trig EA98+30h&FFF   >= 0BD0 : C271=1(00) ; GOTO_PT(01 20 20 1A 50)
+  off=005E @34C4  trig EAA4           <  1A78 : GOTO_PT(01 20 20 1A 70)
+  off=0066 @34CC  trig EA9C+18h&3FFF  <  3A98 : SETDIR(19) ; CHECKPOINT x=20A0 y=19E0 (EB1C=x-18h) nextoff=0070
+  off=0070 @34D6  trig EA9C+18h&3FFF  <  3A18 : MSG(C14B)(03) ; SIGN(01 02 02)
+  off=0078 @34DE  trig EA9C+18h&3FFF  <  38D8 : NOPC(01) ; CHECKPOINT x=1FC0 y=1900 (EB1C=x-18h) nextoff=0082
+  off=0082 @34E8  trig EA9C+18h&3FFF  <  38D8 : SIGN(01 02 02)
+  off=0088 @34EE  trig EA9C+18h&3FFF  <  3818 : C271=1(00) ; GOTO_PT(00 1F 18 18 E0)
+  off=0092 @34F8  trig EAA0+18h       <  1F38 : SIGN(1F 03 05)
+  off=0098 @34FE  trig EAA0+18h       <  1EF8 : LIGHT(C1A1)(00) ; SETDIR(1E) ; CHECKPOINT x=1F20 y=1880 (EB1C=x-18h) nextoff=00A4
+  off=00A4 @350A  trig EAA0+18h       <  1EF8 : SIGN(1F 03 05)
+  off=00AA @3510  trig EAA0+18h       <  1D98 : MSG(C14B)(04) ; C271=1(00)
+  off=00B0 @3516  trig EAA0+18h       <  1CD8 : SIGN(3A 05 04)
+  off=00B6 @351C  trig EAA0+18h       <  1BB8 : CHECKPOINT x=1BA0 y=1880 (EB1C=x-18h) nextoff=00BE
+  off=00BE @3524  trig EAA0+18h       <  1BB8 : SIGN(3A 05 04)
+  off=00C4 @352A  trig EAA0+18h       <  1B38 : C271=1(00) ; GOTO_PT(82 1B 38 17 60)
+  off=00CE @3534  trig EA9C+18h&3FFF  <  3298 : GOTO_PT(02 19 88 18 E0) ; MSG(C14B)(05)
+  off=00D8 @353E  trig EAA0+18h       <  19B8 : NOPC(00) ; SETDIR(1E) ; CHECKPOINT x=19A0 y=17C0 (EB1C=x-18h) nextoff=00E4
+  off=00E4 @354A  trig EAA0+18h       <  1978 : GOTO_PT(82 19 78 16 A0)
+  off=00EC @3552  trig EA9C+18h&3FFF  <  3018 : GOTO_PT(82 19 60 16 88)
+  off=00F4 @355A  trig EAA4           <  16B8 : MSG(C14B)(06) ; SETDIR(14) ; CHECKPOINT x=1840 y=16A0 (EB1C=x-18h) nextoff=0100
+  off=0100 @3566  trig EAA4           <  15F8 : SIGN(15 02 03)
+  off=0106 @356C  trig EAA4           <  14D8 : MSG(C14B)(07) ; CHECKPOINT x=1840 y=14C0 (EB1C=x-18h) nextoff=0110
+  off=0110 @3576  trig EAA4           <  14D8 : SIGN(15 02 03)
+  off=0116 @357C  trig EAA4           <  1438 : C271=1(00) ; GOTO_PT(82 19 60 14 38)
+  off=0120 @3586  trig EA98+30h&FFF   >= 08D0 : SIGN(0D 03 03)
+  off=0126 @358C  trig EA98+30h&FFF   >= 09D0 : SETDIR(0F) ; CHECKPOINT x=1880 y=1380 (EB1C=x-18h) nextoff=0130
+  off=0130 @3596  trig EA98+30h&FFF   >= 09D0 : SIGN(0D 03 03)
+  off=0136 @359C  trig EA98+30h&FFF   >= 0B50 : CHECKPOINT x=18E0 y=1320 (EB1C=x-18h) nextoff=013E
+  off=013E @35A4  trig EA98+30h&FFF   >= 0B50 : SIGN(0D 03 03)
+  off=0144 @35AA  trig EA98+30h&FFF   >= 0CD0 : C271=1(00) ; GOTO_PT(01 18 A0 12 50) ; NOPC(01)
+  off=0150 @35B6  trig EAA4           <  1278 : MSG(C14B)(08) ; GOTO_PT(01 18 A0 12 70)
+  off=015A @35C0  trig EA9C+18h&3FFF  <  2B18 : GOTO_PT(02 18 48 12 A0)
+  off=0162 @35C8  trig EAA0+18h       <  1878 : SETDIR(1E) ; CHECKPOINT x=1860 y=1180 (EB1C=x-18h) nextoff=016C
+  off=016C @35D2  trig EAA0+18h       <  1878 : SIGN(3D 03 06)
+  off=0172 @35D8  trig EAA0+18h       <  16D8 : C271=1(00)
+  off=0176 @35DC  trig EAA0+18h       <  1578 : MSG(C14B)(09) ; SIGN(04 03 02)
+  off=017E @35E4  trig EAA0+18h       <  1458 : CHECKPOINT x=1440 y=1180 (EB1C=x-18h) nextoff=0186
+  off=0186 @35EC  trig EAA0+18h       <  1458 : SIGN(04 03 02)
+  off=018C @35F2  trig EAA0+18h       <  13D8 : LIGHT(C1A1)(01) ; C271=1(00) ; GOTO_PT(81 13 D0 10 C0) ; NOPC(01)
+  off=019A @3600  trig EA9C+18h&3FFF  <  2498 : GOTO_PT(81 13 C0 10 B0)
+  off=01A2 @3608  trig EAA4           <  10D8 : MSG(C14B)(0A) ; SETDIR(14) ; CHECKPOINT x=1300 y=10C0 (EB1C=x-18h) nextoff=01AE
+  off=01AE @3614  trig EAA4           <  1078 : SIGN(3B 05 04)
+  off=01B4 @361A  trig EAA4           <  0F58 : CHECKPOINT x=1300 y=0F40 (EB1C=x-18h) nextoff=01BC
+  off=01BC @3622  trig EAA4           <  0F58 : SIGN(3B 05 04)
+  off=01C2 @3628  trig EAA4           <  0ED8 : C271=1(00) ; GOTO_PT(81 13 C0 0E D0)
+  off=01CC @3632  trig EA98+30h&FFF   >= 0950 : MSG(C14B)(0B) ; GOTO_PT(01 12 80 0D F0) ; NOPC(00)
+  off=01D8 @363E  trig EAA4           <  0E18 : GOTO_PT(01 12 80 0E 10)
+  off=01E0 @3646  trig EA9C+18h&3FFF  <  2098 : GOTO_PT(01 12 70 0E 00)
+  off=01E8 @364E  trig EAA0+18h       <  1298 : GOTO_PT(82 12 78 0C 20)
+  off=01F0 @3656  trig EA9C+18h&3FFF  <  1E98 : GOTO_PT(82 12 60 0C 08)
+  off=01F8 @365E  trig EAA4           <  0C38 : MSG(C14B)(0C) ; SETDIR(14) ; CHECKPOINT x=1140 y=0C20 (EB1C=x-18h) nextoff=0204
+  off=0204 @366A  trig EAA4           <  0A78 : RACE_START(B6 00 BE)
+  off=020A @3670  trig EAA4           <  0A58 : RACE_START2(14 00 96)
+  off=0210 @3676  trig EAA4           >= 0CD8 : C105=1(00)
+  off=0214 @367A  trig EAA4           <  0CD8 : MSG(C14B)(0D) ; SIGN(00 03 02)
+  off=021C @3682  trig EAA4           <  0BB8 : CHECKPOINT x=0D40 y=0BA0 (EB1C=x-18h) nextoff=0224
+  off=0224 @368A  trig EAA4           <  0BB8 : SIGN(00 03 02)
+  off=022A @3690  trig EAA4           <  0B38 : C271=1(00) ; GOTO_PT(00 0C E0 0B 28)
+  off=0234 @369A  trig EA9C+18h&3FFF  <  1818 : SIGN(3C 06 03)
+  off=023A @36A0  trig EA9C+18h&3FFF  <  17D8 : MSG(C14B)(0E) ; SETDIR(19) ; CHECKPOINT x=0D20 y=0AE0 (EB1C=x-18h) nextoff=0246
+  off=0246 @36AC  trig EA9C+18h&3FFF  <  17D8 : SIGN(3C 06 03)
+  off=024C @36B2  trig EA9C+18h&3FFF  <  16D8 : CHECKPOINT x=0C80 y=0A40 (EB1C=x-18h) nextoff=0254
+  off=0254 @36BA  trig EA9C+18h&3FFF  <  16D8 : SIGN(3C 06 03)
+  off=025A @36C0  trig EA9C+18h&3FFF  <  1618 : C271=1(00) ; GOTO_PT(81 0C A0 09 50)
+  off=0264 @36CA  trig EAA4           <  0978 : MSG(C14B)(0F) ; SETDIR(14) ; CHECKPOINT x=0BE0 y=0960 (EB1C=x-18h) nextoff=0270
+  off=0270 @36D6  trig EAA4           <  0978 : GOTO_PT(01 0B 20 08 F0)
+  off=0278 @36DE  trig EA9C+18h&3FFF  <  1418 : GOTO_PT(01 0B 10 08 E0)
+  off=0280 @36E6  trig EAA0+18h       <  0B38 : SETDIR(1E) ; CHECKPOINT x=0B20 y=0820 (EB1C=x-18h) nextoff=028A
+  off=028A @36F0  trig EAA0+18h       <  0AB8 : GOTO_PT(81 0A B0 07 60) ; NOPC(00)
+  off=0294 @36FA  trig EA9C+18h&3FFF  <  1218 : MSG(C14B)(10) ; SETDIR(19) ; CHECKPOINT x=0A20 y=07E0 (EB1C=x-18h) nextoff=02A0
+  off=02A0 @3706  trig EA9C+18h&3FFF  <  1198 : SIGN(07 02 02)
+  off=02A6 @370C  trig EA9C+18h&3FFF  <  1058 : CHECKPOINT x=0940 y=0700 (EB1C=x-18h) nextoff=02AE
+  off=02AE @3714  trig EA9C+18h&3FFF  <  1058 : SIGN(07 02 02)
+  off=02B4 @371A  trig EA9C+18h&3FFF  <  0F98 : C271=1(00) ; GOTO_PT(82 09 A0 05 C8)
+  off=02BE @3724  trig EAA4           <  05F8 : MSG(C14B)(11) ; SETDIR(14) ; CHECKPOINT x=0880 y=05E0 (EB1C=x-18h) nextoff=02CA
+  off=02CA @3730  trig EAA4           >= 0518 : SIGN(08 03 04)
+  off=02D0 @3736  trig EAA4           <  03F8 : MSG(C14B)(12) ; CHECKPOINT x=0880 y=03E0 (EB1C=x-18h) nextoff=02DA
+  off=02DA @3740  trig EAA4           <  03F8 : SIGN(08 03 04)
+  off=02E0 @3746  trig EAA4           <  0378 : C271=1(00) ; GOTO_PT(82 09 A0 03 78) ; NOPC(01)
+  off=02EC @3752  trig EA98+30h&FFF   >= 0BD0 : LIGHT(C1A1)(00) ; GOTO_PT(02 07 E0 02 08)
+  off=02F6 @375C  trig EAA4           <  0238 : MSG(C14B)(13) ; SETDIR(14) ; CHECKPOINT x=0900 y=0220 (EB1C=x-18h) nextoff=0302
+  off=0302 @3768  trig EAA4           <  0238 : SIGN(40 04 06)
+  off=0308 @376E  trig EAA4           >= 0498 : C105=1(00)
+  off=030C @3772  trig EAA4           <  0498 : C271=1(00)
+  off=0310 @3776  trig EAA4           <  0398 : MSG(C14B)(14) ; SIGN(09 03 02)
+  off=0318 @377E  trig EAA4           <  0278 : CHECKPOINT x=0500 y=0260 (EB1C=x-18h) nextoff=0320
+  off=0320 @3786  trig EAA4           <  0278 : SIGN(09 03 02)
+  off=0326 @378C  trig EAA4           <  01F8 : C271=1(00) ; GOTO_PT(00 04 A0 01 E8) ; NOPC(00)
+  off=0332 @3798  trig EA9C+18h&3FFF  <  0698 : GOTO_PT(00 04 98 01 E0)
+  off=033A @37A0  trig EAA0+18h       <  04B8 : MSG(C14B)(15) ; SETDIR(1E) ; CHECKPOINT x=04A0 y=0180 (EB1C=x-18h) nextoff=0346
+  off=0346 @37AC  trig EAA0+18h       <  0478 : SIGN(0A 03 03)
+  off=034C @37B2  trig EAA0+18h       <  0318 : CHECKPOINT x=0340 y=0180 (EB1C=x-18h) nextoff=0354
+  off=0354 @37BA  trig EAA0+18h       <  0318 : SIGN(0A 03 03)
+  off=035A @37C0  trig EAA0+18h       <  02D8 : MSG(C14B)(16) ; C271=1(00) ; GOTO_PT(81 02 D0 00 C0) ; NOPC(01)
+  off=0368 @37CE  trig EA9C+18h&3FFF  <  0398 : GOTO_PT(81 02 C0 00 B0)
+  off=0370 @37D6  trig EAA4           <  00D8 : GOTO_PT(81 02 C0 00 D0)
+  off=0378 @37DE  trig EA98+30h&FFF   >= 02D0 : SIGN(0B 02 03)
+  off=037E @37E4  trig EA98+30h&FFF   >= 0350 : SETDIR(0F) ; CHECKPOINT x=0220 y=0060 (EB1C=x-18h) nextoff=0388
+  off=0388 @37EE  trig EA98+30h&FFF   >= 0350 : SIGN(0B 02 03)
+  off=038E @37F4  trig EA98+30h&FFF   >= 04D0 : CHECKPOINT x=0280 y=0000 (EB1C=x-18h) nextoff=0396
+  off=0396 @37FC  trig EA98+30h&FFF   >= 04D0 : SIGN(0B 02 03)
+  (end offset 039C, next base 3802)

@@ -1,0 +1,51 @@
+World Rally (Gaelco 1993) - port a Neo Geo, version final ("WRally neogeo final") - como compilar
+====================================================================
+
+Este paquete NO contiene datos del juego original ni BIOS. Todo (programa, graficos, sonido) se
+genera a partir de las ROM de tu propia placa (set de MAME "wrally").
+
+Requisitos (Linux):
+  - python3 con numpy, scipy, pillow y capstone
+  - binutils + gcc para 68000: m68k-linux-gnu-gcc / -nm / -objcopy / -size
+  - pasmo (ensamblador Z80, para el driver de sonido)
+  - gcc normal (para snd/adpcma_enc.c)
+  - MAME (opcional, para las pruebas de test/)
+
+Rutas: los scripts usan rutas fijas. Coloca el arbol en /home/claude/wrally (o cambia las rutas en
+build.py, snd/sndbuild.py, gfxconv.py, mkfbneo.py y pack.py):
+  /home/claude/wrally/rom/        tus ROM del set "wrally" descomprimidas (worldr16.c22,
+                                  worldr17.c23, graficos, sonido y wrdallas.bin de la MCU)
+  /home/claude/wrally/cov/        este directorio cov/
+  /home/claude/wrally/neo/        este directorio neo/
+
+Pasos:
+  1. python3 mkprog.py /home/claude/wrally/rom/      -> prog.bin (programa 68000, 1 MB)
+  2. cd /home/claude/wrally/neo/snd && gcc -O2 -o adpcma_enc adpcma_enc.c
+  3. cd /home/claude/wrally/neo && python3 build.py   -> build/prom.bin, crom.bin, v1.bin, m1.bin
+  4. python3 pack.py                                   -> build/wrally.neo (NeoSD / MiSTer)
+  5. python3 mkfbneo.py <carpeta>                      -> wrallyng.zip + wrallyng.dat (FBNeo; los
+                                                          6 archivos sueltos sirven para BackBit)
+
+Opciones de build.py (variables de entorno, solo para pruebas):
+  DIAG3, DIAG4, DIAG5   lineas de diagnostico en pantalla (salida de etapa, escrituras de la
+                        posicion del coche, terreno bajo el coche)
+  ENDTEST               la demo empieza por la escena final (trompos del campeon)
+  VELFIX                el parche de prueba de la 4g (coche fijo hasta el GO); no hace falta
+  DBGSPD, SLOWTEST, TIMERX   medidas de velocidad
+
+Archivos principales:
+  neo/build.py          parchea el programa original (reubicacion, VRAM cifrada, ganchos nativos,
+                        sumas de la proteccion anticopia) y enlaza el codigo del port
+  neo/src/shell_wr.s    arranque, interrupciones, copias de mapa nativas
+  neo/src/fast.s        conversion de sprites, paletas, lista 1 nativa
+  neo/src/video.c       capas de tiles, paletas, efectos (sombras y faros)
+  neo/eyetext.py        textos de la intro Neo Geo (PORT ARKRETRO / PRO BLOSTE SPEC); lo usan
+                        pack.py y mkfbneo.py. Solo actua si existe build/eyecatch_fix.bin (los
+                        tiles de la intro sacados de un juego tuyo)
+  neo/src/main.c        bucle de VBLANK, mandos, MCU
+  neo/rc/rc51.py        recompilador de la MCU (DS5002FP 8051) a 68000
+  neo/snd/              driver Z80 y conversion de sonido OKI -> ADPCM-A
+  cov/                  analisis del programa original (relocaciones)
+  neo/test/mame_lua/    guiones de MAME usados en las pruebas (fase4j/: comparacion de etapas,
+                        carreras con "Continue" original contra port, escena final;
+                        final/: faros conduciendo y girando, intro)
