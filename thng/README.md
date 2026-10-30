@@ -47,6 +47,18 @@ textos, el título y el modo demo, y se puede jugar (moneda: SELECT o la ranura 
   se suben las que cambian; las paletas sólo se comparan si la rutina de copia del juego las marca.
 * Gráficos: `tools/gfx2crom.py` (C ROM 2 x 8 MB + tabla de tiles 8x8 + S ROM con la fuente).
 
+## Generar el .neo con tu propia ROM (sin compilar nada)
+
+El paquete no lleva ningún dato del juego arcade: se genera con tu `thoop.zip` de MAME.
+
+* **Navegador:** abre `thng.html`, arrastra `thoop.zip` y pulsa "Generar thng.neo" (Python corre en tu navegador,
+  los archivos no se suben a ningún sitio).
+* **Línea de comandos** (Python 3.8+, sin paquetes): `python3 thng_build.py thng-kit.zip thoop.zip -o thng.neo`
+  (`--mame thng.zip` genera también el set para MAME).
+
+Ambos se obtienen con `make kit ARCADE=<carpeta del set thoop>` (`build/release/`) y dan un .neo idéntico byte a
+byte al del build normal.
+
 ## Compilar
 
     make game ARCADE=<carpeta con el set thoop de MAME>

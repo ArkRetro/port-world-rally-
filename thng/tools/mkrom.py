@@ -24,8 +24,9 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'analysis'))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gaelcrypt  # noqa: E402
-from capstone import Cs, CS_ARCH_M68K, CS_MODE_M68K_000  # noqa: E402
+import m68k_mini  # noqa: E402
 
 RUNTIME_ORG = 0xB0000
 CODE_HI = 0x26000                               # the program code ends below here (maps / graphics data above)
@@ -55,11 +56,8 @@ def reloc(v):
     return None
 
 
-cs = Cs(CS_ARCH_M68K, CS_MODE_M68K_000)
-
-
 def dis(rom, pc):
-    return next(cs.disasm(bytes(rom[pc:pc + 12]), pc, 1))
+    return m68k_mini.decode(rom, pc)
 
 
 def parse(op):
@@ -208,6 +206,15 @@ def gen_stub(pc, i):
     out.append('        moveq   #%d,d6' % i.size)
     out.append('        jmp     linea_done')
     return out
+
+
+def stub_blob(rom, sites_path, syms):
+    """the stub table + stubs (what stubs.s assembles to) placed at linea_sites: (bytes, labels)"""
+    stubs = [(pc, i) for pc, i, act in sites(rom, sites_path) if act[0] == 'stub']
+    lines = ['linea_sites:'] + ['        .long   s_%06X' % pc for pc, i in stubs]
+    for pc, i in stubs:
+        lines += gen_stub(pc, i)
+    return m68k_mini.assemble(lines, syms['linea_sites'], syms)
 
 
 def cmd_stubs(a):

@@ -15,7 +15,7 @@ VERSION := $(shell cat VERSION)
 SRCS = src/header.s src/main.s src/crypt.s src/video.s src/fix.s src/sound.s src/tables.s
 ANALYSIS = analysis/absrefs.csv analysis/trap_tables.csv analysis/code_ranges.csv analysis/vram_sites.txt
 
-.PHONY: game neo clean
+.PHONY: game neo kit clean
 
 $(BUILD)/th_cpu.bin: $(ARCADE)/th18dea1.040 $(ARCADE)/th161eb4.020
 	mkdir -p $(BUILD)
@@ -67,3 +67,10 @@ neo: game
 	mkdir -p $(BUILD)/release
 	python3 -I tools/mkneo.py $(BUILD)/roms/thng thng $(BUILD)/release/thng.neo -n "Thunder Hoop NG v$(VERSION)" --zip $(BUILD)/release/thng.zip
 	cp $(BUILD)/release/thng.neo $(BUILD)/release/thng_v$(VERSION).neo
+
+# ---- distributable kit: the port without any arcade data + the tool (command line / web page) that rebuilds
+# thng.neo from the user's own Thunder Hoop ROMs ----
+kit: neo
+	python3 -I tools/mkkit.py $(BUILD) $(BUILD)/release/thng-kit.zip
+	cp tools/thng_build.py $(BUILD)/release/
+	python3 -I tools/mkweb.py $(BUILD)/release/thng-kit.zip tools/thng_build.py $(BUILD)/release/thng.html $(VERSION)
