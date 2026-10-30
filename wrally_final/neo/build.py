@@ -156,8 +156,18 @@ FILL_SITES = {0x11FDC: 'fill_l1', 0x11FF2: 'fill_l0'}
 # copia de listas de sprites (IRQ del juego) -> conversion directa
 patch(0x44E6, bytes.fromhex('43F900109006'), bytes.fromhex('4EF900000000'))
 # rutinas completas de copia de mapa -> version nativa (sin trampa por long)
+# copias de rectangulos de pantalla (graficos fijos de menus) -> version nativa con maptab
+PIC_SITES = {} if os.environ.get('NOPIC') else {0x11D30: ('2A4C380228F21000', 'pic_copy1'), 0x11D9A: ('2A4C380228F21000', 'pic_copy0')}
+for a, (o, n) in PIC_SITES.items():   # (la instruccion de en medio ya es un A-line de VSITES)
+    assert bytes(D[a:a+4]) == bytes.fromhex(o[:8]) and bytes(D[a+6:a+8]) == bytes.fromhex(o[12:]), hex(a)
+    D[a:a+8] = bytes.fromhex('4EF9000000004E71')
 MAPC_SITES = {0x98DA: 'map_row_l1', 0x9976: 'map_col_l1', 0x9C12: 'map_row_l0', 0x9CAE: 'map_col_l0'}
 for a in MAPC_SITES: patch(a, bytes.fromhex('34390010C256'), bytes.fromhex('4EF900000000'))
+# pausa en negro entre pantallas (move.w #50,d1 / bsr 0x2F7E: ~2 millones de ciclos, unos 10 cuadros):
+# en el port la pantalla nueva tarda mas en construirse (escrituras cifradas), asi que la pausa se
+# acorta a 20 para que la transicion dure lo mismo que en el arcade
+for a in (0x3302, 0x89FE):
+    patch(a, bytes.fromhex('323C00326100'), bytes.fromhex('323C00146100'))
 # fin de cuadro del bucle principal: "tst.w $FEC1A6 / beq.s *-6" -> jsr frame_hook / nop
 patch(0x32B8, bytes.fromhex('4A790010C1A667F8'), bytes.fromhex('4EB9000000004E71'))
 # test de RAM del arranque (16 KB x2 con IRQ desactivadas): version que alimenta el watchdog
@@ -233,6 +243,7 @@ for _r1 in (0x1500a, 0x6d61e, 0x71628, 0x7d646, 0x75632, 0x8565a, 0x81650, 0x896
         for _idx in set(_np.frombuffer(_orig[_rt:_rt + 0x2000], dtype='>u2').tolist()):
             _a = _base + _idx * 256
             _set.update(range(_a >> 12, ((_a + 255) >> 12) + 1))
+_set.update(range(0xE5, 0xF9))         # graficos fijos de las pantallas (copias 0x11D30 / 0x11D9A)
 MAP_PAGES = sorted(_set)
 _ptab = [0xFFFF] * 256
 _mt = bytearray()
@@ -415,6 +426,7 @@ D[0x100:0x100 + len(hdr)] = hdr
 D[MCU_SITE+2:MCU_SITE+6] = struct.pack('>I', syms['mcu_hook'])
 for a, n in FILL_SITES.items(): D[a+2:a+6] = struct.pack('>I', syms[n])
 for a, n in MAPC_SITES.items(): D[a+2:a+6] = struct.pack('>I', syms[n])
+for a, (o, n) in PIC_SITES.items(): D[a+2:a+6] = struct.pack('>I', syms[n])
 if not os.environ.get('NOL1'): D[0x457C:0x457C+6] = bytes.fromhex('4EF9') + struct.pack('>I', syms['l1_build'])   # lista 1 nativa
 assert D[0xA07A:0xA080] == bytes.fromhex('B051 6700 000E'.replace(' ',''))
 if not os.environ.get('NOSRCH'): D[0xA07A:0xA080] = bytes.fromhex('4EF9') + struct.pack('>I', syms['srch_hook'])   # busqueda con indice

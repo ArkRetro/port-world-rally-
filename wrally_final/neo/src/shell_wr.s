@@ -591,6 +591,66 @@ ram_test:
 8:      ori.l   #0x80000000,%d0
         movea.l %d0,%a6
         rts
+| copia de rectangulos de pantalla (0x11D30 capa 1 con tope 0x104000, 0x11D9A capa 0 sin tope):
+| "move.l (a2,d1.w),(a4)+" fila a fila (d2 = longs-1, d3 = filas-1, filas de 256 bytes) con los
+| graficos fijos de la ROM (0xE5000-0xF8FFF, menus y pantallas): el valor ya descifrado sale de
+| maptab y va directo (.Vhave), sin trampa A-line ni descifrado por long. Fuera de maptab: vram_fix_a0
+        .globl  pic_copy1, pic_copy0
+pic_copy1:
+        move.l  #0x104000,pc_lim
+        bra.s   1f
+pic_copy0:
+        move.l  #0x7FFFFFFF,pc_lim
+1:      movem.l %d0/%d5-%d7/%a0-%a1/%a3/%a6,-(%sp)
+.Prow:  movea.l %a4,%a5
+        move.w  %d2,%d4
+.Pcol:  movem.l %d1-%d4/%a2/%a5,-(%sp)
+        move.w  %d1,%d0
+        ext.l   %d0
+        add.l   %a2,%d0
+        btst    #1,%d0                  | (maptab: longs alineados a 4; si no, por la via normal)
+        bne.s   4f
+        bsr     .Mxlat
+        bra.s   5f
+4:      bset    #31,%d0
+        movea.l %d0,%a6
+5:      move.w  %sr,%d7
+        ori.w   #0x0700,%sr
+        move.l  %a6,%d0
+        bmi.s   2f
+        move.w  (%a6),%d3
+        move.w  2(%a6),%d1
+        move.w  %d3,(%a4)
+        move.w  %d1,2(%a4)
+        move.l  %a4,%d0
+        subi.l  #0x100000,%d0
+        bsr     .Vhave
+        bra.s   3f
+2:      bclr    #31,%d0                 | (como el stub A-line: el long cifrado y vram_fix_a0)
+        movea.l %d0,%a0
+        move.l  (%a0),(%a4)
+        movea.l %a4,%a0
+        jsr     vram_fix_a0
+3:      move.w  %d7,%sr
+        movem.l (%sp)+,%d1-%d4/%a2/%a5
+        addq.l  #4,%a4
+        addq.w  #4,%d1
+        cmpa.l  pc_lim,%a4
+        bge.s   9f
+        dbra    %d2,.Pcol
+        movea.l %a5,%a4
+        move.w  %d4,%d2
+        lea     256(%a4),%a4
+        cmpa.l  pc_lim,%a4
+        bge.s   9f
+        dbra    %d3,.Prow
+9:      movem.l (%sp)+,%d0/%d5-%d7/%a0-%a1/%a3/%a6
+        rts
+        .bss
+        .even
+pc_lim: .skip 4
+        .text
+
 | un long: (a6) -> (a5) y VRAM Neo Geo
 .Mput:  ori.w   #0x0700,%sr
         move.l  %a6,%d0
