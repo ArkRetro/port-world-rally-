@@ -2,6 +2,13 @@ WRally neogeo final - World Rally (Gaelco 1993), port a Neo Geo por arkretro. SO
 No incluye BIOS: usa la tuya (neogeo.zip / BIOS de tu consola). Hecho a partir de las ROM de tu
 propia placa: no lo distribuyas (para Patreon, mejor el video y el codigo fuente).
 
+TRANSICIONES MAS RAPIDAS (final + t1)
+  - Las pantallas fijas (titulo, menus, mapa, "The Competition Car") se dibujan con una copia
+    nativa (0x11D30 / 0x11D9A): los graficos ya descifrados salen de maptab, sin trampa A-line ni
+    descifrado por long. La pausa en negro entre pantallas se acorta de 50 a 20 (0x3302, 0x89FE).
+    En MAME el negro entre pantallas baja de 32-46 cuadros a 26-28 (antes de la carrera, de 76 a
+    60); la VRAM del juego queda identica.
+
 CAMBIO PARA NEOSD (sobre la version final)
   - Todo el codigo del port, sus interrupciones y sus tablas pasan al primer mega de la ROM P
     (0x19000-0x68FFF y 0x99000-0xCEFFF, paginas de los mapas cifrados del original, que el port ya
