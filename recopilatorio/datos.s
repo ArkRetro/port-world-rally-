@@ -4,3 +4,8 @@
     .global pantalla
 pantalla:
     .incbin "pantalla.bin"
+# la musica (musica.py; vacia, la cabecera a cero, si se construye con SIN_MUSICA=1)
+    .align 4
+    .global musica
+musica:
+    .incbin "musica.bin"

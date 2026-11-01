@@ -7,6 +7,8 @@
 #   SD_NOMBRE, REGIONES, XSTATION, PSIO: ver mkiso.py
 # Las portadas del menu (work/portada1.ppm y portada2.ppm) las saca captura.sh del titulo de cada port si no estan
 # (se pueden poner otras: capturas de 368 x 240 en ppm o png); SIN_PORTADAS=1: el menu con un 1 y un 2 en su lugar.
+# La musica del menu (musica.py): la del WR1 de sus pistas de CD-DA y la del titulo del WR2 grabada del port con
+# mednafen (musica.sh, si no esta work/mus/w2.wav ni work/musica2.wav); SIN_MUSICA=1: el menu sin musica.
 set -e
 cd "$(dirname "$0")"
 P=mipsel-linux-gnu
@@ -15,6 +17,12 @@ mkdir -p work cd
 if [ -z "$SIN_PORTADAS" ] && { [ ! -f work/portada1.ppm ] || [ ! -f work/portada2.ppm ]; }; then ./captura.sh; fi
 echo "== pantalla del menu"
 python3 pantalla.py work/pantalla.bin work/portada1.ppm work/portada2.ppm work/vista.png
+echo "== musica del menu"
+if [ -n "$SIN_MUSICA" ]; then python3 -c "open('work/musica.bin','wb').write(bytes(24))"
+else
+  if [ ! -f work/musica2.wav ] && [ ! -f work/mus/w2.wav ]; then ./musica.sh; fi
+  python3 musica.py work/musica.bin
+fi
 echo "== INICIO.EXE"
 ARCH="-march=mips1 -mabi=32 -EL -fno-pic -mno-shared -mno-abicalls -mfp32 -mno-llsc -fno-stack-protector -nostdlib -ffreestanding"
 CF="$ARCH -Os -G0 -mno-gpopt -fomit-frame-pointer -fno-builtin -fdata-sections -ffunction-sections -Wall"
