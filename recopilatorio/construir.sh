@@ -20,7 +20,9 @@ python3 pantalla.py work/pantalla.bin work/portada1.ppm work/portada2.ppm work/v
 echo "== musica del menu"
 if [ -n "$SIN_MUSICA" ]; then python3 -c "open('work/musica.bin','wb').write(bytes(24))"
 else
-  if [ ! -f work/musica2.wav ] && [ ! -f work/mus/w2.wav ]; then ./musica.sh; fi
+  if [ ! -f work/musica2.wav ] && [ ! -f work/mus/w2.wav ]; then
+    if [ -n "$LICENCIA" ]; then ./musica.sh; else echo "sin LICENCIA (BIOS) no se graba la musica del WR2"; fi
+  fi
   python3 musica.py work/musica.bin
 fi
 echo "== INICIO.EXE"

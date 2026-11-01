@@ -4,19 +4,20 @@
 # 25_30 y 20_15 con salidas, choques y vuelcos), para las poses de cada coche en GAMEL/GAMER.PAK: con solo la partida de
 # Portugal (ptL/ptR) faltaban muchas al girar fuerte o volcar en otros tramos (cuadrados en el coche). Sin ROMSTAT: los
 # bancos de ROM de los tramos siguen saliendo de las corridas de N. Salida: work/coches/<coche>_<rally>_<estilo>/
-# (blk.bin, log.txt, dumps.bin, inputs.txt). Uso: tools/corridas_coches.sh [cuadros (18000)] [estilos] [coches ("L R")]
+# (blk.bin, log.txt, dumps.bin, inputs.txt). Uso: tools/corridas_coches.sh [cuadros (18000)] [estilos (los 8 de
+# corridas_tramos.sh)] [coches ("L R")]; RALLIES ("0 1 2 3") como alli
 set -e
 W=$(cd "$(dirname "$0")/.." && pwd)/work
 RC=$(cd "$(dirname "$0")/../rc" && pwd)
 H=${RC_HOST:-$W/rc_host_p2}
-N=${1:-18000}; ESTILOS=${2:-"10_150 25_30 20_15"}; COCHES=${3:-"L R"}
+N=${1:-18000}; ESTILOS=${2:-"10_150 10_90 15_150 8_200 12_120 10_60 25_30 20_15"}; COCHES=${3:-"L R"}
 MENU_0="1200-1208:C,1300-1308:S,1450-1458:X,1800-1808:X"
 MENU_1="1200-1208:C,1300-1308:S,1450-1458:X,1720-1728:R,1950-1958:X"
 MENU_2="1200-1208:C,1300-1308:S,1450-1458:X,1720-1728:R,1790-1798:R,1950-1958:X"
 MENU_3="1200-1208:C,1300-1308:S,1450-1458:X,1720-1728:R,1790-1798:R,1860-1868:R,1950-1958:X"
 cd "$RC"
 for c in $COCHES; do
-  for r in 0 1 2 3; do
+  for r in ${RALLIES:-0 1 2 3}; do
     eval m=\$MENU_$r
     m="1380-1386:$c,$m"
     for e in $ESTILOS; do

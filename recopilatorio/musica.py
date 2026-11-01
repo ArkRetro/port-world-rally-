@@ -5,6 +5,7 @@
    de sndps1.py, para que el CD-DA pare entre una y otra) se deja en un cuadro, como en la placa.
  - WR2: la del titulo, grabada del port (musica.sh: work/mus/w2.wav) desde que empieza a sonar despues del arranque
    hasta el silencio de detras, o work/musica2.wav entera si esta. A la frecuencia del GAE1 (tono 0x2D6), en bucle.
+   Sin ninguna de las dos (sin BIOS no se puede grabar), el WR2 va sin musica en el menu.
 Cabecera: por pieza, bytes, desplazamiento del bucle (desde su principio) y tono (u32 cada uno); luego los datos de
 las dos, cada una en multiplos de 64 bytes (la DMA de la SPU va de 16 en 16 palabras). Uso personal."""
 import os, sys, struct, subprocess, wave
@@ -61,8 +62,10 @@ intro = a_frec(sin_huecos(a[:int(CORTE1 * f)], f), f, F1)
 intro = intro[:len(intro) // 28 * 28]
 m1 = adpcm(np.concatenate([intro, a_frec(sin_huecos(b, f), f, F1)]), len(intro))
 
+c = None
 if os.path.exists('work/musica2.wav'):
     c, f = lee('work/musica2.wav'); c = a_frec(c, f, F2)
+elif not os.path.exists('work/mus/w2.wav'): print('WR2: sin grabacion de su musica (musica.sh): el menu la deja en silencio')
 else:
     c, f = lee('work/mus/w2.wav')
     v = int(f * 0.05)
@@ -75,7 +78,7 @@ else:
     print('WR2: musica del titulo de %.2f a %.2f s' % (i0 / f, i1 / f))
     assert 10 < (i1 - i0) / f < 40, 'no se encuentra la musica del titulo en la grabacion'
     c = a_frec(c[i0:i1], f, F2)
-m2 = adpcm(c, 0)
+m2 = adpcm(c, 0) if c is not None else (b'', 0)
 
 tono = [round(4096 * F1 / 44100), round(4096 * F2 / 44100)]
 assert len(m1[0]) + len(m2[0]) <= SPU_MAX, 'la musica no cabe en la RAM de la SPU'

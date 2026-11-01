@@ -105,12 +105,12 @@ static void spu_init(void)
     R16(0x1F801DAC) = 0x0004;
     SPUCNT = 0xC000;                                       /* SPU sin silencio, sin audio del CD */
     for (v = 0; v < 24; v++) { VOZ(v, 0) = 0; VOZ(v, 2) = 0; }
-    hay_musica = c[0] && c[3];
+    hay_musica = c[0] || c[3];                    /* sin la del WR2 (sin BIOS no se graba), solo la del WR1 */
     if (!hay_musica) return;
     m_dir[0] = SPU0; m_dir[1] = SPU0 + c[0];
     m_bucle[0] = c[1]; m_bucle[1] = c[4]; m_tono[0] = c[2]; m_tono[1] = c[5];
-    spu_sube(m_dir[0], c + 6, c[0]);
-    spu_sube(m_dir[1], (const u8 *)(c + 6) + c[0], c[3]);
+    if (c[0]) spu_sube(m_dir[0], c + 6, c[0]);
+    if (c[3]) spu_sube(m_dir[1], (const u8 *)(c + 6) + c[0], c[3]);
     for (v = 0; v < 2; v++) {
         VOZ(v, 0) = 0x3FFF; VOZ(v, 2) = 0x3FFF; VOZ(v, 4) = m_tono[v]; VOZ(v, 6) = m_dir[v] >> 3;
         VOZ(v, 8) = 0x00FF; VOZ(v, 10) = 0x000B;          /* ataque inmediato, sostenido al maximo, salida en 0,1 s */
@@ -119,6 +119,7 @@ static void spu_init(void)
 static void musica_de(int j)                  /* la de j (voz j) desde el principio; la otra se apaga */
 {
     if (!hay_musica) return;
+    if (!musica[j * 3]) { R16(0x1F801D8C) = 3; return; }  /* de esa no hay: las dos calladas */
     VOZ(j, 6) = m_dir[j] >> 3; VOZ(j, 14) = (m_dir[j] + m_bucle[j]) >> 3;
     R16(0x1F801D8C) = 1 << !j; R16(0x1F801D88) = 1 << j;
 }

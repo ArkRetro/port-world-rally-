@@ -19,6 +19,26 @@ Diseno y plan: `doc/diseno.md` y `doc/hitos.md`.
   Falta la prueba en MiSTer, PSIO y XStation (prueba 0, entregada).
 - H3 (en curso): attract con los graficos de verdad; ROM por bancos hecha en el banco.
 
+## Construir
+
+Todo desde tus ROM de MAME, en orden:
+
+```
+WR2_ROM=/ruta/a/wrally2.zip NUGGET=/ruta/a/nugget MKPSXISO=/ruta/a/mkpsxiso LICENCIA=tu_bios.bin ./construir.sh
+```
+
+Los pasos que hace:
+
+1. Prepara el banco de pruebas (`banco.sh` con perfiles).
+2. Pasa el sonido a la SPU (`tools/sndwr2.py`).
+3. Hace las corridas del banco: `tools/corridas_tramos.sh` y `tools/corridas_coches.sh`, un proceso por rally (`PROC`).
+4. Monta los paquetes del CD (`tools/construir_cd.sh`).
+5. Saca el perfil de memoria para el codigo recompilado (`rc/regiones.py`).
+6. Compila el EXE y las imagenes (`ps1/build.sh`).
+
+Con 4 nucleos tarda unos 15 minutos y ocupa unos 10 GB en `work/`. Lo que ya este hecho en `work/` no se repite.
+Para hacerlo todo de una vez con los dos juegos y el disco con el menu: `herramienta/` (en la raiz).
+
 ## Grabar el CD para una PS1 de verdad
 
 - Graba la imagen con el `.cue` (no el `.bin` suelto), en modo **DAO / disc-at-once** y a **poca velocidad** (4x-8x),
