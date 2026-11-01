@@ -1,0 +1,59 @@
+WORLD RALLY 1 y 2 PARA PLAYSTATION - Creador de imagenes (Windows)
+==================================================================
+
+Este programa crea las imagenes de CD (.bin/.cue) de World Rally 1 y 2 para
+PlayStation a partir de TUS ROM de MAME. Uso personal: no compartas las
+imagenes que salen (llevan contenido de las ROM).
+
+QUE NECESITAS
+-------------
+- Windows 10 u 11 de 64 bits, conexion a internet la primera vez y unos
+  15 GB libres en el disco C:.
+- Una carpeta con tus ROM de MAME, en .zip tal como las usa MAME:
+    wrally.zip   (y wrallyd.zip si tu romset es "split")
+    wrally2.zip  (o wrally2a.zip)
+  Si las tienes en .7z, descomprimelas antes.
+- Recomendado: tu BIOS de PlayStation (por ejemplo scph1001.bin o
+  scph101.bin) en esa misma carpeta. Con ella las imagenes llevan el logo de
+  PlayStation del arranque, que hace falta para PSIO, XStation y consolas PAL
+  o japonesas. Sin BIOS funcionan en MiSTer y en consolas americanas.
+
+COMO SE USA
+-----------
+1. Descomprime este zip en cualquier carpeta.
+2. Abre "Crear imagenes PS1.exe".
+   Si Windows avisa con "Windows protegio su PC", pulsa "Mas informacion" y
+   "Ejecutar de todas formas" (el programa no esta firmado).
+3. Pulsa el primer "Elegir..." y elige la carpeta de tus ROM.
+4. Si quieres, cambia la carpeta donde dejar las imagenes.
+5. Pulsa "Crear imagenes" y espera:
+   - la primera vez descarga las herramientas (unos 200 MB);
+   - despues tarda unos 20-40 minutos segun el ordenador.
+   Al acabar se abre la carpeta con las imagenes.
+
+Si se corta o cierras el programa, vuelve a pulsar "Crear imagenes": sigue
+donde iba.
+
+QUE SALE
+--------
+Una carpeta por imagen:
+  World Rally 1 y 2 PS1 (USA)            -> CD grabado, MiSTer y emuladores
+  World Rally 1 y 2 PS1 (USA) XStation   -> para XStation
+  World Rally 1 y 2 PS1 (USA) PSIO       -> para PSIO
+  ... (EUR) ...                          -> lo mismo para consolas PAL
+  World Rally PS1 / World Rally 2 PS1    -> cada juego en su disco
+
+- CD grabado: carga el .cue en tu programa de grabacion, modo DAO
+  (disc-at-once), a poca velocidad (4x-8x).
+- XStation / PSIO: copia la carpeta entera a la tarjeta SD, sin cambiar los
+  nombres de los ficheros.
+
+SI ALGO FALLA
+-------------
+- Mira las ultimas lineas del registro de la ventana: suelen decir que falta
+  (una ROM concreta, la conexion a internet...).
+- Si falta una ROM, el mensaje dice su nombre y su CRC: comprueba que tu
+  romset de MAME esta completo.
+- El registro completo queda en C:\WRPS1\registro.txt.
+- El programa trabaja en C:\WRPS1. Cuando tengas las imagenes puedes borrar
+  esa carpeta para recuperar el espacio.

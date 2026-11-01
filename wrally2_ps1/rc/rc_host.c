@@ -35,8 +35,18 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <unistd.h>
+#ifdef _WIN32
+/* Windows (herramienta/windows): sin fork, el piloto automatico (AUTOP) no va; las corridas repiten las partidas
+   grabadas (tools/pilotos.txt). mkdir sin permisos */
+#include <direct.h>
+#define mkdir(d, m) _mkdir(d)
+static int fork(void) { fprintf(stderr, "AUTOP: el piloto automatico necesita fork (Windows no lo tiene)\n"); exit(1); }
+static int pipe(int *p) { (void)p; return 0; }
+static int wait(int *s) { (void)s; return -1; }
+#else
+#include <sys/wait.h>
+#endif
 #include "rc_rt.h"
 #include "mcs51.h"
 #include "gae1.h"

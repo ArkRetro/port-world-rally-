@@ -31,12 +31,14 @@ Los pasos que hace:
 
 1. Prepara el banco de pruebas (`banco.sh` con perfiles).
 2. Pasa el sonido a la SPU (`tools/sndwr2.py`).
-3. Hace las corridas del banco: `tools/corridas_tramos.sh` y `tools/corridas_coches.sh`, un proceso por rally (`PROC`).
+3. Hace las corridas del banco: `tools/corridas_tramos.sh` y `tools/corridas_coches.sh`, un proceso por rally. Repiten
+   las partidas del piloto automatico guardadas en `tools/pilotos.txt` (solo botones del mando; sin el piloto, que usa
+   `fork`, asi va tambien en Windows); las que no esten ahi las juega el piloto.
 4. Monta los paquetes del CD (`tools/construir_cd.sh`).
 5. Saca el perfil de memoria para el codigo recompilado (`rc/regiones.py`).
 6. Compila el EXE y las imagenes (`ps1/build.sh`).
 
-Con 4 nucleos tarda unos 15 minutos y ocupa unos 10 GB en `work/`. Lo que ya este hecho en `work/` no se repite.
+Con 4 nucleos tarda unos 10 minutos y ocupa unos 10 GB en `work/`. Lo que ya este hecho en `work/` no se repite.
 Para hacerlo todo de una vez con los dos juegos y el disco con el menu: `herramienta/` (en la raiz).
 
 ## Grabar el CD para una PS1 de verdad

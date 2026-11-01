@@ -1371,8 +1371,8 @@ static u32 sym_lookup(const char *mapfile, const char *name)
     char line[512]; FILE *f = fopen(mapfile, "r"); u32 v = 0;
     if (!f) return 0;
     while (fgets(line, sizeof line, f)) {
-        unsigned a; char ty, nm[400];
-        if (sscanf(line, "%x %c %399s", &a, &ty, nm) == 3 && !strcmp(nm, name)) { v = a; break; }
+        unsigned long long a; char ty, nm[400];   /* %llx: el nm de PSn00bSDK (Windows) da las direcciones con 64 bits */
+        if (sscanf(line, "%llx %c %399s", &a, &ty, nm) == 3 && !strcmp(nm, name)) { v = (u32)a; break; }
     }
     fclose(f);
     return v;

@@ -6,7 +6,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential gcc-mipsel-linux-gnu binutils-mipsel-linux-gnu \
       python3 python3-numpy python3-scipy python3-pil \
       git ca-certificates cmake g++ zip unzip \
-      mednafen xvfb ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 # mkpsxiso (imagenes de CD) y nugget (los .ld del enlazado de los EXE de PS1), en las versiones con que se probo
 ARG MKPSXISO_REV=a6b11ea86e67c189137ac50a4066044b3fdb0525

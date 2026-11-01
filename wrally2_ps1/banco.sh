@@ -8,7 +8,7 @@
 # en work/regiones.txt y rc68.py genera con el las comprobaciones de region en linea: -46 KB de codigo en la PS1)
 set -e
 cd "$(dirname "$0")"
-tools/guardia_wr1.sh
+sh tools/guardia_wr1.sh
 python3 tools/prep.py
 python3 tools/descent.py
 python3 tools/alcance15.py

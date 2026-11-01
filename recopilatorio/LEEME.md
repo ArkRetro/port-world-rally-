@@ -51,10 +51,10 @@ Los pasos que hace:
    - Con `SIN_PORTADAS=1` el menú pone un 1 y un 2 en su lugar.
 2. `musica.py`: la música del menú en `work/musica.bin`.
    - **WR1:** sale de las pistas de CD-DA del port (`wrally_ps1/snd/wav`).
-   - **WR2:** su sonido sale del modelo del GAE1 y no hay pistas que copiar. `musica.sh` graba lo que suena en el
-     attract del port con mednafen (hacen falta mednafen, Xvfb, ffmpeg y `LICENCIA`) y `musica.py` corta el título.
-     Solo se graba si no están `work/mus/w2.wav` ni `work/musica2.wav`; en `work/musica2.wav` sirve otra pieza, que se
-     usa entera.
+   - **WR2:** su sonido sale del modelo del GAE1 y no hay pistas que copiar. `musica.sh` saca lo que suena en el
+     attract del port con `psxprof2` (su perfilador, que escribe el sonido de la SPU en un WAV; sin emulador ni BIOS)
+     y `musica.py` corta el título. Solo se saca si no están `work/mus/w2.wav` ni `work/musica2.wav`; en
+     `work/musica2.wav` sirve otra pieza, que se usa entera.
    - Con `SIN_MUSICA=1` el menú va sin música.
 3. `pantalla.py`: dibuja la pantalla en `work/pantalla.bin`, con una vista previa en `work/vista.png`.
 4. Compila `cd/INICIO.EXE`.

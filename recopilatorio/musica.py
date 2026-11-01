@@ -3,9 +3,9 @@
    hasta que entra la segunda, la musica de los menus, a los CORTE1 s, medido en el attract del port) y en bucle la
    segunda entera. A la frecuencia del OKI. El silencio que separa las frases encadenadas en las pistas (SEP sectores
    de sndps1.py, para que el CD-DA pare entre una y otra) se deja en un cuadro, como en la placa.
- - WR2: la del titulo, grabada del port (musica.sh: work/mus/w2.wav) desde que empieza a sonar despues del arranque
-   hasta el silencio de detras, o work/musica2.wav entera si esta. A la frecuencia del GAE1 (tono 0x2D6), en bucle.
-   Sin ninguna de las dos (sin BIOS no se puede grabar), el WR2 va sin musica en el menu.
+ - WR2: la del titulo, sacada del port (musica.sh: el attract en psxprof2, work/mus/w2.wav) desde que empieza a sonar,
+   DUR2 s (lo que dura en la placa, medido), o work/musica2.wav entera si esta. A la frecuencia del GAE1 (tono
+   0x2D6), en bucle. Sin ninguna de las dos, el WR2 va sin musica en el menu.
 Cabecera: por pieza, bytes, desplazamiento del bucle (desde su principio) y tono (u32 cada uno); luego los datos de
 las dos, cada una en multiplos de 64 bytes (la DMA de la SPU va de 16 en 16 palabras). Uso personal."""
 import os, sys, struct, subprocess, wave
@@ -15,6 +15,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 SND1 = os.path.join(AQUI, '..', 'wrally_ps1', 'snd')
 os.chdir(AQUI)
 CORTE1 = 10.78
+DUR2 = 16.31
 F1, F2 = 1000000 / 132, 7812.5                # OKI (1 MHz / 132) y GAE1 (tono 0x2D6 en la SPU)
 SPU_MAX = 0x80000 - 0x1010                     # la RAM de la SPU desde 0x1010 (antes, los bufer de captura)
 
@@ -65,18 +66,14 @@ m1 = adpcm(np.concatenate([intro, a_frec(sin_huecos(b, f), f, F1)]), len(intro))
 c = None
 if os.path.exists('work/musica2.wav'):
     c, f = lee('work/musica2.wav'); c = a_frec(c, f, F2)
-elif not os.path.exists('work/mus/w2.wav'): print('WR2: sin grabacion de su musica (musica.sh): el menu la deja en silencio')
+elif not os.path.exists('work/mus/w2.wav'): print('WR2: sin su musica (musica.sh): el menu la deja en silencio')
 else:
     c, f = lee('work/mus/w2.wav')
     v = int(f * 0.05)
     rms = np.sqrt(np.convolve(c * c, np.ones(v) / v, 'same'))
-    t = int(f * 20)                                 # despues del sonido del arranque de la BIOS
-    i0 = t + int(np.argmax(rms[t:] > 300))
-    j = i0 + int(f * 8)
-    calla = rms[j:] < 30
-    i1 = j + int(np.argmax(calla)) if calla.any() else len(c)
+    i0 = int(np.argmax(rms > 300)); i1 = i0 + int(DUR2 * f)
+    assert rms[i0] > 300 and i1 <= len(c), 'no se encuentra la musica del titulo en work/mus/w2.wav'
     print('WR2: musica del titulo de %.2f a %.2f s' % (i0 / f, i1 / f))
-    assert 10 < (i1 - i0) / f < 40, 'no se encuentra la musica del titulo en la grabacion'
     c = a_frec(c[i0:i1], f, F2)
 m2 = adpcm(c, 0) if c is not None else (b'', 0)
 

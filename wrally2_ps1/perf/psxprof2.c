@@ -7,6 +7,9 @@
    - INPUTS: la letra G (marcha, un nivel en el banco) pulsa el cuadrado un cuadro cada vez que cambia de nivel (en
      la PS1 la marcha es un conmutador por flanco del cuadrado, ps1/main.c); Q sigue siendo el cuadrado sin mas.
    - Sin la moneda y el START por defecto del WR1 (cuadros 600, 800...): solo con COIN1=1; el guion va en INPUTS.
+   - WAV=fichero: lo que suena, mono a 44,1 kHz (recopilatorio/musica.sh saca de aqui la musica del titulo para el
+     menu, sin emulador ni BIOS). Modelo sencillo de la SPU: ADPCM con banderas y repeticion, tono con interpolacion
+     lineal, volumen de cada voz y general, envolvente de ataque inmediato y bajada lineal al KOFF.
    - SPU: direccion de repeticion, banderas de bloque, ENDX (ENDX_BORRA=1: se borra al escribirlo, como Mednafen; si no,
      como MiSTer) e IRQ de la SPU: para probar el encadenado de trozos (sucesos SPU_SALTO / SPU_FIN).
    - cpu.csv: por llamada a rc_vblank, ciclos de la CPU fuera de rc_vblank desde la llamada anterior (68000 + MCU
@@ -250,6 +253,64 @@ static u32 spu_endx(void)
 {
     spu_avanza();
     return spu_endx_bits;
+}
+/* WAV=fichero: el sonido (modelo sencillo, ver la cabecera). Se rinde hasta el ciclo actual antes de cada escritura a
+   la SPU y al acabar */
+static FILE *wavf; static u64 wav_n, wav_t;
+static struct { int on, rel; u32 addr, cnt; s16 b[28], h1, h2; int env; } wv[24];
+static void wav_bloque(int v)
+{
+    static const int f0[5] = {0, 60, 115, 98, 122}, f1[5] = {0, 0, -52, -55, -60};
+    const u8 *p = &spuram[wv[v].addr & 0x7FFFF]; int sh = p[0] & 15, fi = (p[0] >> 4) % 5, i;
+    if (sh > 12) sh = 9;
+    for (i = 0; i < 28; i++) {
+        int n = (p[2 + i / 2] >> ((i & 1) * 4)) & 15, x = (s16)(n << 12) >> sh;
+        x += (wv[v].h1 * f0[fi] + wv[v].h2 * f1[fi] + 32) >> 6;
+        if (x > 32767) x = 32767; if (x < -32768) x = -32768;
+        wv[v].h2 = wv[v].h1; wv[v].h1 = (s16)x; wv[v].b[i] = (s16)x;
+    }
+    if (p[1] & 4) spu[v * 8 + 7] = (u16)((wv[v].addr & 0x7FFFF) >> 3);
+}
+static void wav_hasta(u64 hasta)
+{
+    if (!wavf) return;
+    for (; wav_t + 768 <= hasta; wav_t += 768) {
+        int v, acc = 0; s16 o;
+        for (v = 0; v < 24; v++) {
+            int i, a, b, s;
+            if (!wv[v].on) continue;
+            i = wv[v].cnt >> 12;
+            a = wv[v].b[i]; b = i < 27 ? wv[v].b[i + 1] : a;
+            s = a + (b - a) * (int)(wv[v].cnt & 0xFFF) / 4096;
+            acc += s * (s16)spu[v * 8] / 0x4000 * wv[v].env / 0x7FFF;
+            if (wv[v].rel && (wv[v].env -= 256) <= 0) { wv[v].on = 0; continue; }
+            wv[v].cnt += spu[v * 8 + 2] > 0x4000 ? 0x4000 : spu[v * 8 + 2];
+            while (wv[v].cnt >= 28 << 12 && wv[v].on) {
+                u8 f = spuram[(wv[v].addr + 1) & 0x7FFFF];
+                wv[v].cnt -= 28 << 12;
+                if (f & 1) { if (f & 2) wv[v].addr = spu[v * 8 + 7] * 8u; else { wv[v].on = 0; break; } }
+                else wv[v].addr += 16;
+                wav_bloque(v);
+            }
+        }
+        acc = acc * (s16)spu[(0xD80 - 0xC00) / 2] / 0x4000;
+        o = (s16)(acc > 32767 ? 32767 : acc < -32768 ? -32768 : acc);
+        fwrite(&o, 2, 1, wavf); wav_n++;
+    }
+}
+static void wav_teclas(u32 on, u32 off)
+{
+    int v;
+    for (v = 0; v < 24; v++) {
+        if (off & (1u << v)) wv[v].rel = 1;
+        if (on & (1u << v)) { wv[v].on = 1; wv[v].rel = 0; wv[v].env = 0x7FFF; wv[v].cnt = 0; wv[v].h1 = wv[v].h2 = 0; wv[v].addr = spu[v * 8 + 3] * 8u; wav_bloque(v); }
+    }
+}
+static void wav_cierra(void)
+{
+    u32 n = (u32)wav_n * 2, h[11] = {0x46464952, 36 + n, 0x45564157, 0x20746d66, 16, 0x10001, 44100, 88200, 0x100002, 0x61746164, n};
+    if (!wavf) return;
+    fseek(wavf, 0, SEEK_SET); fwrite(h, 4, 11, wavf); fclose(wavf); wavf = 0;
 }
 /* ---- mando */
 static int joy_state, joy_byte_pending; static u64 joy_rx_at, joy_ack_at; static u8 joy_rx; static int joy_rx_valid;
@@ -1163,6 +1224,9 @@ static void io_write(u32 a, u32 v, int sz, int *cost)
     if (o >= 0xC00 && o < 0xE00) {
         u32 r = (o - 0xC00) / 2;
         *cost = IO_SPU;
+        wav_hasta(cyc);
+        if (o >= 0xD88 && o <= 0xD8E && wavf) wav_teclas(o == 0xD88 ? v & 0xFFFF : o == 0xD8A ? (v & 0xFF) << 16 : 0,
+                                                       o == 0xD8C ? v & 0xFFFF : o == 0xD8E ? (v & 0xFF) << 16 : 0);
         if (r < 0xC0 && (r & 7) == 7) spu_avanza();         /* direccion de repeticion: la voz ya avanzo hasta ahora */
         if (r < 0xC0 && (r & 7) == 2 && spu[r] != (u16)v) {  /* tono: hasta ahora con el de antes; con 0 la voz no avanza
                                                                (al volver, el bloque sigue donde se quedo) */
@@ -1434,8 +1498,8 @@ static u32 sym_lookup(const char *mapfile, const char *name)
     char line[512]; FILE *f = fopen(mapfile, "r"); u32 v = 0;
     if (!f) return 0;
     while (fgets(line, sizeof line, f)) {
-        unsigned a; char ty, nm[400];
-        if (sscanf(line, "%x %c %399s", &a, &ty, nm) == 3 && !strcmp(nm, name)) { v = a; break; }
+        unsigned long long a; char ty, nm[400];   /* %llx: el nm de PSn00bSDK (Windows) da las direcciones con 64 bits */
+        if (sscanf(line, "%llx %c %399s", &a, &ty, nm) == 3 && !strcmp(nm, name)) { v = (u32)a; break; }
     }
     fclose(f);
     return v;
@@ -1489,6 +1553,7 @@ int main(int argc, char **argv)
     if (getenv("HUELLA")) huellaf = fopen(getenv("HUELLA"), "w");
     { char fn[600]; snprintf(fn, sizeof fn, "%s/cpu.csv", outdir); cpuf = fopen(fn, "w"); if (cpuf) fprintf(cpuf, "llamada,cyc_68k,cyc_vblank_ant,cyc_mcu_ant,modo\n"); }
     sym_tslot = sym_lookup(nmfile, "tslot"); sym_loading = sym_lookup(nmfile, "loading"); sym_in_race = sym_lookup(nmfile, "in_race");
+    if (getenv("WAV") && (wavf = fopen(getenv("WAV"), "wb"))) { static const char z[44] = {0}; fwrite(z, 1, 44, wavf); }
     if (getenv("MISSLOG")) { char fn[600]; snprintf(fn, sizeof fn, "%s/falta.txt", outdir); misslog = fopen(fn, "w"); }
     dump_init();
     prof = calloc(0x80000, 8); prof_n = calloc(0x80000, 8);
@@ -1618,6 +1683,7 @@ int main(int argc, char **argv)
     if (o_cola) fprintf(stderr, "CD_COLA: %ld lecturas de 1F801801-3 en el banco anterior\n", cola_n);
     if (o_t1g) fprintf(stderr, "T1_GLITCH: %ld lecturas del temporizador 1 al cambiar con acarreo, %ld rotas\n", t1_lect, t1_rotas);
     if (o_irq) fprintf(stderr, "LOADER_IRQ: %ld interrupciones, main %s\n", irq_n, irq_main ? "alcanzado" : "NO alcanzado");
+    wav_hasta(cyc); wav_cierra();
     fprintf(stderr, "fin: %ld cuadros de juego, %llu vblanks, %.2f s emulados, %.1f cuadros de juego/s\n", game_frame, (unsigned long long)vbl_count,
             cyc / CLK, game_frame / (cyc / CLK));
     return 0;

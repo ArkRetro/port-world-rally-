@@ -5,7 +5,17 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+/* Windows (herramienta/windows): sin fork, el piloto automatico (AUTOP) no va; las corridas repiten las partidas
+   grabadas (tools/pilotos.txt). mkdir sin permisos */
+#include <direct.h>
+#define mkdir(d, m) _mkdir(d)
+static int fork(void) { fprintf(stderr, "AUTOP: el piloto automatico necesita fork (Windows no lo tiene)\n"); exit(1); }
+static int pipe(int *p) { (void)p; return 0; }
+static int wait(int *s) { (void)s; return -1; }
+#else
 #include <sys/wait.h>
+#endif
 #include "rc_rt.h"
 /* ficheros de trabajo en $WR_WORK (por defecto ../work) */
 static const char *WORKF(const char *n) { static char b[4][512]; static int k; const char *w = getenv("WR_WORK"); k = (k + 1) & 3; snprintf(b[k], 512, "%s/%s", w ? w : "../work", n); return b[k]; }

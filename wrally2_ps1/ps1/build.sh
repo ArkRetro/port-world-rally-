@@ -8,7 +8,7 @@
 set -e
 cd "$(dirname "$0")"
 WR1=../../wrally_ps1
-P=mipsel-linux-gnu
+P=${MIPS:-mipsel-linux-gnu}    # MIPS: prefijo del compilador cruzado; MIPS_ELF: su formato ELF (en Windows, mipsel-none-elf y elf32-littlemips)
 N=${NUGGET:?define NUGGET con la ruta de pcsx-redux/src/mips (nugget)}
 # de la MCU solo las tablas que lee MOVC, seguidas (mcu.c, MCU_TABLAS)
 python3 -c "d = open('../work/mcu.bin', 'rb').read(); open('mcu_tab.bin', 'wb').write(d[0x1025:0x40E4] + d[0x5488:0x54CE])"
@@ -45,7 +45,7 @@ $P-gcc $CF -DMCS51_XOR=1 -c ../rc/mcu_rc.c -o mcu_rc.o
 $P-gcc $ARCH -c data.s -o data.o
 $P-gcc $ARCH -c data_r1.s -o data_r1.o
 $P-gcc $ARCH -c $WR1/ps1/crt0.s -o crt0.o
-LD="$P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,--oformat=elf32-tradlittlemips"
+LD="$P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,--oformat=${MIPS_ELF:-elf32-tradlittlemips}"
 O="crt0.o video.o cd.o snd.o wr2_rc.o gae1.o mcu.o mcu_rc.o"
 # puerta G-RAM: R0 (la ROM en el EXE; no va al CD) y el EXE de tamanos R1 (con las reservas del codigo que falta),
 # que solo se enlaza para medir el area de tramo
