@@ -154,4 +154,8 @@ El JogCon de Ridge Racer Type 4 sirve como volante (`ps1/mando.c`, comun con el 
 
   Abajo sale el numero mientras giras y despues el medido. Si nos lo dices, lo ponemos por defecto (`VUELTA_DEF` en
   `ps1/mando.c`).
+- **Si tira a un lado (drift):** el muelle no siempre deja la rueda justo en el centro. Hay una zona muerta pequena, y
+  si aun asi el coche tira, un toque de L1+R1 sin girar la rueda pone el centro donde este.
+- **Acelerador:** en las dos placas es un boton de todo o nada, asi que X siempre da el maximo. Para la velocidad
+  punta hay que cambiar a la marcha larga con cuadrado: se empieza en la corta.
 - **Botones:** los mismos que el pad.

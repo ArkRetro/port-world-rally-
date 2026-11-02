@@ -1140,7 +1140,7 @@ static int load_cue(const char *cue)
    tarda). Suceso JOG_MODO. La rueda: izquierda/derecha
    de INPUTS la llevan a -n/+n (4 unidades por cuadro); soltada, el motor la vuelve a
    la posicion de sujecion (orden 3x tras Cx) o se queda donde este. Suceso JOG_MOTOR con cada orden distinta */
-static int jog_n = -1, jog_cfg, jog_cmd, jog_pos, jog_hold, jog_sujeta, jog_orden = -1, jog_modo = -1, jog_pend = -1, jog_pend_v;
+static int jog_n = -1, jog_cfg, jog_cmd, jog_pos, jog_hold, jog_sujeta, jog_orden = -1, jog_modo = -1, jog_pend = -1, jog_pend_v, jog_holg = -99999;
 static u8 jog_map[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static void eventf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 static void jog_motor(u8 v)
@@ -1156,7 +1156,10 @@ static void jog_cuadro(void)                    /* tras leer INPUTS: la rueda en
     if (jog_pend > 0 && !--jog_pend) { jog_modo = jog_pend_v; eventf("JOG_MODO %d (con retardo)", jog_modo); }
     if (jog_n <= 0 || jog_modo != 1) return;
     pad_buttons |= 0xA0;
-    t = l ? -jog_n : r ? jog_n : jog_sujeta ? jog_hold : jog_pos;
+    if (jog_holg < -9999) jog_holg = getenv("JOG_HOLGURA") ? atoi(getenv("JOG_HOLGURA")) : 0;   /* el muelle la deja ahi */
+    /* soltada: el muelle la lleva hacia la sujecion y para a JOG_HOLGURA de ella (sin pasarse: holgura del motor) */
+    t = l ? -jog_n : r ? jog_n : !jog_sujeta ? jog_pos : jog_pos > jog_hold + jog_holg ? jog_hold + jog_holg
+        : jog_pos < jog_hold - jog_holg ? jog_hold - jog_holg : jog_pos;
     jog_pos += t > jog_pos + 4 ? 4 : t < jog_pos - 4 ? -4 : t - jog_pos;
 }
 static int jog_byte(u8 v, int seq, u8 *resp)  /* devuelve ack */

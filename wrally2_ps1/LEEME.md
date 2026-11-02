@@ -59,6 +59,10 @@ El JogCon de Ridge Racer Type 4 hace de volante, como el de la cabina (`../wrall
 
   Abajo sale el numero mientras giras y despues el medido. Si nos lo dices, lo ponemos por defecto (`VUELTA_DEF` en
   `../wrally_ps1/ps1/mando.c`).
+- **Si tira a un lado (drift):** el muelle no siempre deja la rueda justo en el centro. Hay una zona muerta pequena, y
+  si aun asi el coche tira, un toque de L1+R1 sin girar la rueda pone el centro donde este.
+- **Acelerador:** en las dos placas es un boton de todo o nada, asi que X siempre da el maximo. Para la velocidad
+  punta hay que cambiar a la marcha larga con cuadrado: se empieza en la corta.
 - **Pruebas:** en el banco, `VOLANTE=n` pone el volante n pasos al lado que diga el guion. En `psxprof2`, `JOGCON=n`
   emula el mando y su motor.
 

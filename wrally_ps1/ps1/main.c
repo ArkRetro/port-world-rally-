@@ -1273,11 +1273,12 @@ void rc_vblank(void)
         if (!(pad & 0x0080)) in &= ~0x08;            /* izquierda */
         if (mando_jog) {   /* JogCon: el giro en pulsos de izquierda/derecha (la placa solo lee bien el joystick: con su
                               volante optico o de potenciometro el juego no gira, tambien en MAME), tantos por cuadro como
-                              lo girado (un acumulador: 1/4 de giro, un cuadro de cada cuatro) */
-            static int acu;
-            int g = mando_giro < 0 ? -mando_giro : mando_giro;
-            acu += g < 24 ? 0 : g;
-            if (acu >= 256) { acu -= 256; in &= mando_giro < 0 ? ~0x08 : ~0x04; }
+                              lo girado (un acumulador: 1/4 de giro, un cuadro de cada cuatro; la zona muerta, en mando.c) */
+            static int acu, lado;
+            int g = mando_giro < 0 ? -mando_giro : mando_giro, l = mando_giro < 0;
+            if (!g || l != lado) acu = 0;              /* al centro o al otro lado, sin restos (no tira de mas) */
+            lado = l; acu += g;
+            if (acu >= 256) { acu -= 256; in &= l ? ~0x08 : ~0x04; }
         }
         if (!(pad & 0x4000)) in &= ~0x20;            /* X: acelerar */
         if (!(pad & 0x8000) && sq_last) gear ^= 1;   /* cuadrado: cambio de marcha */

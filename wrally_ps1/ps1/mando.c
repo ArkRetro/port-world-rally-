@@ -8,7 +8,8 @@
    256, izquierda negativa) es la distancia al centro, con todo el giro a mando_vuelta unidades. No se sabe cuantas
    da un cuarto de vuelta (el giro completo que se quiere: la marca de arriba a las 3 o a las 9), asi que se mide:
    con L1+R1 pulsados se gira hasta ahi y al soltar, lo que mas se haya separado del centro es el giro completo (el
-   port ensena el numero un rato, mando_aviso). Si se pulsa MODE (luz apagada) el JogCon pasa a
+   port ensena el numero un rato, mando_aviso); un toque de L1+R1 sin girar pone el centro donde este la rueda (si se
+   ha ido corriendo). Zona muerta en el centro (ZONA). Si se pulsa MODE (luz apagada) el JogCon pasa a
    ser un pad digital y se lee como tal; al conectarlo (o al arrancar) se le pide el modo JogCon (pide_jogcon), porque el
    mando real arranca en modo digital. Uso personal. */
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32; typedef short s16;
@@ -19,12 +20,14 @@ typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32; 
 #define JOY_BAUD (*(volatile u16 *)0x1F80104E)
 #define MANDO_FUERZA 8                  /* fuerza del muelle (0-15) */
 #define VUELTA_DEF 88                   /* unidades de la rueda para todo el giro hasta medirlo (un cuarto de vuelta?) */
+#define ZONA 12                         /* zona muerta en el centro (de 256): el muelle no deja la rueda justo en el centro
+                                           y sin ella el coche tiraria poco a poco a un lado */
 int mando_jog;                          /* 1: hay un JogCon en modo JogCon */
 int mando_giro;                         /* -256 (izquierda del todo) a 256 (derecha del todo) */
 int mando_vuelta = VUELTA_DEF;          /* unidades de la rueda para todo el giro (L1+R1: se mide) */
 int mando_aviso;                        /* cuadros que quedan para ensenar mando_cifra (el port lo pinta) */
 int mando_cifra;                        /* lo que se ensena: lo medido hasta ahora mientras se mide, luego mando_vuelta */
-static int conf, centro, midiendo, maximo;
+static int conf, centro, midiendo, maximo, pmin, pmax;
 static int probado;                     /* ya se le mando pasar a modo JogCon (una vez por conexion): 1, y 2 si al hacerlo
                                            resulto ser un DualShock, que se devuelve a digital */
 static u8 motor;                        /* orden para el proximo sondeo */
@@ -89,18 +92,23 @@ u16 mando_lee(void)
         if (motor == 0xC0) { centro = pos; motor = 0x30 | MANDO_FUERZA; }
         if (!(r & 0x0400) && !(r & 0x0800)) {          /* L1+R1: midiendo el giro completo */
             int d = pos - centro; if (d < 0) d = -d;
-            if (!midiendo) midiendo = 1, maximo = 0;
+            if (!midiendo) midiendo = 1, maximo = 0, pmin = pmax = pos;
             if (d > maximo) maximo = d;
+            if (pos < pmin) pmin = pos; if (pos > pmax) pmax = pos;
             mando_cifra = maximo; mando_aviso = 120;
         } else if (midiendo) {
             midiendo = 0;
-            if (maximo >= 8) mando_vuelta = maximo;      /* (si casi no se giro, se deja como estaba) */
+            if (pmax - pmin < 8) motor = 0xC0;           /* sin mover la rueda mientras se pulsaba: centro nuevo (donde
+                                                            este; si se ha ido corriendo) */
+            else if (maximo >= 24) mando_vuelta = maximo;   /* girada: lo mas lejos del centro es el giro completo */
             mando_cifra = mando_vuelta; mando_aviso = 180;
         }
         r |= 0x0C00;
         v = mando_vuelta;
         g = (pos - centro) * 256 / v;
-        mando_giro = g < -256 ? -256 : g > 256 ? 256 : g;
+        g = g < -256 ? -256 : g > 256 ? 256 : g;
+        /* zona muerta, y lo de fuera reescalado para que todo el giro siga siendo 256 */
+        mando_giro = g > ZONA ? (g - ZONA) * 256 / (256 - ZONA) : g < -ZONA ? (g + ZONA) * 256 / (256 - ZONA) : 0;
         mando_jog = 1;
         return r;
     }
