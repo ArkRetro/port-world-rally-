@@ -41,6 +41,18 @@ Los pasos que hace:
 Con 4 nucleos tarda unos 10 minutos y ocupa unos 10 GB en `work/`. Lo que ya este hecho en `work/` no se repite.
 Para hacerlo todo de una vez con los dos juegos y el disco con el menu: `herramienta/` (en la raiz).
 
+## JogCon (Namco)
+
+El JogCon de Ridge Racer Type 4 hace de volante, como el de la cabina (`../wrally_ps1/ps1/mando.c`, comun con el WR1).
+
+- **Como funciona:** con el JogCon el port pone el DIPSW de control en volante de potenciometro. `rc_mem.c` hace de su
+  ADC serie y le da la posicion de la rueda: 0x8A al centro y 0x70 a cada lado con todo el giro.
+- **Conectarlo:** en el puerto 1, con la luz de MODE encendida.
+- **El centro:** es donde este la rueda cuando el juego lo ve, y el motor la devuelve ahi como un muelle.
+- **Sensibilidad:** L1 hace que haya que girar mas y R1 menos. Son 7 niveles y el nivel sale abajo al cambiarlo.
+- **Pruebas:** en el banco, `VOLANTE=n` pone el volante n pasos al lado que diga el guion. En `psxprof2`, `JOGCON=n`
+  emula el mando y su motor.
+
 ## Grabar el CD para una PS1 de verdad
 
 - Graba la imagen con el `.cue` (no el `.bin` suelto), en modo **DAO / disc-at-once** y a **poca velocidad** (4x-8x),

@@ -1170,32 +1170,11 @@ static HOT u32 sprites(void)    /* devuelve las paletas 32-47 usadas */
     return pm;
 }
 
-/* ------------------------------------------------------------ mando (SIO0 directo) */
-static void joy_init(void) { JOY_CTRL = 0x40; JOY_BAUD = 0x88; JOY_MODE = 0x0D; JOY_CTRL = 0; }
-/* un byte; tras el ultimo el mando no da ACK y no hay que esperarlo */
-static u8 joy_x(u8 b, int ack)
-{
-    int t;
-    for (t = 0; t < 2000 && !(JOY_STAT & 1); t++);
-    JOY_DATA = b;
-    for (t = 0; t < 2000 && !(JOY_STAT & 2); t++);
-    b = JOY_DATA;
-    if (ack) for (t = 0; t < 600 && !(JOY_STAT & 0x80); t++);
-    JOY_CTRL |= 0x10;
-    return b;
-}
-static u16 joy_read(void)
-{
-    u16 r = 0xFFFF; u8 id; int t;
-    JOY_CTRL = 0x1003;
-    for (t = 0; t < 300; t++) __asm__ volatile ("nop");
-    joy_x(0x01, 1); id = joy_x(0x42, 1);
-    if ((id & 0xF0) == 0x40 || (id & 0xF0) == 0x70 || (id & 0xF0) == 0x50) {
-        joy_x(0, 1); r = joy_x(0, 1); r |= joy_x(0, 0) << 8;
-    }
-    JOY_CTRL = 0;
-    return r;
-}
+/* ------------------------------------------------------------ mando (SIO0 directo): mando.c (pad o JogCon) */
+void mando_init(void); u16 mando_lee(void);
+extern int mando_jog, mando_giro, mando_sens, mando_aviso;
+#define joy_init mando_init
+#define joy_read mando_lee
 
 static int fb, nframe, gear, sq_last, l2_last = 1, show_dbg = 0, skipped, eff_due, nskip, reloj_ok;
 static s32 adel; static u16 t_ref;   /* reloj del juego (arriba) */
@@ -1292,6 +1271,14 @@ void rc_vblank(void)
         if (!(pad & 0x0040)) in &= ~0x02;            /* abajo */
         if (!(pad & 0x0020)) in &= ~0x04;            /* derecha */
         if (!(pad & 0x0080)) in &= ~0x08;            /* izquierda */
+        if (mando_jog) {   /* JogCon: el giro en pulsos de izquierda/derecha (la placa solo lee bien el joystick: con su
+                              volante optico o de potenciometro el juego no gira, tambien en MAME), tantos por cuadro como
+                              lo girado (un acumulador: 1/4 de giro, un cuadro de cada cuatro) */
+            static int acu;
+            int g = mando_giro < 0 ? -mando_giro : mando_giro;
+            acu += g < 24 ? 0 : g;
+            if (acu >= 256) { acu -= 256; in &= mando_giro < 0 ? ~0x08 : ~0x04; }
+        }
         if (!(pad & 0x4000)) in &= ~0x20;            /* X: acelerar */
         if (!(pad & 0x8000) && sq_last) gear ^= 1;   /* cuadrado: cambio de marcha */
         sq_last = (pad & 0x8000) != 0;
@@ -1331,6 +1318,7 @@ void rc_vblank(void)
             /* CD: sectores perdidos, errores, vigilancias, ultimo codigo de error, Pause rechazadas; cuadros/s x1000 */
             digits(4, 28, cd_dbg[1]); digits(48, 28, cd_dbg[2]); digits(92, 28, cd_dbg[3]); digits(136, 28, cd_dbg[5]);
             digits(180, 28, cd_dbg[6]); digits(224, 28, fps_mil); }
+        if (mando_aviso) { mando_aviso--; digits(168, 220, mando_sens + 1); }   /* JogCon: sensibilidad (1-7) tras L1/R1 */
         pk_send(fb ? 256 : 0);
     }
     t_cd0 = T1;

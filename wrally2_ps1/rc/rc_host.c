@@ -168,6 +168,17 @@ static void ap_log(long to)
     if (*p && ap_outn < (int)sizeof ap_out - 64)
         ap_outn += sprintf(ap_out + ap_outn, "%ld-%ld%s:%c,", ap_from, to, p[1] == 'h' ? "%8/4" : p[1] == 'q' ? "%8/2" : "", p[0]);
 }
+/* VOLANTE=n: el volante de potenciometro de la placa (DIPSW 0x0800 de IN0 a 0, como el JogCon en la PS1): izquierda o
+   derecha (de INPUTS, STEER o el piloto) lo ponen n pasos a ese lado del centro (0x8A; izquierda suma, como en MAME) */
+static void volante(void)
+{
+    extern u8 rc_volante; static int n = -1;
+    if (n < 0) n = getenv("VOLANTE") ? atoi(getenv("VOLANTE")) : 0;
+    if (!n) return;
+    in0 &= ~0x0800;
+    rc_volante = (u8)(0x8A + (!(in0 & 0x08) ? n : 0) - (!(in0 & 0x04) ? n : 0));
+    in0 |= 0x0C;
+}
 static void autop(void)
 {
     if (ap_a == -2) {
@@ -446,7 +457,7 @@ void rc_vblank(void)
     memcpy(vram_vb, rc_vram, 0x10000);
     /* las del guion de este cuadro: MAME las fija justo tras el frame_done y la IRQ6 ya las ve (el volcado y el
        registro de este cuadro llevan las de antes, como los suyos) */
-    inputs(frame); poke68(); autop(); rc_set_io(in0, in1, in2, in3);
+    inputs(frame); poke68(); autop(); volante(); rc_set_io(in0, in1, in2, in3);
     if (getenv("V") && frame % 100 < n) { fprintf(stderr, "cuadro %ld pc %06X ciclos/cuadro %ld\n", frame, rc_r.pc, dsum / 100); dsum = 0; }
     dsum += CYC_FRAME + RC_REL;
     if (frame >= nframes) {
@@ -511,7 +522,7 @@ int main(int argc, char **argv)
     m68k_pulse_reset();
     m68k_execute(1);     /* consume los ciclos de reset */
 #endif
-    inputs(0); rc_set_io(in0, in1, in2, in3);
+    inputs(0); volante(); rc_set_io(in0, in1, in2, in3);
     rc_run((rombe[4] << 24) | (rombe[5] << 16) | (rombe[6] << 8) | rombe[7]);
     return 1;
 }

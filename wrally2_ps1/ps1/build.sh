@@ -39,6 +39,7 @@ $P-gcc $CF $MAINOPT -c video.c -o video.o
 $P-gcc $CF $CDOPT -I$WR1/ps1 -c cd.c -o cd.o   # copia de la del WR1 con el EDC
 $P-gcc $CF -c ../rc/gae1.c -o gae1.o
 $P-gcc $CF -c snd.c -o snd.o
+$P-gcc $CF -c $WR1/ps1/mando.c -o mando.o   # el mando (pad o JogCon), comun con el WR1
 $P-gcc $CF -DMCS51_XOR=1 -DMCU_TABLAS -c ../rc/mcu.c -o mcu.o
 $P-gcc $CF -c reservas.c -o reservas.o
 $P-gcc $CF -DMCS51_XOR=1 -c ../rc/mcu_rc.c -o mcu_rc.o
@@ -46,7 +47,7 @@ $P-gcc $ARCH -c data.s -o data.o
 $P-gcc $ARCH -c data_r1.s -o data_r1.o
 $P-gcc $ARCH -c $WR1/ps1/crt0.s -o crt0.o
 LD="$P-gcc $ARCH -nostdlib -static -Wl,--gc-sections -T$N/nooverlay.ld -T$N/ps-exe.ld -Wl,--oformat=${MIPS_ELF:-elf32-tradlittlemips}"
-O="crt0.o video.o cd.o snd.o wr2_rc.o gae1.o mcu.o mcu_rc.o"
+O="crt0.o video.o cd.o snd.o mando.o wr2_rc.o gae1.o mcu.o mcu_rc.o"
 # puerta G-RAM: R0 (la ROM en el EXE; no va al CD) y el EXE de tamanos R1 (con las reservas del codigo que falta),
 # que solo se enlaza para medir el area de tramo
 $LD -Wl,-Map=w2ps1_r0.map -o w2ps1_r0.elf $O main_r0.o carga_r0.o rc_mem_r0.o reservas.o data.o -lgcc

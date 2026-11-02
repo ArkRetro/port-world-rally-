@@ -41,6 +41,10 @@ u8 rc_vregs[0x1000 + 4] RC_AL, rc_iopg[0x1000 + 4] RC_AL, rc_ffpg[0x1000 + 4] RC
 rc_regs_t rc_r;
 u32 rc_cuadro;         /* cuadro (lo pone la plataforma: perfiles por cuadros) */
 u16 rc_latch;          /* LS259 de 0x400000 (bit n = 0x400000 + 8n): contadores de monedas y el ADC del volante */
+u8 rc_volante = 0x8A;  /* volante de potenciometro (con el DIPSW 0x0800 de IN0 a 0: el JogCon, ps1/main.c): lo que lee el
+                          ADC; 0x8A al centro, mas a la izquierda */
+static u8 adc;         /* ADC serie (MAME wrally2_adc_cs/clk): CS a 0 (latch 6) convierte, CLK a 0 (latch 5) desplaza; el
+                          juego lee el bit 7 en el 0x40 de IN0 */
 #ifdef RCREG
 static u32 rc_fr;      /* cuadro, para el perfil de regiones */
 #endif
@@ -52,6 +56,7 @@ void rc_set_io(u16 in0, u16 in1, u16 in2, u16 in3)
 #ifdef RCREG
     rc_fr++;
 #endif
+    if (!(in0 & 0x0800)) in0 = (u16)((in0 & ~0x40) | ((adc >> 7 & 1) << 6));   /* volante: el bit del ADC sigue */
     *(u16 *)(rc_iopg + 0x0) = in0;
     *(u16 *)(rc_iopg + 0x2) = in1;
     *(u16 *)(rc_iopg + 0x4) = in2;
@@ -192,6 +197,11 @@ static void wr_mask(u32 a, u32 v, u32 m)
         else MW(rc_vram, a & 0xFFFF) = (u16)((MW(rc_vram, a & 0xFFFF) & ~m) | (v & m));
     } else if ((a >> 6) == (0x400000 >> 6)) {
         u32 b = (a >> 3) & 7;
+        if (!(v & 1) && (rc_latch >> b & 1)) {               /* bajada de CS o de CLK del ADC */
+            if (b == 6) adc = rc_volante; else if (b == 5) adc <<= 1;
+            if ((b == 5 || b == 6) && !(*(u16 *)(rc_iopg + 0x0) & 0x0800))   /* solo con el volante (joystick: como antes) */
+                *(u16 *)(rc_iopg + 0x0) = (u16)((*(u16 *)(rc_iopg + 0x0) & ~0x40) | ((adc >> 7 & 1) << 6));
+        }
         rc_latch = (u16)((rc_latch & ~(1u << b)) | ((v & 1) << b));
     }
 }

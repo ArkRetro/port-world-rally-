@@ -41,30 +41,12 @@ static inline u16 t1_get(void)
 #define T1 t1_get()
 
 /* ------------------------------------------------------------ mando (SIO0 directo) */
-static void joy_init(void) { JOY_CTRL = 0x40; JOY_BAUD = 0x88; JOY_MODE = 0x0D; JOY_CTRL = 0; }
-static u8 joy_x(u8 b, int ack)
-{
-    int t;
-    for (t = 0; t < 2000 && !(JOY_STAT & 1); t++);
-    JOY_DATA = b;
-    for (t = 0; t < 2000 && !(JOY_STAT & 2); t++);
-    b = JOY_DATA;
-    if (ack) for (t = 0; t < 600 && !(JOY_STAT & 0x80); t++);
-    JOY_CTRL |= 0x10;
-    return b;
-}
-static u16 joy_read(void)
-{
-    u16 r = 0xFFFF; u8 id; int t;
-    JOY_CTRL = 0x1003;
-    for (t = 0; t < 300; t++) __asm__ volatile ("nop");
-    joy_x(0x01, 1); id = joy_x(0x42, 1);
-    if ((id & 0xF0) == 0x40 || (id & 0xF0) == 0x70 || (id & 0xF0) == 0x50) {
-        joy_x(0, 1); r = joy_x(0, 1); r |= joy_x(0, 0) << 8;
-    }
-    JOY_CTRL = 0;
-    return r;
-}
+/* mando: ../../wrally_ps1/ps1/mando.c (pad o JogCon, comun a los dos ports) */
+void mando_init(void); u16 mando_lee(void);
+extern int mando_jog, mando_giro, mando_sens, mando_aviso;
+extern u8 rc_volante;
+#define joy_init mando_init
+#define joy_read mando_lee
 
 /* ------------------------------------------------------------ mosaico */
 /* plano 0 (VRAM 0xC000 con vregs[0] = 0x0C90): 64 x 32 tiles de 16 x 16, dos palabras por tile (palabra 0: color en los
@@ -265,6 +247,7 @@ void rc_vblank(void)
                 digits(180, 20, carga_dm_neg[0], 4); digits(220, 20, carga_dm_neg[1], 4);
             }
         }
+        if (mando_aviso) { mando_aviso--; digits(176, 220, mando_sens + 1, 1); }   /* JogCon: sensibilidad (1-7) tras L1/R1 */
         carga_atiende();
         l_send();
     }
@@ -280,6 +263,11 @@ void rc_vblank(void)
         if (!(pad & 0x8000) && sq_last) gear ^= 1;      /* cuadrado: cambio de marcha */
         sq_last = (pad & 0x8000) != 0;
         if (gear) in0 |= 0x20;
+        if (mando_jog) {   /* JogCon: el volante de potenciometro de la placa (DIPSW 0x0800 a 0; el ADC en rc_mem.c),
+                              0x8A al centro, mas a la izquierda; todo el giro, 0x70 a cada lado */
+            in0 = (u16)((in0 & ~0x0800) | 0x0C);
+            rc_volante = (u8)(0x8A - mando_giro * 0x70 / 256);
+        }
         if (!(pad & 0x0008) && !corriendo()) in0 &= ~0x80;   /* START (mientras se corre es la pausa) */
         if (!(pad & 0x0001)) in2 &= ~0x100;            /* SELECT: moneda */
         {   /* L2 + R2: cifras de depuracion si/no */

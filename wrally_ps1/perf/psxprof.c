@@ -1020,12 +1020,51 @@ static int load_cue(const char *cue)
 }
 
 /* ---------------------------------------------------------------- mando (SIO0) */
+/* JOGCON=n: en el puerto 1 un JogCon (como el de DuckStation, src/core/jogcon.cpp): ID E3h (F3h en configuracion),
+   43h entra/sale de la configuracion, 4Dh asigna el byte del motor, 42h da botones, posicion de la rueda (16 bits) y
+   estado. La rueda: izquierda/derecha de INPUTS la llevan a -n/+n (4 unidades por cuadro); soltada, el motor la vuelve a
+   la posicion de sujecion (orden 3x tras Cx) o se queda donde este. Suceso JOG_MOTOR con cada orden distinta */
+static int jog_n = -1, jog_cfg, jog_cmd, jog_pos, jog_hold, jog_sujeta, jog_orden = -1;
+static u8 jog_map[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static void eventf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+static void jog_motor(u8 v)
+{
+    if (v != jog_orden) { jog_orden = v; eventf("JOG_MOTOR %02X pos %d", v, jog_pos); }
+    if ((v >> 4) == 0xC) jog_hold = jog_pos;
+    else if ((v >> 4) == 3) jog_sujeta = (v & 15) != 0;
+    else if ((v >> 4) == 0) jog_sujeta = 0;
+}
+static void jog_cuadro(void)                    /* tras leer INPUTS: la rueda en vez de izquierda/derecha */
+{
+    int t, l = !(pad_buttons & 0x80), r = !(pad_buttons & 0x20);
+    if (jog_n <= 0) return;
+    pad_buttons |= 0xA0;
+    t = l ? -jog_n : r ? jog_n : jog_sujeta ? jog_hold : jog_pos;
+    jog_pos += t > jog_pos + 4 ? 4 : t < jog_pos - 4 ? -4 : t - jog_pos;
+}
+static int jog_byte(u8 v, int seq, u8 *resp)  /* devuelve ack */
+{
+    int k = seq - 3;
+    if (seq == 1) { jog_cmd = v; *resp = jog_cfg ? 0xF3 : 0xE3; return 1; }
+    if (seq == 2) { *resp = 0x5A; return 1; }
+    if (k < 0 || k > 5) { *resp = 0xFF; return 0; }
+    *resp = 0;
+    if (jog_cmd == 0x42) {
+        u8 d[6] = {(u8)pad_buttons, (u8)(pad_buttons >> 8), (u8)jog_pos, (u8)(jog_pos >> 8), 0, 0};
+        *resp = d[k];
+        if (jog_map[k] == 0) jog_motor(v);
+    } else if (jog_cmd == 0x43) { if (k == 0) jog_cfg = v == 1; }
+    else if (jog_cmd == 0x4D && jog_cfg) { *resp = jog_map[k]; jog_map[k] = v; }
+    return k < 5;
+}
 static void joy_data_write(u8 v)
 {
     u8 resp = 0xFF; int ack = 0;
     if (!(joy_ctrl & 2)) { joy_seq = -1; }
     if (joy_seq <= 0) {
         if (v == 0x01) { resp = 0xFF; ack = 1; joy_seq = 1; } else { resp = 0xFF; joy_seq = -1; }
+    } else if ((jog_n < 0 ? (jog_n = getenv("JOGCON") ? atoi(getenv("JOGCON")) : 0) : jog_n) > 0) {
+        ack = jog_byte(v, joy_seq, &resp); joy_seq++;
     } else {
         switch (joy_seq) {
         case 1: resp = 0x41; ack = 1; break;
@@ -1477,7 +1516,7 @@ int main(int argc, char **argv)
             game_frame++;
             dump_entry();
             if (game_frame == prof_from_frame) { memset(prof, 0, 0x80000 * 8); memset(prof_n, 0, 0x80000 * 8); prof_from_cyc = cyc; }
-            pad_buttons = inputs_for(game_frame);
+            pad_buttons = inputs_for(game_frame); jog_cuadro();
             if ((shot_every && game_frame % shot_every == 0) || shot_at(game_frame)) { char nm[64]; snprintf(nm, sizeof nm, "shot_%05ld", game_frame); screenshot(nm); }
             if (game_frame >= max_game_frames) break;
         }
