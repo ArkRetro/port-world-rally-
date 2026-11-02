@@ -139,7 +139,8 @@ carpetas para la tarjeta de PSIO o XStation (`SD_NOMBRE` cambia el nombre; por d
 
 El JogCon de Ridge Racer Type 4 sirve como volante (`ps1/mando.c`, comun con el WR2).
 
-- **Conectarlo:** en el puerto 1, con la luz de MODE encendida. Si se apaga (modo digital), funciona como un pad normal.
+- **Conectarlo:** en el puerto 1. El JogCon arranca en modo digital y el juego lo pasa solo a modo JogCon (se enciende
+  la luz de MODE), como Ridge Racer Type 4. Si luego se pulsa MODE y se apaga, funciona como un pad normal.
 - **El centro:** es donde este la rueda cuando el juego lo ve, y el motor la devuelve ahi como un muelle.
 - **Como gira el coche:** la placa del WR1 solo lee bien el joystick. Con su volante optico o de potenciometro el juego
   no gira, tampoco en MAME. Por eso el giro de la rueda se pasa a pulsos de izquierda/derecha, tantos como lo girado:

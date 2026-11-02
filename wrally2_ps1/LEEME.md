@@ -47,7 +47,8 @@ El JogCon de Ridge Racer Type 4 hace de volante, como el de la cabina (`../wrall
 
 - **Como funciona:** con el JogCon el port pone el DIPSW de control en volante de potenciometro. `rc_mem.c` hace de su
   ADC serie y le da la posicion de la rueda: 0x8A al centro y 0x70 a cada lado con todo el giro.
-- **Conectarlo:** en el puerto 1, con la luz de MODE encendida.
+- **Conectarlo:** en el puerto 1. El JogCon arranca en modo digital y el juego lo pasa solo a modo JogCon (se enciende
+  la luz de MODE), como Ridge Racer Type 4. Si luego se pulsa MODE y se apaga, funciona como un pad normal.
 - **El centro:** es donde este la rueda cuando el juego lo ve, y el motor la devuelve ahi como un muelle.
 - **El giro completo:** la marca de la rueda arriba (las 12) es recto. Por defecto, todo el giro es a las 3 (derecha) o
   a las 9 (izquierda), es decir, un cuarto de vuelta. Como no se sabe cuantas unidades da el JogCon en ese cuarto de

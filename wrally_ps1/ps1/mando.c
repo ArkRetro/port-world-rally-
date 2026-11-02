@@ -9,7 +9,8 @@
    da un cuarto de vuelta (el giro completo que se quiere: la marca de arriba a las 3 o a las 9), asi que se mide:
    con L1+R1 pulsados se gira hasta ahi y al soltar, lo que mas se haya separado del centro es el giro completo (el
    port ensena el numero un rato, mando_aviso). Si se pulsa MODE (luz apagada) el JogCon pasa a
-   ser un pad digital y se lee como tal. Uso personal. */
+   ser un pad digital y se lee como tal; al conectarlo (o al arrancar) se le pide el modo JogCon (pide_jogcon), porque el
+   mando real arranca en modo digital. Uso personal. */
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32; typedef short s16;
 #define JOY_DATA (*(volatile u8 *)0x1F801040)
 #define JOY_STAT (*(volatile u16 *)0x1F801044)
@@ -24,6 +25,8 @@ int mando_vuelta = VUELTA_DEF;          /* unidades de la rueda para todo el gir
 int mando_aviso;                        /* cuadros que quedan para ensenar mando_cifra (el port lo pinta) */
 int mando_cifra;                        /* lo que se ensena: lo medido hasta ahora mientras se mide, luego mando_vuelta */
 static int conf, centro, midiendo, maximo;
+static int probado;                     /* ya se le mando pasar a modo JogCon (una vez por conexion): 1, y 2 si al hacerlo
+                                           resulto ser un DualShock, que se devuelve a digital */
 static u8 motor;                        /* orden para el proximo sondeo */
 
 void mando_init(void) { JOY_CTRL = 0x40; JOY_BAUD = 0x88; JOY_MODE = 0x0D; JOY_CTRL = 0; }
@@ -49,11 +52,23 @@ static u8 comando(const u8 *b, int n)
     JOY_CTRL = 0;
     return id;
 }
+static void pausa(void) { int t; for (t = 0; t < 12000; t++) __asm__ volatile ("nop"); }   /* ~1 ms entre comandos */
+/* un pad en modo digital (41h) puede ser un JogCon: el suyo arranca asi y es el juego el que lo pasa a modo JogCon (la
+   luz de MODE se enciende), como Ridge Racer Type 4: 43h 01 entrar en configuracion, 44h 01 (modo JogCon, sin bloquear
+   el boton MODE) y 43h 00 salir. Un pad digital sin configuracion no hace caso; un DualShock pasaria a analogico (73h),
+   y se le devuelve a digital al verlo (44h 00) */
+static void pide_jogcon(int modo)
+{
+    static const u8 entra[8] = {0x43, 0x00, 0x01}, sale[8] = {0x43, 0x00, 0x00};
+    u8 m[8] = {0x44, 0x00, 0x00, 0x02};
+    m[2] = (u8)modo;
+    pausa(); comando(entra, 8); pausa(); comando(m, 8); pausa(); comando(sale, 8); pausa();
+}
 static void configura(void)
 {
     static const u8 entra[8] = {0x43, 0x00, 0x01}, mapa[8] = {0x4D, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
                     sale[8] = {0x43, 0x00, 0x00};
-    comando(entra, 8); comando(mapa, 8); comando(sale, 8);
+    pausa(); comando(entra, 8); pausa(); comando(mapa, 8); pausa(); comando(sale, 8); pausa();
     motor = 0xC0;                       /* el centro: donde este la rueda ahora; despues, el muelle */
     conf = 1;
 }
@@ -94,5 +109,8 @@ u16 mando_lee(void)
     }
     JOY_CTRL = 0;
     mando_jog = 0; conf = 0;            /* otro mando (o el JogCon en modo digital): se vuelve a configurar al verlo */
+    if (id == 0x41 && !probado) { probado = 1; pide_jogcon(1); }          /* puede ser un JogCon en modo digital */
+    else if ((id & 0xF0) == 0x70 && probado == 1) { probado = 2; pide_jogcon(0); }   /* era un DualShock: a digital */
+    else if (id == 0xFF || id == 0x00) probado = 0;                       /* sin mando: al conectar otro, se prueba */
     return r;
 }
