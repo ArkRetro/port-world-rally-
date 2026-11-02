@@ -43,7 +43,7 @@ static inline u16 t1_get(void)
 /* ------------------------------------------------------------ mando (SIO0 directo) */
 /* mando: ../../wrally_ps1/ps1/mando.c (pad o JogCon, comun a los dos ports) */
 void mando_init(void); u16 mando_lee(void);
-extern int mando_jog, mando_giro, mando_sens, mando_aviso;
+extern int mando_jog, mando_giro, mando_cifra, mando_aviso;
 extern u8 rc_volante;
 #define joy_init mando_init
 #define joy_read mando_lee
@@ -247,7 +247,7 @@ void rc_vblank(void)
                 digits(180, 20, carga_dm_neg[0], 4); digits(220, 20, carga_dm_neg[1], 4);
             }
         }
-        if (mando_aviso) { mando_aviso--; digits(176, 220, mando_sens + 1, 1); }   /* JogCon: sensibilidad (1-7) tras L1/R1 */
+        if (mando_aviso) { mando_aviso--; digits(168, 220, mando_cifra, 5); }   /* JogCon: el giro completo (L1+R1 lo mide) */
         carga_atiende();
         l_send();
     }

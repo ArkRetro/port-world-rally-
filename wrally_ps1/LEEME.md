@@ -144,6 +144,13 @@ El JogCon de Ridge Racer Type 4 sirve como volante (`ps1/mando.c`, comun con el 
 - **Como gira el coche:** la placa del WR1 solo lee bien el joystick. Con su volante optico o de potenciometro el juego
   no gira, tampoco en MAME. Por eso el giro de la rueda se pasa a pulsos de izquierda/derecha, tantos como lo girado:
   un cuarto de giro, un cuadro de cada cuatro; todo el giro, siempre.
-- **Sensibilidad:** L1 hace que haya que girar mas y R1 menos. Son 7 niveles y se empieza en el 4; el nivel sale abajo
-  al cambiarlo.
+- **El giro completo:** la marca de la rueda arriba (las 12) es recto. Por defecto, todo el giro es a las 3 (derecha) o
+  a las 9 (izquierda), es decir, un cuarto de vuelta. Como no se sabe cuantas unidades da el JogCon en ese cuarto de
+  vuelta, se mide:
+  1. Manten L1+R1.
+  2. Gira la rueda hasta las 3 (o hasta las 9).
+  3. Suelta.
+
+  Abajo sale el numero mientras giras y despues el medido. Si nos lo dices, lo ponemos por defecto (`VUELTA_DEF` en
+  `ps1/mando.c`).
 - **Botones:** los mismos que el pad.

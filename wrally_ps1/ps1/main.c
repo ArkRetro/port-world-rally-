@@ -1172,7 +1172,7 @@ static HOT u32 sprites(void)    /* devuelve las paletas 32-47 usadas */
 
 /* ------------------------------------------------------------ mando (SIO0 directo): mando.c (pad o JogCon) */
 void mando_init(void); u16 mando_lee(void);
-extern int mando_jog, mando_giro, mando_sens, mando_aviso;
+extern int mando_jog, mando_giro, mando_cifra, mando_aviso;
 #define joy_init mando_init
 #define joy_read mando_lee
 
@@ -1318,7 +1318,7 @@ void rc_vblank(void)
             /* CD: sectores perdidos, errores, vigilancias, ultimo codigo de error, Pause rechazadas; cuadros/s x1000 */
             digits(4, 28, cd_dbg[1]); digits(48, 28, cd_dbg[2]); digits(92, 28, cd_dbg[3]); digits(136, 28, cd_dbg[5]);
             digits(180, 28, cd_dbg[6]); digits(224, 28, fps_mil); }
-        if (mando_aviso) { mando_aviso--; digits(168, 220, mando_sens + 1); }   /* JogCon: sensibilidad (1-7) tras L1/R1 */
+        if (mando_aviso) { mando_aviso--; digits(168, 220, mando_cifra); }   /* JogCon: el giro completo (L1+R1 lo mide) */
         pk_send(fb ? 256 : 0);
     }
     t_cd0 = T1;

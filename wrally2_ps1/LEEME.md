@@ -49,7 +49,15 @@ El JogCon de Ridge Racer Type 4 hace de volante, como el de la cabina (`../wrall
   ADC serie y le da la posicion de la rueda: 0x8A al centro y 0x70 a cada lado con todo el giro.
 - **Conectarlo:** en el puerto 1, con la luz de MODE encendida.
 - **El centro:** es donde este la rueda cuando el juego lo ve, y el motor la devuelve ahi como un muelle.
-- **Sensibilidad:** L1 hace que haya que girar mas y R1 menos. Son 7 niveles y el nivel sale abajo al cambiarlo.
+- **El giro completo:** la marca de la rueda arriba (las 12) es recto. Por defecto, todo el giro es a las 3 (derecha) o
+  a las 9 (izquierda), es decir, un cuarto de vuelta. Como no se sabe cuantas unidades da el JogCon en ese cuarto de
+  vuelta, se mide:
+  1. Manten L1+R1.
+  2. Gira la rueda hasta las 3 (o hasta las 9).
+  3. Suelta.
+
+  Abajo sale el numero mientras giras y despues el medido. Si nos lo dices, lo ponemos por defecto (`VUELTA_DEF` en
+  `../wrally_ps1/ps1/mando.c`).
 - **Pruebas:** en el banco, `VOLANTE=n` pone el volante n pasos al lado que diga el guion. En `psxprof2`, `JOGCON=n`
   emula el mando y su motor.
 

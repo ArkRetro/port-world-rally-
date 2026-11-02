@@ -5,8 +5,10 @@
    motor en el primer byte, 43h 00 salir). Orden del motor: nibble alto 0 parar, 1 derecha, 2 izquierda, 3 sujetar en la
    posicion de sujecion, C esa posicion = la actual; nibble bajo la fuerza (0-15). Al verlo se configura, se toma la
    posicion de ese momento como el centro y el motor la sujeta (un muelle, MANDO_FUERZA): el giro (mando_giro, -256 a
-   256, izquierda negativa) es la distancia al centro, con todo el giro a vuelta[mando_sens] unidades (no se sabe
-   cuantas da una vuelta de la rueda: se elige con L1 y R1, 7 niveles). Si se pulsa MODE (luz apagada) el JogCon pasa a
+   256, izquierda negativa) es la distancia al centro, con todo el giro a mando_vuelta unidades. No se sabe cuantas
+   da un cuarto de vuelta (el giro completo que se quiere: la marca de arriba a las 3 o a las 9), asi que se mide:
+   con L1+R1 pulsados se gira hasta ahi y al soltar, lo que mas se haya separado del centro es el giro completo (el
+   port ensena el numero un rato, mando_aviso). Si se pulsa MODE (luz apagada) el JogCon pasa a
    ser un pad digital y se lee como tal. Uso personal. */
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32; typedef short s16;
 #define JOY_DATA (*(volatile u8 *)0x1F801040)
@@ -15,13 +17,13 @@ typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32; 
 #define JOY_CTRL (*(volatile u16 *)0x1F80104A)
 #define JOY_BAUD (*(volatile u16 *)0x1F80104E)
 #define MANDO_FUERZA 8                  /* fuerza del muelle (0-15) */
-/* unidades de la rueda para todo el giro, por nivel de sensibilidad (L1 menos, R1 mas); se empieza en el del medio */
-static const u16 vuelta[7] = {192, 144, 112, 88, 68, 52, 40};
+#define VUELTA_DEF 88                   /* unidades de la rueda para todo el giro hasta medirlo (un cuarto de vuelta?) */
 int mando_jog;                          /* 1: hay un JogCon en modo JogCon */
 int mando_giro;                         /* -256 (izquierda del todo) a 256 (derecha del todo) */
-int mando_sens = 3;                     /* nivel de vuelta[] */
-int mando_aviso;                        /* cuadros que quedan para ensenar el nivel tras cambiarlo (el port lo pinta) */
-static int conf, centro, l1_ant = 1, r1_ant = 1;
+int mando_vuelta = VUELTA_DEF;          /* unidades de la rueda para todo el giro (L1+R1: se mide) */
+int mando_aviso;                        /* cuadros que quedan para ensenar mando_cifra (el port lo pinta) */
+int mando_cifra;                        /* lo que se ensena: lo medido hasta ahora mientras se mide, luego mando_vuelta */
+static int conf, centro, midiendo, maximo;
 static u8 motor;                        /* orden para el proximo sondeo */
 
 void mando_init(void) { JOY_CTRL = 0x40; JOY_BAUD = 0x88; JOY_MODE = 0x0D; JOY_CTRL = 0; }
@@ -70,11 +72,18 @@ u16 mando_lee(void)
         JOY_CTRL = 0;
         if (!conf) { configura(); centro = pos; mando_giro = 0; mando_jog = 1; return r; }
         if (motor == 0xC0) { centro = pos; motor = 0x30 | MANDO_FUERZA; }
-        if (!(r & 0x0400) && l1_ant && mando_sens > 0) mando_sens--, mando_aviso = 90;   /* L1: hay que girar mas */
-        if (!(r & 0x0800) && r1_ant && mando_sens < 6) mando_sens++, mando_aviso = 90;   /* R1: hay que girar menos */
-        l1_ant = (r & 0x0400) != 0; r1_ant = (r & 0x0800) != 0;
+        if (!(r & 0x0400) && !(r & 0x0800)) {          /* L1+R1: midiendo el giro completo */
+            int d = pos - centro; if (d < 0) d = -d;
+            if (!midiendo) midiendo = 1, maximo = 0;
+            if (d > maximo) maximo = d;
+            mando_cifra = maximo; mando_aviso = 120;
+        } else if (midiendo) {
+            midiendo = 0;
+            if (maximo >= 8) mando_vuelta = maximo;      /* (si casi no se giro, se deja como estaba) */
+            mando_cifra = mando_vuelta; mando_aviso = 180;
+        }
         r |= 0x0C00;
-        v = vuelta[mando_sens];
+        v = mando_vuelta;
         g = (pos - centro) * 256 / v;
         mando_giro = g < -256 ? -256 : g > 256 ? 256 : g;
         mando_jog = 1;

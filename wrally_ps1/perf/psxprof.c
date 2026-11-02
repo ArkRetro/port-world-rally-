@@ -250,7 +250,7 @@ static void eventf(const char *fmt, ...)
    STEER=1      direccion oscilante desde 1300 (90 cuadros recto, derecha, recto, izquierda): choques y derrapes;
                 STEER=n (n > 1): con n cuadros por tramo
    INPUTS=a-b:BOT,...  botones de mas en los cuadros [a, b) (a sola: solo ese cuadro; a-b%P/W: solo cuando
-                (cuadro - a) % P < W): C moneda, S START, X acelerar, x soltar el acelerador, Q cuadrado, cruceta
+                (cuadro - a) % P < W): C moneda, S START, X acelerar, x soltar el acelerador, Q cuadrado, 1 L1, 2 R1, cruceta
                 R L U D. Elegir rally en 'Choose a Rally': R en 1180-1190 Monte-Carlo, R tres veces Acropolis,
                 L 1000 Lagos (lo mismo que rc_host)
    RND=semilla  direccion al azar desde RNDFROM (1300) en tramos de 5 a 120 cuadros
@@ -269,7 +269,7 @@ static u16 inputs_spec(const char *q, long fr, u16 in)
         if (fr >= a && fr < b && (!P || (fr - a) % P < Wd)) for (c = bt; c < q; c++) switch (*c) {
             case 'C': in &= ~0x0001; break; case 'S': in &= ~0x0008; break; case 'X': in &= ~0x4000; break;
             case 'Q': in &= ~0x8000; break; case 'L': in &= ~0x0080; break; case 'R': in &= ~0x0020; break;
-            case 'U': in &= ~0x0010; break; case 'D': in &= ~0x0040; break; case 'x': in |= 0x4000; break;
+            case 'U': in &= ~0x0010; break; case 'D': in &= ~0x0040; break; case '1': in &= ~0x0400; break; case '2': in &= ~0x0800; break;   /* L1, R1 */ case 'x': in |= 0x4000; break;
             }
         if (*q == ',') q++;
     }
