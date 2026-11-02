@@ -173,8 +173,10 @@ static void ap_log(long to)
 static void volante(void)
 {
     extern u8 rc_volante; static int n = -1;
+    static long desde = -1;
     if (n < 0) n = getenv("VOLANTE") ? atoi(getenv("VOLANTE")) : 0;
-    if (!n) return;
+    if (desde < 0) desde = getenv("VOLANTE_DESDE") ? atol(getenv("VOLANTE_DESDE")) : 0;   /* el volante desde ese cuadro */
+    if (!n || frame < desde) return;
     in0 &= ~0x0800;
     rc_volante = (u8)(0x8A + (!(in0 & 0x08) ? n : 0) - (!(in0 & 0x04) ? n : 0));
     in0 |= 0x0C;
@@ -464,6 +466,7 @@ void rc_vblank(void)
         if (ap_child >= 0) _exit(0);
         if (dumpf) fclose(dumpf);
         if (logf) fclose(logf);
+    if (getenv("RAMFIN")) { FILE *f = fopen(getenv("RAMFIN"), "wb"); if (f) { fwrite(rc_ram, 1, 0x10000, f); fclose(f); } }   /* la RAM al acabar */
         { extern unsigned long mcu_repes, mcu_trabajos; fprintf(stderr, "fin: %ld cuadros; MCU: %lu trabajos, %lu repetidos\n", frame, mcu_trabajos, mcu_repes); }
         { extern unsigned mcu_movc_fuera; if (mcu_movc_fuera) fprintf(stderr, "MOVC fuera de las tablas: %u\n", mcu_movc_fuera); }
 #ifdef HPROF

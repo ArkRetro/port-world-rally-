@@ -268,6 +268,16 @@ void rc_vblank(void)
             in0 = (u16)((in0 & ~0x0800) | 0x0C);
             rc_volante = (u8)(0x8A - mando_giro * 0x70 / 256);
         }
+        {   /* el juego lee ese DIPSW solo al arrancar y lo guarda en el byte FE808F (1 volante, 0 joystick; buscado en el
+               banco): el JogCon real tarda en pasar a modo JogCon (y se puede conectar o pulsar MODE luego), asi que se
+               pone a mano cada vez que cambia */
+            static int jog_ant;
+            if (mando_jog != jog_ant) {
+                u16 *w = (u16 *)(rc_ram + 0x808E);
+                *w = (u16)((*w & 0xFF00) | (mando_jog ? 1 : 0));
+                jog_ant = mando_jog;
+            }
+        }
         if (!(pad & 0x0008) && !corriendo()) in0 &= ~0x80;   /* START (mientras se corre es la pausa) */
         if (!(pad & 0x0001)) in2 &= ~0x100;            /* SELECT: moneda */
         {   /* L2 + R2: cifras de depuracion si/no */
