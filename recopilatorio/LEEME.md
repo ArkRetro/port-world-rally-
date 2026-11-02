@@ -14,7 +14,7 @@ Mandos del menú:
   Al cambiar, la música del otro juego se apaga y empieza desde el principio la del elegido.
 - **START, X o círculo**: cargan el juego. La pantalla se funde a negro, sale CARGANDO y la BIOS carga el EXE del juego.
 - Para volver al menú, se reinicia la consola.
-- Vale también el JogCon de Namco, con su cruceta y sus botones. En los juegos hace de volante: ver el LEEME de cada port.
+- Valen también el JogCon y el NeGcon de Namco, con su cruceta y START. En los juegos hacen de volante: ver el LEEME de cada port.
 
 La música:
 

@@ -1075,12 +1075,39 @@ static int jog_byte(u8 v, int seq, u8 *resp)  /* devuelve ack */
     else if (jog_cmd == 0x4D && jog_cfg) { *resp = jog_map[k]; jog_map[k] = v; }
     return k < 5;
 }
+/* NEGCON=n: en el puerto 1 un NeGcon (ID 23h): de INPUTS, izquierda/derecha lo retuercen n desde 80h (4 por cuadro;
+   suelto vuelve al centro), X es I a fondo, Q es A, C es B, 1 es L a fondo y 2 es R */
+static int neg_n = -1, neg_tw = 0x80;
+static int neg_byte(int seq, u8 *resp)
+{
+    int k = seq - 3, l = !(pad_buttons & 0x80), r = !(pad_buttons & 0x20);
+    if (seq == 1) {                                       /* cada sondeo: el giro */
+        int t = 0x80 + (l ? -neg_n : r ? neg_n : 0);
+        neg_tw += t > neg_tw + 4 ? 4 : t < neg_tw - 4 ? -4 : t - neg_tw;
+        *resp = 0x23; return 1;
+    }
+    if (seq == 2) { *resp = 0x5A; return 1; }
+    if (k < 0 || k > 5) { *resp = 0xFF; return 0; }
+    {
+        u16 b = 0xFFFF;
+        if (!(pad_buttons & 0x08)) b &= ~0x08;             /* START */
+        b &= (u16)(pad_buttons | ~0x50);                   /* arriba, abajo */
+        if (!(pad_buttons & 0x8000)) b &= ~0x2000;         /* Q -> A */
+        if (!(pad_buttons & 0x0001)) b &= ~0x1000;         /* C -> B */
+        if (!(pad_buttons & 0x0800)) b &= ~0x0800;         /* 2 -> R */
+        u8 d[6] = {(u8)b, (u8)(b >> 8), (u8)neg_tw, (u8)(!(pad_buttons & 0x4000) ? 0xFF : 0), 0, (u8)(!(pad_buttons & 0x0400) ? 0xFF : 0)};
+        *resp = d[k];
+    }
+    return k < 5;
+}
 static void joy_data_write(u8 v)
 {
     u8 resp = 0xFF; int ack = 0;
     if (!(joy_ctrl & 2)) { joy_seq = -1; }
     if (joy_seq <= 0) {
         if (v == 0x01) { resp = 0xFF; ack = 1; joy_seq = 1; } else { resp = 0xFF; joy_seq = -1; }
+    } else if ((neg_n < 0 ? (neg_n = getenv("NEGCON") ? atoi(getenv("NEGCON")) : 0) : neg_n) > 0) {
+        ack = neg_byte(joy_seq, &resp); joy_seq++;
     } else if ((jog_n < 0 ? (jog_n = getenv("JOGCON") ? atoi(getenv("JOGCON")) : 0) : jog_n) > 0) {
         ack = jog_byte(v, joy_seq, &resp); joy_seq++;
     } else {

@@ -143,7 +143,7 @@ static u16 joy_read(void)                  /* botones pulsados a 1 */
     JOY_CTRL = 0x1003;
     for (t = 0; t < 300; t++) __asm__ volatile ("nop");
     joy_x(0x01, 1); id = joy_x(0x42, 1);
-    if ((id & 0xF0) == 0x40 || (id & 0xF0) == 0x70 || (id & 0xF0) == 0x50 || id == 0xE3) {   /* E3: JogCon (botones igual) */
+    if ((id & 0xF0) == 0x40 || (id & 0xF0) == 0x70 || (id & 0xF0) == 0x50 || id == 0xE3 || id == 0x23) {   /* JogCon, NeGcon: START y cruceta igual */
         joy_x(0, 1); r = joy_x(0, 1); r |= joy_x(0, 0) << 8;
     }
     JOY_CTRL = 0;

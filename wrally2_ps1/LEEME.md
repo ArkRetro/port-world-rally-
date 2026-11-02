@@ -66,6 +66,21 @@ El JogCon de Ridge Racer Type 4 hace de volante, como el de la cabina (`../wrall
 - **Pruebas:** en el banco, `VOLANTE=n` pone el volante n pasos al lado que diga el guion. En `psxprof2`, `JOGCON=n`
   emula el mando y su motor.
 
+## NeGcon (Namco)
+
+El NeGcon tambien hace de volante, en el puerto 1 (`../wrally_ps1/ps1/mando.c`). No necesita configuracion: se ve al conectarlo.
+
+- **Giro:** retorcer el mando gira el coche como la rueda del JogCon. Todo el giro es 60h de los 80h que da a cada
+  lado, y hay zona muerta en el centro.
+- **Botones:**
+  - I: acelerar. Es analogico, pero el juego solo tiene todo o nada: pasada la mitad, a fondo.
+  - A: marcha.
+  - B: moneda (el NeGcon no tiene SELECT).
+  - START y la cruceta, como en el pad.
+- **L+R juntos:** lo mismo que L1+R1 en el JogCon. Retorciendo mientras se pulsan se mide el giro completo; con un
+  toque sin retorcer, el centro pasa a donde este.
+- **Pruebas:** en `psxprof`/`psxprof2`, `NEGCON=n`.
+
 ## Grabar el CD para una PS1 de verdad
 
 - Graba la imagen con el `.cue` (no el `.bin` suelto), en modo **DAO / disc-at-once** y a **poca velocidad** (4x-8x),

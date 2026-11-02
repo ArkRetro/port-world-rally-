@@ -159,3 +159,18 @@ El JogCon de Ridge Racer Type 4 sirve como volante (`ps1/mando.c`, comun con el 
 - **Acelerador:** en las dos placas es un boton de todo o nada, asi que X siempre da el maximo. Para la velocidad
   punta hay que cambiar a la marcha larga con cuadrado: se empieza en la corta.
 - **Botones:** los mismos que el pad.
+
+### NeGcon (Namco)
+
+El NeGcon tambien hace de volante, en el puerto 1 (mismo `mando.c`). No necesita configuracion: se ve al conectarlo.
+
+- **Giro:** retorcer el mando gira el coche como la rueda del JogCon. Todo el giro es 60h de los 80h que da a cada
+  lado, y hay zona muerta en el centro.
+- **Botones:**
+  - I: acelerar. Es analogico, pero el juego solo tiene todo o nada: pasada la mitad, a fondo.
+  - A: marcha.
+  - B: moneda (el NeGcon no tiene SELECT).
+  - START y la cruceta, como en el pad.
+- **L+R juntos:** lo mismo que L1+R1 en el JogCon. Retorciendo mientras se pulsan se mide el giro completo; con un
+  toque sin retorcer, el centro pasa a donde este.
+- **Pruebas:** en `psxprof`/`psxprof2`, `NEGCON=n`.

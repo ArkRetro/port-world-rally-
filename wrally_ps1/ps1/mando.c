@@ -1,5 +1,5 @@
-/* Mando del puerto 1 por SIO0 (sondeo, sin interrupciones), comun a los dos ports: pad digital o analogico y el JogCon
-   de Namco. El JogCon (ID E3h, el modo de la luz encendida) da los botones como el pad, la posicion de la rueda (16 bits
+/* Mando del puerto 1 por SIO0 (sondeo, sin interrupciones), comun a los dos ports: pad digital o analogico, el JogCon
+   y el NeGcon de Namco. El JogCon (ID E3h, el modo de la luz encendida) da los botones como el pad, la posicion de la rueda (16 bits
    con signo, absoluta) y un estado; su motor se manda con un byte de cada sondeo, el que se le asigna con el comando
    4Dh en el modo de configuracion (como pscontroller-rs, probado con el mando: 43h 01 entrar, 4Dh 00 FF FF FF FF FF el
    motor en el primer byte, 43h 00 salir). Orden del motor: nibble alto 0 parar, 1 derecha, 2 izquierda, 3 sujetar en la
@@ -11,7 +11,11 @@
    port ensena el numero un rato, mando_aviso); un toque de L1+R1 sin girar pone el centro donde este la rueda (si se
    ha ido corriendo). Zona muerta en el centro (ZONA). Si se pulsa MODE (luz apagada) el JogCon pasa a
    ser un pad digital y se lee como tal; al conectarlo (o al arrancar) se le pide el modo JogCon (pide_jogcon), porque el
-   mando real arranca en modo digital. Uso personal. */
+   mando real arranca en modo digital.
+   El NeGcon (ID 23h, psx-spx; el sentido como DuckStation) da START, la cruceta, R, A y B en los botones, el giro
+   (00h izquierda, 80h centro, FFh derecha) y los botones analogicos I, II y L (00h suelto, FFh a fondo). Se pasa a los
+   botones del pad: I acelerar (X: el juego solo tiene todo o nada), A marcha (cuadrado), B moneda (SELECT); su giro va
+   como la rueda del JogCon (NEG_VUELTA de 80h, sin motor), y L+R juntos hacen lo de L1+R1. Uso personal. */
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32; typedef short s16;
 #define JOY_DATA (*(volatile u8 *)0x1F801040)
 #define JOY_STAT (*(volatile u16 *)0x1F801044)
@@ -22,12 +26,14 @@ typedef unsigned char u8; typedef unsigned short u16; typedef unsigned int u32; 
 #define VUELTA_DEF 88                   /* unidades de la rueda para todo el giro hasta medirlo (un cuarto de vuelta?) */
 #define ZONA 12                         /* zona muerta en el centro (de 256): el muelle no deja la rueda justo en el centro
                                            y sin ella el coche tiraria poco a poco a un lado */
-int mando_jog;                          /* 1: hay un JogCon en modo JogCon */
+#define NEG_VUELTA 0x60                 /* NeGcon: lo retorcido (desde 80h) para todo el giro, hasta medirlo */
+int mando_jog;                          /* 1: hay un volante (JogCon en modo JogCon o NeGcon): mando_giro vale */
 int mando_giro;                         /* -256 (izquierda del todo) a 256 (derecha del todo) */
 int mando_vuelta = VUELTA_DEF;          /* unidades de la rueda para todo el giro (L1+R1: se mide) */
 int mando_aviso;                        /* cuadros que quedan para ensenar mando_cifra (el port lo pinta) */
 int mando_cifra;                        /* lo que se ensena: lo medido hasta ahora mientras se mide, luego mando_vuelta */
 static int conf, centro, midiendo, maximo, pmin, pmax;
+static int vuelta_neg = NEG_VUELTA, centro_neg;
 static int probado;                     /* ya se le mando pasar a modo JogCon (una vez por conexion): 1, y 2 si al hacerlo
                                            resulto ser un DualShock, que se devuelve a digital */
 static u8 motor;                        /* orden para el proximo sondeo */
@@ -75,14 +81,41 @@ static void configura(void)
     motor = 0xC0;                       /* el centro: donde este la rueda ahora; despues, el muelle */
     conf = 1;
 }
-/* los botones (activos a 0, como el pad digital); con un JogCon tambien mando_giro */
+/* comun a los dos volantes: con los hombros (L1+R1 o L+R) pulsados se mide el giro completo o, sin mover el volante,
+   se pone el centro donde este (recentra: devuelve 1); luego el giro con la zona muerta */
+static int volante(int pos, int hombros, int *cen, int *vuelta)
+{
+    int g, r = 0;
+    if (hombros) {
+        int d = pos - *cen; if (d < 0) d = -d;
+        if (!midiendo) midiendo = 1, maximo = 0, pmin = pmax = pos;
+        if (d > maximo) maximo = d;
+        if (pos < pmin) pmin = pos;
+        if (pos > pmax) pmax = pos;
+        mando_cifra = maximo; mando_aviso = 120;
+    } else if (midiendo) {
+        midiendo = 0;
+        if (pmax - pmin < 8) { *cen = pos; r = 1; }    /* sin mover el volante mientras se pulsaba: centro nuevo (donde
+                                                          este; si se ha ido corriendo) */
+        else if (maximo >= 24) *vuelta = maximo;       /* girado: lo mas lejos del centro es el giro completo */
+        mando_cifra = *vuelta; mando_aviso = 180;
+    }
+    mando_vuelta = *vuelta;
+    g = (pos - *cen) * 256 / *vuelta;
+    g = g < -256 ? -256 : g > 256 ? 256 : g;
+    /* zona muerta, y lo de fuera reescalado para que todo el giro siga siendo 256 */
+    mando_giro = g > ZONA ? (g - ZONA) * 256 / (256 - ZONA) : g < -ZONA ? (g + ZONA) * 256 / (256 - ZONA) : 0;
+    mando_jog = 1;
+    return r;
+}
+/* los botones (activos a 0, como el pad digital); con un JogCon o un NeGcon tambien mando_giro */
 u16 mando_lee(void)
 {
     u16 r = 0xFFFF; u8 id;
     sel();
     joy_x(0x01, 1); id = joy_x(0x42, 1);
     if (id == 0xE3) {                   /* JogCon: 5A, botones (2), posicion (2), estado, y uno mas */
-        s16 pos; int g, v;
+        s16 pos;
         joy_x(0, 1);
         r = joy_x(conf ? motor : 0, 1); r |= joy_x(0, 1) << 8;
         pos = (s16)joy_x(0, 1); pos = (s16)((u16)pos | joy_x(0, 1) << 8);
@@ -90,26 +123,26 @@ u16 mando_lee(void)
         JOY_CTRL = 0;
         if (!conf) { configura(); centro = pos; mando_giro = 0; mando_jog = 1; return r; }
         if (motor == 0xC0) { centro = pos; motor = 0x30 | MANDO_FUERZA; }
-        if (!(r & 0x0400) && !(r & 0x0800)) {          /* L1+R1: midiendo el giro completo */
-            int d = pos - centro; if (d < 0) d = -d;
-            if (!midiendo) midiendo = 1, maximo = 0, pmin = pmax = pos;
-            if (d > maximo) maximo = d;
-            if (pos < pmin) pmin = pos; if (pos > pmax) pmax = pos;
-            mando_cifra = maximo; mando_aviso = 120;
-        } else if (midiendo) {
-            midiendo = 0;
-            if (pmax - pmin < 8) motor = 0xC0;           /* sin mover la rueda mientras se pulsaba: centro nuevo (donde
-                                                            este; si se ha ido corriendo) */
-            else if (maximo >= 24) mando_vuelta = maximo;   /* girada: lo mas lejos del centro es el giro completo */
-            mando_cifra = mando_vuelta; mando_aviso = 180;
+        {   static int vuelta_jog = VUELTA_DEF;
+            if (volante(pos, !(r & 0x0400) && !(r & 0x0800), &centro, &vuelta_jog)) motor = 0xC0;   /* y el muelle alli */
         }
         r |= 0x0C00;
-        v = mando_vuelta;
-        g = (pos - centro) * 256 / v;
-        g = g < -256 ? -256 : g > 256 ? 256 : g;
-        /* zona muerta, y lo de fuera reescalado para que todo el giro siga siendo 256 */
-        mando_giro = g > ZONA ? (g - ZONA) * 256 / (256 - ZONA) : g < -ZONA ? (g + ZONA) * 256 / (256 - ZONA) : 0;
         mando_jog = 1;
+        return r;
+    }
+    if (id == 0x23) {                   /* NeGcon: 5A, botones (2), giro, I, II, L */
+        u16 b; u8 tw, i1, i2, l;
+        joy_x(0, 1); b = joy_x(0, 1); b |= joy_x(0, 1) << 8;
+        tw = joy_x(0, 1); i1 = joy_x(0, 1); i2 = joy_x(0, 1); l = joy_x(0, 0);
+        JOY_CTRL = 0;
+        (void)i2;
+        r = b | 0xC707;                                 /* START (8), cruceta (F0) y R (800) tal cual */
+        if (i1 > 0x60) r &= ~0x4000;                    /* I: acelerar */
+        if (!(b & 0x2000)) r &= ~0x8000;                /* A: marcha */
+        if (!(b & 0x1000)) r &= ~0x0001;                /* B: moneda */
+        r |= 0x0800;
+        conf = 0;
+        volante(tw - 0x80, l > 0x80 && !(b & 0x0800), &centro_neg, &vuelta_neg);
         return r;
     }
     if ((id & 0xF0) == 0x40 || (id & 0xF0) == 0x70 || (id & 0xF0) == 0x50) {
