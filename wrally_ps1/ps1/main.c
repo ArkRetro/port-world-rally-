@@ -1288,7 +1288,9 @@ void rc_vblank(void)
         if (!(pad & 0x4000)) in &= ~0x20;            /* X: acelerar */
         if (!(pad & 0x8000) && sq_last) gear ^= 1;   /* cuadrado: cambio de marcha */
         sq_last = (pad & 0x8000) != 0;
-        if (!(pad & 0x0100) && l2_last) show_dbg ^= 1;  /* L2: cifras de rendimiento */
+#ifdef CIFRAS
+        if (!(pad & 0x0100) && l2_last) show_dbg ^= 1;  /* L2: cifras de rendimiento (solo con -DCIFRAS: en la imagen no) */
+#endif
         l2_last = (pad & 0x0100) != 0;
         if (!gear) in &= ~0x10;
         if (!(pad & 0x0001)) in &= ~0x40;            /* SELECT: moneda */

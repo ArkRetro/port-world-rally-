@@ -91,7 +91,7 @@ El NeGcon tambien hace de volante, en el puerto 1 (`../wrally_ps1/ps1/mando.c`).
   los de `SPU.BIN` ademas con su suma, y lo escrito en la RAM de la SPU se lee de vuelta para ver que llego.
 - Antes de cada tramo sale CARGANDO al menos 3 s: mientras tanto el CD trae lo que viene (como los juegos de la PS1),
   y en la carrera casi no hace falta leer nada.
-- Con L2 + R2 salen las cifras; la tercera fila: sectores de `SPU.BIN` que llegaron mal, perdidos (sin leer bien en 4
+- Con L2 + R2 salen las cifras (solo construyendo con `MAINOPT=-DCIFRAS`; en las imagenes normales no); la tercera fila: sectores de `SPU.BIN` que llegaron mal, perdidos (sin leer bien en 4
   intentos), escrituras a la SPU que no salieron, errores del controlador del CD y errores de los paquetes. Si en la
   consola algo suena o se ve mal, esas cifras dicen si es el disco. La fila de arriba lleva, en lineas de video por
   cuadro (263 = un cuadro entero), el 68000 (3.a cifra) y el dibujo (4.a), y despues los cuadros saltados; la ultima

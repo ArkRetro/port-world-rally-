@@ -9,7 +9,7 @@ N=${NUGGET:?define NUGGET con la ruta de pcsx-redux/src/mips (nugget)}
 ARCH="-march=mips1 -mabi=32 -EL -fno-pic -mno-shared -mno-abicalls -mfp32 -mno-llsc -fno-stack-protector -nostdlib -ffreestanding"
 CF="$ARCH -O2 -G0 -mno-gpopt -fomit-frame-pointer -fno-builtin -fno-strict-aliasing -fdata-sections -ffunction-sections -w -I$N"
 [ wr_rc.o -nt ../rc/wr_rc.c ] && [ wr_rc.o -nt ../rc/rc_rt.h ] && [ wr_rc.o -nt build.sh ] || $P-gcc $CF ${RCOPT:--Os} -c ../rc/wr_rc.c -o wr_rc.o
-$P-gcc $CF -c main.c -o main.o
+$P-gcc $CF $MAINOPT -c main.c -o main.o   # MAINOPT=-DCIFRAS: L2 ensena las cifras de rendimiento
 $P-gcc $CF -c cd.c -o cd.o
 $P-gcc $CF -c snd.c -o snd.o
 $P-gcc $CF -c mando.c -o mando.o

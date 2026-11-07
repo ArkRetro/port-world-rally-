@@ -311,7 +311,9 @@ void rc_vblank(void)
         if (!(pad & 0x0001)) in2 &= ~0x100;            /* SELECT: moneda */
         {   /* L2 + R2: cifras de depuracion si/no */
             int lr = !(pad & 0x0100) && !(pad & 0x0200);
+#ifdef CIFRAS                                   /* solo con -DCIFRAS (MAINOPT): en la imagen no */
             if (lr && !lr_last) show ^= 1, vid_cifras = show;
+#endif
             lr_last = lr;
         }
         rc_set_io(in0, 0xFFFF, in2, 0xFFFF);
