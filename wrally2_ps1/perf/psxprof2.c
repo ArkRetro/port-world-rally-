@@ -327,6 +327,7 @@ static u64 t_vbin, t_vbout, t_min, vb_cyc, mcu_cyc; static u32 ra_vb, ra_mcu, sy
 /* cambio de bufer (GP1 05): lineas desde que empezo el vblank (si se pasa, la parte de arriba sale rota) */
 static u64 vbl_set_cyc; static long swap_hist[64]; static double swap_max; static long swap_max_fr;
 static u32 minsp = 0x1FFFFF; static long minsp_fr;
+static u32 minsp_spad = 0x400, minsp_spad_pc; static long minsp_spad_fr;   /* pila en el scratchpad (PILA_SPAD) */
 static u32 fnv(u32 h, u32 a, u32 n) { u32 i; a &= 0x1FFFFF; for (i = 0; i < n; i++) { h ^= ram[(a + i) & 0x1FFFFF]; h *= 16777619u; } return h; }
 static u32 state_hash(void) { u32 h = 2166136261u; if (!sym_ram) return 0; h = fnv(h, sym_ram, 0x10000); h = fnv(h, sym_vram, 0x10000); h = fnv(h, sym_pal, 0x2000); h = fnv(h, sym_xram, 0x2000); return h; }   /* psxprof2: como rc_host HUELLA */
 
@@ -772,6 +773,11 @@ void dump_show(void)                  /* GP1 05: empieza a verse el bufer de dis
 static void dma_start(int ch)
 {
     u32 chcr = dma_chcr[ch], madr = dma_madr[ch] & 0x1FFFFC, mode = (chcr >> 9) & 3, words = 0;
+    if ((dma_madr[ch] & 0xFFFFFF) >= 0x800000 && !(ch == 2 && mode == 2)) {   /* la DMA no llega al scratchpad (p. ej. un
+                                                     bufer en la pila, si esta alli): en la consola leeria o escribiria otra cosa */
+        eventf("DMA_SCRATCHPAD canal %d desde %08x", ch, dma_madr[ch]);
+        fprintf(stderr, "DMA_SCRATCHPAD: canal %d con MADR %08x (PC %08x)\n", ch, dma_madr[ch], PC);
+    }
     if (ch == 2) {
         if (mode == 2) {   /* lista enlazada */
             u32 a = madr; int guard = 0;
@@ -1738,6 +1744,7 @@ int main(int argc, char **argv)
         else if (ra_mcu && PC == ra_mcu) { mcu_cyc += cyc - t_min; ra_mcu = 0; }
         step();
         if ((R[29] & 0x1FFFFF) < minsp && (R[29] >> 24) == 0x80) { minsp = R[29] & 0x1FFFFF; minsp_fr = game_frame; }
+        else if ((R[29] >> 10) == (0x1F800000u >> 10) && (R[29] & 0x3FF) < minsp_spad) { minsp_spad = R[29] & 0x3FF; minsp_spad_fr = game_frame; minsp_spad_pc = PC; }
         while (cyc >= next_vbl) {
             I_STAT |= 1; vbl_set_cyc = next_vbl; next_vbl += frame_cyc; vbl_count++;
             if (getenv("INPUTSV")) pad_buttons = inputs_spec(getenv("INPUTSV"), vbl_count, inputs_for(game_frame));   /* por vblank (pausa) */
@@ -1759,7 +1766,8 @@ int main(int argc, char **argv)
     if (framef) fclose(framef);
     {   int b; fprintf(stderr, "cambio de bufer (lineas tras el vblank): max %.1f en el cuadro %ld; histograma:", swap_max, swap_max_fr);
         for (b = 0; b < 64; b++) if (swap_hist[b]) fprintf(stderr, " %d:%ld", b, swap_hist[b]);
-        fprintf(stderr, "\npila: sp minimo 0x%06x en el cuadro %ld\n", minsp, minsp_fr); }
+        fprintf(stderr, "\npila: sp minimo 0x%06x en el cuadro %ld\n", minsp, minsp_fr);
+        if (minsp_spad < 0x400) fprintf(stderr, "pila en el scratchpad: sp minimo 0x1F800%03x en el cuadro %ld (PC %08x): %u bytes libres\n", minsp_spad, minsp_spad_fr, minsp_spad_pc, minsp_spad); }
     if (misslog) fclose(misslog);
     fprintf(stderr, "perfil desde ciclo %llu (%.2f s)\n", (unsigned long long)prof_from_cyc, (cyc - prof_from_cyc) / CLK);
     fprintf(stderr, "SPU: %ld teclas pisadas antes de que su voz las viera, %ld saltos por repeticion\n", spu_perdidas, spu_saltos);

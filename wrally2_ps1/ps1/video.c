@@ -188,7 +188,6 @@ static u8 hmu[NB], hpal[NB], hfl[NB];
 static u16 carga_ini; static int en_carga; /* desde que cuadro protege la carga en curso lo que sube */
 static int hand;                          /* aguja del reloj de victimas */
 static u16 now;                           /* cuadro actual (vid_menu) */
-static u16 pal_sh[64][32];                /* sombra de la paleta del juego */
 static u16 pal_c[6][352] __attribute__((aligned(4)));   /* las 6 filas de S0 ya convertidas (11 paletas de 32 por fila) */
 static u16 efe[128] __attribute__((aligned(4)));         /* fila 246: RESTA (0-15), SUMA (16-31), RESTA32 (32-63), SUMA32 (64-95) */
 static u8 tbuf[2][256] __attribute__((aligned(4)));      /* tile de 8 bpp expandido (doble: la DMA lee el anterior) */
@@ -204,21 +203,30 @@ static u16 c15(u32 v)
     u32 c = ((v >> 10) & 31) | (v & 0x3E0) | ((v & 31) << 10);
     return (u16)(c ? c : 0x8000);
 }
+static u32 pal_firma[64];                 /* firma de cada paleta (pal_sig) al convertirla */
+/* firma de las 32 entradas de la paleta c (16 palabras): cada cuadro se mira si cambio con la mitad de lecturas que
+   comparandola con su copia (la RAM es lo que cuesta: ~6 ciclos por lectura). Rotar y sumar: un cambio que deje la
+   misma firma tendria que coincidir en 32 bits */
+static inline u32 pal_sig(int c)
+{
+    const u32 *s = (const u32 *)(rc_pal + c * 64); u32 h = 0x9E3779B9u; int k;
+    for (k = 0; k < 16; k++) h = ((h << 5) | (h >> 27)) + (s[k] ^ (u32)k);
+    return h;
+}
 static void pal_conv(int c)
 {
     const u16 *s = (const u16 *)(rc_pal + c * 64); u16 *d = &pal_c[c / 11][PAL_X(c)]; int k;
-    for (k = 0; k < 16; k++) ((u32 *)pal_sh[c])[k] = ((const u32 *)s)[k];
     d[0] = 0;
     for (k = 1; k < 32; k++) d[k] = c15(s[k]);
+    pal_firma[c] = pal_sig(c);
 }
 static u16 pal_t[64];                     /* B: cuadro en que cambio cada paleta (las CLUT dibujadas antes se rehacen) */
 void vid_paletas(void)
 {
     int c, k, n = 0, f[6] = {0, 0, 0, 0, 0, 0};
     for (c = 0; c < 64; c++) {
-        const u32 *s = (const u32 *)(rc_pal + c * 64), *h = (const u32 *)pal_sh[c];
-        for (k = 0; k < 16; k++) if (s[k] != h[k]) break;
-        if (k == 16) continue;
+        u32 g = pal_sig(c);
+        if (g == pal_firma[c]) continue;
         pal_conv(c); f[c / 11] = 1; n++; pal_t[c] = (u16)(now + 1);   /* now + 1: el cuadro que se va a dibujar */
     }
     if (!n) return;
@@ -340,35 +348,46 @@ void vid_marco(int fb)
    modo); con espejo (fl: bit 0 X, bit 1 Y), cuadrilatero 0x2D con la ventana de textura (E2) ajustada al tile, para
    que U/V puedan ir de 31 a 15 sin salirse (las GPU antiguas no hacen espejo en los rectangulos). semi: modo de
    semitransparencia (0 opaco, 1 B+F, 2 B-F). e1: pagina (A de 8 bpp o B de 4 bpp) */
-static inline __attribute__((always_inline)) void emit_t(int x, int y, u32 e1, u32 h, u32 cl, u32 fl, u32 semi)
+/* estado de la lista (lp, node, cur_e1, win) en una copia local: en el bucle de vid_b va en registros (las globales
+   costarian una lectura de la RAM cada vez); se pasa a las globales antes de lo que dibuje por su cuenta (rect16) */
+typedef struct { u32 *lp, *node, e1; int win; } lst_t;
+#define LST_IN(s) ((s).lp = lp, (s).node = node, (s).e1 = cur_e1, (s).win = win)
+#define LST_OUT(s) (lp = (s).lp, node = (s).node, cur_e1 = (s).e1, win = (s).win)
+static inline __attribute__((always_inline)) void emit_tl(lst_t *s, int x, int y, u32 e1, u32 h, u32 cl, u32 fl, u32 semi)
 {
     u32 uv = ((h >> 4) & 15) << 12 | (h & 15) << 4;
     u32 x0 = (u32)x & 0xFFFF, y0 = ((u32)y & 0xFFFF) << 16;
-    if (lp + 14 >= lst + LSTN) return;        /* lleno (l_full, aqui sin llamada: es el bucle mas caliente) */
+    u32 *q = s->lp;
+    if (q + 14 >= lst + LSTN) return;         /* lleno (l_full, aqui sin llamada: es el bucle mas caliente) */
     if (!fl) {
-        if (lp + 4 - node > 16) { l_close(lp); node = lp; lp = node + 1; }
-        if (win) { *lp++ = 0xE2000000; win = 0; }
-        if (e1 != cur_e1) { *lp++ = e1; cur_e1 = e1; }
-        lp[0] = semi ? 0x7F000000 : 0x7D000000; lp[1] = y0 | x0; lp[2] = (cl << 16) | uv; lp += 3;
+        if (q + 4 - s->node > 16) { s->node[0] = ((u32)(q - s->node - 1) << 24) | ((u32)q & 0xFFFFFF); s->node = q; q++; }
+        if (s->win) { *q++ = 0xE2000000; s->win = 0; }
+        if (e1 != s->e1) { *q++ = e1; s->e1 = e1; }
+        q[0] = semi ? 0x7F000000 : 0x7D000000; q[1] = y0 | x0; q[2] = (cl << 16) | uv; q += 3;
     } else {
         const u32 *f = fuv[fl]; u32 x1 = (x0 + 16) & 0xFFFF, y1 = y0 + (16 << 16);
-        if (lp + 10 - node > 16) { l_close(lp); node = lp; lp = node + 1; }
-        if (e1 != cur_e1) { *lp++ = e1; cur_e1 = e1; }
-        lp[0] = 0xE20003DE | ((uv & 0xF0) << 7) | ((uv & 0xF000) << 4);
-        lp[1] = semi ? 0x2F808080 : 0x2D808080;
-        lp[2] = y0 | x0; lp[3] = (cl << 16) | f[0];
-        lp[4] = y0 | x1; lp[5] = ((e1 & 0xFFFF) << 16) | f[1];
-        lp[6] = y1 | x0; lp[7] = f[2];
-        lp[8] = y1 | x1; lp[9] = f[3];
-        lp += 10; win = 1;
+        if (q + 10 - s->node > 16) { s->node[0] = ((u32)(q - s->node - 1) << 24) | ((u32)q & 0xFFFFFF); s->node = q; q++; }
+        if (e1 != s->e1) { *q++ = e1; s->e1 = e1; }
+        q[0] = 0xE20003DE | ((uv & 0xF0) << 7) | ((uv & 0xF000) << 4);
+        q[1] = semi ? 0x2F808080 : 0x2D808080;
+        q[2] = y0 | x0; q[3] = (cl << 16) | f[0];
+        q[4] = y0 | x1; q[5] = ((e1 & 0xFFFF) << 16) | f[1];
+        q[6] = y1 | x0; q[7] = f[2];
+        q[8] = y1 | x1; q[9] = f[3];
+        q += 10; s->win = 1;
     }
+    s->lp = q;
+}
+static inline __attribute__((always_inline)) void emit_t(int x, int y, u32 e1, u32 h, u32 cl, u32 fl, u32 semi)
+{
+    lst_t s; LST_IN(s); emit_tl(&s, x, y, e1, h, cl, fl, semi); LST_OUT(s);
 }
 static void __attribute__((noinline)) emit_af(int x, int y, u32 h, u32 cl, u32 fl, u32 semi)
 {   /* menus (reparto A): una sola copia de emit_t (en linea solo en el reparto B, el de la carrera) */
     emit_t(x, y, te1[h >> 8] | (semi << 5), h, cl, fl, semi);
 }
 #define emit_a(x, y, h, cl, fl, semi) emit_af(x, y, h, cl, fl, semi)
-#define emit_b(x, y, h, cl, fl, semi) emit_t(x, y, te1b[(h) >> 8] | ((semi) << 5), h, cl, fl, semi)
+#define emit_b(x, y, h, cl, fl, semi) emit_tl(&ls, x, y, te1b[(h) >> 8] | ((semi) << 5), h, cl, fl, semi)   /* vid_b: con ls */
 /* falta: cuadrado del color proxy del mosaico (main.c) y peticion al cargador. En el negro de una transicion
    (FEC298 = 0) la paleta esta apagada y el plano trae lo de antes o lo de despues: no cuenta ni se pide */
 static int negro;
@@ -391,8 +410,10 @@ void vid_spr_copia(void)
     for (b = 0; b < 2; b++) {
         u32 j, nc = 0, ne = 0;
         for (j = b * 0x800; j < (u32)b * 0x800 + 0x800; j += 4) {
-            u32 d0 = v[j], d1 = v[j + 1], d2 = v[j + 2], d3 = v[j + 3], n, k;
-            if ((d0 & 0x8000) || !(d1 & 0x200)) continue;
+            u32 d01 = *(const u32 *)(v + j), d0 = d01 & 0xFFFF, d1 = d01 >> 16, d2, d3, n, k;
+            if ((d0 & 0x8000) || !(d1 & 0x200)) continue;   /* casi todas: solo la primera lectura */
+            __asm__ volatile ("" ::: "memory");         /* que el compilador no adelante estas dos a antes del salto */
+            d2 = v[j + 2]; d3 = v[j + 3];
             n = (((d2 >> 12) & 15) + 1) * (((d1 >> 12) & 15) + 1);
             if (ne >= SPN || nc + n > SCN) break;
             sent[b][ne].d0 = (u16)d0; sent[b][ne].d1 = (u16)d1; sent[b][ne].d2 = (u16)d2; sent[b][ne].ci = (u16)nc;
@@ -410,7 +431,7 @@ void vid_menu(void)
     const u16 *m = v + ((((vr[2] >> 9) & 7) * 0x2000) >> 1);
     int sx = (v[0x2802 >> 1] + 0x14 + 8) & 0x3FF, sy = (v[0x2800 >> 1] + 1 + 16) & 0x1FF, i, j, n = 0, b;   /* +16: la pantalla son las lineas 16-255 de MAME */
     int ox = sx & 15, oy = sy & 15;
-    u32 ent[384]; u16 ord[384]; int cnt[65];
+    static u32 ent[384]; static u16 ord[384]; static int cnt[65];   /* fuera de la pila (1 KB en el scratchpad) */
     u16 t0 = T1;
     now++; vid_faltas_cuadro = 0; negro = *(const u16 *)(rc_ram + 0xC298) == 0;
     /* plano 0: hueco | espejo << 12 | posicion << 14 | paleta << 23, y luego por paleta (cuenta y coloca) */
@@ -819,7 +840,7 @@ void vid_b(void)
     const u16 *m = v + ((((vr[2] >> 9) & 7) * 0x2000) >> 1);
     int sx = (v[0x2802 >> 1] + 0x14 + 8) & 0x3FF, sy = (v[0x2800 >> 1] + 1 + 16) & 0x1FF, i, j, b, h;
     int ox = sx & 15, oy = sy & 15;
-    u16 t0 = T1;
+    u16 t0 = T1; lst_t ls;
     now++; vid_faltas_cuadro = 0; nl2 = 0; l2_tope = MAXL2; negro = *(const u16 *)(rc_ram + 0xC298) == 0;
     {   /* prelectura en la demo y la carrera */
         u16 md = *(const u16 *)(rc_ram + 0xC298);
@@ -832,15 +853,18 @@ void vid_b(void)
         }
     }
     /* plano 0 en orden (cada tile con su CLUT: no hay nada que agrupar) */
+    LST_IN(ls);
     for (j = 0; j < 16; j++) {
         if ((j & 3) == 3) carga_poll();
         for (i = 0; i < 24; i++) {
             int e = ((((sy >> 4) + j) & 31) * 64 + (((sx >> 4) + i) & 63)) * 2;
-            u32 w0 = m[e], c = m[e + 1], col = (w0 >> 9) & 0x3F, cl;
+            u32 w = *(const u32 *)(m + e), w0 = w & 0xFFFF, c = w >> 16, col = (w0 >> 9) & 0x3F, cl;   /* una lectura */
             if (!c) continue;
             if ((h = b_busca(c)) < 0) {
+                LST_OUT(ls);
                 if (h == -2) vid_b_tope++, rect16(i * 16 - ox, j * 16 - oy, rgb24(col * 32 + 1 + (c % 15)));
                 else falta(i * 16 - ox, j * 16 - oy, col, c);
+                LST_IN(ls);
                 continue;
             }
             cl = b_cl(h, col); hstamp[h] = now; hfl[h] &= (u8)~F_NUEVO;
@@ -871,13 +895,16 @@ void vid_b(void)
                     continue;
                 }
                 if (h < 0) {
+                    LST_OUT(ls);
                     if (h == -2) vid_b_tope++, rect16(px, py, rgb24(col * 32 + 1 + ((c & 0xFFF) % 15)));
                     else { falta(px, py, col, code); vid_faltas_spr++; vid_falta_spr_ult = code; }
+                    LST_IN(ls);
                     continue;
                 }
                 { u32 cl = b_cl(h, col & 0x3F); hstamp[h] = now; hfl[h] &= (u8)~F_NUEVO; emit_b(px, py, (u32)h, cl, fl, 0); }
             }
     }
+    LST_OUT(ls);
     if (win) { l_room(1); *lp++ = 0xE2000000; win = 0; }
     if (nl2 > (int)vid_b_maxl2) vid_b_maxl2 = (u32)nl2;
     if (vid_cifras && (now & 31) == 0) {                  /* cifras: huecos fijos y rotativos ocupados (recorre todos: solo

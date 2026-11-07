@@ -87,7 +87,7 @@ static void sprites(void)
 /* ------------------------------------------------------------ cuadro */
 static int fb, gear, sq_last, show, lr_last, skipped, start_up;
 static u16 snd_tv;                              /* ultima lectura del temporizador 1 del reloj del sonido */   /* show: cifras de depuracion (L2 + R2) */
-static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc, lvid, lvid_acc;
+static u32 nframe, skips, lastv, l68, ldraw, l68_acc, ldraw_acc, lvid, lvid_acc, lgpu, lgpu_acc;
 extern int cd_dbg[8];                           /* cd.c del WR1: [2] errores del controlador */
 static u32 modo_ant, f146_ant, modo_ped;
 int fps_mil = 60000;
@@ -133,7 +133,25 @@ static void precarga_spu(u32 ped)
     else if (ped == 8) snd_precarga(6);
     else { if (ped == 0xA) snd_precarga(7); if (c < 3) snd_precarga(coche[c]); }
 }
-static void pantalla(u32 modo)
+/* pila: crt0 la deja en la RAM (801FFFF0) y main pasa a rc_run con la del scratchpad (1F8003F0, 1 KB): los accesos a la
+   pila (registros guardados, variables que no caben en registros) cuestan 1 ciclo en vez de ~6 en la RAM. Lo que
+   bloquea y llama hondo (pantallas, sonido a la SPU, la pausa, la trampa de la ROM) vuelve con en_ram a la de la RAM,
+   por debajo de donde estaba al pasar; el resto se queda en ~650 bytes (medido; psxprof2 dice cuanto queda libre). La
+   DMA no llega al scratchpad: nada que vaya por DMA puede estar en la pila */
+#define PILA_SPAD 0x1F8003F0u
+static u32 pila_ram;                            /* sp de la RAM al pasar al scratchpad (0: no se paso) */
+void con_pila(void (*f)(u32), u32 a, u32 sp);   /* f(a) con la pila en sp; luego la de antes */
+__asm__(".text\n.globl con_pila\n.type con_pila, @function\n.set noreorder\ncon_pila:\n"
+        "  move  $t0, $sp\n  addiu $sp, $a2, -8\n  sw    $t0, 0($sp)\n  sw    $ra, 4($sp)\n"
+        "  jalr  $a0\n  move  $a0, $a1\n"
+        "  lw    $ra, 4($sp)\n  lw    $t0, 0($sp)\n  jr    $ra\n  move  $sp, $t0\n.set reorder\n");
+static inline u32 sp_ahora(void) { u32 v; __asm__ volatile ("move %0, $sp" : "=r"(v)); return v; }
+void __attribute__((noinline)) en_ram(void (*f)(u32), u32 a)
+{
+    if (pila_ram && (sp_ahora() >> 10) == (PILA_SPAD >> 10)) con_pila(f, a, pila_ram); else f(a);
+}
+static void snd_pide_ram(u32 a) { (void)a; carga_para(); snd_pausa(1); snd_atiende(); snd_pausa(0); }
+static void __attribute__((noinline)) pantalla(u32 modo)
 {
     u32 f146 = RW(0xFEC146), ped = RW(0xFEC29C);
     if (ped) modo_ped = ped;
@@ -165,6 +183,7 @@ static void pantalla(u32 modo)
 /* se corre: modo carrera (la demo es el 5) y FEFD1E = 1, que el juego pone con el GO y quita en la meta y al acabarse el
    tiempo. En el Continue? (aun modo 1) START es del juego: antes se lo quedaba la pausa y no se podia continuar */
 static int corriendo(void) { return RW(0xFEC298) == 1 && RW(0xFEFD1E) == 1; }
+static void pausa_ram(u32 a);
 static void pausa(void)
 {
     int up = 0;
@@ -183,11 +202,20 @@ static void pausa(void)
     reloj_ok = 0;                               /* ni para el reloj del juego */
     start_up = 0;                               /* START sigue pulsado: no vuelve a pausar hasta soltarlo */
 }
+static void pausa_ram(u32 a) { (void)a; pausa(); }
+#ifdef R1
+static void rom_suma_ram(u32 a) { (void)a; carga_rom_suma(); }
+#endif
 void rc_vblank(void)
 {
     u16 pad, t0; int draw = 1, menu, b; u32 modo;
     l68_acc += (u16)(T1 - lastv);
-    while (D2_CHCR & (1 << 24)) carga_poll();   /* la lista anterior aun en la GPU: sondear mientras (hasta 10 ms) */
+    {   /* la lista anterior aun en la GPU: sondear mientras (hasta 10 ms). Lo que se espera, en las cifras (lgpu): si en
+           una consola va alto, la GPU es la que no llega */
+        u16 tw = T1;
+        while (D2_CHCR & (1 << 24)) carga_poll();
+        lgpu_acc += (u16)(T1 - tw);
+    }
     carga_atiende();
     {   /* el reloj del juego (arriba): un cuadro mas desde la ultima vez */
         u16 t = T1; s32 e = (u16)(t - t_ref); t_ref = t;
@@ -217,16 +245,16 @@ void rc_vblank(void)
     rc_snd_vblank();
     carga_poll();                               /* el CD entre paso y paso del vblank (hueco <= ~3 ms) */
     snd_modo_tit = RW(0xFEC298) == 3;
-    if (snd_pide) { carga_para(); snd_pausa(1); snd_atiende(); snd_pausa(0); }
+    if (snd_pide) en_ram(snd_pide_ram, 0);
     snd_vblank();
     carga_poll();
     mcu_cuadro(rc_ram, &rc_mcu);
     carga_poll();
     modo = RW(0xFEC298); menu = modo != 1;
-    pantalla(modo);
+    en_ram(pantalla, modo);                     /* cargas bloqueantes: en la pila de la RAM */
     carga_poll();
 #ifdef R1
-    if (rc_suma_hecha) carga_rom_suma();
+    if (rc_suma_hecha) en_ram(rom_suma_ram, 0);
 #endif
     b = vid_lay() == 2;                         /* mapa de la demo y demo (y sus negros): formato B */
     if (draw) {
@@ -238,10 +266,11 @@ void rc_vblank(void)
         else { plano(); sprites(); }            /* carrera sin su paquete: mosaico */
         if (show) {
             digits(4, 4, modo, 2); digits(28, 4, nframe, 6); digits(84, 4, l68, 3); digits(116, 4, ldraw, 3);
-            digits(148, 4, skips, 4); digits(188, 4, fps_mil, 5); digits(236, 4, (0x801FFFF0u - 16384u - (u32)__bss_end) >> 10, 4);
+            digits(148, 4, skips, 4); digits(188, 4, fps_mil, 5); digits(236, 4, (0x801FFFF0u - PILA_RAM - (u32)__bss_end) >> 10, 4);
             digits(272, 4, vid_faltas_cuadro, 3); digits(300, 4, carga_sectores, 5); digits(344, 4, lvid, 3);
             digits(4, 36, snd_ck_mal, 4); digits(44, 36, snd_ck_perdidos, 4); digits(84, 36, snd_spu_mal, 4);   /* SPU.BIN: mal leidos, perdidos; SPU mal */
             digits(124, 36, (u32)cd_dbg[2], 4); digits(164, 36, carga_err, 4);                                 /* errores del CD y de los paquetes */
+            digits(212, 36, lgpu, 3);                    /* lineas esperando a que la GPU acabe la lista anterior */
             if (b) {
                 digits(4, 20, vid_b_fijos, 4); digits(44, 20, vid_b_rot, 4); digits(84, 20, vid_b_l2, 5); digits(132, 20, carga_emerg, 5);
                 digits(180, 20, carga_dm_neg[0], 4); digits(220, 20, carga_dm_neg[1], 4);
@@ -288,13 +317,13 @@ void rc_vblank(void)
         rc_set_io(in0, 0xFFFF, in2, 0xFFFF);
     }
     if (!(pad & 0x0008) && start_up && corriendo()) {   /* solo mientras se corre (no en el Continue? ni en la meta) */
-        pausa(); pad = joy_read();
+        en_ram(pausa_ram, 0); pad = joy_read();
         sq_last = (pad & 0x8000) != 0;          /* lo que siga pulsado al volver no cambia nada */
     }
     start_up = (pad & 0x0008) != 0;
     carga_poll();
     ldraw_acc += (u16)(T1 - t0);
-    if ((++nframe & 31) == 0) { l68 = l68_acc >> 5; ldraw = ldraw_acc >> 5; lvid = lvid_acc >> 5; l68_acc = ldraw_acc = lvid_acc = 0; }
+    if ((++nframe & 31) == 0) { l68 = l68_acc >> 5; ldraw = ldraw_acc >> 5; lvid = lvid_acc >> 5; lgpu = lgpu_acc >> 5; l68_acc = ldraw_acc = lvid_acc = lgpu_acc = 0; }
     lastv = T1;
 }
 static volatile u32 bad_pc;
@@ -361,6 +390,11 @@ int main(void)
     rc_sondeo_gancho = carga_poll; rc_sondeo_per = 16384; rc_sondeo_t = 0;   /* el CD se sondea tambien mientras corre el 68000 */
 #endif
     lastv = T1;
+#ifdef SIN_PILA_SPAD
     rc_run((rc_rd16(4) << 16) | rc_rd16(6));
+#else
+    pila_ram = (sp_ahora() - 64) & ~7u;           /* por debajo de main: libre para en_ram */
+    con_pila((void (*)(u32))rc_run, (rc_rd16(4) << 16) | rc_rd16(6), PILA_SPAD);
+#endif
     for (;;);
 }

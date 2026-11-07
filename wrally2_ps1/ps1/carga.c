@@ -195,7 +195,7 @@ static void demo_init(void)
     }
     lba_gn = lba_g[0];
     area = (u8 *)(((u32)__bss_end + 3) & ~3u);
-    t = (s32)(0x801FFFF0u - 16384u - AREA_RES - (u32)area);   /* la pila empieza en 801FFFF0 (crt0) */
+    t = (s32)(0x801FFFF0u - PILA_RAM - AREA_RES - (u32)area);   /* la pila de la RAM empieza en 801FFFF0 (crt0) */
     if (t < HREC + SEC) { area = 0; return; }
     carga_area_kb = (u32)t >> 10; area_l2 = area + HREC; l2_cap = (t - HREC) / SEC; carga_l2_cap = (u32)l2_cap;
     vid_area(area, area_l2);
@@ -495,6 +495,7 @@ static void rom_trampa(u32 a)
     remb_s[k] = (int)s; snd_pausa(0);
     l = (u16)(T1 - t0); carga_rom_trampas++; carga_rom_lin += l; if (l > carga_rom_max) carga_rom_max = l;
 }
+static void rom_trampa_ram(u32 a) { en_ram(rom_trampa, a); }   /* lee del CD bloqueando: en la pila de la RAM */
 int carga_rom_arranque(void)
 {
     int sz;
@@ -502,7 +503,7 @@ int carga_rom_arranque(void)
     if (cd_read(lba_rom, ROMFIN / SEC, area, 1)) return -1;
     rom_swap(area, ROMFIN);
     rc_rom_mapa(0, ROMFIN, area); rc_rom_residente(area);
-    rc_romf_gancho = rom_trampa; rom_arr = 1;
+    rc_romf_gancho = rom_trampa_ram; rom_arr = 1;
     return 0;
 }
 void carga_rom_suma(void)

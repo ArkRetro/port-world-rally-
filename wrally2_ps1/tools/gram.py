@@ -1,5 +1,5 @@
 """gram.py [--r1 | --codigo] w2ps1.map: puerta G-RAM (diseno 2.1, 2.5 y 11.2) con el mapa del enlazado.
-R0 (el EXE de H2, ROM contigua): pool = 0x80200000 - pila (16 KB) - fin de la imagen - lo que falta del codigo hasta
+R0 (el EXE de H2, ROM contigua): pool = 0x80200000 - pila (8 KB) - fin de la imagen - lo que falta del codigo hasta
 sus presupuestos (rc_run 393 216 B y C del port 81 920 B); puerta: pool >= 160 KB.
 --codigo: imprime RES_CODIGO (lo que falta hasta los presupuestos de R1: rc_run 417 792 B y C 81 920 B) para el
 enlazado del EXE de tamanos R1 (reservas.c con -DR1).
@@ -7,7 +7,7 @@ enlazado del EXE de tamanos R1 (reservas.c con -DR1).
 fin de la imagen; puerta: area >= 960 KB. Sale con error si la puerta no pasa (GRAM=0: solo avisa)."""
 import sys, os, re
 
-FIN, PILA = 0x80200000, 16384
+FIN, PILA = 0x80200000, 8192          # PILA_RAM de ps1/carga.h (el juego va con la pila en el scratchpad)
 PRESU = {'rc_run R0': 393216, 'rc_run R1': 417792, 'C': 81920}
 GENERADO = {'wr2_rc.o': 'rc_run', 'mcu_rc.o': 'MCU traducida', 'data.o': 'datos', 'data_r1.o': 'datos',
             'reservas.o': 'reservas', 'reservas_r1.o': 'reservas'}

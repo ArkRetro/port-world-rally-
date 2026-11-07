@@ -163,7 +163,7 @@ static void spu_mano_write(u32 addr, const void *src, int bytes)
 }
 static int spu_igual(u32 addr, const unsigned char *src, int bytes)
 {
-    u32 t[64]; int o, k;
+    static u32 t[64]; int o, k;           /* fuera de la pila: la pila esta en el scratchpad y la DMA no llega alli */
     for (o = 0; o < bytes; o += 256) {
         int b = bytes - o < 256 ? bytes - o : 256;
         spu_dma_read(addr + o, t, b);

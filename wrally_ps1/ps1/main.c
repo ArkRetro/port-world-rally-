@@ -1196,7 +1196,7 @@ static void digits(int x, int y, u32 v)
 }
 static void upload(int x, int y, int w, int h, const void *d);
 #define T1 t1_get()
-static u32 lines_acc, lines_avg, rend_acc, rend_avg; static u16 t_rend0, t_pad, t_pal, t_l0, t_l1, t_end, t_cd0; static u32 l1_acc, l1_avg, all_acc, all_avg; static u32 pad_acc, pal_acc, pad_avg, pal_avg;
+static u32 lines_acc, lines_avg, rend_acc, rend_avg; static u16 t_rend0, t_pad, t_pal, t_l0, t_l1, t_end, t_cd0; static u32 l1_acc, l1_avg, all_acc, all_avg, gpu_acc, gpu_avg; static u32 pad_acc, pal_acc, pad_avg, pal_avg;
 static int lastv;
 /* ---- pausa: START mientras el jugador corre. El 68000 (y la MCU) se quedan parados aqui dentro; la pantalla que se
    ve se oscurece con PAUSA encima; sin sonido y la frase larga parada; el CD acaba lo que estaba leyendo (vsync lo
@@ -1235,7 +1235,12 @@ void rc_vblank(void)
         u16 t = T1;
         used = (u16)(t - lastv);
     }
-    dma_wait();                          /* el cuadro anterior ya esta dibujado */
+    {   /* el cuadro anterior ya esta dibujado; lo que se espera, en las cifras (gpu_avg, fila 2): si en una consola va
+           alto, la GPU es la que no llega */
+        u16 tw = T1;
+        dma_wait();
+        gpu_acc += (u16)(T1 - tw);
+    }
     {   /* el reloj del juego (arriba): un cuadro mas desde la ultima vez */
         u16 t = T1; s32 e = (u16)(t - t_ref);
         s32 paso = RITMO && fps_mil > RITMO ? (s32)((u32)LIN_VBL * 256u * (u32)fps_mil / RITMO) : LIN_VBL * 256;
@@ -1311,11 +1316,11 @@ void rc_vblank(void)
         lines_acc += used; pad_acc += (u16)(t_pad - t_rend0); pal_acc += (u16)(t_pal - t_end);
         l1_acc += (u16)(t_l1 - t_l0); all_acc += (u16)(t_end - t_l0);
         if ((nframe & 31) == 31) {
-            lines_avg = lines_acc >> 5; pad_avg = pad_acc >> 5; pal_avg = pal_acc >> 5; l1_avg = l1_acc >> 5; all_avg = all_acc >> 5;
-            lines_acc = pad_acc = pal_acc = l1_acc = all_acc = 0;
+            lines_avg = lines_acc >> 5; pad_avg = pad_acc >> 5; pal_avg = pal_acc >> 5; l1_avg = l1_acc >> 5; all_avg = all_acc >> 5; gpu_avg = gpu_acc >> 5;
+            lines_acc = pad_acc = pal_acc = l1_acc = all_acc = gpu_acc = 0;
         }
         if (show_dbg) { digits(4, 4, lines_avg); digits(48, 4, rend_avg); digits(92, 4, cd_loads); digits(136, 4, tiles_up); digits(180, 4, pack_err);
-            digits(4, 16, pad_avg); digits(48, 16, pal_avg); digits(92, 16, l1_avg); digits(136, 16, all_avg); digits(180, 16, skips);
+            digits(4, 16, pad_avg); digits(48, 16, pal_avg); digits(92, 16, l1_avg); digits(136, 16, all_avg); digits(180, 16, skips); digits(224, 16, gpu_avg);
             /* CD: sectores perdidos, errores, vigilancias, ultimo codigo de error, Pause rechazadas; cuadros/s x1000 */
             digits(4, 28, cd_dbg[1]); digits(48, 28, cd_dbg[2]); digits(92, 28, cd_dbg[3]); digits(136, 28, cd_dbg[5]);
             digits(180, 28, cd_dbg[6]); digits(224, 28, fps_mil); }

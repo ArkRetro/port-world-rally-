@@ -133,7 +133,7 @@ carpetas para la tarjeta de PSIO o XStation (`SD_NOMBRE` cambia el nombre; por d
 | X | acelerar |
 | Cuadrado | marcha |
 | cruceta | dirección |
-| L2 | cifras de rendimiento; abajo, las del CD: sectores perdidos, errores, vigilancias, último código de error, Pause rechazadas y cuadros por segundo ×1000 |
+| L2 | cifras de rendimiento (en líneas de vídeo, 263 = un cuadro: arriba 68000 y dibujo; en la segunda, la última son los cuadros saltados y la espera a que la GPU acabe el cuadro anterior); abajo, las del CD: sectores perdidos, errores, vigilancias, último código de error, Pause rechazadas y cuadros por segundo ×1000 |
 
 ### JogCon (Namco)
 

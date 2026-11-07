@@ -93,7 +93,18 @@ El NeGcon tambien hace de volante, en el puerto 1 (`../wrally_ps1/ps1/mando.c`).
   y en la carrera casi no hace falta leer nada.
 - Con L2 + R2 salen las cifras; la tercera fila: sectores de `SPU.BIN` que llegaron mal, perdidos (sin leer bien en 4
   intentos), escrituras a la SPU que no salieron, errores del controlador del CD y errores de los paquetes. Si en la
-  consola algo suena o se ve mal, esas cifras dicen si es el disco.
+  consola algo suena o se ve mal, esas cifras dicen si es el disco. La fila de arriba lleva, en lineas de video por
+  cuadro (263 = un cuadro entero), el 68000 (3.a cifra) y el dibujo (4.a), y despues los cuadros saltados; la ultima
+  de la tercera fila son las lineas que se espera a que la GPU acabe el cuadro anterior. Si en la consola caen
+  cuadros: 68000 + dibujo cerca de 263, falta procesador; la espera de la GPU alta, la GPU no llega.
+- Rendimiento en la consola real: va un poco mas lenta que los emuladores y que MiSTer (la RAM y los fallos de la cache
+  de instrucciones), y el port iba justo. La pila esta en el scratchpad (1 KB, un ciclo por acceso en vez de ~6 en la
+  RAM; lo que bloquea y llama hondo, las cargas, la trampa de la ROM y la pausa, vuelve con `en_ram` a la pila de la
+  RAM), el bucle de los tiles lleva la lista en registros y lee cada entrada del mapa de una vez, las paletas se
+  comparan por firma y los sprites inactivos con una lectura. Con el modelo lento de `psxprof2` (`ICF_BASE=6
+  ICF_WORD=2 RAM_LD=8`), en una carrera de Portugal, los cuadros saltados bajan de 682 a 90 de unos 3 000; con el
+  normal, de 26 a 16. `psxprof2` dice al final cuanta pila del scratchpad queda libre y avisa si una DMA va al
+  scratchpad (no llega: nada que vaya por DMA puede estar en la pila).
 - Disco con los dos World Rally y un menu para elegir: `recopilatorio/` (su LEEME). Alli los ficheros del WR2 van en
   la carpeta `WR2`; `cd.c` los busca en ella si esta y si no en la raiz (este disco), con las mismas lecturas.
 
