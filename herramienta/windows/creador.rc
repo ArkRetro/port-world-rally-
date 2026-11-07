@@ -1,0 +1,3 @@
+// recursos de creador.c: icono (creador.ico, de wrally_ps1/ps1/logo_pina.png) y manifiesto (estilos visuales)
+1 ICON "creador.ico"
+1 24 "creador.manifest"

@@ -1,0 +1,27 @@
+# generado a partir de las ROM del usuario (no se distribuye)
+rom/
+work/
+__pycache__/
+rc/wr_rc.c
+rc/mcu_rc.c
+rc/*.o
+rc/rc_host
+rc/rc_host_dbg
+snd/oki_tab.c
+snd/snd_tab.c
+snd/wav/
+snd/tracks.txt
+snd/psxadpcm
+ps1/cd/
+ps1/*.o
+ps1/*.bin
+ps1/*.cue
+ps1/*.elf
+ps1/*.map
+ps1/*.nm
+ps1/*.ps-exe
+ps1/*.dat
+ps1/iso_*.xml
+ps1/*.cu2
+ps1/sd/
+perf/psxprof

@@ -1,0 +1,5 @@
+# los scripts corren en Linux (el contenedor de herramienta/): finales de linea LF aunque se clone en Windows
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+SYSTEM.CNF -text

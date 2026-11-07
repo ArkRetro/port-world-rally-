@@ -1,0 +1,38 @@
+# generado a partir de las ROM del usuario (no se distribuye)
+rom/
+work/
+__pycache__/
+rc/wr2_rc.c
+rc/mcu_rc.c
+rc/*.o
+rc/rc_host
+rc/rc_host_dbg*
+rc/rc_host_reg
+rc/rc_host_rom
+# EXE, imagenes de CD (llevan el logo de tu BIOS) y lo que sale de las ROM
+ps1/*.o
+ps1/*.elf
+ps1/*.map
+ps1/*.nm
+ps1/*.ps-exe
+ps1/*.bin
+ps1/*.cue
+ps1/*.dat
+ps1/iso_*.xml
+ps1/cd/
+ps1/sd/
+# sondas de prueba/: lo que sale de construirlas (datos de prueba generados, EXE, imagenes)
+prueba/*/*.o
+prueba/*/*.elf
+prueba/*/*.map
+prueba/*/*.nm
+prueba/*/*.ps-exe
+prueba/*/*.bin
+prueba/*/*.cue
+prueba/*/*.cu2
+prueba/*/*.dat
+prueba/*/iso_*.xml
+prueba/*/cd/
+prueba/*/sd/
+perf/psxprof2
+snd/psxadpcm

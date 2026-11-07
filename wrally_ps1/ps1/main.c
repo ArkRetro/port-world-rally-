@@ -1,0 +1,1386 @@
+/* World Rally -> PlayStation, fase 2: el programa original del 68000 recompilado a MIPS (rc68.py) con la
+   MCU (8051 interpretado), y la imagen dibujada cada cuadro desde la VRAM/paletas/sprites del juego.
+   Uso personal. */
+#include "../rc/rc_rt.h"
+#include "../rc/mcs51.h"
+#include "cd.h"
+#define REG(a) (*(volatile u32 *)(a))
+#define GP0 REG(0x1F801810)
+#define GP1 REG(0x1F801814)
+#define I_STAT REG(0x1F801070)
+#define I_MASK REG(0x1F801074)
+#define D2_MADR REG(0x1F8010A0)
+#define D2_BCR REG(0x1F8010A4)
+#define D2_CHCR REG(0x1F8010A8)
+#define DPCR REG(0x1F8010F0)
+#define JOY_DATA (*(volatile u8 *)0x1F801040)
+#define JOY_STAT (*(volatile u16 *)0x1F801044)
+#define JOY_MODE (*(volatile u16 *)0x1F801048)
+#define JOY_CTRL (*(volatile u16 *)0x1F80104A)
+#define JOY_BAUD (*(volatile u16 *)0x1F80104E)
+
+void rc_mem_init(void); void rc_set_io(u16 dsw, u16 in);
+extern const u8 mcu_rom[0x8000];
+static mcs51_t mcu;
+static u16 io_in = 0xFFEF, io_dsw = 0xFFDF;
+u16 gdecrypt(u16 ep, u16 dp, u16 e);
+
+void mcu_run_c(mcs51_t *c);
+void rc_mcu(void) { mcu_run_c(&mcu); }
+void rc_divzero(u32 pc) { (void)pc; for (;;); }
+static volatile u32 bad_pc;
+void rc_bad(u32 pc) { bad_pc = pc; GP1 = 0x03000000; for (;;); }
+
+/* ------------------------------------------------------------ GPU */
+#define W 368
+#define H 240
+#define CLUT_Y 240
+#define TEX_X 384
+#ifndef FRAMESKIP
+#define FRAMESKIP 1          /* si un cuadro llega tarde no se dibuja el siguiente: la logica sigue a 60 Hz */
+#endif
+/* reloj del juego y saltos de cuadro (como el WR2). adel = tiempo del juego - tiempo real (temporizador 1, en 1/256 de
+   linea; un cuadro del juego = 263 lineas, o 263 x fps / RITMO con RITMO). En cada cuadro:
+   - llega tarde (el vblank ya paso) y va atrasado mas de un vblank: no se dibuja, hasta MAXSKIP seguidos (cuanto mas
+     atrasado, mas saltos; antes, uno y nunca dos seguidos); si no, se dibuja y el retraso no se recupera de golpe;
+   - con RITMO, adelantado mas de medio vblank: el mismo cuadro un vblank mas;
+   - mas de 8 vblanks de golpe (pausa, carga): el reloj empieza de nuevo.
+   Por defecto un cuadro del juego por vblank (59,83 en NTSC): unas decimas por minuto mas deprisa que la placa.
+   -DRITMO=59100: 59,1 cuadros por segundo (la del WR2 en MAME; la del WR1, 60 en MAME, marcada como no exacta), pero en
+   una pantalla de 59,83 es repetir un cuadro de cada ~81, un tiron cada ~1,4 s (probado: el usuario prefirio fluido) */
+#ifndef RITMO
+#define RITMO 0
+#endif
+#define MAXSKIP 3
+#define LIN_VBL 263
+static void gpu_wait(void) { while (!(GP1 & (1 << 26))); }
+static void dma_wait(void) { while (D2_CHCR & (1 << 24)); }
+static void upload(int x, int y, int w, int h, const void *d)
+{
+    int words = w * h / 2, bs = 16;
+    dma_wait(); gpu_wait();
+    GP0 = 0x01000000;
+    GP0 = 0xA0000000; GP0 = (y << 16) | x; GP0 = (h << 16) | w;
+    if (words % bs) bs = words < 16 ? words : 1;
+    D2_MADR = (u32)d; D2_BCR = ((words / bs) << 16) | bs; D2_CHCR = 0x01000201;
+    dma_wait();
+}
+/* lista para la GPU: un cubo por paso de dibujo, cada uno una cadena de trozos de CHW palabras de un deposito
+   comun. Las capas y la tabla de sprites se recorren una sola vez repartiendo cada tile en sus cubos, y al final
+   los cubos se enlazan en el orden de la placa con nodos vacios (o con un E2 si el cubo acabo con la ventana de
+   textura puesta). La DMA no lee del scratchpad: los trozos estan en la RAM principal */
+#define CHW 1024
+#define NCH 32
+static u32 pool[NCH][CHW];
+static int pool_n;
+static u32 hdr[10];
+/* cabecera de un nodo de n palabras (la direccion del siguiente en los 24 bits bajos): las de la RAM son
+   0x80xxxxxx, asi que basta con sumar */
+#define NODE(p, n) ((p)[0] = (u32)((p) + 1 + (n)) + (((u32)(n) << 24) - 0x80000000u))
+/* bucles calientes: sin la planificacion antes de asignar registros, que lo adelanta todo y acaba guardando
+   constantes en la pila (cada lectura de la RAM cuesta ~6 ciclos); y sin convertir bucles en memset */
+#define HOT_OPT optimize("no-schedule-insns", "no-tree-loop-distribute-patterns")
+#define HOT __attribute__((noinline, HOT_OPT))
+typedef struct { u32 *p, *end, win; } bucket_t;     /* el primer trozo del cubo k es pool[k] */
+enum { BK_A, BK_B, BK_C, BK_D, BK_E00, BK_E01, BK_S0, BK_F, BK_E10, BK_E11, BK_S1, BK_DBG, NBK };
+/* scratchpad (1 KB, lectura en 1 ciclo; las de RAM cuestan ~6): estado de los cubos y tablas que se leen por
+   cada tile. Se usan 0x1F800000-0x1F8002E7 */
+typedef struct { bucket_t bk[NBK]; u32 pal_wf[32], cl16[32], te1[20], fuv[4][4], rec[(W / 16 + 2) * 2]; } spad_t;
+#define SPAD ((spad_t *)0x1F800000)
+typedef char spad_cabe[sizeof(spad_t) <= 0x300 ? 1 : -1];
+static u32 *bk_cur[NBK];
+/* trozo nuevo para un cubo (empieza con la ventana de textura apagada). Deposito lleno: se reescribe el ultimo
+   trozo del cubo (se pierde lo dibujado en el, como al llenarse la lista antes) */
+static __attribute__((noinline)) u32 *chunk_new(bucket_t *b, u32 *p)
+{
+    u32 *c;
+    if (pool_n < NCH) { c = pool[pool_n++]; p[0] = (u32)c & 0xFFFFFF; bk_cur[b - SPAD->bk] = c; b->end = c + CHW - 2; }
+    else c = bk_cur[b - SPAD->bk];
+    NODE(c, 1); c[1] = 0xE2000000;
+    return c + 2;
+}
+static void bk_init(void)
+{
+    bucket_t *b = SPAD->bk; int k;
+    for (k = 0; k < NBK; k++, b++) { u32 *c = pool[k]; bk_cur[k] = b->p = c; b->end = c + CHW - 2; b->win = 0; }
+    pool_n = NBK;
+}
+/* enlaza los cubos detras de la cabecera (bufer fy: area de dibujo, desplazamiento, fondo negro) y lo manda */
+static void pk_send(int fy)
+{
+    bucket_t *b = SPAD->bk; int k;
+    u32 *h = hdr;
+    h[0] = (8u << 24) | ((u32)pool[0] & 0xFFFFFF);
+    h[1] = 0xE3000000 | (fy << 10); h[2] = 0xE4000000 | ((fy + H - 1) << 10) | (W - 1); h[3] = 0xE5000000 | (fy << 11);
+    h[4] = 0xE6000000; h[5] = 0xE2000000;
+    h[6] = 0x02000000; h[7] = (u32)fy << 16; h[8] = (H << 16) | W;          /* fondo negro */
+    for (k = 0; k < NBK; k++, b++) {
+        u32 *p = b->p, nx = k + 1 < NBK ? (u32)pool[k + 1] & 0xFFFFFF : 0xFFFFFF;
+        if (b->win) { p[0] = (1u << 24) | nx; p[1] = 0xE2000000; } else p[0] = nx;
+    }
+    dma_wait(); gpu_wait(); D2_MADR = (u32)hdr; D2_BCR = 0; D2_CHCR = 0x01000401;
+}
+static int vbl_count;
+extern int fps_mil;
+#define T1 t1_get()
+static u16 t_vbl;                                    /* temporizador 1 (lineas) en un vblank visto al momento */
+/* espera al siguiente vblank (atendiendo al CD mientras tanto, salvo cerca del vblank: leer un sector tarda hasta
+   ~11 lineas en psxprof, mas con un bus del CD lento, y retrasaria el cambio de bufer) y lo reconoce: la bandera que
+   haya al volver a entrar es que ya paso otro. Cerca: de 32 lineas antes a 2 despues de donde toca, 263 por cuadro
+   desde t_vbl, que se toma cuando la ultima vuelta del bucle no tardo (sin leer un sector: el vblank llego hace
+   menos de 2 lineas) */
+static void vsync(void)
+{
+    u16 tp = T1, ph; int late = 0;
+    I_STAT = ~1u;
+    while (!(I_STAT & 1)) {
+        tp = T1; ph = (u16)(tp - t_vbl) % 263; late = 0;
+        if (ph >= 2 && ph < 263 - 32) { cd_poll(); late = (u16)(T1 - tp) >= 2; }
+    }
+    if (!late) t_vbl = tp;
+    I_STAT = ~1u; vbl_count++;
+}
+
+/* paletas: 64 del juego (0x000-0x3FF) en 4 variantes: 0 opaca, 1 pen 0 transparente, 2 solo pens 1-7,
+   3 solo pens 8-15 (para las prioridades por grupo de pens de la capa delantera). Se miran solo las que usa
+   el cuadro (0-31 las capas, 32-47 los sprites; 48-63 nadie) y se convierten las que han cambiado; las que no se
+   usan pueden quedar viejas en la VRAM hasta que se vuelvan a usar */
+#define NPAL 48
+static u16 clut[4][64][16];
+static u32 pal_prev[NPAL * 8];
+static int pal_first = 1;
+static u16 c15(u16 v)
+{
+    u32 b = (v >> 8) & 15, r = (v >> 4) & 15, g = v & 15, c;
+    c = ((r << 1) | (r >> 3)) | (((g << 1) | (g >> 3)) << 5) | (((b << 1) | (b >> 3)) << 10);
+    return c ? c : 0x8000;
+}
+static __attribute__((noinline)) int pal_convert(u32 m0, u32 m1)    /* m0: paletas 0-31 que se usan, m1: 32-47 */
+{
+    int p, k, ch = 0;
+    const u32 *q = (const u32 *)rc_pal; u32 *o = pal_prev;
+    if (pal_first) m0 = m1 = ~0u;
+    for (p = 0; p < NPAL; p++, q += 8, o += 8) {
+        if (!(((p < 32 ? m0 : m1) >> (p & 31)) & 1)) continue;
+        if (!pal_first && !((q[0] ^ o[0]) | (q[1] ^ o[1]) | (q[2] ^ o[2]) | (q[3] ^ o[3]) |
+                             (q[4] ^ o[4]) | (q[5] ^ o[5]) | (q[6] ^ o[6]) | (q[7] ^ o[7]))) continue;
+        ch = 1;
+        for (k = 0; k < 8; k++) o[k] = q[k];
+        for (k = 0; k < 16; k++) {
+            u16 c = c15(((const u16 *)q)[k]);
+            clut[0][p][k] = c;
+            clut[1][p][k] = k ? c : 0;
+            clut[2][p][k] = (k && k < 8) ? c : 0;
+            clut[3][p][k] = k >= 8 ? c : 0;
+        }
+    }
+    pal_first = 0;
+    return ch;
+}
+#define CLUTID(v, p) ((u32)((((CLUT_Y + ((v) * 4 + ((p) >> 4))) << 6) | ((p) & 15))))
+static inline u32 tpage_of(int s) { int tp = s >> 8; return ((TEX_X + (tp % 10) * 64) >> 6) | (((tp / 10) & 1) << 4); }
+
+/* ---- cache de tiles en VRAM: 5120 huecos de un tile (20 paginas de textura de 256 tiles). Al arrancar se carga
+   el paquete de menus, y de fondo el de carrera y el resto de menus. Al entrar en carrera (recorrido nuevo: puntero
+   de la tabla de filas del juego en 0xFEC190; o el mismo de antes cuando el fondo vuelve a ser su mapa) se leen los
+   sectores que falten del paquete del recorrido y del de carrera, que quedan fijos (y los menus, lo ultimo que se
+   sustituye despues). Al salir (el fondo deja de ser el mapa) se sueltan y se vuelven a leer de fondo los paquetes
+   de menus, que quedan fijos. Lo que falte se pide a TILES.BIN sin esperar y aparece cuando llega. Reemplazo por
+   reloj con edad. */
+#define NTS 5120
+static u16 tslot[16384], slot_tile[NTS];
+static u32 slot_age[NTS];
+static int hand, frame_id = 10;
+static u16 miss_list[512]; static int nmiss, miss_t0 = -1;   /* miss_t0: cuadro desde el que falta algo */
+static u8 miss_mark[16384 / 8], miss_now[16384 / 8];          /* en la lista; pedidos en este cuadro */
+static u32 cd_loads, tiles_up, pack_err;
+static int tiles_lba = -1, level_lba[12], cur_level = -1, level_sec[12], in_race, race_cnt;
+static u32 cur_lvl_ptr;
+static const u32 level_ptr[12] = {0x1500a, 0x6d61e, 0x71628, 0x7d646, 0x75632, 0x8565a, 0x81650, 0x89664, 0x7963c, 0x8d66e, 0x91678, 0x95682};
+static inline int tile_slot(u32 t)
+{
+    u32 s = tslot[t];
+    if (s == 0xFFFF) {
+        miss_now[t >> 3] |= 1 << (t & 7);
+        if (!(miss_mark[t >> 3] & (1 << (t & 7))) && nmiss < 512) { miss_mark[t >> 3] |= 1 << (t & 7); miss_list[nmiss++] = t; }
+        return -1;
+    }
+    slot_age[s] = frame_id;
+    return (int)s;
+}
+/* huecos fijos: tiles de los paquetes del recorrido actual (o de los menus fuera de la carrera), que se sustituyen
+   los ultimos; guardados: los de los paquetes que no tocan ahora pero si luego (los menus en carrera, el de
+   carrera fuera), que se sustituyen antes que los fijos pero despues de lo demas. min_cls: clase minima que queda
+   en este cuadro (evita recorrer la cache entera en cada tile cuando esta llena) */
+static u8 slot_pin[NTS / 8], slot_low[NTS / 8];
+#define PINNED(s) (slot_pin[(s) >> 3] & (1 << ((s) & 7)))
+#define LOW(s) (slot_low[(s) >> 3] & (1 << ((s) & 7)))
+static int min_cls, min_cls_frame = -1;
+static void cache_init(void)
+{
+    int i;
+    for (i = 0; i < 16384; i++) tslot[i] = 0xFFFF;
+    for (i = 0; i < NTS; i++) { slot_tile[i] = 0xFFFF; slot_age[i] = 0; }
+    for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
+}
+/* orden de sustitucion: 0 libre o suelto sin usar en 2 s, 1 guardado sin usar en 2 s, 2 fijo sin usar en 10 s,
+   3 suelto o guardado, 4 fijo; nunca lo usado en este cuadro o el anterior, ni en carrera lo fijo (el mapa del
+   recorrido y los sprites del coche: el arco de la meta, p. ej., solo sale al principio y al final del tramo) */
+static inline int slot_cls(int h)
+{
+    s32 age = frame_id - slot_age[h];
+    if (slot_tile[h] == 0xFFFF) return 0;
+    if (age < 2) return 9;
+    if (!PINNED(h)) return age >= 120 ? (LOW(h) ? 1 : 0) : 3;
+    return in_race ? 9 : age >= 600 ? 2 : 4;
+}
+#define NEXT(h) ((h) + 1 == NTS ? 0 : (h) + 1)
+/* desde la mano, el primero de clase <= min_cls, o el mejor; maxc: clase maxima. Los de clase 0 se buscan en toda
+   la cache (saltando los grupos de 8 fijos); si no hay, el mejor de un cuarto de la cache. Dentro de un cuadro las
+   clases solo suben: min_cls dice desde que clase vale la pena buscar */
+static int slot_alloc(int maxc)
+{
+    int n, h, c, best = -1, bc = 9;
+    if (min_cls_frame != frame_id) { min_cls = 0; min_cls_frame = frame_id; }
+    if (min_cls > maxc) return -1;
+    if (!min_cls) {
+        for (n = 0, h = hand; n < NTS; n++, h = NEXT(h)) {
+            if (!(h & 7) && (slot_pin[h >> 3] | slot_low[h >> 3]) == 0xFF) { n += 7; h += 7; continue; }
+            if (!PINNED(h) && !slot_cls(h)) { hand = NEXT(h); return h; }
+        }
+        min_cls = 1;
+        if (maxc < 1) return -1;
+    }
+    for (n = 0; n < NTS; n++) {
+        h = hand; hand = NEXT(hand);
+        c = slot_cls(h);
+        if (c <= min_cls) return h;
+        if (c < bc) { bc = c; best = h; }
+        if (n >= NTS / 4 && bc < 9) break;
+    }
+    min_cls = bc;
+    return bc <= maxc ? best : -1;
+}
+static void upload(int x, int y, int w, int h, const void *d);
+/* pone el tile t (si no estaba) y lo marca como usado; pin: 1 queda fijo, 2 guardado; pin < 0: de paso (solo en
+   un hueco libre o viejo, nunca de un fijo, ni de un guardado salvo en carrera, y como ya usado) */
+static void tile_put(u32 t, const void *data, int pin)
+{
+    int s = tslot[t];
+    if (s == 0xFFFF) {
+        s = slot_alloc(pin < 0 ? in_race : 8);
+        if (s < 0) return;
+        if (slot_tile[s] != 0xFFFF) tslot[slot_tile[s]] = 0xFFFF;
+        slot_tile[s] = t; tslot[t] = s; tiles_up++;
+        slot_pin[s >> 3] &= ~(1 << (s & 7)); slot_low[s >> 3] &= ~(1 << (s & 7));
+        upload(TEX_X + ((s >> 8) % 10) * 64 + (s & 15) * 4, ((s >> 8) / 10) * 256 + ((s >> 4) & 15) * 16, 4, 16, data);
+    } else if (pin < 0) return;
+    slot_age[s] = pin < 0 ? frame_id - 2 : frame_id;
+    if (pin > 0) (pin == 1 ? slot_pin : slot_low)[s >> 3] |= 1 << (s & 7);
+}
+static u8 cdbuf[16 * 2048] __attribute__((aligned(4)));
+/* ---- pantalla de carga: barra dibujada directamente en los dos bufers */
+static void gp_fill(int x, int y, int w, int h, u32 c)
+{
+    dma_wait(); gpu_wait(); GP0 = 0x02000000 | c; GP0 = ((u32)y << 16) | x; GP0 = ((u32)h << 16) | w;
+}
+static void gp_rect(int x, int y, int w, int h, u32 c)
+{
+    dma_wait(); gpu_wait(); GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
+    GP0 = 0x60000000 | c; GP0 = ((u32)y << 16) | x; GP0 = ((u32)h << 16) | w;
+}
+/* pantalla de carga al estilo del juego: bandas de cuadros de bandera arriba y abajo, CARGANDO en cursiva con el
+   degradado amarillo-rojo y el borde negro de las cifras del marcador, y la barra START-FINISH del marcador (verde).
+   Al arrancar, encima, el logo (LOGO.BIN) */
+static const char lchars[] = "CARGNDOSTFIHPU";
+static const u8 lglyph[14][7] = {                   /* 5x7, bit 4 a la izquierda */
+    {14, 17, 16, 16, 16, 17, 14}, {14, 17, 17, 31, 17, 17, 17}, {30, 17, 17, 30, 20, 18, 17}, {14, 17, 16, 23, 17, 17, 15},
+    {17, 25, 21, 19, 17, 17, 17}, {30, 17, 17, 17, 17, 17, 30}, {14, 17, 17, 17, 17, 17, 14}, {15, 16, 16, 14, 1, 1, 30},
+    {31, 4, 4, 4, 4, 4, 4}, {31, 16, 16, 30, 16, 16, 16}, {14, 4, 4, 4, 4, 4, 14}, {17, 17, 17, 31, 17, 17, 17},
+    {30, 17, 17, 30, 16, 16, 16}, {17, 17, 17, 17, 17, 17, 14}};
+static const u32 lgrad[7] = {0x60F0FF, 0x40D8FF, 0x20B8FF, 0x1098FF, 0x0070FF, 0x0048F0, 0x0020D0};   /* 0xBBGGRR */
+static const u32 lwhite[7] = {0xF8F8F8, 0xF8F8F8, 0xF0F0F0, 0xE8E8E8, 0xE0E0E0, 0xD0D0D0, 0xC0C0C0};
+static const u32 lgreen[6] = {0x90FF90, 0x40F040, 0x20D820, 0x10B810, 0x089808, 0x047804};
+static void gp_text(int b, int x, int y, const char *t, int sc, const u32 *col)
+{
+    int pass, k, r, c, n;
+    for (pass = 0; pass < 2; pass++)
+        for (k = 0; t[k]; k++) {
+            for (n = 0; lchars[n] && lchars[n] != t[k]; n++);
+            if (!lchars[n]) continue;
+            for (r = 0; r < 7; r++) for (c = 0; c < 5; c++) if (lglyph[n][r] & (16 >> c)) {
+                int px = x + k * (6 * sc) + c * sc + (6 - r) * sc / 3, py = b * 256 + y + r * sc;
+                if (!pass) gp_rect(px - 1, py - 1, sc + 3, sc + 2, 0);     /* borde negro */
+                else gp_rect(px, py, sc + 1, sc, col[r]);
+            }
+        }
+}
+static int bar_x, bar_y, bar_w;                     /* barra: interior */
+static int load_total, load_done, loading;
+static void t1_update(void);
+static void load_bar(void)
+{
+    int b, r, w = load_total ? load_done * bar_w / load_total : 0;
+    t1_update();
+    if (w > bar_w) w = bar_w;
+    if (w > 0) for (b = 0; b < 2; b++) for (r = 0; r < 6; r++) gp_rect(bar_x, b * 256 + bar_y + r, w, 1, lgreen[r]);
+}
+static int logo_lba = -1, logo_ns;
+static void logo_cb(int i, const unsigned char *d) { int b; for (b = 0; b < 2; b++) upload(120, b * 256 + 18 + i * 8, 128, 8, d); }
+static void load_screen(int total)
+{
+    int b, k, logo = logo_lba >= 0 && logo_ns > 0, sc = logo ? 3 : 4, ty = logo ? 176 : 88, tw = 8 * 6 * sc - sc;
+    load_total = total; load_done = 0; loading = 1;
+    bar_w = logo ? 200 : 240; bar_x = (W - bar_w) / 2; bar_y = logo ? 204 : 134;
+    for (b = 0; b < 2; b++) {
+        gp_fill(0, b * 256, 368, 240, 0);
+        for (k = 0; k < 46 * 4; k++) {                 /* cuadros de bandera: 2 filas arriba y 2 abajo */
+            int row = k / 46, col = k % 46, y = row < 2 ? row * 8 : 224 + (row - 2) * 8;
+            if ((row + col) & 1) gp_rect(col * 8, b * 256 + y, 8, 8, 0xE0E0E0);
+        }
+        gp_text(b, (W - tw) / 2, ty, "CARGANDO", sc, lgrad);
+        gp_rect(bar_x - 3, b * 256 + bar_y - 1, bar_w + 6, 8, 0xB0B0B0);   /* marco gris redondeado y el interior oscuro */
+        gp_rect(bar_x - 1, b * 256 + bar_y - 3, bar_w + 2, 12, 0xB0B0B0);
+        gp_rect(bar_x - 1, b * 256 + bar_y - 1, bar_w + 2, 8, 0x181818);
+        gp_text(b, bar_x - 6, bar_y + 12, "START", 1, lwhite);
+        gp_text(b, bar_x + bar_w - 6 * 6 + 4, bar_y + 12, "FINISH", 1, lwhite);
+    }
+    if (logo) { if (cd_stream(logo_lba, logo_ns, logo_cb, 1)) pack_err++; logo_ns = 0; }   /* el logo, solo al arrancar */
+}
+/* ---- paquetes: sectores de cabecera (u16 n, u16 na, u16 tiles[n], ordenados en dos tramos [0, n1) y [n1, n), na
+   pares (tile, igual a): tiles sin datos porque son iguales a otro del paquete o del de carrera, y u16 n1; en los de
+   recorrido el bit 15 marca los tiles de su mapa) y luego los datos de los n, 16 tiles por sector. hs: sectores de cabecera (0 mientras no se hayan leido
+   todos; hn los que son, hr los que ya se han leido en orden). pin: lo que llega queda fijo (1), guardado (2) o
+   suelto (0) */
+typedef struct { u16 *ids; int max, n, hs, pin, lba, ns, hn, hr; u16 *al; int maxal, nal; void (*raw)(int i, const u8 *d); int n1; } pack_t;
+void snd_fx_sector(int i, const unsigned char *d);
+/* SNDFX.BIN: muestras de la SPU, leidas de fondo despues de arrancar (paquete sin tiles: cada sector a raw, en orden) */
+static pack_t fx_pk = {0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, snd_fx_sector};
+static int race_cp[12];                             /* copia de RACE.BIN detras de cada LEVELnn.BIN (o -1) */
+static u16 lvl_ids[4000], race_ids[2000], menu_ids[1400], menu2_ids[4000], post_ids[256], post2_ids[768], lvl_al[768 * 2], race_al[256 * 2];
+static pack_t menu_pk = {menu_ids, 1400, 0, 0, 0, -1}, menu2_pk = {menu2_ids, 4000, 0, 0, 0, -1}, post_pk = {post_ids, 256, 0, 0, 1, -1},
+    post2_pk = {post2_ids, 768, 0, 0, 1, -1};
+static pack_t lvl_pk = {lvl_ids, 4000, 0, 0, 0, -1, 0, 0, 0, lvl_al, 768}, race_pk = {race_ids, 2000, 0, 0, 0, -1, 0, 0, 0, race_al, 256};
+static u8 lvl_map[16384 / 8];                       /* tiles del mapa del recorrido de lvl_pk */
+/* los tiles del paquete que ya estan quedan fijos o guardados segun p->pin (use: y como recien usados) */
+static void pack_pin(pack_t *p, int use)
+{
+    int i, s;
+    u8 *m = p->pin == 2 ? slot_low : slot_pin;
+    for (i = 0; i < p->n; i++) if ((s = tslot[p->ids[i]]) != 0xFFFF) { if (use) slot_age[s] = frame_id; m[s >> 3] |= 1 << (s & 7); }
+}
+static void pack_sector(pack_t *p, int i, const u8 *d)
+{
+    const u16 *w = (const u16 *)d;
+    int k, j;
+    if (p->raw) { if (i == p->hr) { p->raw(i, d); p->hr++; } return; }
+    if (!i) {
+        p->hn = (4 + w[0] * 2 + w[1] * 4 + 2 + 2047) / 2048; p->hs = p->hr = 0;
+        p->n = w[0] <= p->max ? w[0] : 0; p->nal = w[1] <= p->maxal ? w[1] : 0; p->n1 = p->n;
+        if (p == &lvl_pk) for (k = 0; k < 16384 / 32; k++) ((u32 *)lvl_map)[k] = 0;
+    }
+    if (i < p->hn) {
+        if (i != p->hr) return;
+        for (k = i ? 0 : 2; k < 1024; k++) {
+            if ((j = i * 1024 + k - 2) < p->n) p->ids[j] = w[k] & 0x3FFF;
+            else if ((j -= p->n) < p->nal * 2) p->al[j] = w[k];
+            else { if (j == p->nal * 2 && w[k] && w[k] <= p->n) p->n1 = w[k]; break; }
+            if ((w[k] & 0x8000) && j >= 0) lvl_map[(w[k] >> 3) & 0x7FF] |= 1 << (w[k] & 7);
+        }
+        if (++p->hr == p->hn) p->hs = p->hn;
+        return;
+    }
+    if (!p->hs) return;
+    if (i == p->hs && p->pin) pack_pin(p, 1);          /* los que ya estan no se sustituyen durante la carga */
+    i = (i - p->hs) * 16;
+    for (k = 0; k < 16 && i + k < p->n; k++) tile_put(p->ids[i + k], d + k * 128, p->pin);
+}
+/* tiles iguales a otro (alias): en carrera usan el hueco de ese, que es fijo y no se sustituye; al salir se quitan */
+static void alias_set(pack_t *p, int on)
+{
+    int i;
+    for (i = 0; i < p->nal; i++) {
+        u16 d = p->al[i * 2] & 0x3FFF, s = tslot[p->al[i * 2 + 1] & 0x3FFF];
+        if (on) { if (tslot[d] == 0xFFFF && s != 0xFFFF) tslot[d] = s; }
+        else if (tslot[d] != 0xFFFF && slot_tile[tslot[d]] != d) tslot[d] = 0xFFFF;
+    }
+}
+/* sector s del paquete con algun tile que no este en la cache */
+static int pack_need(pack_t *p, int s)
+{
+    int k = (s - p->hs) * 16, j;
+    for (j = 0; j < 16 && k + j < p->n; j++) if (tslot[p->ids[k + j]] == 0xFFFF) return 1;
+    return 0;
+}
+static int pack_missing(pack_t *p)
+{
+    int s, n = 0;
+    for (s = p->hs; s < p->ns; s++) n += pack_need(p, s);
+    return n;
+}
+/* sector del paquete con el tile t, o -1 (dos tramos ordenados: [0, n1) y los de relleno [n1, n)) */
+static int ids_find(const u16 *ids, int a, int b, int t)
+{
+    int m;
+    while (a <= b) { m = (a + b) >> 1; if (ids[m] == t) return m; if (ids[m] < t) a = m + 1; else b = m - 1; }
+    return -1;
+}
+static int pack_sec_of(const pack_t *p, int t)
+{
+    int m = ids_find(p->ids, 0, p->n1 - 1, t);
+    if (m < 0 && p->n1 < p->n) m = ids_find(p->ids, p->n1, p->n - 1, t);
+    return m < 0 ? -1 : p->hs + m / 16;
+}
+static pack_t *run_pk; static int run_base;
+static int spr_pending;                             /* sprites del jugador por leer de fondo en carrera (level_load) */
+static void spr_done(void) { if (spr_pending) { spr_pending = 0; lvl_pk.pin = 0; } }
+static void run_cb(int i, const unsigned char *d) { pack_sector(run_pk, run_base + i, d); if (loading) { load_done++; load_bar(); } }
+/* lee los sectores del paquete (de from a until) que hacen falta, por tramos (los huecos cortos se leen de paso) */
+static void pack_runs(pack_t *p, int from, int fast, int until)
+{
+    int s, e, j;
+    run_pk = p;
+    if (until > p->ns) until = p->ns;
+    for (s = from; s < until; s = e + 1) {
+        e = s;
+        if (!pack_need(p, s)) continue;
+        for (j = s + 1; j < until && j - e <= 8; j++) if (pack_need(p, j)) e = j;
+        run_base = s;
+        if (cd_stream(p->lba + s, e - s + 1, run_cb, fast)) pack_err++; else cd_loads++;
+    }
+}
+/* ---- trabajo del CD sin esperar (avanza en cd_poll; lo leido se sube al principio de los cuadros siguientes, con
+   la GPU parada, como mucho UPF tiles por cuadro). Lo que falta en pantalla se pide a TILES.BIN de tramo en tramo,
+   salvo que lo traiga el paquete de fondo que toca; si no falta nada, los paquetes de fondo, de su primer sector
+   con algo que falte al ultimo, de una vez, por un anillo de 16 sectores. Mientras suena una frase de CD-DA no se
+   lee, salvo que falten muchos tiles o desde hace rato: entonces se corta la frase (como mucho una vez cada 2 s) y
+   se sigue cuando ya no falta nada */
+#define UPF 64
+static int job_on;                                  /* lectura en curso: 1 tiles (a cdbuf), 2 paquete de fondo (al anillo) */
+static u16 job_t[256]; static int job_n, job_s0, job_s1, job_st, job_i, job_f; /* job_st: resultado aun por subir; job_i: por donde va; job_f: cuadro en que se pidio */
+static int job_pf;                                  /* la lectura de tiles es de antemano (prefetch): lo que falte va antes */
+static int race_end, lum_prev, lum_ref, lum_steps;  /* la carrera se esta fundiendo a negro (y luminosidad de la paleta) */
+static int race_on;                                 /* el reloj de la carrera corre (0xFEC1B2 = 1) */
+static int race_demo;                               /* la ultima carrera era la demostracion del attract */
+static pack_t *bgq[4]; static int nbg, bg_from, bg_jump = -1, bg_err;     /* bg_from: siguiente sector de bgq[0] que mirar */
+#define RING 16
+static u8 ring[RING * 2048] __attribute__((aligned(4)));
+static int bg_s0, bg_n, bg_got, ring_t;              /* lectura de bgq[0] desde bg_s0: sectores pedidos, llegados, tratados */
+static int cut_end, cut_until;                       /* cuadro hasta el que el audio queda cortado como mucho, y hasta el que no se vuelve a cortar */
+static int skipped;                                  /* este cuadro no se ha dibujado (rc_vblank) */
+static u8 *ring_dst(int i) { return i - ring_t >= RING ? 0 : ring + (i & (RING - 1)) * 2048; }
+static void miss_clear(void)
+{
+    int i;
+    for (i = 0; i < nmiss; i++) miss_mark[miss_list[i] >> 3] = 0;
+    for (i = job_i; i < job_n; i++) miss_mark[job_t[i] >> 3] = 0;
+    if (job_on == 1) { cd_cancel(); job_on = 0; }
+    nmiss = job_n = job_i = job_st = 0; miss_t0 = -1;
+}
+static void bg_stop(void) { if (job_on == 2) { cd_cancel(); job_on = 0; } nbg = bg_n = bg_got = ring_t = 0; bg_jump = -1; }
+static void bg_add(pack_t *p) { if (p->lba >= 0 && p->ns > 0 && nbg < 4) { if (!nbg) bg_from = bg_err = 0; bgq[nbg++] = p; } }
+static void bg_next(void) { int i; for (i = 1; i < nbg; i++) bgq[i - 1] = bgq[i]; nbg--; bg_from = bg_err = 0; bg_jump = -1; }
+/* lo que toca leer de bgq[0]: [*a, *b). Sin la cabecera, todo lo que queda; si no, del primer sector con algo que
+   falte desde bg_from (o desde el principio de los datos, si despues no queda nada) al ultimo */
+static void bg_range(int *a, int *b)
+{
+    pack_t *p = bgq[0];
+    int s, e;
+    if (!p->hs) { *a = p->hr; *b = p->ns; return; }
+    if (bg_from < p->hs) bg_from = p->hs;
+    for (s = bg_from; s < p->ns && !pack_need(p, s); s++);
+    if (s == p->ns) for (s = p->hs; s < p->ns && !pack_need(p, s); s++);
+    for (e = p->ns - 1; e >= s && !pack_need(p, e); e--);
+    *a = s; *b = e + 1;
+}
+/* de los que faltan se miran como mucho NMS, repartidos por la lista. El paquete de fondo (indice en bgq) que trae
+   mas (al menos la cuarta parte), o -1; *ms: el primer sector de esos */
+#define NMS 48
+static int bg_covers(int *ms)
+{
+    int i, q, s, n, b, bq = -1, bn = 0, m = nmiss < NMS ? nmiss : NMS;
+    for (q = 0; q < nbg; q++) {
+        if (!bgq[q]->hs) continue;
+        for (i = n = 0, b = 0x7FFF; i < m; i++) if ((s = pack_sec_of(bgq[q], miss_list[i * nmiss / m])) >= 0) { n++; if (s < b) b = s; }
+        if (n > bn) { bn = n; bq = q; *ms = b; }
+    }
+    return bn * 4 >= m ? bq : -1;
+}
+/* si alguno llega pronto (en los 16 sectores siguientes) en la lectura de fondo en curso */
+static int bg_ahead(void)
+{
+    int i, s, j = bg_s0 + cd_read_pos(), m = nmiss < NMS ? nmiss : NMS;
+    for (i = 0; i < m; i++) if ((s = pack_sec_of(bgq[0], miss_list[i * nmiss / m])) >= j && s < j + 16 && s < bg_s0 + bg_n) return 1;
+    return 0;
+}
+static void bg_start(void)
+{
+    pack_t *p = bgq[0];
+    int a, b;
+    bg_range(&a, &b);
+    if (a >= b) { bg_next(); return; }
+    bg_s0 = a; bg_n = b - a; bg_got = ring_t = 0;
+    if (p->pin && p->hs) pack_pin(p, 0);
+    if (cd_stream_async(p->lba + a, b - a, ring_dst)) { bg_n = 0; return; }
+    job_on = 2; cd_poll();
+}
+static void cache_flush(void)
+{
+    u32 t0 = tiles_up;
+    int st, k;
+    /* tiles pedidos: primero los que faltaban, luego (de paso) sus vecinos */
+    if (job_on == 1 && (st = cd_read_state())) { job_on = 0; job_st = st; job_i = 0; if (st > 0) cd_loads++; else pack_err++; }
+    while (job_st && tiles_up - t0 < UPF) {
+        if (job_i < job_n) {
+            u16 t = job_t[job_i++];
+            if (job_st > 0) tile_put(t, cdbuf + (t - job_s0 * 16) * 128, 0);
+            miss_mark[t >> 3] &= ~(1 << (t & 7));
+        } else if (job_st > 0 && (k = job_i++ - job_n) < (job_s1 - job_s0 + 1) * 16) tile_put(job_s0 * 16 + k, cdbuf + k * 128, -1);
+        else job_st = 0;
+    }
+    /* paquete de fondo: lo que ha llegado al anillo, como mucho 4 sectores */
+    if (!nbg) return;
+    if (job_on == 2) {
+        bg_got = cd_read_pos();
+        if ((st = cd_read_state())) { job_on = 0; if (st > 0) cd_loads++; else bg_err++; }
+    }
+    for (k = 0; k < (bgq[0]->raw ? 8 : 4) && ring_t < bg_got && tiles_up - t0 < UPF; k++, ring_t++) pack_sector(bgq[0], bg_s0 + ring_t, ring + (ring_t & (RING - 1)) * 2048);
+    if (job_on != 2 && bg_n && ring_t == bg_got) {      /* acabada (o cortada) y tratada */
+        bg_from = bg_jump >= 0 ? bg_jump : bg_s0 + bg_got; bg_jump = -1; bg_n = bg_got = ring_t = 0;
+        if (bg_err > 4) bg_next();
+    }
+}
+/* de los tiles que faltan, cuantos se ven (sin la columna y la fila de mas, que solo se piden de antemano) */
+static u8 vis_seen[16384 / 8]; static u16 vis_l[2 * 24 * 17 + 511];
+#define VIS(t) { u32 b_ = 1 << ((t) & 7); if (tslot[t] == 0xFFFF && !(vis_seen[(t) >> 3] & b_)) { vis_seen[(t) >> 3] |= b_; vis_l[n++] = (t); } }
+static int miss_vis(void)
+{
+    const u16 *vr = (const u16 *)rc_vregs;
+    const u32 *q = (const u32 *)(rc_spr + 4);
+    int L, i, j, k, n = 0;
+    for (L = 0; L < 2; L++) {
+        const u32 *m = (const u32 *)(rc_vram + (L ? 0x2000 : 0));
+        int sx = L ? (vr[3] + 8) & 1023 : (vr[1] + 12) & 1023, sy = L ? (vr[2] + 16) & 511 : (vr[0] + 16) & 511;
+        int nv = (W + 15 + (sx & 15)) >> 4, nf = (H + 15 + (sy & 15)) >> 4;
+        for (j = 0; j < nf; j++) {
+            const u32 *row = m + (((sy >> 4) + j) & 31) * 64;
+            for (i = 0; i < nv; i++) { u32 t = row[((sx >> 4) + i) & 63] & 0x3FFF; VIS(t) }
+        }
+    }
+    for (k = 0; k < 511; k++, q += 2) {                 /* los sprites que pide sprites() */
+        u32 t = q[2] & 0x3FFF;
+        if ((((q[1] >> 16) - 8) & 0x3FF) >= W + 15 || ((q[0] >> 16) & 0xFF) == 0xF0) continue;
+        VIS(t)
+    }
+    for (i = 0; i < n; i++) vis_seen[vis_l[i] >> 3] = 0;
+    return n;
+}
+/* en carrera, con el CD libre: los sectores de TILES.BIN de al lado de los sprites del jugador que se ven. Las poses
+   del coche (girar, derrapar, volcar) y del haz de los faros van de 16 en 16 tiles en el orden en que se suceden: asi
+   la siguiente ya esta cuando hace falta. pf_at: cuando se pidio cada sector (en cuadros / 8), para no repetirlo en 3 s */
+static u8 pf_at[1024];
+static int sec_missing(int s) { int k; if (s < 0 || s >= 1024) return 0; for (k = 0; k < 16; k++) if (tslot[s * 16 + k] == 0xFFFF) return 1; return 0; }
+static void prefetch(void)
+{
+    const u32 *q = (const u32 *)(rc_spr + 4);
+    int k, s, a, b, now = (frame_id >> 3) & 0xFF;
+    for (k = 0; k < 511; k++, q += 2) {
+        u32 t = q[2] & 0x3FFF;
+        if ((((q[1] >> 16) - 8) & 0x3FF) >= W + 15 || ((q[0] >> 16) & 0xFF) == 0xF0) continue;
+        if (!((t >= 0x2E00 && t < 0x3700) || (t >= 0x3BA4 && t < 0x3EF0))) continue;
+        for (a = 0x7FFF, b = -1, s = (t >> 4) - 2; s <= (int)(t >> 4) + 2; s++)
+            if (sec_missing(s) && (u8)(now - pf_at[s]) >= 23) { if (s < a) a = s; b = s; }
+        if (b < 0) continue;
+        for (s = a; s <= b; s++) pf_at[s] = now;
+        job_n = job_i = 0; job_s0 = a; job_s1 = b; job_pf = 1;
+        if (cd_read_async(tiles_lba + a, b - a + 1, cdbuf)) return;
+        job_on = 1; job_f = frame_id; cd_poll();
+        return;
+    }
+}
+static void cache_load(void)
+{
+    int snd_cut(void), snd_cut_on(void), snd_fresh(void); void snd_resume(void);
+    int i, j, s0 = 0x7FFF, s1, urg, q, ms, au, nv;
+    static int fx_fast = 1;
+    if (spr_pending && (!nbg || !in_race)) { alias_set(&race_pk, 1); alias_set(&lvl_pk, 1); spr_done(); }
+    /* SNDFX de fondo a doble velocidad (sin tiles: el anillo se vacia enseguida); luego normal, lista para el audio */
+    if (fx_fast && (fx_pk.lba < 0 || fx_pk.hr >= fx_pk.ns || cd_audio())) { fx_fast = 0; cd_speed(0); }
+    for (i = j = 0; i < nmiss; i++) {                   /* fuera los que ya estan y los que no se han pedido en este cuadro */
+        u16 t = miss_list[i], b = 1 << (t & 7);
+        if (tslot[t] != 0xFFFF || (!skipped && !(miss_now[t >> 3] & b))) { miss_mark[t >> 3] &= ~b; continue; }
+        miss_now[t >> 3] &= ~b;
+        miss_list[j++] = t;
+        if ((t >> 4) < s0) s0 = t >> 4;
+    }
+    nmiss = j;
+    if (!nmiss) miss_t0 = -1; else if (miss_t0 < 0) miss_t0 = frame_id;
+    if (nmiss && job_st && job_i >= job_n && !job_pf) job_st = 0;  /* los vecinos que quedaban, ya no (lo leido de antemano si: puede ser lo que falta) */
+    if (job_on == 1 && job_pf && nmiss) { cd_cancel(); job_on = 0; }
+    if (job_on == 1) {          /* cdbuf ocupado; si una frase nueva la para, cortarla (si aun no suena, ya) */
+        if (cd_audio() && !snd_cut_on() && (!cd_playing() || frame_id - job_f >= 6) && snd_cut()) cut_end = frame_id + 180;
+        return;
+    }
+    if (job_st) return;
+    /* seguir la frase cuando ya no falte nada ni queden paquetes de fondo (como mucho 3 s cortada); en carrera no se
+       vuelve a cortar en 2 s, fuera en 0,5 s */
+    if (snd_cut_on() && ((!nmiss && (!nbg || (bgq[0] == &menu2_pk && !race_demo))) || frame_id > cut_end)) { snd_resume(); cut_until = frame_id + (in_race ? 120 : 30); }
+    /* fuera de la carrera (o fundiendose) una frase que acaba de empezar espera a lo de las pantallas de despues de la
+       carrera (POST, POST2 y MENU, el mapa del rally; como mucho 2,5 s): mejor empezar un poco tarde que cortarla luego
+       (la musica no deja leer: suena seguida). Por MENU2 solo tras la demostracion del attract (hasta 4 s): las fotos
+       del titulo que vienen despues son de MENU2; tras una partida, 'Your Time' y su musica no esperan a MENU2 */
+    if (nbg && (!in_race || race_end) && (bgq[0] != &menu2_pk || race_demo) && snd_fresh() && !snd_cut_on() &&
+        frame_id >= cut_until && snd_cut()) cut_end = frame_id + (race_demo ? 240 : 150);
+    /* pasada la meta, la musica de la meta espera (como mucho 20 cuadros) a que acabe de llegar POST */
+    else if (nbg && in_race && !race_on && !race_end && bgq[0] == &post_pk && cd_audio() && !cd_playing() && !snd_cut_on() &&
+             frame_id >= cut_until && snd_cut()) cut_end = frame_id + 20;
+    if (nmiss && tiles_lba >= 0) {
+        /* urgente: muchos en pantalla, o desde hace rato (en carrera antes). Con una frase sonando solo se mira lo
+           que se ve (para cortarla) */
+        au = cd_audio() && !snd_cut_on();
+        nv = au && frame_id >= cut_until ? miss_vis() : nmiss;
+        urg = nv >= 16 || (nv && frame_id - miss_t0 >= (in_race ? 6 : 10));
+        /* si alguno llega en la lectura de fondo en curso, seguir con ella; si no, si los trae un paquete de fondo,
+           que se lea ese empezando por ellos; si no, de TILES.BIN */
+        if (job_on == 2 && bg_ahead()) {
+            if (urg && au && frame_id >= cut_until && snd_cut()) cut_end = frame_id + 180;
+            return;
+        }
+        q = bg_covers(&ms);
+        if (job_on == 2) { bg_got = cd_read_pos(); cd_cancel(); job_on = 0; if (!q) bg_jump = ms; }
+        if (q >= 0 && bg_n) return;                     /* antes, tratar lo que ya llego */
+        if (au) {
+            if (!urg || frame_id < cut_until || !snd_cut()) return;
+            cut_end = frame_id + 180;
+        }
+        if (q >= 0) {
+            if (q) { pack_t *t = bgq[0]; bgq[0] = bgq[q]; bgq[q] = t; bg_err = 0; }
+            bg_from = ms; bg_start();
+            return;
+        }
+        /* el primer tramo: hasta 16 sectores desde el mas bajo que falta */
+        for (i = 0, s1 = s0; i < nmiss; i++) { int s = miss_list[i] >> 4; if (s > s1 && s < s0 + 16) s1 = s; }
+        for (i = j = 0, job_n = 0; i < nmiss; i++) {
+            u16 t = miss_list[i];
+            if ((t >> 4) <= s1 && job_n < 256) job_t[job_n++] = t; else miss_list[j++] = t;
+        }
+        nmiss = j; job_s0 = s0; job_s1 = s1; job_i = 0; job_pf = 0;
+        if (cd_read_async(tiles_lba + s0, s1 - s0 + 1, cdbuf)) { for (i = 0; i < job_n; i++) miss_mark[job_t[i] >> 3] = 0; job_n = 0; return; }
+        job_on = 1; job_f = frame_id; cd_poll();
+        return;
+    }
+    if (nbg && !job_on && !bg_n && !cd_audio()) bg_start();
+    else if (in_race && !race_end && !nmiss && !nbg && !job_on && !job_st && tiles_lba >= 0 && !cd_audio()) prefetch();
+}
+/* ---- carrera: entrar (paquetes del recorrido y de carrera fijos, los de menus guardados: se sustituyen antes que
+   los fijos y despues de lo demas, y asi al salir hay menos que volver a leer) y salir (los de menus fijos y se
+   vuelven a leer de fondo; el de carrera guardado) */
+/* al final de cada paquete de recorrido (gen2.py, desde n1): los sprites del jugador (poses del coche, marcador, haz
+   de los faros) que no se ven en los primeros 5 s de ninguna carrera registrada de ese recorrido. En la carga se lee
+   hasta ahi; el resto, de fondo al empezar la carrera (fijo, a velocidad normal) */
+static int spr_from(const pack_t *p) { return p->hs + (p->n1 + 15) / 16; }
+static void level_load(int k)
+{
+    int i, hs, fast, need, same = k == cur_level && lvl_pk.hs;
+    alias_set(&lvl_pk, 0); alias_set(&race_pk, 0);
+    race_end = lum_prev = lum_steps = race_on = 0;
+    for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
+    for (i = 0; i < NTS; i++) slot_age[i] = frame_id - 1000;
+    min_cls_frame = -1; hand = 0;
+    lvl_pk.pin = race_pk.pin = 1; menu_pk.pin = menu2_pk.pin = 2;
+    pack_pin(&menu_pk, 0); pack_pin(&menu2_pk, 0);
+    if (fx_pk.lba >= 0 && fx_pk.hr < fx_pk.ns) {        /* los efectos aun no habian acabado de leerse de fondo */
+        run_pk = &fx_pk; run_base = fx_pk.hr;
+        if (cd_stream(fx_pk.lba + fx_pk.hr, fx_pk.ns - fx_pk.hr, run_cb, 1)) pack_err++;
+    }
+    if (!race_pk.hs && race_pk.lba >= 0) {              /* la cabecera de carrera aun no se habia leido de fondo */
+        hs = race_pk.ns < 2 ? race_pk.ns : 2;
+        if (cd_read(race_pk.lba, hs, cdbuf, 0) == 0) for (i = 0; i < hs; i++) pack_sector(&race_pk, i, cdbuf + i * 2048);
+    }
+    pack_pin(&race_pk, 1);
+    if (same) pack_pin(&lvl_pk, 1);
+    need = pack_missing(&race_pk) + (same ? pack_missing(&lvl_pk) : level_sec[k]);
+    if (need) {
+        fast = need > 120;
+        load_screen(need);
+        /* el del recorrido entero de corrido (cabecera y datos), o lo que falte si ya estaba; del de carrera lo que falte */
+        if (same) pack_runs(&lvl_pk, lvl_pk.hs, fast, spr_from(&lvl_pk));
+        else {
+            /* la cabecera (dice donde empiezan los sprites) y los datos hasta ahi, de corrido */
+            lvl_pk.n = lvl_pk.hs = lvl_pk.hn = 0; lvl_pk.lba = level_lba[k]; lvl_pk.ns = level_sec[k];
+            run_pk = &lvl_pk; run_base = 0;
+            if (level_lba[k] < 0 || cd_stream(level_lba[k], 1, run_cb, fast)) pack_err++;
+            else {
+                if (lvl_pk.hn > 1) { run_base = 1; if (cd_stream(level_lba[k] + 1, lvl_pk.hn - 1, run_cb, fast)) pack_err++; }
+                if (lvl_pk.hs) {
+                    i = spr_from(&lvl_pk); run_base = lvl_pk.hs;
+                    load_total = load_done + (i - lvl_pk.hs) + pack_missing(&race_pk) / 4;
+                    if (cd_stream(level_lba[k] + lvl_pk.hs, i - lvl_pk.hs, run_cb, fast)) pack_err++;
+                }
+            }
+        }
+        /* lo que falte del de carrera, de su copia de detras del recorrido (sin volver a buscar) */
+        if (race_cp[k] >= 0) race_pk.lba = race_cp[k];
+        pack_runs(&race_pk, race_pk.hs, fast, race_pk.ns);  /* entero: son las poses que mas se ven */
+    }
+    alias_set(&race_pk, 1); alias_set(&lvl_pk, 1);
+    lvl_pk.pin = 0; race_pk.pin = 2;
+    if (pack_missing(&lvl_pk)) { spr_pending = 1; lvl_pk.pin = 1; }
+    loading = 0;
+}
+static void t1_skip(void);
+static void race_enter(int k)
+{
+    void snd_suspend(void), snd_resume(void);
+    miss_clear(); bg_stop();                            /* cancelar lo pendiente antes de esperar al audio */
+    snd_suspend();
+    level_load(k);
+    if (spr_pending) bg_add(&lvl_pk);                   /* los sprites del recorrido, de fondo */
+    cd_speed(0);                                        /* en carrera se lee a velocidad normal: a doble se pierden sectores (el CD se atiende entre cuadros) */
+    cur_level = k; in_race = 1; race_cnt = 0;
+    t1_skip();                                          /* el tiempo de la carga no cuenta para el sonido */
+    snd_resume();
+}
+/* fin de la carrera: el juego funde la paleta a negro (~50 cuadros) antes de la pantalla siguiente ('Your Time',
+   'Continue ?', las fotos del attract). Entonces lo de la carrera deja de ser fijo y pasa a viejo (salvo lo que se ve;
+   de los repetidos solo siguen los que se ven, con su hueco fijo) y se leen de fondo POST.BIN y POST2.BIN, lo que
+   sale al acabar una carrera, y luego los menus: asi esa pantalla no sale a trozos */
+static void race_ending(void)
+{
+    int i, k;
+    pack_t *ap[2] = {&lvl_pk, &race_pk};
+    race_end = 1;
+    spr_done();
+    for (i = 0; i < NTS / 8; i++) slot_pin[i] = 0;
+    for (i = 0; i < NTS; i++) if (frame_id - slot_age[i] >= 2 && !LOW(i)) slot_age[i] = frame_id - 1000;
+    for (k = 0; k < 2; k++) for (i = 0; i < ap[k]->nal; i++) {
+        u16 d = ap[k]->al[i * 2] & 0x3FFF, s = tslot[d];
+        if (s == 0xFFFF || slot_tile[s] == d) continue;
+        if (frame_id - slot_age[s] < 2) slot_pin[s >> 3] |= 1 << (s & 7); else tslot[d] = 0xFFFF;
+    }
+    if (post_pk.hs) pack_pin(&post_pk, 1);              /* lo de POST que ya llego (desde la meta) sigue fijo */
+    min_cls_frame = -1;
+    if (job_on == 1 && job_pf) { cd_cancel(); job_on = 0; }
+    bg_stop(); bg_add(&post_pk); bg_add(&post2_pk); bg_add(&menu_pk); bg_add(&menu2_pk);
+}
+/* luminosidad de las paletas 0-63 (una de cada 4 entradas). El fundido del final la baja cada 2 o 3 cuadros, sin
+   subir nunca y como mucho un 20 % cada vez, hasta 0 (unos 45 cuadros). En carrera la paleta animada sube y baja un
+   poco y a veces cae a 0 de golpe y vuelve (de noche). Fundido: 6 bajadas seguidas de menos de un cuarto, sin subir, y
+   ya por debajo de la mitad de donde empezo */
+/* meta o tiempo agotado (el reloj de la carrera se para): POST de fondo ya, mientras la unidad esta libre (la musica
+   de la meta empieza unos 40 cuadros despues y la ocuparia hasta la pantalla 'Your Time', que saldria a trozos). En
+   carrera casi toda la cache esta fija: para que quepa, los sprites del jugador del final del paquete del recorrido
+   (desde n1) que no se ven dejan de ser fijos (el mapa sigue fijo), y los iguales que usaban su hueco se olvidan */
+static void race_finish(void)
+{
+    pack_t *ap[2] = {&lvl_pk, &race_pk};
+    int i, k, s;
+    if (spr_pending) { bg_stop(); spr_done(); }
+    for (i = lvl_pk.n1; i < lvl_pk.n; i++)          /* (la letra del marcador, 0x3940-0x3A13, sigue: la usa 'Your Time') */
+        if ((s = tslot[lvl_pk.ids[i]]) != 0xFFFF && slot_tile[s] == lvl_pk.ids[i] && frame_id - slot_age[s] >= 2 &&
+            (lvl_pk.ids[i] < 0x3940 || lvl_pk.ids[i] >= 0x3A14)) {
+            slot_pin[s >> 3] &= ~(1 << (s & 7)); slot_age[s] = frame_id - 1000;
+        }
+    for (k = 0; k < 2; k++) for (i = 0; i < ap[k]->nal; i++) {
+        u16 d = ap[k]->al[i * 2] & 0x3FFF;
+        s = tslot[d];
+        if (s != 0xFFFF && slot_tile[s] != d && !(slot_pin[s >> 3] & (1 << (s & 7)))) tslot[d] = 0xFFFF;
+    }
+    min_cls_frame = -1;
+    bg_add(&post_pk);
+}
+static void race_fade(void)
+{
+    const u16 *p = (const u16 *)rc_pal;
+    int i, l = 0;
+    for (i = 0; i < 1024; i += 4) { u16 c = p[i]; l += (c & 15) + ((c >> 4) & 15) + ((c >> 8) & 15); }
+    if (l > lum_prev || (lum_prev - l) * 4 > lum_prev) lum_steps = 0;
+    else if (l < lum_prev && !lum_steps++) lum_ref = lum_prev;
+    lum_prev = l;
+    if (lum_steps >= 6 && l * 2 < lum_ref && !race_end) race_ending();
+}
+/* hueco de la cache en la VRAM */
+#define SLOT_X(s) (TEX_X + (((s) >> 8) % 10) * 64 + ((s) & 15) * 4)
+#define SLOT_Y(s) ((((s) >> 8) / 10) * 256 + (((s) >> 4) & 15) * 16)
+/* al salir de la carrera los iguales dejan de usar el hueco de su tile de carrera; los que salen despues (POST, POST2)
+   se copian en la VRAM a un hueco suyo (el contenido es el mismo): si no, faltarian en la pantalla siguiente (p. ej.
+   0x1A00 de 'Your Time', igual a 0x17FF, que tambien sale) */
+static void alias_keep(pack_t *p)
+{
+    int i, n;
+    for (i = 0; i < p->nal; i++) {
+        u16 d = p->al[i * 2] & 0x3FFF, s = tslot[d];
+        if (s == 0xFFFF || slot_tile[s] == d) continue;
+        if (!(post_pk.hs && pack_sec_of(&post_pk, d) >= 0) && !(post2_pk.hs && pack_sec_of(&post2_pk, d) >= 0)) continue;
+        if ((n = slot_alloc(8)) < 0 || n == s) continue;
+        if (slot_tile[n] != 0xFFFF) tslot[slot_tile[n]] = 0xFFFF;
+        slot_tile[n] = d; tslot[d] = n; slot_age[n] = frame_id;
+        slot_pin[n >> 3] &= ~(1 << (n & 7)); slot_low[n >> 3] &= ~(1 << (n & 7));
+        dma_wait(); gpu_wait();
+        GP0 = 0x01000000;
+        GP0 = 0x80000000; GP0 = ((u32)SLOT_Y(s) << 16) | SLOT_X(s); GP0 = ((u32)SLOT_Y(n) << 16) | SLOT_X(n); GP0 = (16 << 16) | 4;
+    }
+}
+static void race_exit(void)
+{
+    int i;
+    in_race = 0; race_cnt = 0;
+    spr_done();
+    alias_keep(&lvl_pk); alias_keep(&race_pk);
+    alias_set(&lvl_pk, 0); alias_set(&race_pk, 0);
+    for (i = 0; i < NTS / 8; i++) slot_pin[i] = slot_low[i] = 0;
+    for (i = 0; i < NTS; i++) if (frame_id - slot_age[i] >= 2) slot_age[i] = frame_id - 1000;   /* lo de la carrera, viejo */
+    min_cls_frame = -1;
+    menu_pk.pin = menu2_pk.pin = 1;
+    pack_pin(&menu_pk, 0); pack_pin(&menu2_pk, 0); pack_pin(&race_pk, 0);
+    if (post_pk.hs) pack_pin(&post_pk, 1);              /* lo de la pantalla que viene ('Your Time'), como recien usado */
+    if (post2_pk.hs) pack_pin(&post2_pk, 0);
+    if (job_on == 1) {                                  /* los tiles que se estaban leyendo ya no son de esta pantalla */
+        cd_cancel(); job_on = 0;
+        for (i = 0; i < job_n; i++) miss_mark[job_t[i] >> 3] = 0;
+        job_n = 0;
+    }
+    if (!race_end) { bg_stop(); bg_add(&menu_pk); bg_add(&menu2_pk); }   /* si se fundio, ya se estan leyendo */
+    race_end = 0;
+}
+/* de una muestra de 30 tiles del fondo visible, cuantos son del mapa del recorrido cargado */
+static int map_score(void)
+{
+    const u16 *vr = (const u16 *)rc_vregs;
+    const u32 *m = (const u32 *)(rc_vram + 0x2000);
+    int sx = ((vr[3] + 8) & 1023) >> 4, sy = ((vr[2] + 16) & 511) >> 4, i, j, n = 0;
+    for (j = 0; j < 15; j += 3) for (i = 0; i < 24; i += 4) {
+        u32 t = m[((sy + j) & 31) * 64 + ((sx + i) & 63)] & 0x3FFF;
+        n += (lvl_map[t >> 3] >> (t & 7)) & 1;
+    }
+    return n;
+}
+/* cada cuadro: recorrido nuevo (cambia el puntero), o entrar/salir de la carrera del recorrido cargado segun el fondo
+   sea su mapa (2 cuadros seguidos para entrar; para salir 8, o 2 si falta mucho: ha cambiado la pantalla) */
+static void level_check(void)
+{
+    u32 p = ((u32)*(u16 *)(rc_ram + 0x190) << 16) | *(u16 *)(rc_ram + 0x192);
+    int k, sc;
+    if (p != cur_lvl_ptr) {
+        cur_lvl_ptr = p;
+        for (k = 0; k < 12 && level_ptr[k] != p; k++);
+        if (k < 12 && k != cur_level) { race_enter(k); return; }
+    }
+    if (cur_level < 0) return;
+    if (in_race) {
+        int on = *(u16 *)(rc_ram + 0x1B2) != 0;           /* el reloj de la carrera corre */
+        if (on) race_demo = rc_ram[0x173 ^ 1] & 1;      /* (el juego la borra al acabar, aun en carrera) */
+        if (race_on && !on && !race_end) race_finish();     /* en el fundido sigue lo demas (race_ending) */
+        race_on = on;
+        race_fade();
+    }
+    sc = level_ptr[cur_level] == p ? map_score() : 0;
+    if (in_race ? sc < 8 : sc >= 15) {
+        if (++race_cnt >= (in_race ? (nmiss >= 16 ? 2 : 8) : 2)) { if (in_race) race_exit(); else race_enter(cur_level); }
+    }
+    else race_cnt = 0;
+}
+/* ---- arranque: tabla de pistas, efectos de sonido y paquete de menus, de una sola lectura si estan seguidos en
+   el disco; luego, de fondo, el paquete de carrera y el resto de menus */
+static int b_base, b_trk = -1, b_fx = -1, b_nfx;
+static void boot_cb(int i, const unsigned char *d)
+{
+    void snd_tracks(const unsigned char *d), snd_fx_sector(int i, const unsigned char *d);
+    int l = b_base + i;
+    if (l == b_trk) snd_tracks(d);
+    else if (l >= menu_pk.lba && l < menu_pk.lba + menu_pk.ns) pack_sector(&menu_pk, l - menu_pk.lba, d);
+    load_done++; load_bar();
+}
+static void boot_read(int lba, int n) { if (lba >= 0 && n > 0) { b_base = lba; if (cd_stream(lba, n, boot_cb, 1)) pack_err++; } }
+/* en un lector real un fallo de lectura al arrancar no deja sin ese fichero toda la partida: hasta 3 veces */
+static int find(const char *nm, int *lba, int *sz) { int k; for (k = 0; k < 3; k++) if (!cd_find(nm, lba, sz)) return 0; return -1; }
+static void pk_find(pack_t *p, const char *nm) { int sz; if (find(nm, &p->lba, &sz)) p->lba = -1; else p->ns = sz / 2048; }
+static void boot_load(void)
+{
+    void snd_init(void);
+    int sz, k; char nm[] = "LEVEL00.BIN";
+    if (find("TILES.BIN", &tiles_lba, &sz)) tiles_lba = -1;
+    if (find("LOGO.BIN", &logo_lba, &sz)) logo_lba = -1; else logo_ns = sz / 2048;
+    pk_find(&race_pk, "RACE.BIN");
+    for (k = 0; k < 12; k++) { nm[5] = '0' + k / 10; nm[6] = '0' + k % 10; if (find(nm, &level_lba[k], &sz)) level_lba[k] = -1; else level_sec[k] = sz / 2048; }
+    for (k = 0; k < 12; k++) { char rn[] = "ZRACE00.BIN"; rn[5] = '0' + k / 10; rn[6] = '0' + k % 10; if (cd_find(rn, &race_cp[k], &sz) || sz / 2048 != race_pk.ns) race_cp[k] = -1; }
+    if (find("TRACKS.BIN", &b_trk, &sz)) b_trk = -1;
+    if (find("SNDFX.BIN", &b_fx, &sz)) b_fx = -1; else b_nfx = (sz + 2047) / 2048;
+    pk_find(&menu_pk, "MENU.BIN"); pk_find(&menu2_pk, "MENU2.BIN"); pk_find(&post_pk, "POST.BIN"); pk_find(&post2_pk, "POST2.BIN");
+    menu_pk.pin = menu2_pk.pin = 1; race_pk.pin = 2;
+    snd_init();
+    /* al arrancar, la tabla de pistas y el paquete de menus (seguidos en el disco); los efectos (SNDFX, 252 sectores)
+       de fondo despues, a doble velocidad, y luego el paquete de carrera y el resto de menus (snd_play no toca una
+       muestra que aun no haya llegado) */
+    fx_pk.lba = b_fx; fx_pk.ns = b_nfx;
+    load_screen(1 + menu_pk.ns);
+    GP1 = 0x05000000; GP1 = 0x03000000;          /* pantalla encendida con la barra de carga */
+    if (b_trk >= 0 && menu_pk.lba == b_trk + 1) boot_read(b_trk, 1 + menu_pk.ns);
+    else { boot_read(b_trk, 1); boot_read(menu_pk.lba, menu_pk.ns); }
+    loading = 0;
+    bg_add(&fx_pk); bg_add(&race_pk); bg_add(&menu2_pk);
+    cd_speed(1);
+    t1_skip();
+}
+/* al principio de cada cuadro: avanzar el CD, subir los tiles que llegaron (la GPU esta parada) y llevar el tiempo
+   del OKI en pasos de 1/60 s por el temporizador 1 (tiempo real, no cuadros del juego; OKI_CUADROS: como antes) */
+static u16 t1_last; static u32 t1_acc;
+static void t1_update(void) { u16 t = t1_get(), d = t - t1_last; if (d < 0x8000) t1_acc += d; t1_last = t; }
+static void t1_skip(void) { t1_update(); t1_acc = 0; }
+static void cd_frame(void)
+{
+    void rc_oki_tick(int n), rc_oki_frame(void), snd_frame(int n);
+    int n;
+    cd_poll();
+    cache_flush();
+    t1_update();
+    n = t1_acc / 263; t1_acc -= n * 263;
+#ifdef OKI_CUADROS
+    rc_oki_frame(); snd_frame(1);
+#else
+    rc_oki_tick(n); snd_frame(n);
+#endif
+}
+/* tablas en el scratchpad: E1 (pagina de textura) por pagina de la cache, CLUT (<<16) de cada paleta de las
+   capas en la variante 0 (las otras variantes estan 4 filas mas abajo cada una: + CLV(v)), y V<<8 | U de las
+   cuatro esquinas del cuadrilatero de un tile con espejo */
+#define CLV(v) ((u32)((v) * 4) << 22)
+static void tables_init(void)
+{
+    int p;
+    for (p = 0; p < 20; p++) SPAD->te1[p] = 0xE1000400 | ((TEX_X + (p % 10) * 64) >> 6) | (((p / 10) & 1) << 4);
+    for (p = 0; p < 32; p++) { SPAD->cl16[p] = CLUTID(0, p) << 16; SPAD->pal_wf[p] = 0; }
+    for (p = 0; p < 4; p++) {
+        u32 uL = (p & 1) ? 31 : 0, uR = (p & 1) ? 15 : 16, vT = (p & 2) ? 31 : 0, vB = (p & 2) ? 15 : 16;
+        SPAD->fuv[p][0] = (vT << 8) | uL; SPAD->fuv[p][1] = (vT << 8) | uR; SPAD->fuv[p][2] = (vB << 8) | uL; SPAD->fuv[p][3] = (vB << 8) | uR;
+    }
+}
+/* un tile 16x16 en (x0, y0>>16) (x0 e y0 ya en el formato de la GPU) con a = CLUT<<16 | V<<8 | U: sin espejo,
+   sprite 0x7D (+E1); con espejo, cuadrilatero 0x2D con la ventana de textura (E2) ajustada al tile, para que U/V
+   puedan ir de 31 a 15 sin salirse (las GPU antiguas no hacen espejo en los rectangulos). *win: si la ventana
+   quedo puesta */
+static inline __attribute__((always_inline)) u32 *emit_tile(u32 *p, u32 *win, u32 x0, u32 y0, u32 a, u32 fl, u32 tp, u32 semi)
+{
+    if (semi) tp |= (semi - 1) << 5;
+    if (!fl) {
+        if (*win) { NODE(p, 1); p[1] = 0xE2000000; p += 2; *win = 0; }
+        NODE(p, 4);
+        p[1] = 0xE1000400 | tp; p[2] = semi ? 0x7F000000 : 0x7D000000;
+        p[3] = y0 | x0;
+        p[4] = a;
+        return p + 5;
+    } else {
+        const u32 *f = SPAD->fuv[fl];
+        u32 x1 = (x0 + 16) & 0xFFFF, y1 = y0 + (16 << 16);
+        NODE(p, 10);
+        p[1] = 0xE20003DE | ((a & 0xF0) << 7) | ((a & 0xF000) << 4);
+        p[2] = semi ? 0x2F808080 : 0x2D808080;
+        p[3] = y0 | x0; p[4] = (a & 0xFFFF0000) | f[0];
+        p[5] = y0 | x1; p[6] = (tp << 16) | f[1];
+        p[7] = y1 | x0; p[8] = f[2];
+        p[9] = y1 | x1; p[10] = f[3];
+        *win = 1;
+        return p + 11;
+    }
+}
+/* lo mismo en un cubo cualquiera (mira si cabe) */
+static inline __attribute__((always_inline)) void emit_bk(bucket_t *b, u32 x0, u32 y0, u32 a, u32 fl, u32 tp, u32 semi)
+{
+    u32 *p = b->p, win = b->win;
+    if (p + 11 > b->end) { p = chunk_new(b, p); win = 0; }
+    b->p = emit_tile(p, &win, x0, y0, a, fl, tp, semi); b->win = win;
+}
+/* capas: cada tile visible en sus cubos segun la categoria (bit 5 del atributo); los de la columna y la fila de
+   mas solo se piden a la cache (para tenerlos antes) y cuentan para pal_w. Orden de la placa: fondo, frente
+   cat. 0, fondo cat. 1, frente cat. 1 (pens 1-7), sprites, frente cat. 1 (pens 8-15), sprites de prioridad alta:
+   capa 1 (fondo): todos -> A (variante 0); cat. 1 tambien -> C (variante 1)
+   capa 0 (frente): cat. 0 -> B (variante 1); cat. 1 -> D (variante 2) y F (variante 3)
+   Por filas: los tiles sin espejo del cubo principal de la capa se emiten segun se leen; los demas (con espejo,
+   y los de la cat. 1 para los otros cubos) van a SPAD->rec, dos palabras por tile (CLUT<<16 | V<<8 | U de la
+   variante 0, y x | categoria<<16 | espejo<<17 | pagina<<24): los sin espejo desde el principio y los con espejo
+   desde el final, y luego se emiten con un bucle corto por cubo (dentro de una capa los tiles no se tapan: el
+   orden da igual) */
+#define ROWW ((W / 16 + 2) * 11 + 2)      /* lo mas que puede ocupar una fila de tiles en un cubo */
+#define NROW (W / 16 + 2)
+#define REC_CAT (1u << 16)
+/* fila: c columna del mapa, nv columnas que se ven (las demas solo se piden a la cache), xy = y | x de la primera
+   con x en 11 bits con signo (la GPU no mira los bits 11-15: asi xy + 16 * k no pasa a la y), b cubo principal
+   con la variante v (todas: todas las categorias; si no, solo la 0). Devuelve cuantos tiles hay en rec sin
+   espejo, con espejo (<<8) y si hay de la cat. 1 (<<16) */
+static inline __attribute__((always_inline, HOT_OPT)) u32 row_run(const u32 *row, u32 c, u32 nv, u32 xy, bucket_t *b, u32 v, const int todas)
+{
+    spad_t *__restrict sp = SPAD;
+    u32 *__restrict p = b->p, *r = sp->rec, *rf = r + NROW * 2, win = b->win, any = 0, k = NROW - nv;
+    if (p > b->end - ROWW) { p = chunk_new(b, p); win = 0; }
+    for (; nv; nv--, xy += 16, c = (c + 1) & 63) {
+        u32 w = row[c], d2 = w >> 16, pi = d2 & 31, a, t;
+        int s = tile_slot(w & 0x3FFF);
+        if (s < 0) continue;
+        sp->pal_wf[pi]++;
+        a = sp->cl16[pi] | ((s & 0xF0) << 8) | ((s & 15) << 4);
+        t = sp->te1[s >> 8];
+        any |= d2;
+        if (!(d2 & 0xC0)) {
+            if (todas || !(d2 & 0x20)) {         /* sin espejo: sprite 16x16 en el cubo principal */
+                if (win) { NODE(p, 1); p[1] = 0xE2000000; p += 2; win = 0; }
+                NODE(p, 4);
+                p[1] = t; p[2] = 0x7D000000;
+                p[3] = xy;
+                p[4] = a + v;
+                p += 5;
+            }
+            if (d2 & 0x20) { r[0] = a; r[1] = (xy & 0xFFFF) | (((d2 >> 5) & 7) << 16) | (t << 24); r += 2; }
+        } else { rf -= 2; rf[0] = a; rf[1] = (xy & 0xFFFF) | (((d2 >> 5) & 7) << 16) | (t << 24); }
+    }
+    for (; k; k--, c = (c + 1) & 63) {           /* fuera de la pantalla: solo se piden a la cache */
+        u32 w = row[c];
+        if (tile_slot(w & 0x3FFF) >= 0) sp->pal_wf[(w >> 16) & 31]++;
+    }
+    b->p = p; b->win = win;
+    return ((r - sp->rec) >> 1) | (((sp->rec + NROW * 2 - rf) >> 1) << 8) | ((any & 0x20) << 11);
+}
+static HOT u32 row_run1(const u32 *row, u32 c, u32 nv, u32 xy) { return row_run(row, c, nv, xy, &SPAD->bk[BK_A], CLV(0), 1); }
+static HOT u32 row_run0(const u32 *row, u32 c, u32 nv, u32 xy) { return row_run(row, c, nv, xy, &SPAD->bk[BK_B], CLV(1), 0); }
+/* los tiles de rec con (categoria & cm) == cv a un cubo, con la CLUT de la variante (v = CLV(variante)) */
+static HOT void row_emit(bucket_t *b, const u32 *rec, u32 n, u32 y0, u32 v, u32 cm, u32 cv)
+{
+    u32 *__restrict p = b->p, win = b->win;
+    const u32 *r = rec, *re = rec + (n & 255) * 2;
+    if (p + ((n & 255) + ((n >> 8) & 255)) * 11 + 2 > b->end) { p = chunk_new(b, p); win = 0; }
+    if (win && r < re) { NODE(p, 1); p[1] = 0xE2000000; p += 2; win = 0; }
+    for (; r < re; r += 2) {                     /* sin espejo: sprite 16x16 */
+        u32 a = r[0], e = r[1];
+        if ((e & cm) != cv) continue;
+        NODE(p, 4);
+        p[1] = 0xE1000400 | (e >> 24); p[2] = 0x7D000000;
+        p[3] = y0 | (e & 0xFFFF);
+        p[4] = a + v;
+        p += 5;
+    }
+    for (r = rec + (NROW - ((n >> 8) & 255)) * 2, re = rec + NROW * 2; r < re; r += 2) {   /* con espejo */
+        u32 a = r[0] + v, e = r[1], x0 = e & 0xFFFF, x1 = (x0 + 16) & 0xFFFF, y1 = y0 + (16 << 16);
+        const u32 *f = (const u32 *)((u8 *)SPAD->fuv + ((e >> 13) & 0x30));
+        if ((e & cm) != cv) continue;
+        NODE(p, 10);
+        p[1] = 0xE20003DE | ((a & 0xF0) << 7) | ((a & 0xF000) << 4);
+        p[2] = 0x2D808080;
+        p[3] = y0 | x0; p[4] = (a & 0xFFFF0000) | f[0];
+        p[5] = y0 | x1; p[6] = ((e >> 24) << 16) | f[1];
+        p[7] = y1 | x0; p[8] = f[2];
+        p[9] = y1 | x1; p[10] = f[3];
+        p += 11; win = 1;
+    }
+    b->p = p; b->win = win;
+}
+/* capa: kr recibe la cat. 0 (y la 1 si todas) con la variante vr; kx, ky la cat. 1 (ky < 0: ninguno) */
+static void layer(const u32 *m, int sx, int sy, int kr, u32 vr, int todas, int kx, u32 vx, int ky, u32 vy)
+{
+    bucket_t *bk = SPAD->bk;
+    u32 *rec = SPAD->rec, y0 = (u32)-(sy & 15) << 16;
+    int tx0 = sx >> 4, ty0 = sy >> 4, ox = -(sx & 15), oy = -(sy & 15), j;
+    int nv = (W + 15 - ox) >> 4, nf = (H + 15 - oy) >> 4;   /* columnas y filas que se ven */
+    for (j = 0; j < H / 16 + 2; j++, y0 += 16 << 16) {
+        u32 n = (todas ? row_run1 : row_run0)(m + ((ty0 + j) & 31) * 64, tx0 & 63, j < nf ? nv : 0, y0 | (ox & 0x7FF));
+        if (n & 0xFF00) row_emit(bk + kr, rec, n & 0xFF00, y0, vr, todas ? 0 : REC_CAT, 0);
+        if (n >> 16) {
+            row_emit(bk + kx, rec, n, y0, vx, REC_CAT, REC_CAT);
+            if (ky >= 0) row_emit(bk + ky, rec, n, y0, vy, REC_CAT, REC_CAT);
+        }
+    }
+}
+/* sprites de efecto (faros, sombras): en la placa cambian el banco de paleta (1-7) de lo que tapan; aqui se
+   dibujan semitransparentes con dos CLUT (lo que el banco k suma y lo que resta, de media, sobre la paleta
+   normal), en x 256 y 272 de la fila 240 */
+static u16 eff_clut[2][16];
+#define EFF_CLUT(i) ((u32)((CLUT_Y << 6) | (16 + (i))))
+/* suma de las componentes de los 16 colores de una paleta (r = bits 4-7, g = 0-3, b = 8-11): dos colores por
+   lectura, en campos de 8 bits que no desbordan */
+#define PS1(v) (a += (v) & 0x0F0F0F0F, b += ((v) >> 4) & 0x000F000F)
+static inline __attribute__((always_inline)) void pal_sum(const u32 *w, int *r, int *g, int *bl)
+{
+    u32 a = 0, b = 0, v0 = w[0], v1 = w[1], v2 = w[2], v3 = w[3], v4 = w[4], v5 = w[5], v6 = w[6], v7 = w[7];
+    PS1(v0); PS1(v1); PS1(v2); PS1(v3); PS1(v4); PS1(v5); PS1(v6); PS1(v7);
+    *r = (b & 0xFFFF) + (b >> 16);
+    *g = (a & 0xFF) + ((a >> 16) & 0xFF);
+    *bl = ((a >> 8) & 0xFF) + (a >> 24);
+}
+/* tiles de cada paleta en los cuadros anteriores (los cuenta cada cuadro en SPAD->pal_wf): pesos del color de la
+   luz. Por cada banco k, la media ponderada de lo que cambia cada componente del banco 0 al k */
+static u32 pal_w[32];
+static HOT void eff_update(void)
+{
+    const u32 *pr = (const u32 *)rc_pal;
+    int k, i, p, c, d[8][3];
+    u32 tw = 0;
+    for (p = 0; p < 32; p++) tw += pal_w[p];
+    if (!tw) return;
+    for (k = 1; k < 8; k++) d[k][0] = d[k][1] = d[k][2] = 0;
+    for (p = 0; p < 32; p++) {
+        const u32 *q = pr + p * 8;
+        int wgt = pal_w[p], r0, g0, b0, r, g, b;
+        if (!wgt) continue;
+        pal_sum(q, &r0, &g0, &b0);
+        for (k = 1; k < 8; k++) {
+            pal_sum(q + k * 512, &r, &g, &b);
+            d[k][0] += (r - r0) * wgt; d[k][1] += (g - g0) * wgt; d[k][2] += (b - b0) * wgt;
+        }
+    }
+    for (k = 1; k < 8; k++) {
+        int pos[3], neg[3];
+        /* media por color (4 bits) -> 5 bits */
+        for (c = 0; c < 3; c++) { int v = d[k][c] * 3 / (int)(tw * 16); pos[c] = v > 0 ? (v > 31 ? 31 : v) : 0; neg[c] = v < 0 ? (-v > 31 ? 31 : -v) : 0; }
+        eff_clut[0][8 + k] = (pos[0] | pos[1] << 5 | pos[2] << 10) ? (u16)(0x8000 | pos[0] | pos[1] << 5 | pos[2] << 10) : 0;
+        eff_clut[1][8 + k] = (neg[0] | neg[1] << 5 | neg[2] << 10) ? (u16)(0x8000 | neg[0] | neg[1] << 5 | neg[2] << 10) : 0;
+    }
+    eff_clut[0][8] = eff_clut[1][8] = 0;
+    for (i = 0; i < 8; i++) eff_clut[0][i] = eff_clut[1][i] = 0;
+    for (p = 0; p < 32; p++) pal_w[p] = 0;
+}
+/* tabla de sprites en una pasada: entrada k = palabras 3+4k..6+4k, leidas de dos en dos (q[0] = w0 << 16,
+   q[1] = w2 << 16 | w1, q[2] = w3 | ...). Primero la x, que descarta casi todas las que no se ven con una sola
+   lectura. Prioridad 0 = bajo la parte alta de la capa delantera, 1 = encima de todo. De efecto (color >= 16):
+   pasada 0 (suma) en E*0 y pasada 1 (resta) en E*1; normales en S* */
+#define NSPR 511
+static HOT u32 sprites(void)    /* devuelve las paletas 32-47 usadas */
+{
+    const u32 *q = (const u32 *)(rc_spr + 4), *te1 = SPAD->te1;
+    u32 pm = 0;
+    int k;
+    for (k = 0; k < NSPR; k++, q += 2) {
+        u32 w2 = q[1] >> 16, u = (w2 - 8) & 0x3FF, w0, num, tp, y0, uv;
+        int s, pr;
+        if (u >= W + 15) continue;                            /* x = ((w2 & 0x3FF) - 23) & 0x3FF fuera */
+        w0 = q[0] >> 16;
+        if ((w0 & 0xFF) == 0xF0) continue;                    /* y = -16: fuera */
+        num = q[2] & 0x3FFF;
+        s = tile_slot(num);
+        if (s < 0) continue;
+        pr = num >= 0x3700;
+        tp = te1[s >> 8] & 0x1FF; uv = ((s & 0xF0) << 8) | ((s & 15) << 4);
+        y0 = (u32)(((240 - (w0 & 0xFF)) & 0xFF) - 16) << 16;
+        if (w2 & 0x4000) {
+            bucket_t *b = &SPAD->bk[pr ? BK_E10 : BK_E00];
+            emit_bk(b, (u - 15) & 0xFFFF, y0, (EFF_CLUT(0) << 16) | uv, w0 >> 14, tp, 2);
+            emit_bk(b + 1, (u - 15) & 0xFFFF, y0, (EFF_CLUT(1) << 16) | uv, w0 >> 14, tp, 3);
+        } else {
+            emit_bk(&SPAD->bk[pr ? BK_S1 : BK_S0], (u - 15) & 0xFFFF, y0, (CLUTID(1, 32 + ((w2 >> 10) & 15)) << 16) | uv, w0 >> 14, tp, 0);
+            pm |= 1 << ((w2 >> 10) & 15);
+        }
+    }
+    return pm;
+}
+
+/* ------------------------------------------------------------ mando (SIO0 directo): mando.c (pad o JogCon) */
+void mando_init(void); u16 mando_lee(void);
+extern int mando_jog, mando_giro, mando_cifra, mando_aviso;
+#define joy_init mando_init
+#define joy_read mando_lee
+
+static int fb, nframe, gear, sq_last, l2_last = 1, show_dbg = 0, skipped, eff_due, nskip, reloj_ok;
+static s32 adel; static u16 t_ref;   /* reloj del juego (arriba) */
+static u32 skips;
+static const u16 font[10] = {0x7B6F, 0x2C97, 0x73E7, 0x73CF, 0x5BC9, 0x79CF, 0x79EF, 0x7249, 0x7BEF, 0x7BCF};
+static void digits(int x, int y, u32 v)
+{
+    bucket_t *b = &SPAD->bk[BK_DBG];
+    int n, k, d[5];
+    for (n = 0; n < 5; n++) { d[n] = v % 10; v /= 10; }
+    for (n = 0; n < 5; n++)
+        for (k = 0; k < 15; k++)
+            if (font[d[4 - n]] & (1 << (14 - k))) {
+                u32 *p = b->p;
+                if (p + 4 > b->end) p = chunk_new(b, p);
+                NODE(p, 3); p[1] = 0x60FFFF00; p[2] = ((u32)(y + (k / 3) * 2) << 16) | (x + n * 8 + (k % 3) * 2); p[3] = (2 << 16) | 2;
+                b->p = p + 4;
+            }
+}
+static void upload(int x, int y, int w, int h, const void *d);
+#define T1 t1_get()
+static u32 lines_acc, lines_avg, rend_acc, rend_avg; static u16 t_rend0, t_pad, t_pal, t_l0, t_l1, t_end, t_cd0; static u32 l1_acc, l1_avg, all_acc, all_avg, gpu_acc, gpu_avg; static u32 pad_acc, pal_acc, pad_avg, pal_avg;
+static int lastv;
+/* ---- pausa: START mientras el jugador corre. El 68000 (y la MCU) se quedan parados aqui dentro; la pantalla que se
+   ve se oscurece con PAUSA encima; sin sonido y la frase larga parada; el CD acaba lo que estaba leyendo (vsync lo
+   atiende) pero no empieza nada; el tiempo de la pausa no cuenta para el OKI. Sale con otra pulsacion de START */
+static int start_up;
+/* corre el jugador: en carrera, sin fundirse, y no es la demostracion del attract (bit 0 de 0xFEC173: el juego lo pone
+   en 0xED00 antes de la carrera de demostracion y lo quita en 0xED74; los bytes del 68000 van cambiados de dos en dos) */
+static int jugando(void) { return in_race && !race_end && !(rc_ram[0x173 ^ 1] & 1); }
+static void pausa(void)
+{
+    void snd_pause(int on);
+    int b = fb ^ 1, sc = 4, up = 0;                  /* el bufer que se ve (el ultimo dibujado) */
+    t1_update();                                     /* lo de antes de la pausa si cuenta para el OKI */
+    snd_pause(1);
+    dma_wait(); gpu_wait();
+    GP0 = 0xE1000400; GP0 = 0xE6000000; GP0 = 0xE2000000; GP0 = 0xE3000000; GP0 = 0xE4000000 | (511 << 10) | 1023; GP0 = 0xE5000000;
+    GP0 = 0x62000000; GP0 = (u32)(b * 256) << 16; GP0 = (240 << 16) | W;   /* negro semitransparente: la mitad */
+    gp_text(b, (W - (5 * 6 * sc - sc)) / 2, 100, "PAUSA", sc, lgrad);
+    for (;;) {
+        u16 p;
+        vsync();
+        p = joy_read();
+        if (p & 0x0008) up = 1; else if (up) break;
+    }
+    t1_last = T1;                                    /* la pausa no cuenta (el temporizador da la vuelta en 4,2 s) */
+    reloj_ok = 0;                                    /* ni para el reloj del juego */
+    snd_pause(0);
+    start_up = 0;                                    /* START sigue pulsado: no vuelve a pausar hasta soltarlo */
+}
+void rc_vblank(void)
+{
+    void snd_spu(int n);
+    u16 pad;
+    int used, draw = 1;
+    {   /* lineas usadas por el juego desde la ultima vuelta (temporizador 1 contando HBLANK) */
+        u16 t = T1;
+        used = (u16)(t - lastv);
+    }
+    {   /* el cuadro anterior ya esta dibujado; lo que se espera, en las cifras (gpu_avg, fila 2): si en una consola va
+           alto, la GPU es la que no llega */
+        u16 tw = T1;
+        dma_wait();
+        gpu_acc += (u16)(T1 - tw);
+    }
+    {   /* el reloj del juego (arriba): un cuadro mas desde la ultima vez */
+        u16 t = T1; s32 e = (u16)(t - t_ref);
+        s32 paso = RITMO && fps_mil > RITMO ? (s32)((u32)LIN_VBL * 256u * (u32)fps_mil / RITMO) : LIN_VBL * 256;
+        t_ref = t;
+        if (!reloj_ok || e > 8 * LIN_VBL) { adel = 0; reloj_ok = 1; }
+        else adel += paso - (e << 8);
+    }
+#if FRAMESKIP
+    if ((I_STAT & 1) && adel < -(LIN_VBL << 8) && nskip < MAXSKIP) draw = 0;   /* tarde y atrasado: sin dibujar */
+    nskip = draw ? 0 : nskip + 1; skipped = !draw; skips += !draw;
+#endif
+    if (draw) {
+        vsync();
+        GP1 = 0x05000000 | ((fb ? 256 : 0) << 10);   /* mostrar el cuadro anterior */
+        fb ^= 1;
+        if (RITMO && adel > (LIN_VBL << 7)) vsync();   /* adelantado: el mismo cuadro un vblank mas */
+    } else I_STAT = ~1u;
+    GP1 = 0x03000000;                    /* pantalla encendida (tambien si el primero se salta: barra de carga) */
+    pad = joy_read();                    /* el mando justo tras el vblank: la entrada mas reciente para el 68000 */
+    if (!(pad & 0x0008) && start_up && jugando()) {
+        pausa(); pad = joy_read();
+        sq_last = (pad & 0x8000) != 0; l2_last = (pad & 0x0100) != 0;   /* lo que siga pulsado al volver no cambia nada */
+    }
+    start_up = (pad & 0x0008) != 0;
+    t_rend0 = T1;
+    /* la MCU da una vuelta a su bucle principal por cuadro (contestacion 0xA53E, etc.) */
+    mcu_run_c(&mcu);
+    cd_frame();                          /* CD (tiles que llegaron) y sonido */
+    /* entradas */
+    {
+        u16 in = 0xFFFF;
+        if (!(pad & 0x0010)) in &= ~0x01;            /* arriba */
+        if (!(pad & 0x0040)) in &= ~0x02;            /* abajo */
+        if (!(pad & 0x0020)) in &= ~0x04;            /* derecha */
+        if (!(pad & 0x0080)) in &= ~0x08;            /* izquierda */
+        if (mando_jog) {   /* JogCon: el giro en pulsos de izquierda/derecha (la placa solo lee bien el joystick: con su
+                              volante optico o de potenciometro el juego no gira, tambien en MAME), tantos por cuadro como
+                              lo girado (un acumulador: 1/4 de giro, un cuadro de cada cuatro; la zona muerta, en mando.c) */
+            static int acu, lado;
+            int g = mando_giro < 0 ? -mando_giro : mando_giro, l = mando_giro < 0;
+            if (!g || l != lado) acu = 0;              /* al centro o al otro lado, sin restos (no tira de mas) */
+            lado = l; acu += g;
+            if (acu >= 256) { acu -= 256; in &= l ? ~0x08 : ~0x04; }
+        }
+        if (!(pad & 0x4000)) in &= ~0x20;            /* X: acelerar */
+        if (!(pad & 0x8000) && sq_last) gear ^= 1;   /* cuadrado: cambio de marcha */
+        sq_last = (pad & 0x8000) != 0;
+#ifdef CIFRAS
+        if (!(pad & 0x0100) && l2_last) show_dbg ^= 1;  /* L2: cifras de rendimiento (solo con -DCIFRAS: en la imagen no) */
+#endif
+        l2_last = (pad & 0x0100) != 0;
+        if (!gear) in &= ~0x10;
+        if (!(pad & 0x0001)) in &= ~0x40;            /* SELECT: moneda */
+        if (!(pad & 0x0008) && !jugando()) in &= ~0x4000;   /* START (en carrera es la pausa) */
+        io_in = in;
+        rc_set_io(io_dsw, io_in);
+    }
+    if (!(nframe & 3)) eff_due = 1;
+    t_pad = T1;
+    if (draw) {                          /* dibujar el estado actual en el otro bufer */
+        const u16 *vr = (const u16 *)rc_vregs;
+        u32 *pw = SPAD->pal_wf, m0 = 0, m1; int k;
+        if (eff_due) { eff_due = 0; eff_update(); upload(256, CLUT_Y, 32, 1, eff_clut); }
+        bk_init();
+        t_l0 = T1;
+        layer((const u32 *)(rc_vram + 0x2000), (vr[3] + 8) & 1023, (vr[2] + 16) & 511, BK_A, CLV(0), 1, BK_C, CLV(1), -1, 0);
+        layer((const u32 *)rc_vram, (vr[1] + 12) & 1023, (vr[0] + 16) & 511, BK_B, CLV(1), 0, BK_D, CLV(2), BK_F, CLV(3));
+        t_l1 = T1;
+        m1 = sprites();
+        t_end = T1;
+        for (k = 0; k < 32; k++) if (pw[k]) { m0 |= 1u << k; pal_w[k] += pw[k]; pw[k] = 0; }   /* paletas de las capas usadas */
+        if (pal_convert(m0, m1)) upload(0, CLUT_Y, 256, 16, clut);
+        t_pal = T1;
+        /* lineas de video por cuadro del juego (media de 32 cuadros; 263 = 60 por segundo) */
+        lines_acc += used; pad_acc += (u16)(t_pad - t_rend0); pal_acc += (u16)(t_pal - t_end);
+        l1_acc += (u16)(t_l1 - t_l0); all_acc += (u16)(t_end - t_l0);
+        if ((nframe & 31) == 31) {
+            lines_avg = lines_acc >> 5; pad_avg = pad_acc >> 5; pal_avg = pal_acc >> 5; l1_avg = l1_acc >> 5; all_avg = all_acc >> 5; gpu_avg = gpu_acc >> 5;
+            lines_acc = pad_acc = pal_acc = l1_acc = all_acc = gpu_acc = 0;
+        }
+        if (show_dbg) { digits(4, 4, lines_avg); digits(48, 4, rend_avg); digits(92, 4, cd_loads); digits(136, 4, tiles_up); digits(180, 4, pack_err);
+            digits(4, 16, pad_avg); digits(48, 16, pal_avg); digits(92, 16, l1_avg); digits(136, 16, all_avg); digits(180, 16, skips); digits(224, 16, gpu_avg);
+            /* CD: sectores perdidos, errores, vigilancias, ultimo codigo de error, Pause rechazadas; cuadros/s x1000 */
+            digits(4, 28, cd_dbg[1]); digits(48, 28, cd_dbg[2]); digits(92, 28, cd_dbg[3]); digits(136, 28, cd_dbg[5]);
+            digits(180, 28, cd_dbg[6]); digits(224, 28, fps_mil); }
+        if (mando_aviso) { mando_aviso--; digits(168, 220, mando_cifra); }   /* JogCon: el giro completo (L1+R1 lo mide) */
+        pk_send(fb ? 256 : 0);
+    }
+    t_cd0 = T1;
+    cd_poll();
+    level_check();                       /* recorrido nuevo: paquetes del CD (con pantalla de carga) */
+    cache_load();                        /* tiles que faltan: se piden al CD sin esperar */
+    snd_spu(0);                          /* frases de la SPU que acaban de terminar: el juego las ve libres ya */
+    frame_id++;
+    nframe++;
+    {
+        u16 t = T1;
+        rend_acc += (u16)(t_cd0 - t_rend0);
+        if ((nframe & 31) == 0) { rend_avg = rend_acc >> 5; rend_acc = 0; }
+        lastv = t;
+    }
+}
+
+/* cuadros de 263 lineas por segundo x1000, medidos contra el temporizador 2 (reloj del sistema / 8, igual en todas las
+   consolas): 59826 en una NTSC, 59280 en una PAL (el video NTSC con su reloj). Un cuadro, de un cambio de linea a otro */
+int fps_mil = 60000;
+static void medir_fps(void)
+{
+    volatile u16 *t2 = (volatile u16 *)0xBF801120; u16 a, p, l0; u32 ck = 0, x = 4233600;
+    int k = 0;
+    *(volatile u16 *)0xBF801124 = 0x0200;              /* reloj / 8, libre */
+    l0 = t1_get(); while (t1_get() == l0 && ++k < 100000);   /* desde el principio de una linea */
+    l0 = t1_get(); p = *t2;
+    while ((u16)(t1_get() - l0) < 263 && ++k < 2000000) { a = *t2; ck += (u16)(a - p); p = a; }
+    if (ck > 62500 && ck < 77500) fps_mil = x / ck * 1000 + (x % ck) * 1000 / ck;
+}
+int main(void)
+{
+    int i;
+    __asm__ volatile ("mtc0 $0, $12");
+    *(volatile u32 *)0xFFFE0130 = 0x0001E988;     /* cache de instrucciones activada (como la BIOS) */
+    I_MASK = 0;
+    DPCR |= 0x800;
+    GP1 = 0x00000000;
+    GP1 = 0x04000002;
+    GP1 = 0x08000041;
+    GP1 = 0x06C70260;
+    GP1 = 0x07040010;
+    cache_init();
+    tables_init();
+    joy_init();
+    *(volatile u16 *)0x1F801114 = 0x0100;   /* temporizador 1: cuenta lineas */
+    medir_fps();
+    if (cd_init() == 0) boot_load();         /* el CD vigila sus respuestas con el temporizador 1 */
+    rc_mem_init();
+    mcu.code = mcu_rom; mcu.xram = rc_ram;
+    mcs51_reset(&mcu); mcs51_run(&mcu, 0x013F, 1000000);
+    rc_r.a[7] = ((u32)*(u16 *)(rc_rom) << 16) | *(u16 *)(rc_rom + 2);
+    rc_r.imask = 7;
+    rc_r.cyc_next = CYC_FRAME;
+    rc_run(((u32)*(u16 *)(rc_rom + 4) << 16) | *(u16 *)(rc_rom + 6));
+    for (;;);
+}

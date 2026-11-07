@@ -1,0 +1,39 @@
+#!/bin/sh
+# World Rally -> PlayStation: construccion completa desde tus ROM (uso personal) - arkretro
+#   WR_ROM   carpeta con las ROM de MAME de wrally (por defecto ./rom)
+#   NUGGET   ruta de nugget (pcsx-redux/src/mips), para el enlazado (ps-exe.ld)
+#   MKPSXISO ejecutable de mkpsxiso (por defecto el del PATH)
+#   LICENCIA tu BIOS (o LICENSEA.DAT): logo de PlayStation del arranque (ps1/licencia.py); para PSIO/XStation, siempre
+#   SD_NOMBRE nombre de las carpetas de ps1/sd/ para la tarjeta (por defecto 'World Rally PS1'); CU2_REV=1: .cu2 de PSIO
+#            para firmware anterior a 2.6.11
+set -e
+cd "$(dirname "$0")"
+R=$(pwd)
+echo "== 1. datos desde las ROM"
+python3 tools/prep.py
+echo "== 2. traduccion 68000 -> C y 8051 -> C"
+(cd rc && python3 rc68.py wr_rc.c && python3 rc51c.py mcu_rc.c)
+echo "== 3. tablas de sonido y codificador PS-ADPCM"
+(cd snd && python3 okitab.py && gcc -O2 -o psxadpcm psxadpcm.c)
+echo "== 4. banco de pruebas en el PC: tiles usados (paquetes) en attract, partida, partidas en cada rally hasta el"
+echo "      game over y los records, con la direccion oscilante (choques y derrapes) y con el piloto automatico (los tres"
+echo "      tramos de cada rally hasta la meta: las partidas de tools/pilotos.txt); regiones de memoria (recompilador)"
+(cd rc && gcc -O1 -c -w -DMCS51_XOR=1 -Dmcs51_run=mcs51_run_sw -Dmcs51_reset=mcs51_reset_sw mcs51.c -o mcs51_sw.o \
+  && gcc -O1 -c -w -DMCS51_XOR=1 mcu_rc.c -o mcu_rc_sw.o \
+  && gcc -O1 -w -DBLKLOG -DRCREG -I. -o rc_host rc_host.c rc_mem.c ../snd/oki_tab.c wr_rc.c mcu_rc_sw.o gcrypt.c mcs51_sw.o \
+  && mkdir -p ../work/run \
+  && NOCOIN=1 WR_WORK=../work BLKLOG=../work/tl_nc.bin RCREG=../work/reg_nc.bin ./rc_host 30000 ../work/run \
+  && WR_WORK=../work BLKLOG=../work/tl_co.bin RCREG=../work/reg_co.bin ./rc_host 8000 ../work/run \
+  && for s in 45 90 140; do STEER=$s WR_WORK=../work BLKLOG=../work/tl_s$s.bin RCREG=../work/reg_s$s.bin ./rc_host 9000 ../work/run || exit 1; done \
+  && for r in 1:1180-1190:R 5: 7:1170-1173:R,1179-1182:R,1188-1191:R 9:1180-1190:L; do \
+       INPUTS=${r#*:} WR_WORK=../work BLKLOG=../work/tl_r${r%%:*}.bin RCREG=/dev/null ./rc_host 12500 ../work/run || exit 1; \
+       g=$(grep "^a${r%%:*} " ../tools/pilotos.txt | cut -d" " -f2-); \
+       if [ -n "$g" ]; then INPUTS="$g" WR_WORK=../work BLKLOG=../work/tl_a${r%%:*}.bin RCREG=/dev/null ./rc_host 24000 ../work/run || exit 1; \
+       else INPUTS=${r#*:} AUTOP=1900-24000 WR_WORK=../work BLKLOG=../work/tl_a${r%%:*}.bin RCREG=/dev/null ./rc_host 24000 ../work/run || exit 1; fi; done \
+  && python3 regiones.py ../work/reg_*.bin && python3 rc68.py wr_rc.c)
+echo "== 5. graficos y sonido para el CD"
+(cd ps1 && python3 gen2.py && python3 logo.py)
+(cd snd && python3 sndps1.py)
+echo "== 6. ejecutable de PS1 e imagenes de CD"
+(cd ps1 && RCOPT=${RCOPT:--Os} sh build.sh)
+ls -l ps1/wrps1_*.bin ps1/wrps1_*.cue

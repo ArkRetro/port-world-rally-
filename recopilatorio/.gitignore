@@ -1,0 +1,8 @@
+# lo que sale de las ROM y de la BIOS del usuario: portadas, pantalla, EXE e imagenes
+work/
+cd/
+sd/
+*.bin
+*.cue
+*.dat
+iso_*.xml

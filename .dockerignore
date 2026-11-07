@@ -1,0 +1,15 @@
+# el contexto del contenedor de la herramienta (herramienta/Dockerfile): solo el codigo, nada generado
+.git
+**/work
+**/rom
+**/__pycache__
+**/sd
+**/cd
+**/*.bin
+**/*.cue
+**/*.cu2
+**/*.o
+**/*.elf
+**/*.ps-exe
+salida
+
