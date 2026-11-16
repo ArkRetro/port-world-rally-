@@ -28,7 +28,7 @@ static mcs51_t mcu_be;
 void mcs51_reset(mcs51_t *c); long mcs51_run(mcs51_t *c, unsigned short stop, long max);
 #endif
 void mcs51_reset_sw(mcs51_t *c); long mcs51_run_sw(mcs51_t *c, unsigned short stop, long max);
-u16 gdecrypt(u16 ep, u16 dp, u16 e);
+/* gdecrypt (descifrado de referencia de la VRAM, para Musashi): gaelcrpt_gen.h, generado desde MAME */
 static u16 io_in = 0xFFEF, io_dsw = 0xFFDF;
 static long frame, nframes = 3000;
 static int ap_child = -1;                   /* piloto automatico: candidato que prueba este proceso hijo */

@@ -8,6 +8,11 @@ No distribuyas las imágenes de CD que salen.
 - Linux con `python3` (numpy, scipy), `gcc`, `mipsel-linux-gnu-gcc` (binutils/gcc cruzados para MIPS).
 - **nugget** (de pcsx-redux, `src/mips`): `ps-exe.ld`, `nooverlay.ld`. Ruta en `NUGGET`.
 - **mkpsxiso** (en `MKPSXISO` o en el PATH).
+- El descifrado de la VRAM de Gaelco **no va en el repositorio**: se saca en tu máquina del fuente de MAME
+  (`src/mame/gaelco/gaelcrpt.cpp`, `gaelcrpt.h` y `wrally.cpp`, licencia BSD-3-Clause, en un commit fijo). El paso 0
+  de `construir.sh` lo hace con `tools/gaelcrpt_extrae.py`: toma esos ficheros de `WR_MAME` (el creador y el
+  contenedor de `herramienta/` ya los traen) o, si no está, los baja de github.com/mamedev/mame a `work/mame`, con su
+  SHA-256. A mano: `python3 tools/gaelcrpt_extrae.py --descargar`.
 - ROM de MAME `wrally`: `worldr14.c01 worldr15.c03 worldr16.c22 worldr17.c23 worldr18.i07 worldr19.i09 worldr20.i11 worldr21.i13 wrdallas.bin` en `WR_ROM` (por defecto `./rom`).
 
 ## Construir
@@ -56,7 +61,12 @@ carpetas para la tarjeta de PSIO o XStation (`SD_NOMBRE` cambia el nombre; por d
 - `rc/rc51c.py`: traducción 8051 → C de la tarea del DS5002FP. `rc/mcs51.c` es el intérprete 8051 que se usa para el arranque.
 - `rc/rc_rt.h`, `rc/rc_mem.c`: entorno del código traducido.
   - Mapa de memoria.
-  - Descifrado de la VRAM de Gaelco (`gcrypt.c`, algoritmo de MAME).
+  - Descifrado de la VRAM de Gaelco: no está en el repositorio. `tools/gaelcrpt_extrae.py` lee la función
+    `decrypt()` del `gaelcrpt.cpp` de MAME y la traduce, sentencia a sentencia, a `work/gaelcrpt/`: `gaelcrpt_gen.h`
+    (en línea para el código recompilado: cada `bitswap<16>` como dos consultas a tabla y los `switch` sobre la misma
+    variable fundidos en uno), `gaelcrpt_gen.c` (las tablas y la traducción literal, `gdecrypt`, para el banco) y
+    `gaelcrpt_gen.py` (`tools/mapdec.py`). Los parámetros de la placa salen del `set_params` de `wrally.cpp`. Comprueba
+    el resultado con una huella SHA-256 de su salida; sin esos ficheros la compilación para con un mensaje.
   - Modelo del OKI.
 - `rc/rc_host.c`: banco de pruebas en el PC.
   - Con `-DRCDBG` y Musashi (MIT, no incluido) compara instrucción a instrucción.

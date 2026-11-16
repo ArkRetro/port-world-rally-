@@ -48,6 +48,16 @@ Una carpeta por imagen:
 - XStation / PSIO: copia la carpeta entera a la tarjeta SD, sin cambiar los
   nombres de los ficheros.
 
+QUE DESCARGA Y LICENCIAS
+------------------------
+La primera vez descarga, cada cosa comprobada con su SHA-256 y con su propia
+licencia: numpy, scipy y pillow, w64devkit (gcc y busybox), el gcc de MIPS de
+PSn00bSDK, mkpsxiso, dos ficheros de nugget y tres ficheros fuente de MAME
+(licencia BSD-3-Clause). De estos ultimos se saca en tu ordenador el
+descifrado de la VRAM de Gaelco que necesita World Rally: no va en este zip.
+El codigo propio del creador y de los ports es MIT (LICENSE.txt); los juegos,
+sus ROM y sus marcas son de Gaelco y no van incluidos (THIRD_PARTY.md).
+
 SI ALGO FALLA
 -------------
 - Mira las ultimas lineas del registro de la ventana: suelen decir que falta

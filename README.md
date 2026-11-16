@@ -33,6 +33,11 @@ decompilaciones, los parches de traducción): **se distribuye solo el trabajo pr
 - Ningún fichero de las ROM de los arcade: ni código, ni gráficos, ni sonido, ni músicas, ni trozos de ellos.
 - Ninguna BIOS de PlayStation.
 - Ninguna imagen de disco ya creada.
+- El descifrado de la memoria de vídeo de la placa de *World Rally* (el algoritmo y sus tablas). Como el resto de
+  herramientas de terceros, se obtiene en tu máquina: el creador descarga de MAME (github.com/mamedev/mame, en un
+  commit fijo y comprobado con su SHA-256) el fichero fuente donde está, `src/mame/gaelco/gaelcrpt.cpp` (licencia
+  BSD-3-Clause), y `wrally_ps1/tools/gaelcrpt_extrae.py` lo lee y genera de él, en la carpeta de trabajo, el código
+  que usa el port. Ese código generado no se distribuye.
 
 **Cómo funciona el creador:** lee las ROM de MAME **que tú aportas**, extrae de ellas los gráficos, sonidos y datos
 del juego y los combina en tu ordenador con el código del port para crear las imágenes. El contenido protegido viene
@@ -57,15 +62,25 @@ solo para identificar los juegos y el hardware.
 
 Si eres titular de derechos y crees que algo de este repositorio te afecta, abre una *issue* y se revisará.
 
+## Licencia
+
+El código y la documentación propios de este repositorio son **MIT** ([`LICENSE`](LICENSE), © 2026 ArkRetro y
+colaboradores). La licencia cubre solo eso: no los juegos de Gaelco, sus ROM, gráficos, sonido ni marcas, ni las
+herramientas de terceros que se descargan, que tienen las suyas. El detalle de lo que es de terceros está en
+[`THIRD_PARTY.md`](THIRD_PARTY.md).
+
 ## Herramientas de terceros
 
-El creador descarga en la primera ejecución, cada una comprobada con su SHA-256 y con su propia licencia:
+El creador descarga en la primera ejecución, cada una comprobada con su SHA-256 y con su propia licencia (el
+contenedor de [`herramienta/`](herramienta/LEEME.md) instala las mismas):
 
-- Python embebido (python.org, licencia PSF) y paquetes de PyPI.
-- El compilador de MIPS de PSn00bSDK.
-- [mkpsxiso](https://github.com/Lameguy64/mkpsxiso), para montar la imagen de CD.
-- Los ficheros de enlazado de [nugget](https://github.com/pcsx-redux/nugget) (PCSX-Redux).
-- busybox para Windows.
+- Python embebido (python.org, licencia PSF) y numpy, scipy y pillow de PyPI.
+- El compilador de MIPS de PSn00bSDK (GPL).
+- [mkpsxiso](https://github.com/Lameguy64/mkpsxiso), para montar la imagen de CD (GPL-2.0).
+- Los ficheros de enlazado de [nugget](https://github.com/pcsx-redux/nugget) (PCSX-Redux, MIT).
+- w64devkit, con gcc y busybox para Windows.
+- Tres ficheros fuente de [MAME](https://github.com/mamedev/mame) (`src/mame/gaelco/gaelcrpt.cpp`, `gaelcrpt.h` y
+  `wrally.cpp`, BSD-3-Clause), de donde se saca el descifrado de la VRAM de Gaelco (ver el aviso legal).
 
 Ninguna contiene material de los juegos.
 

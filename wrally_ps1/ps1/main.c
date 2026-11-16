@@ -23,7 +23,6 @@ void rc_mem_init(void); void rc_set_io(u16 dsw, u16 in);
 extern const u8 mcu_rom[0x8000];
 static mcs51_t mcu;
 static u16 io_in = 0xFFEF, io_dsw = 0xFFDF;
-u16 gdecrypt(u16 ep, u16 dp, u16 e);
 
 void mcu_run_c(mcs51_t *c);
 void rc_mcu(void) { mcu_run_c(&mcu); }

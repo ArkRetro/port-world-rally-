@@ -1,6 +1,7 @@
 #!/bin/sh
 # World Rally -> PlayStation: construccion completa desde tus ROM (uso personal) - arkretro
 #   WR_ROM   carpeta con las ROM de MAME de wrally (por defecto ./rom)
+#   WR_MAME  carpeta con gaelcrpt.cpp, gaelcrpt.h y wrally.cpp de MAME (si no, se bajan: paso 0)
 #   NUGGET   ruta de nugget (pcsx-redux/src/mips), para el enlazado (ps-exe.ld)
 #   MKPSXISO ejecutable de mkpsxiso (por defecto el del PATH)
 #   LICENCIA tu BIOS (o LICENSEA.DAT): logo de PlayStation del arranque (ps1/licencia.py); para PSIO/XStation, siempre
@@ -9,6 +10,10 @@
 set -e
 cd "$(dirname "$0")"
 R=$(pwd)
+echo "== 0. descifrado de la VRAM de Gaelco desde el fuente de MAME (no va en el repositorio: tools/gaelcrpt_extrae.py)"
+# WR_MAME: carpeta con gaelcrpt.cpp, gaelcrpt.h y wrally.cpp de MAME (la del creador o la del contenedor); sin ella se
+# bajan de github.com/mamedev/mame (commit fijo, con su SHA-256) a work/mame
+if [ -n "$WR_MAME" ]; then python3 tools/gaelcrpt_extrae.py; else python3 tools/gaelcrpt_extrae.py --descargar; fi
 echo "== 1. datos desde las ROM"
 python3 tools/prep.py
 echo "== 2. traduccion 68000 -> C y 8051 -> C"
@@ -20,7 +25,7 @@ echo "      game over y los records, con la direccion oscilante (choques y derra
 echo "      tramos de cada rally hasta la meta: las partidas de tools/pilotos.txt); regiones de memoria (recompilador)"
 (cd rc && gcc -O1 -c -w -DMCS51_XOR=1 -Dmcs51_run=mcs51_run_sw -Dmcs51_reset=mcs51_reset_sw mcs51.c -o mcs51_sw.o \
   && gcc -O1 -c -w -DMCS51_XOR=1 mcu_rc.c -o mcu_rc_sw.o \
-  && gcc -O1 -w -DBLKLOG -DRCREG -I. -o rc_host rc_host.c rc_mem.c ../snd/oki_tab.c wr_rc.c mcu_rc_sw.o gcrypt.c mcs51_sw.o \
+  && gcc -O1 -w -DBLKLOG -DRCREG -I. -I../work/gaelcrpt -o rc_host rc_host.c rc_mem.c ../snd/oki_tab.c wr_rc.c mcu_rc_sw.o ../work/gaelcrpt/gaelcrpt_gen.c mcs51_sw.o \
   && mkdir -p ../work/run \
   && NOCOIN=1 WR_WORK=../work BLKLOG=../work/tl_nc.bin RCREG=../work/reg_nc.bin ./rc_host 30000 ../work/run \
   && WR_WORK=../work BLKLOG=../work/tl_co.bin RCREG=../work/reg_co.bin ./rc_host 8000 ../work/run \

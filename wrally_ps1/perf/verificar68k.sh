@@ -14,11 +14,11 @@ if [ ! -f $B/m68kops.c ]; then
   for f in m68kcpu m68kops m68kdasm; do gcc -O1 -w -I$B -c $B/$f.c -o $B/$f.o; done
   gcc -O1 -w -I$B -c $B/softfloat/softfloat.c -o $B/softfloat.o
 fi
-gcc -O1 -w -DRCDBG -I. -I$B -c wr_rc.c -o $B/wr_rc_dbg.o
+gcc -O1 -w -DRCDBG -I. -I../work/gaelcrpt -I$B -c wr_rc.c -o $B/wr_rc_dbg.o
 gcc -O1 -c -w -DMCS51_XOR=1 -Dmcs51_run=mcs51_run_sw -Dmcs51_reset=mcs51_reset_sw mcs51.c -o $B/mcs51_sw.o
 gcc -O1 -c -w -DMCS51_XOR=1 mcu_rc.c -o $B/mcu_rc_sw.o
 gcc -O1 -c -w mcs51.c -o $B/mcs51_be.o
-gcc -O1 -w -DRCDBG -I. -I$B -o $B/rc_host_dbg rc_host.c rc_mem.c ../snd/oki_tab.c $B/wr_rc_dbg.o $B/mcu_rc_sw.o gcrypt.c $B/mcs51_sw.o $B/mcs51_be.o $B/m68kcpu.o $B/m68kops.o $B/m68kdasm.o $B/softfloat.o -lm
+gcc -O1 -w -DRCDBG -I. -I../work/gaelcrpt -I$B -o $B/rc_host_dbg rc_host.c rc_mem.c ../snd/oki_tab.c $B/wr_rc_dbg.o $B/mcu_rc_sw.o ../work/gaelcrpt/gaelcrpt_gen.c $B/mcs51_sw.o $B/mcs51_be.o $B/m68kcpu.o $B/m68kops.o $B/m68kdasm.o $B/softfloat.o -lm
 mkdir -p ../work/run
 echo "== attract (sin moneda)"; NOCOIN=1 WR_WORK=../work $B/rc_host_dbg ${1:-30000} ../work/run
 echo "== con moneda y carrera"; WR_WORK=../work $B/rc_host_dbg ${2:-8000} ../work/run

@@ -1,7 +1,8 @@
 #!/bin/sh
 # Paquete del creador de imagenes para Windows (herramienta/windows): dist/WorldRallyPS1-Creador.zip con
 #   'Crear imagenes PS1.exe' (creador.c), LEEME.txt, app/creador.py, app/python (Python embebido de python.org, sin
-#   el ._pth para que los scripts vean su carpeta) y app/port (el codigo del port: lo que esta en git).
+#   el ._pth para que los scripts vean su carpeta), app/port (el codigo del port: lo que esta en git), LICENSE.txt y
+#   THIRD_PARTY.md. Sin el descifrado de la VRAM de Gaelco: se saca del fuente de MAME en la maquina del usuario.
 # Nada de las ROM ni de la BIOS: el paquete se puede compartir. Hace falta x86_64-w64-mingw32-gcc y windres, python3
 # con pillow (el icono) y curl. Uso: herramienta/windows/empaquetar.sh [destino (dist)]
 set -e
@@ -25,5 +26,7 @@ cp creador.py "$P/app/"
 (cd "$R" && git ls-files wrally_ps1 wrally2_ps1 recopilatorio herramienta | grep -v '^herramienta/windows/' |
   tar -cf - -T -) | tar -xf - -C "$P/app/port"
 sed 's/$/\r/' LEEME.txt > "$P/LEEME.txt"
+sed 's/$/\r/' "$R/LICENSE" > "$P/LICENSE.txt"     # MIT, solo el codigo propio; lo de terceros en THIRD_PARTY.md
+cp "$R/THIRD_PARTY.md" "$P/"
 (cd "$D" && rm -f WorldRallyPS1-Creador.zip && zip -q -r -9 WorldRallyPS1-Creador.zip WorldRallyPS1-Creador)
 ls -l "$D/WorldRallyPS1-Creador.zip"

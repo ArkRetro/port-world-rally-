@@ -1,7 +1,9 @@
 """Creador de imagenes de World Rally 1 y 2 para PS1 en Windows (lo lanza 'Crear imagenes PS1.exe', creador.c; uso
 personal) - arkretro. Uso: python creador.py carpeta_de_las_roms carpeta_de_salida [--regiones 'USA EUR']
 1. Herramientas libres, la primera vez: el Python de este paquete con numpy, scipy y pillow, w64devkit (gcc y sh de
-   busybox para Windows), el gcc de MIPS de PSn00bSDK, mkpsxiso y los .ld de nugget. Cada descarga con su SHA-256.
+   busybox para Windows), el gcc de MIPS de PSn00bSDK, mkpsxiso, los .ld de nugget y tres fuentes de MAME (BSD-3-Clause:
+   src/mame/gaelco/gaelcrpt.cpp, gaelcrpt.h y wrally.cpp), de donde wrally_ps1/tools/gaelcrpt_extrae.py saca en tu
+   maquina el descifrado de la VRAM de Gaelco (no va en el paquete). Cada descarga con su SHA-256.
 2. Todo se hace en C:\\WRPS1 (sin espacios ni acentos, que algunos programas no llevan bien; si no se puede crear, en
    C:\\Users\\Public\\WRPS1): las herramientas, una copia del port, una de las ROM y la construccion. Si se corta, al
    volver a lanzarlo sigue donde iba.
@@ -16,6 +18,7 @@ APP = os.path.dirname(os.path.abspath(__file__))
 GH = 'https://github.com'
 PY = 'https://files.pythonhosted.org/packages'
 NUG = 'https://raw.githubusercontent.com/pcsx-redux/nugget/8a129f0498131ecefb27f5eb5eee30d016d0fe45'
+MAME = 'https://raw.githubusercontent.com/mamedev/mame/f34f02505e32c1993c6a782b6814232cbfc74e36/src/mame/gaelco'  # mame0289
 DESCARGAS = [
     ('numpy', PY + '/12/33/fefe62073dc8acfd0f2b9ed7c003af2f50aa61555e113e6db02b8f79f145/numpy-2.5.4-cp312-cp312-win_amd64.whl',
      'a7b1b6353e36a7e50de2973a38d705c88ee93adcf120673cee7f45a4a3fa223a', 13),
@@ -31,6 +34,9 @@ DESCARGAS = [
      '65b910e61a276c1b3e30ab13e232f416199b5ffc31eaad3c647d0226bc132df5', 1),
     ('ps-exe.ld', NUG + '/ps-exe.ld', 'df608a9f10a1a4f37d2755e05f1d9fe65206ba8064b802b7f7c89c05e4178593', 0),
     ('nooverlay.ld', NUG + '/nooverlay.ld', '4192744a729e42063942cf6130b77dd0ff7eac4e71ebe1d867f9e8bd328897d4', 0),
+    ('gaelcrpt.cpp', MAME + '/gaelcrpt.cpp', 'bc1970463732e3e565c0f5c0c53638c6d2a014d495956eae43816b5272fff11a', 0),
+    ('gaelcrpt.h', MAME + '/gaelcrpt.h', 'b8ac115c7c667390c5cde43ee3d5aa3c3722310e25691c80d9e2f6c285d2f931', 0),
+    ('wrally.cpp', MAME + '/wrally.cpp', 'ac7ccd985c226c706e4a63e3319fd2e1cdf93ca2f2cc18ac09bae60147ebd883', 0),
 ]
 
 
@@ -102,6 +108,8 @@ def herramientas(H):
             shutil.rmtree(os.path.join(H, 'mipsel'), ignore_errors=True); zipfile.ZipFile(fn).extractall(os.path.join(H, 'mipsel'))
         elif n == 'mkpsxiso':
             zipfile.ZipFile(fn).extractall(H)
+        elif n.endswith(('.cpp', '.h')):             # fuentes de MAME: los lee wrally_ps1/tools/gaelcrpt_extrae.py
+            os.makedirs(os.path.join(H, 'mame'), exist_ok=True); shutil.copy(fn, os.path.join(H, 'mame', n))
         else:
             os.makedirs(os.path.join(H, 'nugget'), exist_ok=True); shutil.copy(fn, os.path.join(H, 'nugget', n))
         marca(n)
@@ -110,7 +118,7 @@ def herramientas(H):
     env['PATH'] = os.pathsep.join([py, os.path.join(H, 'w64devkit', 'bin'), os.path.join(H, 'mipsel', 'bin'),
                                    os.path.join(H, 'mkpsxiso-2.04-win64', 'bin'), env.get('PATH', '')])
     env.update(MIPS='mipsel-none-elf', MIPS_ELF='elf32-littlemips', NUGGET=barra(os.path.join(H, 'nugget')),
-               MKPSXISO=barra(os.path.join(H, 'mkpsxiso-2.04-win64', 'bin', 'mkpsxiso.exe')),
+               MKPSXISO=barra(os.path.join(H, 'mkpsxiso-2.04-win64', 'bin', 'mkpsxiso.exe')), WR_MAME=barra(os.path.join(H, 'mame')),
                PYTHONUTF8='1', PYTHONIOENCODING='utf-8', PYTHONDONTWRITEBYTECODE='1')
     return env
 

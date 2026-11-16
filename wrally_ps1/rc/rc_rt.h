@@ -100,51 +100,18 @@ static inline u32 rc_regbit(u32 a)
 static inline __attribute__((always_inline)) u32 RD8(u32 a) { REGREC(a, 0); return rc_rpg[(a >> 12) & 0xFFF][(a & 0xFFF) ^ 1]; }
 static inline __attribute__((always_inline)) u32 RD16(u32 a) { REGREC(a, 0); return *(u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); }
 static inline __attribute__((always_inline)) u32 RD32(u32 a) { u16 *q; REGREC32(a, 0); q = (u16 *)(rc_rpg[(a >> 12) & 0xFFF] + (a & 0xFFF)); return ((u32)q[0] << 16) | q[1]; }
-/* ---- VRAM cifrada (algoritmo de MAME, tablas en gcrypt.c). Dos escrituras seguidas de la misma instruccion a
-   palabras consecutivas forman un par: la segunda se descifra con la primera (cifrada y descifrada) */
-extern u16 rc_gsw[4][2][256], rc_gfin[2][256];
+/* ---- VRAM cifrada. Dos escrituras seguidas de la misma instruccion a palabras consecutivas forman un par: la
+   segunda se descifra con la primera (cifrada y descifrada). El descifrado (gc_dec, gc_dec0) no va en el repositorio:
+   lo genera tools/gaelcrpt_extrae.py en work/gaelcrpt/ a partir del gaelcrpt.cpp de MAME (construir.sh lo hace) */
 /* par abierto: rc_vl_key = pc de la instruccion y palabra que lo cerraria (0xFFFFFFFF = ninguno) */
 extern u32 rc_vl_key, rc_vram_writes; extern u16 rc_vl_enc, rc_vl_dec;
 #define RC_VLK(pc, off) (((pc) << 14) | (off))     /* pc < 0x40000 (lo comprueba rc68.py) */
-#define GB(x, n) (((x) >> (n)) & 1)
-#define GC_P1 0x1f
-#define GC_P2 0x522a
-static inline __attribute__((always_inline)) u32 gc_bs(u32 v, u32 s) { const u16 *t = rc_gsw[s][0]; return t[v >> 8] | t[256 + (v & 0xFF)]; }
-/* suma de k en los 6 bits bajos */
-static inline __attribute__((always_inline)) u32 gc_lo(u32 res, u32 k) { return ((res & 0xffc0) | ((res + (k ^ GC_P1)) & 0x3f)) ^ GC_P1; }
-/* final comun: k de 5 bits sumado a los bits 6-10 y 11-15, y permutacion de salida */
-static inline __attribute__((always_inline)) u32 gc_end(u32 res, u32 k)
-{
-    k ^= GC_P1;
-    res = ((res & 0x3f) | ((res + (k << 6)) & 0x7c0) | ((res + (k << 11)) & 0xf800)) ^ 0xffc0;
-    return rc_gfin[0][res >> 8] | rc_gfin[1][res & 0xFF];
-}
-/* primera palabra (ep = dp = 0: permutacion 0, tipo 0) */
-static inline __attribute__((always_inline)) u32 gc_dec0(u32 e)
-{
-    u32 res = gc_lo(gc_bs(e, 0) ^ GC_P2, 0x3a);
-    return gc_end(res, GB(e, 9) | (GB(res, 2) << 1) | (GB(e, 5) << 2) | (GB(res, 5) << 3) | (GB(res, 4) << 4));
-}
-/* general (ep, dp: la palabra anterior del par, cifrada y descifrada); cada tipo en un solo tramo */
-static inline __attribute__((always_inline)) u32 gc_dec(u32 ep, u32 dp, u32 e)
-{
-    u32 res = gc_bs(e, (dp >> 7) & 3) ^ GC_P2, k;
-    switch ((GB(dp, 12) << 1) | GB(dp, 2)) {
-    case 0:
-        res = gc_lo(res, 0x3a);
-        k = GB(e,9) | (GB(res,2)<<1) | (GB(e,5)<<2) | (GB(res,5)<<3) | (GB(res,4)<<4); break;
-    case 1:
-        res = gc_lo(res, GB(dp,0) | (GB(dp,1)<<1) | (GB(dp,1)<<2) | (GB(ep,3)<<3) | (GB(ep,8)<<4) | (GB(ep,15)<<5));
-        k = GB(dp,2) | (GB(ep,4)<<1) | (GB(dp,14)<<2) | (GB(res,1)<<3) | (GB(dp,12)<<4); break;
-    case 2:
-        res = gc_lo(res, GB(ep,5) | (GB(dp,5)<<1) | (GB(ep,7)<<2) | (GB(ep,3)<<3) | (GB(ep,13)<<4) | (GB(ep,14)<<5));
-        k = GB(ep,6) | (GB(dp,6)<<1) | (GB(dp,15)<<2) | (GB(res,0)<<3) | (GB(dp,7)<<4); break;
-    default:
-        res = gc_lo(res, GB(ep,0) | (GB(ep,9)<<1) | (GB(ep,6)<<2) | (GB(dp,4)<<3) | (GB(ep,2)<<4) | (GB(dp,11)<<5));
-        k = GB(dp,2) | (GB(dp,9)<<1) | (GB(ep,5)<<2) | (GB(dp,1)<<3) | (GB(ep,10)<<4); break;
-    }
-    return gc_end(res, k);
-}
+#if defined(__has_include)
+#if !__has_include("gaelcrpt_gen.h")
+#error "falta gaelcrpt_gen.h: el descifrado de la VRAM de Gaelco se saca del fuente de MAME en tu maquina. Ejecuta (en wrally_ps1/) python3 tools/gaelcrpt_extrae.py --descargar y compila con -I work/gaelcrpt (wrally_ps1/LEEME.md)"
+#endif
+#endif
+#include "gaelcrpt_gen.h"
 /* en el codigo recompilado, funciones hoja fuera de linea (pocos registros libres: mejor sin nada alrededor) */
 #ifdef RC_GEN
 static __attribute__((noinline)) u32 rc_gdec0(u32 e) { return gc_dec0(e); }

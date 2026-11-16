@@ -9,7 +9,6 @@ u8 rc_spr[0x1000 + 4] __attribute__((aligned(4))), rc_vram[0x4000 + 4] __attribu
 u8 rc_vregs[0x1000 + 4] __attribute__((aligned(4)));
 u8 rc_iopg[0x1000 + 4] __attribute__((aligned(4))), rc_ffpg[0x1000 + 4] __attribute__((aligned(4)));
 rc_regs_t rc_r;
-void rc_gcrypt_init(void);
 /* estado de los pares de escrituras a la VRAM (rc_vw16/rc_vw32 en rc_rt.h) */
 u32 rc_vl_key = 0xFFFFFFFF; u16 rc_vl_enc, rc_vl_dec;
 extern u8 oki_busy;
@@ -47,7 +46,6 @@ void rc_mem_init(void)
     rc_rpg[0x440] = rc_wpg[0x440] = rc_spr;
     rc_rpg[0x700] = rc_iopg;
     rc_set_io(0xFFDF, 0xFFEF);
-    rc_gcrypt_init();
 }
 u32 rc_rd16(u32 a) { return RD16(a); }
 u32 rc_rd8(u32 a) { return RD8(a); }

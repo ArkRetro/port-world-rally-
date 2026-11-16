@@ -15,3 +15,6 @@ Mac.
 | `wrally2_ps1/` | Port del World Rally 2 (su `LEEME.md` y `doc/`) |
 | `recopilatorio/` | Disco con los dos y un menú para elegir |
 | `tools/mame/` | Utilidades de MAME para depurar (del port de Neo Geo) |
+
+Licencia del código propio: MIT (`LICENSE`); lo que es de terceros, en `THIRD_PARTY.md`. El descifrado de la VRAM
+de Gaelco (WR1) no está en el repositorio: se saca al construir del fuente de MAME (`wrally_ps1/tools/gaelcrpt_extrae.py`).

@@ -33,8 +33,15 @@ El zip se genera con `windows/empaquetar.sh` (en Linux, con MinGW). Lleva tres c
   - w64devkit (gcc y el `sh` de busybox para Windows);
   - el gcc de MIPS de PSn00bSDK;
   - mkpsxiso;
-  - los `.ld` de nugget.
+  - los `.ld` de nugget;
+  - tres ficheros fuente de MAME (`src/mame/gaelco/gaelcrpt.cpp`, `gaelcrpt.h` y `wrally.cpp`, BSD-3-Clause, de un
+    commit fijo), a `C:\WRPS1\herramientas\mame` (`WR_MAME`).
 - **Lanza** `crear_imagen.sh` con ese `sh`.
+
+El descifrado de la VRAM de Gaelco que necesita el WR1 no va ni en el repositorio ni en el zip: al construir,
+`wrally_ps1/tools/gaelcrpt_extrae.py` lee esos fuentes de MAME y genera en la carpeta de trabajo
+(`wrally_ps1/work/gaelcrpt/`) el C y el Python que usa el port. El `Dockerfile` baja los mismos ficheros (con su
+SHA-256) a `/opt/mame`.
 
 Las corridas del banco repiten las partidas grabadas del piloto automático (`tools/pilotos.txt` de cada port), porque
 Windows no tiene `fork`.
@@ -75,7 +82,8 @@ Para grabar un CD: carga el `.cue` en el programa de grabación, en modo DAO / d
   Las imágenes quedan en `salida/`. El trabajo se guarda en el volumen `wr-ps1-trabajo`; para recuperar el espacio,
   `docker volume rm wr-ps1-trabajo`.
 - **Linux sin Docker:** lo que instala el `Dockerfile` es el compilador cruzado `mipsel-linux-gnu`, python3 con numpy,
-  scipy y pillow, mkpsxiso y nugget. Con eso:
+  scipy y pillow, mkpsxiso, nugget y los fuentes de MAME del descifrado (`WR_MAME`; si no se da, el WR1 los baja solo
+  a su carpeta de trabajo, con su SHA-256). Con eso:
 
       NUGGET=/ruta/a/nugget MKPSXISO=/ruta/a/mkpsxiso herramienta/crear_imagen.sh \
           --bios scph1001.bin --salida salida --trabajo /tmp/wr-ps1 /ruta/a/mis/roms
@@ -88,7 +96,7 @@ Hacen falta unos 15 GB libres: las corridas del banco del WR2 ocupan unos 10.
 
 1. **`roms.py`** busca cada ROM por su CRC32 en los zip y carpetas que le des, también dentro de subcarpetas de zips
    merged, y las deja con el nombre que usan los ports. Si falta alguna, dice cuál, con su CRC.
-2. **`wrally_ps1/construir.sh`** construye el WR1.
+2. **`wrally_ps1/construir.sh`** construye el WR1 (lo primero, el descifrado de la VRAM desde los fuentes de MAME).
 3. **`wrally2_ps1/construir.sh`** construye el WR2:
    - prepara el banco de pruebas;
    - convierte el sonido a la SPU;
