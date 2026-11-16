@@ -55,8 +55,10 @@ while todo:
     funcs[f] = body
     todo.extend(calls)
 
-# ciclos maquina por opcode (mcs51_cycles de MAME): el trabajo cuenta los suyos en MC por bloque basico, para el
-# modelo de tiempo de la MCU (mcu.c: cada escritura con su momento)
+# ciclos maquina por opcode: el trabajo cuenta los suyos en MC por bloque basico, para el modelo de tiempo de la MCU
+# (mcu.c: cada escritura con su momento). Los valores son los de la tabla mcs51_cycles de MAME
+# (src/devices/cpu/mcs51/mcs51.cpp, licencia BSD-3-Clause, copyright-holders: Steve Ellenoff, Manuel Abadia,
+# Couriersud; THIRD_PARTY.md)
 CYC = [int(x) for x in """1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,
 2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1,
 2,2,2,2,1,2,1,1,1,1,1,1,1,1,1,1, 2,2,2,2,4,2,2,2,2,2,2,2,2,2,2,2, 2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1, 2,2,1,2,4,1,2,2,2,2,2,2,2,2,2,2,
